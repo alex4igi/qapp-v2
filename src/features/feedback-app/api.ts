@@ -42,6 +42,16 @@ export async function listAppFeedback({
   return { rows: data ?? [], total: count ?? 0 }
 }
 
+export async function getAppFeedback(id: string): Promise<AppFeedback | null> {
+  const { data, error } = await supabase
+    .from('app_feedback')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 export async function createAppFeedback(
   dto: InsertDto<'app_feedback'>,
 ): Promise<AppFeedback> {

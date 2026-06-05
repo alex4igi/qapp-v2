@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Button, Spinner } from '@/components/ui'
 import {
@@ -28,6 +29,15 @@ type AuditPayload = {
   by_action?: Array<{ action: string; actor_role: string; count: number }>
 }
 
+// Ținta de navigare la click pe notificare (null = doar marchează citit).
+function targetFor(n: Notification): string | null {
+  if (n.kind === 'app_feedback_new') {
+    const fid = (n.payload as { feedback_id?: string } | null)?.feedback_id
+    return fid ? `/feedback-app?feedback=${fid}` : '/feedback-app'
+  }
+  return null
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('ro-RO', {
@@ -51,6 +61,7 @@ function NotificationCard({
   const unread = n.read_at == null
   const isAudit = n.kind === 'audit_digest_weekly'
   const audit = isAudit ? (n.payload as AuditPayload | null) : null
+  const isFeedback = n.kind === 'app_feedback_new'
 
   return (
     <article
@@ -72,6 +83,11 @@ function NotificationCard({
         </time>
       </header>
       {n.body && <p className="mb-3 text-sm text-quasar-gray">{n.body}</p>}
+      {isFeedback && (
+        <p className="text-xs font-semibold text-quasar-yellow-dark">
+          Vezi detalii și triază →
+        </p>
+      )}
       {audit && audit.by_action && audit.by_action.length > 0 && (
         <div className="rounded-md bg-quasar-gray-light/40 p-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-quasar-gray">
@@ -96,6 +112,7 @@ function NotificationCard({
 
 export function NotificariPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const notificariQ = useQuery({
     queryKey: ['notificari'],
     queryFn: listNotificari,
@@ -172,6 +189,8 @@ export function NotificariPage() {
               n={n}
               onClick={() => {
                 if (n.read_at == null) readOne.mutate(n.id)
+                const target = targetFor(n)
+                if (target) navigate(target)
               }}
             />
           ))}

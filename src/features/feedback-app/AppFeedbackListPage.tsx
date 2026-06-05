@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   PageHeader,
@@ -15,7 +16,7 @@ import type { AppFeedback, AppFeedbackStatus } from '@/types/db'
 import { STATUS_BADGE, STATUS_LABEL, TIP_LABEL, statusOptions } from './constants'
 import { AppFeedbackModal } from './AppFeedbackModal'
 import { AppFeedbackTriageModal } from './AppFeedbackTriageModal'
-import { listAppFeedback, PAGE_SIZE } from './api'
+import { getAppFeedback, listAppFeedback, PAGE_SIZE } from './api'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('ro-RO', {
@@ -80,6 +81,30 @@ export function AppFeedbackListPage() {
   const [page, setPage] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
   const [selected, setSelected] = useState<AppFeedback | null>(null)
+
+  // Deschidere directă din notificare (?feedback=<id>): încarcă rândul și
+  // deschide modalul de triere, apoi curăță param-ul ca să nu redeschidă.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const feedbackParam = searchParams.get('feedback')
+  useEffect(() => {
+    if (!feedbackParam) return
+    let cancelled = false
+    void getAppFeedback(feedbackParam).then((f) => {
+      if (cancelled) return
+      if (f) setSelected(f)
+      // Curățăm param-ul abia după fetch, ca să nu redeschidă la refresh.
+      setSearchParams(
+        (prev) => {
+          prev.delete('feedback')
+          return prev
+        },
+        { replace: true },
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [feedbackParam, setSearchParams])
 
   useEffect(() => {
     const t = setTimeout(() => {
