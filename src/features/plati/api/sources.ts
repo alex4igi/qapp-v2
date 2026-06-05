@@ -6,13 +6,15 @@ export type BiletSursaOption = {
   value: string
   label: string
   pret?: number | null
+  isWorkshop?: boolean
+  nume?: string
 }
 
 export async function listBiletSurse(): Promise<BiletSursaOption[]> {
   const [evRes, coRes] = await Promise.all([
     supabase
       .from('evenimente')
-      .select('id, nume_eveniment, pret_bilet, data')
+      .select('id, nume_eveniment, pret_bilet, data, tip')
       .order('data', { ascending: false, nullsFirst: false }),
     supabase
       .from('concursuri')
@@ -23,10 +25,14 @@ export async function listBiletSurse(): Promise<BiletSursaOption[]> {
   if (coRes.error) throw coRes.error
   const out: BiletSursaOption[] = []
   for (const e of evRes.data ?? []) {
+    const isWorkshop = e.tip === 'Workshop'
+    const prefix = isWorkshop ? 'Workshop' : 'Eveniment'
     out.push({
       value: e.id,
-      label: `Eveniment · ${e.nume_eveniment}${e.data ? ' · ' + e.data : ''}`,
+      label: `${prefix} · ${e.nume_eveniment}${e.data ? ' · ' + e.data : ''}`,
       pret: e.pret_bilet,
+      isWorkshop,
+      nume: e.nume_eveniment,
     })
   }
   for (const c of coRes.data ?? []) {

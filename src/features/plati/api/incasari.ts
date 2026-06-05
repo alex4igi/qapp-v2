@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { normalizeTelefon } from '@/lib/phone'
 import type { Enums, Incasare, InsertDto } from '@/types/db'
 
 export async function getEnrollmentIncasari(
@@ -11,6 +12,54 @@ export async function getEnrollmentIncasari(
     .order('data', { ascending: false, nullsFirst: false })
   if (error) throw error
   return data ?? []
+}
+
+// Rezolvă persoana pentru un guest de workshop (nume + telefon), evitând dubluri:
+//   1. dacă există deja un client cu acest telefon → atașăm încasarea la client
+//   2. dacă există deja un lead cu acest telefon → îl reutilizăm
+//   3. altfel creăm un lead minimal în Nurture (FĂRĂ SMS de bun-venit)
+export type WorkshopGuestResult =
+  | { kind: 'client'; clientId: string }
+  | { kind: 'lead'; leadId: string }
+
+export async function resolveWorkshopGuest(input: {
+  nume: string
+  telefon: string
+  evenimentNume?: string | null
+}): Promise<WorkshopGuestResult> {
+  const telefon = normalizeTelefon(input.telefon)
+
+  const { data: client } = await supabase
+    .from('clienti')
+    .select('id')
+    .eq('telefon', telefon)
+    .limit(1)
+    .maybeSingle()
+  if (client) return { kind: 'client', clientId: client.id }
+
+  const { data: lead } = await supabase
+    .from('leads')
+    .select('id')
+    .eq('telefon', telefon)
+    .limit(1)
+    .maybeSingle()
+  if (lead) return { kind: 'lead', leadId: lead.id }
+
+  const observatii = input.evenimentNume
+    ? `Workshop: ${input.evenimentNume}`
+    : 'Workshop'
+  const { data: created, error } = await supabase
+    .from('leads')
+    .insert({
+      nume: input.nume.trim(),
+      telefon,
+      status: 'nurture',
+      observatii,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+  return { kind: 'lead', leadId: created.id }
 }
 
 export async function createIncasare(

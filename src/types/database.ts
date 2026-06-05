@@ -1356,6 +1356,7 @@ export type Database = {
           participant: string[]
           pret_bilet: number | null
           status: Database["public"]["Enums"]["status_eveniment"] | null
+          tip: Database["public"]["Enums"]["tip_eveniment"]
           updated: string
         }
         Insert: {
@@ -1372,6 +1373,7 @@ export type Database = {
           participant?: string[]
           pret_bilet?: number | null
           status?: Database["public"]["Enums"]["status_eveniment"] | null
+          tip?: Database["public"]["Enums"]["tip_eveniment"]
           updated?: string
         }
         Update: {
@@ -1388,6 +1390,7 @@ export type Database = {
           participant?: string[]
           pret_bilet?: number | null
           status?: Database["public"]["Enums"]["status_eveniment"] | null
+          tip?: Database["public"]["Enums"]["tip_eveniment"]
           updated?: string
         }
         Relationships: [
@@ -1686,6 +1689,7 @@ export type Database = {
           data: string | null
           id: string
           inregistrare: string | null
+          lead: string | null
           locatie: string | null
           metoda: Database["public"]["Enums"]["metoda_plata"] | null
           observatii: string | null
@@ -1704,6 +1708,7 @@ export type Database = {
           data?: string | null
           id?: string
           inregistrare?: string | null
+          lead?: string | null
           locatie?: string | null
           metoda?: Database["public"]["Enums"]["metoda_plata"] | null
           observatii?: string | null
@@ -1722,6 +1727,7 @@ export type Database = {
           data?: string | null
           id?: string
           inregistrare?: string | null
+          lead?: string | null
           locatie?: string | null
           metoda?: Database["public"]["Enums"]["metoda_plata"] | null
           observatii?: string | null
@@ -1869,6 +1875,13 @@ export type Database = {
             columns: ["voucher"]
             isOneToOne: false
             referencedRelation: "vouchere"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incasari_lead_fkey"
+            columns: ["lead"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -4472,6 +4485,14 @@ export type Database = {
         }
       }
       current_teacher_id: { Args: never; Returns: string }
+      get_clienti_activi: {
+        Args: never
+        Returns: {
+          activi: number
+          locatie_id: string
+          locatie_nume: string
+        }[]
+      }
       get_cron_jobs_recent: {
         Args: { p_days?: number }
         Returns: {
@@ -4532,6 +4553,24 @@ export type Database = {
           ramasi: number
           total_eligibili: number
           varsta: Database["public"]["Enums"]["varsta_curs"]
+        }[]
+      }
+      get_trend_prezente: {
+        Args: {
+          p_locatie?: string
+          p_prag_scadere?: number
+          p_saptamani?: number
+          p_teacher?: string
+        }
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          in_scadere: boolean
+          locatie_nume: string
+          rata_precedenta: number
+          rata_recenta: number
+          saptamani: Json
+          teacher_nume: string
         }[]
       }
       is_admin: { Args: never; Returns: boolean }
@@ -4614,7 +4653,7 @@ export type Database = {
       canal_comunicare: "Online" | "Offline"
       canale_online: "Meta ADS" | "Google ADS" | "TikTok Ads" | "Organic"
       categorie_cheltuiala: "Administrativa" | "Salariala" | "Alta"
-      categorie_incasare: "Abonament" | "Bilet" | "Merch" | "Taxa"
+      categorie_incasare: "Abonament" | "Bilet" | "Merch" | "Taxa" | "Workshop"
       categorie_inventar:
         | "Haine"
         | "Accesorii"
@@ -4691,6 +4730,7 @@ export type Database = {
         | "Events"
         | "Website"
         | "Organic"
+      tip_eveniment: "Eveniment" | "Workshop"
       tip_feedback: "Sesizare" | "Review"
       tip_plata: "Per sedinta" | "Per luna" | "Per an"
       tip_voucher: "Valoare" | "Procent" | "Special"
@@ -4851,7 +4891,7 @@ export const Constants = {
       canal_comunicare: ["Online", "Offline"],
       canale_online: ["Meta ADS", "Google ADS", "TikTok Ads", "Organic"],
       categorie_cheltuiala: ["Administrativa", "Salariala", "Alta"],
-      categorie_incasare: ["Abonament", "Bilet", "Merch", "Taxa"],
+      categorie_incasare: ["Abonament", "Bilet", "Merch", "Taxa", "Workshop"],
       categorie_inventar: [
         "Haine",
         "Accesorii",
@@ -4929,6 +4969,7 @@ export const Constants = {
         "Website",
         "Organic",
       ],
+      tip_eveniment: ["Eveniment", "Workshop"],
       tip_feedback: ["Sesizare", "Review"],
       tip_plata: ["Per sedinta", "Per luna", "Per an"],
       tip_voucher: ["Valoare", "Procent", "Special"],

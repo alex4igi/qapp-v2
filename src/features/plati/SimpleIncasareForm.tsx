@@ -6,17 +6,21 @@ import {
   TextArea,
   Select,
   Combobox,
+  Checkbox,
   Button,
 } from '@/components/ui'
 import { clientiOptions } from '@/lib/lookups'
 import { metodaPlataOptions } from '@/lib/enums'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { formatRON } from '@/lib/format'
-import type { Enums, InsertDto } from '@/types/db'
+import { listAvailableVouchere } from '@/features/vouchere/api'
+import { applyVoucher } from '@/features/vouchere/calc'
+import type { Enums, InsertDto, Voucher } from '@/types/db'
 import {
   createIncasare,
   listBiletSurse,
   listInventarOptiuni,
+  resolveWorkshopGuest,
 } from './api'
 
 export type SimpleTip = 'Bilet' | 'Merch' | 'Taxa'
@@ -40,6 +44,12 @@ function parsePret(p: string | null | undefined): number | null {
   return isFinite(n) && n > 0 ? n : null
 }
 
+function voucherLabel(v: Voucher): string {
+  const val =
+    v.tip === 'Procent' ? `${v.valoare}%` : `${v.valoare} RON`
+  return `${v.cod_voucher} — ${val}`
+}
+
 export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
   const queryClient = useQueryClient()
   const { locatieId, locatieNume } = useWorkingLocatie()
@@ -51,6 +61,10 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
   const [data, setData] = useState(todayIso())
   const [metoda, setMetoda] = useState<Enums<'metoda_plata'>>('Cash')
   const [observatii, setObservatii] = useState('')
+  const [voucherId, setVoucherId] = useState('')
+  const [guestMode, setGuestMode] = useState(false)
+  const [guestNume, setGuestNume] = useState('')
+  const [guestTelefon, setGuestTelefon] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const clientiQ = useQuery({
@@ -70,6 +84,13 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
     enabled: tip === 'Merch',
   })
 
+  // Doar vouchere universale (nelegate de un curs anume) au sens pe plăți simple.
+  const vouchereQ = useQuery({
+    queryKey: ['vouchere-disponibile', 'simple'],
+    queryFn: () => listAvailableVouchere({ activeOnly: true }),
+    select: (rows) => rows.filter((v) => !v.curs),
+  })
+
   const selectedBilet = useMemo(
     () => biletSurseQ.data?.find((s) => s.value === sursaId),
     [biletSurseQ.data, sursaId],
@@ -78,6 +99,14 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
     () => inventarQ.data?.find((i) => i.value === sursaId),
     [inventarQ.data, sursaId],
   )
+  const isWorkshop = tip === 'Bilet' && (selectedBilet?.isWorkshop ?? false)
+
+  const voucherSelectat = useMemo(
+    () => vouchereQ.data?.find((v) => v.id === voucherId) ?? null,
+    [vouchereQ.data, voucherId],
+  )
+  const sumaNum = Number(suma) || 0
+  const preview = applyVoucher(sumaNum, voucherSelectat)
 
   // Auto-completează suma pe baza pretului din sursă × bucăți, doar dacă userul n-a editat
   const [sumaTouched, setSumaTouched] = useState(false)
@@ -97,8 +126,8 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const sumaNum = Number(suma)
-      if (!suma.trim() || !isFinite(sumaNum) || sumaNum <= 0) {
+      const sumaInput = Number(suma)
+      if (!suma.trim() || !isFinite(sumaInput) || sumaInput <= 0) {
         throw new Error('Suma este obligatorie și pozitivă.')
       }
       if (tip === 'Bilet' && !sursaId) {
@@ -116,14 +145,38 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
         )
       }
 
+      // La workshop, persoana e obligatorie: client existent SAU guest (nume+telefon).
+      let clientField: string | null = clientId || null
+      let leadField: string | null = null
+      if (isWorkshop) {
+        if (guestMode) {
+          if (!guestNume.trim() || !guestTelefon.trim()) {
+            throw new Error('Pentru guest, completează nume și telefon.')
+          }
+          const res = await resolveWorkshopGuest({
+            nume: guestNume,
+            telefon: guestTelefon,
+            evenimentNume: selectedBilet?.nume ?? null,
+          })
+          if (res.kind === 'client') clientField = res.clientId
+          else leadField = res.leadId
+        } else if (!clientId) {
+          throw new Error(
+            'Alege clientul sau bifează „participant din afara clubului".',
+          )
+        }
+      }
+
       const payload: InsertDto<'incasari'> = {
-        client: clientId || null,
+        client: clientField,
+        lead: leadField,
         locatie: locatieId,
-        suma: sumaNum,
+        suma: applyVoucher(sumaInput, voucherSelectat).sumaFinala,
         data: data || null,
         metoda,
         observatii: observatii.trim() || null,
-        categorie: tip,
+        categorie: isWorkshop ? 'Workshop' : tip,
+        voucher: voucherId || null,
       }
       if (tip === 'Bilet') {
         payload.bilet = sursaId
@@ -138,6 +191,7 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['stat'] })
+      void queryClient.invalidateQueries({ queryKey: ['leads'] })
       onClose()
     },
     onError: (e: unknown) =>
@@ -146,7 +200,7 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
 
   const labels: Record<SimpleTip, { sursa: string; placeholder: string }> = {
     Bilet: {
-      sursa: 'Eveniment / Concurs',
+      sursa: 'Eveniment / Concurs / Workshop',
       placeholder: 'Alege sursa biletului…',
     },
     Merch: {
@@ -163,16 +217,6 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
         {' '}— schimbă din bara de sus dacă e altă recepție.
       </div>
 
-      <Field label="Cursant (opțional)">
-        <Combobox
-          placeholder="Caută cursant (nume sau telefon)…"
-          options={clientiQ.data ?? []}
-          value={clientId}
-          onChange={(v) => setClientId(v)}
-        />
-      </Field>
-
-
       {tip === 'Bilet' && (
         <Field label={labels.Bilet.sursa} required>
           <Select
@@ -183,6 +227,50 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
               setSursaId(e.target.value)
               setSumaTouched(false)
             }}
+          />
+        </Field>
+      )}
+
+      {isWorkshop ? (
+        <div className="space-y-3 rounded-md border border-quasar-gray-light p-3">
+          <Checkbox
+            label="Participant din afara clubului (guest nou)"
+            checked={guestMode}
+            onChange={(e) => setGuestMode(e.target.checked)}
+          />
+          {guestMode ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Nume guest" required>
+                <TextInput
+                  value={guestNume}
+                  onChange={(e) => setGuestNume(e.target.value)}
+                />
+              </Field>
+              <Field label="Telefon guest" required>
+                <TextInput
+                  value={guestTelefon}
+                  onChange={(e) => setGuestTelefon(e.target.value)}
+                />
+              </Field>
+            </div>
+          ) : (
+            <Field label="Cursant" required>
+              <Combobox
+                placeholder="Caută cursant (nume sau telefon)…"
+                options={clientiQ.data ?? []}
+                value={clientId}
+                onChange={(v) => setClientId(v)}
+              />
+            </Field>
+          )}
+        </div>
+      ) : (
+        <Field label="Cursant (opțional)">
+          <Combobox
+            placeholder="Caută cursant (nume sau telefon)…"
+            options={clientiQ.data ?? []}
+            value={clientId}
+            onChange={(v) => setClientId(v)}
           />
         </Field>
       )}
@@ -251,6 +339,22 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
             }
           />
         </Field>
+        <Field label="Voucher (opțional)">
+          <Select
+            placeholder="Fără voucher"
+            options={(vouchereQ.data ?? []).map((v) => ({
+              label: voucherLabel(v),
+              value: v.id,
+            }))}
+            value={voucherId}
+            onChange={(e) => setVoucherId(e.target.value)}
+          />
+          {voucherSelectat?.descriere && (
+            <p className="mt-1 text-xs text-quasar-gray">
+              {voucherSelectat.descriere}
+            </p>
+          )}
+        </Field>
       </div>
 
       <Field
@@ -268,10 +372,21 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
 
       <div className="flex items-center justify-end gap-2 border-t border-quasar-gray-light pt-3">
         <div className="mr-auto text-sm">
-          <span className="text-quasar-gray">Total:</span>{' '}
-          <span className="font-semibold text-quasar-black">
-            {formatRON(Number(suma) || 0)}
-          </span>
+          {voucherSelectat && preview.discount > 0 ? (
+            <span className="text-quasar-gray">
+              {formatRON(sumaNum)} − {formatRON(preview.discount)} ={' '}
+              <span className="font-semibold text-quasar-black">
+                {formatRON(preview.sumaFinala)}
+              </span>
+            </span>
+          ) : (
+            <>
+              <span className="text-quasar-gray">Total:</span>{' '}
+              <span className="font-semibold text-quasar-black">
+                {formatRON(preview.sumaFinala)}
+              </span>
+            </>
+          )}
         </div>
         <Button variant="secondary" onClick={onClose}>
           Anulează

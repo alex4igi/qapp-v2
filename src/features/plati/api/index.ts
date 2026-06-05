@@ -15,10 +15,12 @@ export {
   endOfMonth,
 } from './calendar'
 
+export type { WorkshopGuestResult } from './incasari'
 export {
   getEnrollmentIncasari,
   createIncasare,
   registerPlataFifo,
+  resolveWorkshopGuest,
 } from './incasari'
 
 export type { BiletSursaOption, InventarOptionRow } from './sources'

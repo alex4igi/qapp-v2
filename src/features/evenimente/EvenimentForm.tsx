@@ -8,7 +8,7 @@ import {
   Select,
   Button,
 } from '@/components/ui'
-import { statusEvenimentOptions } from '@/lib/enums'
+import { statusEvenimentOptions, tipEvenimentOptions } from '@/lib/enums'
 import { teacheriOptions } from '@/lib/lookups'
 import type { Eveniment } from '@/types/db'
 import { createEveniment, updateEveniment, deleteEveniment } from './api'
@@ -21,6 +21,7 @@ type Props = {
 
 type FormState = {
   nume_eveniment: string
+  tip: string
   descriere: string
   data: string
   locatia: string
@@ -35,6 +36,7 @@ type FormState = {
 function initialState(e?: Eveniment | null): FormState {
   return {
     nume_eveniment: e?.nume_eveniment ?? '',
+    tip: e?.tip ?? 'Eveniment',
     descriere: e?.descriere ?? '',
     data: e?.data ?? '',
     locatia: e?.locatia ?? '',
@@ -72,6 +74,7 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
     mutationFn: () => {
       const payload = {
         nume_eveniment: form.nume_eveniment.trim(),
+        tip: form.tip as Eveniment['tip'],
         descriere: form.descriere.trim() || null,
         data: form.data || null,
         locatia: form.locatia.trim() || null,
@@ -163,13 +166,23 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
       }
     >
       <form id="eveniment-form" onSubmit={handleSubmit} className="space-y-3">
-        <Field label="Nume eveniment" required htmlFor="nume_eveniment">
-          <TextInput
-            id="nume_eveniment"
-            value={form.nume_eveniment}
-            onChange={(e) => set('nume_eveniment')(e.target.value)}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Nume eveniment" required htmlFor="nume_eveniment">
+            <TextInput
+              id="nume_eveniment"
+              value={form.nume_eveniment}
+              onChange={(e) => set('nume_eveniment')(e.target.value)}
+            />
+          </Field>
+          <Field label="Tip" htmlFor="tip">
+            <Select
+              id="tip"
+              options={tipEvenimentOptions}
+              value={form.tip}
+              onChange={(e) => set('tip')(e.target.value)}
+            />
+          </Field>
+        </div>
 
         <Field label="Descriere" htmlFor="descriere">
           <TextArea

@@ -69,6 +69,8 @@ export const categorieInventarOptions = opts(
 
 export const statusEvenimentOptions = opts('Urmator', 'Finalizat', 'Anulat')
 
+export const tipEvenimentOptions = opts('Eveniment', 'Workshop')
+
 export const tipFeedbackOptions = opts('Sesizare', 'Review')
 
 export const statusSmsOptions = opts(
@@ -83,6 +85,7 @@ export const categorieIncasareOptions = opts(
   'Bilet',
   'Merch',
   'Taxa',
+  'Workshop',
 )
 
 export const categorieCheltuialaOptions = opts(
