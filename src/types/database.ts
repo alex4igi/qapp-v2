@@ -4493,6 +4493,25 @@ export type Database = {
           locatie_nume: string
         }[]
       }
+      get_conversie_leads: {
+        Args: { p_luni?: number }
+        Returns: {
+          convertiti: number
+          procent: number
+          total_leads: number
+          zile_medii: number
+        }[]
+      }
+      get_crestere_neta: {
+        Args: { p_locatie?: string; p_luni?: number }
+        Returns: {
+          activi: number
+          intrati: number
+          luna: string
+          net: number
+          pierduti: number
+        }[]
+      }
       get_cron_jobs_recent: {
         Args: { p_days?: number }
         Returns: {
@@ -4509,6 +4528,18 @@ export type Database = {
           status: string
         }[]
       }
+      get_grad_ocupare: {
+        Args: { p_locatie?: string }
+        Returns: {
+          activi: number
+          capacitate: number
+          curs_id: string
+          curs_nume: string
+          locatie_nume: string
+          procent: number
+          teacher_nume: string
+        }[]
+      }
       get_incasari_per_sezon: {
         Args: never
         Returns: {
@@ -4519,6 +4550,16 @@ export type Database = {
           stare: string
           tip: string
           total_incasari: number
+        }[]
+      }
+      get_profitabilitate_teacher: {
+        Args: { p_luni?: number }
+        Returns: {
+          incasari: number
+          marja: number
+          salariu: number
+          teacher_id: string
+          teacher_nume: string
         }[]
       }
       get_reinscrieri_conversie: {

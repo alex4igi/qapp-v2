@@ -30,6 +30,7 @@ export const navSections: NavSection[] = [
   {
     label: 'Statistici',
     items: [
+      { label: 'Overview', path: '/overview' },
       { label: 'Situație zilnică', path: '/situatie-zilnica' },
       { label: 'Financiar',        path: '/financiar' },
       { label: 'Statistici',       path: '/statistici' },

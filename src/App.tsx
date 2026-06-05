@@ -21,6 +21,7 @@ import { FeedbackListPage } from '@/features/feedback/FeedbackListPage'
 import { AppFeedbackListPage } from '@/features/feedback-app/AppFeedbackListPage'
 import { FinanciarPage } from '@/features/financiar/FinanciarPage'
 import { StatisticiPage } from '@/features/statistici/StatisticiPage'
+import { AnsambluPage } from '@/features/ansamblu/AnsambluPage'
 import { VouchereListPage } from '@/features/vouchere/VouchereListPage'
 import { InventarListPage } from '@/features/inventar/InventarListPage'
 import { EvenimenteListPage } from '@/features/evenimente/EvenimenteListPage'
@@ -89,6 +90,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/']} />}>
             <Route element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
+              <Route path="overview" element={<AnsambluPage />} />
               <Route path="cursuri" element={<CursuriListPage />} />
               <Route path="cursuri/:id" element={<CursProfilePage />} />
               <Route path="prezente" element={<PrezentePage />} />
