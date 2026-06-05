@@ -1,0 +1,63 @@
+import { Spinner } from '@/components/ui'
+import type { CursDatorieRow } from '../../../api'
+import { fullName } from '../helpers'
+
+type Props = {
+  loading: boolean
+  rows: CursDatorieRow[]
+  onRowClick: (clientId: string) => void
+  onPayClick: (clientId: string) => void
+}
+
+export function RestantieriTab({ loading, rows, onRowClick, onPayClick }: Props) {
+  if (loading) return <div className="mt-4"><Spinner /></div>
+  if (rows.length === 0) {
+    return (
+      <p className="mt-4 rounded-lg border border-quasar-gray-light bg-white p-6 text-center text-sm text-quasar-gray">
+        Niciun restanțier la acest curs în sezonul curent.
+      </p>
+    )
+  }
+  return (
+    <div className="mt-4 overflow-hidden rounded-lg border border-quasar-gray-light bg-white">
+      <table className="w-full text-sm">
+        <thead className="bg-quasar-gray-light/50 text-left text-xs uppercase text-quasar-gray">
+          <tr>
+            <th className="w-10 px-3 py-2 text-right">#</th>
+            <th className="px-3 py-2">Nume</th>
+            <th className="px-3 py-2 text-right">Restanță</th>
+            <th className="w-32 px-3 py-2 text-right">Acțiune</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-quasar-gray-light">
+          {rows.map((r, i) => (
+            <tr key={r.clientId} className="hover:bg-quasar-yellow/10">
+              <td className="px-3 py-2 text-right text-quasar-gray">{i + 1}.</td>
+              <td className="px-3 py-2 font-medium text-quasar-black">
+                <button
+                  type="button"
+                  className="text-left hover:underline"
+                  onClick={() => onRowClick(r.clientId)}
+                >
+                  {fullName(r.nume, r.prenume)}
+                </button>
+              </td>
+              <td className="px-3 py-2 text-right font-semibold text-red-700">
+                {r.rest} RON
+              </td>
+              <td className="px-3 py-2 text-right">
+                <button
+                  type="button"
+                  onClick={() => onPayClick(r.clientId)}
+                  className="rounded-md bg-quasar-yellow px-3 py-1 text-xs font-bold text-quasar-black transition-colors hover:bg-quasar-yellow/80"
+                >
+                  Plată nouă
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}

@@ -1,0 +1,97 @@
+import { useState, useEffect, type FormEvent } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Modal, Field, TextArea, Button } from '@/components/ui'
+import type { Lead } from '@/types/db'
+import { prependObservatie } from './constants'
+import { updateLead, type LeadForm } from './api'
+
+type Props = {
+  open: boolean
+  lead: Lead | null
+  onClose: () => void
+}
+
+export function WaitingListModal({ open, lead, onClose }: Props) {
+  const queryClient = useQueryClient()
+  const [detalii, setDetalii] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setDetalii('')
+    setError(null)
+  }, [open])
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      const form: Partial<LeadForm> = { status: 'waiting_list' }
+      if (detalii.trim())
+        form.observatii = prependObservatie(
+          'Waiting list',
+          detalii,
+          lead!.observatii,
+        )
+      return updateLead(lead!.id, form)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['leads'] })
+      onClose()
+    },
+    onError: (e: unknown) =>
+      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+  })
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    mutation.mutate()
+  }
+
+  return (
+    <Modal
+      open={open}
+      title="Adaugă pe lista de așteptare"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Anulează
+          </Button>
+          <Button
+            type="submit"
+            form="waiting-form"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? 'Se salvează…' : 'Adaugă în waiting list'}
+          </Button>
+        </>
+      }
+    >
+      <form id="waiting-form" onSubmit={handleSubmit} className="space-y-3">
+        {lead && (
+          <p className="text-sm text-quasar-gray">
+            Pe lista de așteptare:{' '}
+            <span className="font-medium text-quasar-black">
+              {[lead.prenume, lead.nume].filter(Boolean).join(' ')}
+            </span>
+          </p>
+        )}
+
+        <Field label="Detalii așteptare (opțional)" htmlFor="waiting-detalii">
+          <TextArea
+            id="waiting-detalii"
+            rows={2}
+            value={detalii}
+            onChange={(e) => setDetalii(e.target.value)}
+            placeholder="Ex: vrea grupa Tiny de vineri la Nicolina…"
+          />
+        </Field>
+        <p className="text-xs text-quasar-gray">
+          Se adaugă în observații. Lead-ul primește un SMS de confirmare.
+        </p>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </form>
+    </Modal>
+  )
+}

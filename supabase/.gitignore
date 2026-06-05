@@ -1,0 +1,4 @@
+# Supabase — fișiere locale/temporare
+.branches
+.temp
+.env

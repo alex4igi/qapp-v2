@@ -1,0 +1,139 @@
+.qleads-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.qleads-card {
+  background: #fff;
+  color: #000;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px 24px 24px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  border-top: 6px solid #ffd600;
+}
+
+.qleads-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: 0;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b6b6b;
+  padding: 4px 8px;
+}
+.qleads-close:hover { color: #000; }
+
+.qleads-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+}
+
+.qleads-subtitle {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #6b6b6b;
+}
+
+.qleads-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qleads-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .qleads-row { grid-template-columns: 1fr; }
+}
+
+select.qleads-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23000' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+  padding-right: 28px;
+}
+
+.qleads-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.qleads-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+}
+
+.qleads-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  color: #000;
+  box-sizing: border-box;
+}
+.qleads-input:focus {
+  outline: 2px solid #ffd600;
+  outline-offset: 1px;
+  border-color: #ffd600;
+}
+
+.qleads-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.qleads-submit {
+  margin-top: 8px;
+  padding: 12px 20px;
+  background: #ffd600;
+  color: #000;
+  border: 0;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.qleads-submit:hover:not(:disabled) { background: #e6c000; }
+.qleads-submit:disabled {
+  background: #f3f3f3;
+  color: #6b6b6b;
+  cursor: not-allowed;
+}
+
+.qleads-status {
+  margin-top: 8px;
+  font-size: 13px;
+  min-height: 18px;
+  text-align: center;
+}
+.qleads-status-ok { color: #0a7c3a; font-weight: 600; }
+.qleads-status-err { color: #b00020; font-weight: 600; }

@@ -1,0 +1,293 @@
+// Dashboard pentru o grupă (curs) — roster cu status azi (prezent/absent/
+// inactiv/programat) pentru cursanți + leads programați la acest curs azi.
+import { supabase } from '@/lib/supabase'
+import type { Enums } from '@/types/db'
+import { isoDaysAgo } from './helpers'
+
+export type RosterStatus = 'prezent' | 'absent' | 'inactiv' | 'programat'
+
+export type RosterKind = 'client' | 'lead'
+
+export type GrupaRosterRow = {
+  // ID-ul folosit ca key React. Pentru clienți = enrollmentId, pentru leads = leadId.
+  rowId: string
+  kind: RosterKind
+  // Pentru clienți → enrollment activ (cel mai relevant). Pentru leads → null.
+  enrollmentId: string | null
+  // Pentru clienți = clienti.id, pentru leads = leads.id (folosit la navigare).
+  refId: string
+  nume: string
+  prenume: string | null
+  poza: string | null
+  status: RosterStatus
+  restanta: number
+  esteZiua: boolean
+}
+
+export type GrupaDashboard = {
+  cursId: string
+  cursNume: string
+  ora: string | null
+  teacher: string | null
+  sala: string | null
+  facultativ: boolean
+  roster: GrupaRosterRow[]
+  counters: {
+    prezenti: number
+    absenti: number
+    inactivi: number
+    programati: number
+  }
+}
+
+// Definiție business (2026-05-19): cursantul devine „inactiv" pe o grupă dacă
+// NU are nicio prezență `Prezent` în ultimele 21 zile la enrollment-ul lui pe
+// acea grupă. „Activ" = există minim o prezență Prezent în acest interval.
+const INACTIV_DAYS = 21
+
+export async function getGrupaDashboard(params: {
+  cursId: string
+  date: string
+}): Promise<GrupaDashboard> {
+  const { data: curs, error: cursErr } = await supabase
+    .from('cursuri')
+    .select(
+      'id, numele, ora, facultativ, sala:sali(nume), teacher:teacheri!fk_cursuri_teacher(nume, prenume)',
+    )
+    .eq('id', params.cursId)
+    .single()
+  if (cursErr) throw cursErr
+  const cursRow = curs as unknown as {
+    id: string
+    numele: string
+    ora: string | null
+    facultativ: boolean
+    sala: { nume: string } | null
+    teacher: { nume: string; prenume: string | null } | null
+  }
+
+  const { data: enrData, error: enrErr } = await supabase
+    .from('enrollments')
+    .select(
+      'id, suma, client:clienti(id, nume, prenume, foto, data_nasterii)',
+    )
+    .eq('cursul', params.cursId)
+    .eq('activ', true)
+  if (enrErr) throw enrErr
+  const enrollments = (enrData ?? []) as unknown as Array<{
+    id: string
+    suma: number | null
+    client: {
+      id: string
+      nume: string
+      prenume: string | null
+      foto: string | null
+      data_nasterii: string | null
+    } | null
+  }>
+  const enrollmentIds = enrollments.map((e) => e.id)
+  const todayMmDd = params.date.slice(5) // "MM-DD"
+
+  const baseHeader = {
+    cursId: cursRow.id,
+    cursNume: cursRow.numele,
+    ora: cursRow.ora,
+    sala: cursRow.sala?.nume ?? null,
+    facultativ: Boolean(cursRow.facultativ),
+    teacher: cursRow.teacher
+      ? `${cursRow.teacher.nume} ${cursRow.teacher.prenume ?? ''}`.trim()
+      : null,
+  }
+
+  const { data: prezToday, error: pErr } = enrollmentIds.length
+    ? await supabase
+        .from('prezente')
+        .select('enrollment, status')
+        .in('enrollment', enrollmentIds)
+        .eq('data', params.date)
+    : { data: [], error: null }
+  if (pErr) throw pErr
+  const statusToday = new Map<string, Enums<'status_prezenta'>>()
+  for (const p of prezToday ?? []) {
+    if (p.enrollment && p.status) statusToday.set(p.enrollment, p.status)
+  }
+
+  const cutoff = isoDaysAgo(INACTIV_DAYS)
+  const { data: recent, error: rErr } = enrollmentIds.length
+    ? await supabase
+        .from('prezente')
+        .select('enrollment, data')
+        .in('enrollment', enrollmentIds)
+        .gte('data', cutoff)
+        .eq('status', 'Prezent')
+    : { data: [], error: null }
+  if (rErr) throw rErr
+  const hasRecent = new Set<string>()
+  for (const r of recent ?? []) {
+    if (r.enrollment) hasRecent.add(r.enrollment)
+  }
+
+  // Plăți cumulative per înrolare → restanță = max(0, suma - sum(plăți))
+  const { data: incasariRows, error: iErr } = enrollmentIds.length
+    ? await supabase
+        .from('incasari')
+        .select('inregistrare, suma')
+        .in('inregistrare', enrollmentIds)
+    : { data: [], error: null }
+  if (iErr) throw iErr
+  const paidByEnr = new Map<string, number>()
+  for (const r of incasariRows ?? []) {
+    if (!r.inregistrare) continue
+    paidByEnr.set(
+      r.inregistrare,
+      (paidByEnr.get(r.inregistrare) ?? 0) + Number(r.suma ?? 0),
+    )
+  }
+  const restantaByEnr = new Map<string, number>()
+  for (const e of enrollments) {
+    const due = Number(e.suma ?? 0)
+    const paid = paidByEnr.get(e.id) ?? 0
+    restantaByEnr.set(e.id, Math.max(0, due - paid))
+  }
+
+  // Deduplicăm per client: un cursant cu 4 înrolări lunare la același curs e
+  // un singur card. Agreg statusul peste toate înrolările lui.
+  const STATUS_RANK: Record<RosterStatus, number> = {
+    prezent: 0,
+    absent: 1,
+    programat: 2,
+    inactiv: 3,
+  }
+
+  // Restanță agregată per client (sumează peste toate înrolările active)
+  const restantaByClient = new Map<string, number>()
+  for (const e of enrollments) {
+    if (!e.client) continue
+    const r = restantaByEnr.get(e.id) ?? 0
+    restantaByClient.set(
+      e.client.id,
+      (restantaByClient.get(e.client.id) ?? 0) + r,
+    )
+  }
+
+  const byClient = new Map<string, GrupaRosterRow>()
+  for (const e of enrollments) {
+    if (!e.client) continue
+    const s = statusToday.get(e.id)
+    let status: RosterStatus
+    if (s === 'Prezent') status = 'prezent'
+    else if (s === 'Absent' || s === 'Motivat') status = 'absent'
+    else if (!hasRecent.has(e.id)) status = 'inactiv'
+    // Cursantii nebifati azi sunt implicit absenti (pana cineva ii marcheaza
+    // prezent). Statusul `programat` (galben) e rezervat doar leads-urilor.
+    else status = 'absent'
+
+    const existing = byClient.get(e.client.id)
+    if (!existing || STATUS_RANK[status] < STATUS_RANK[existing.status]) {
+      byClient.set(e.client.id, {
+        rowId: e.id,
+        kind: 'client',
+        enrollmentId: e.id,
+        refId: e.client.id,
+        nume: e.client.nume,
+        prenume: e.client.prenume,
+        poza: e.client.foto,
+        status,
+        restanta: restantaByClient.get(e.client.id) ?? 0,
+        esteZiua: Boolean(
+          e.client.data_nasterii &&
+            e.client.data_nasterii.slice(5) === todayMmDd,
+        ),
+      })
+    }
+  }
+
+  // Leads programați pentru acest curs+data (via tabelul programari_leads).
+  // Mapăm leads.status → RosterStatus pentru afișare consistentă cu cursanții.
+  const { data: programariRows, error: pgErr } = await supabase
+    .from('programari_leads')
+    .select(
+      'lead:leads(id, nume, prenume, status, data_nasterii)',
+    )
+    .eq('cursul_programat', params.cursId)
+    .eq('data_programarii', params.date)
+  if (pgErr) throw pgErr
+  const programari = (programariRows ?? []) as unknown as Array<{
+    lead: {
+      id: string
+      nume: string
+      prenume: string | null
+      status: string | null
+      data_nasterii: string | null
+    } | null
+  }>
+  const seenLeadIds = new Set<string>()
+  const leadRows: GrupaRosterRow[] = []
+  for (const p of programari) {
+    if (!p.lead) continue
+    if (seenLeadIds.has(p.lead.id)) continue
+    seenLeadIds.add(p.lead.id)
+    let status: RosterStatus
+    if (p.lead.status === 'a_venit') status = 'prezent'
+    else if (p.lead.status === 'nu_a_venit') status = 'absent'
+    else if (
+      p.lead.status === 'nou' ||
+      p.lead.status === 'contactat' ||
+      p.lead.status === 'programat'
+    )
+      status = 'programat'
+    else continue // convertit / pierdut / nurture / waiting_list — nu apar
+    leadRows.push({
+      rowId: p.lead.id,
+      kind: 'lead',
+      enrollmentId: null,
+      refId: p.lead.id,
+      nume: p.lead.nume,
+      prenume: p.lead.prenume,
+      poza: null,
+      status,
+      restanta: 0,
+      esteZiua: Boolean(
+        p.lead.data_nasterii &&
+          p.lead.data_nasterii.slice(5) === todayMmDd,
+      ),
+    })
+  }
+
+  const roster: GrupaRosterRow[] = [
+    ...Array.from(byClient.values()),
+    ...leadRows,
+  ].sort((a, b) => {
+    const order: Record<RosterStatus, number> = {
+      prezent: 0,
+      absent: 1,
+      programat: 2,
+      inactiv: 3,
+    }
+    const so = order[a.status] - order[b.status]
+    if (so !== 0) return so
+    return a.nume.localeCompare(b.nume)
+  })
+
+  const counters = roster.reduce(
+    (acc, r) => {
+      const key =
+        r.status === 'prezent'
+          ? 'prezenti'
+          : r.status === 'absent'
+            ? 'absenti'
+            : r.status === 'inactiv'
+              ? 'inactivi'
+              : 'programati'
+      acc[key]++
+      return acc
+    },
+    { prezenti: 0, absenti: 0, inactivi: 0, programati: 0 },
+  )
+
+  return {
+    ...baseHeader,
+    roster,
+    counters,
+  }
+}

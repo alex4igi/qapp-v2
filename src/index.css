@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+
+@theme inline {
+  /* Branding Quasar Dance */
+  --color-quasar-yellow: #ffd600;
+  --color-quasar-yellow-dark: #e6c000;
+  --color-quasar-black: #000000;
+  --color-quasar-gray: #6b6b6b;
+  --color-quasar-gray-light: #f3f3f3;
+
+  --color-brand: var(--color-quasar-yellow);
+  --color-ink: var(--color-quasar-black);
+
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-quasar-gray-light);
+  color: var(--color-quasar-black);
+}

@@ -1,0 +1,205 @@
+import { useEffect, useMemo, useState } from 'react'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import {
+  PageHeader,
+  Button,
+  Select,
+  DataTable,
+  Spinner,
+  type Column,
+} from '@/components/ui'
+import { statusSmsOptions } from '@/lib/enums'
+import type { SituatieSms } from '@/types/db'
+import { SmsQueueForm } from './SmsQueueForm'
+import {
+  listSmsQueue,
+  deleteSmsQueueEntry,
+  processSmsQueue,
+  PAGE_SIZE,
+} from './api'
+
+const STATUS_STYLE: Record<string, string> = {
+  'De trimis': 'text-amber-700',
+  'In curs de trimitere': 'text-blue-700',
+  Trimis: 'text-green-700',
+  Esuat: 'text-red-600',
+}
+
+export function NotificariSmsPage() {
+  const queryClient = useQueryClient()
+  const [status, setStatus] = useState('')
+  const [page, setPage] = useState(0)
+  const [formOpen, setFormOpen] = useState(false)
+  const [processMsg, setProcessMsg] = useState<string | null>(null)
+
+  useEffect(() => setPage(0), [status])
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['sms-queue', { status, page }],
+    queryFn: () => listSmsQueue({ status, page }),
+    placeholderData: keepPreviousData,
+  })
+
+  const totalPages = useMemo(
+    () => (data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1),
+    [data],
+  )
+
+  const remove = useMutation({
+    mutationFn: deleteSmsQueueEntry,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['sms-queue'] }),
+  })
+
+  const process = useMutation({
+    mutationFn: processSmsQueue,
+    onSuccess: (res) => {
+      setProcessMsg(
+        `Procesate: ${res.total} · trimise: ${res.sent} · eșuate: ${res.failed}`,
+      )
+      void queryClient.invalidateQueries({ queryKey: ['sms-queue'] })
+    },
+    onError: (e: unknown) =>
+      setProcessMsg(
+        e instanceof Error ? `Eroare: ${e.message}` : 'Eroare la procesare.',
+      ),
+  })
+
+  const columns: Column<SituatieSms>[] = [
+    { header: 'Telefon', cell: (s) => s.telefon ?? '—', className: 'w-32' },
+    {
+      header: 'Mesaj',
+      cell: (s) => (
+        <span className="line-clamp-2 text-quasar-gray">{s.mesaj ?? '—'}</span>
+      ),
+    },
+    {
+      header: 'Status',
+      cell: (s) => (
+        <span
+          className={`font-medium ${
+            s.status ? (STATUS_STYLE[s.status] ?? '') : ''
+          }`}
+        >
+          {s.status ?? '—'}
+        </span>
+      ),
+      className: 'w-36',
+    },
+    {
+      header: 'Planificat',
+      cell: (s) => s.data_planificata ?? '—',
+      className: 'w-28',
+    },
+    {
+      header: 'Trimis',
+      cell: (s) => s.data_trimitere ?? '—',
+      className: 'w-28',
+    },
+    {
+      header: '',
+      cell: (s) => (
+        <Button
+          variant="ghost"
+          onClick={() => remove.mutate(s.id)}
+          disabled={remove.isPending}
+        >
+          Șterge
+        </Button>
+      ),
+      className: 'w-24',
+    },
+  ]
+
+  return (
+    <div>
+      <PageHeader
+        title="Notificări SMS"
+        subtitle={data ? `${data.total} în coadă` : undefined}
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setFormOpen(true)}
+            >
+              + SMS în coadă
+            </Button>
+            <Button
+              onClick={() => {
+                setProcessMsg(null)
+                process.mutate()
+              }}
+              disabled={process.isPending}
+            >
+              {process.isPending
+                ? 'Se procesează…'
+                : 'Trimite cele de trimis'}
+            </Button>
+          </>
+        }
+      />
+
+      <div className="mb-4 flex items-center gap-3">
+        <div className="w-52">
+          <Select
+            placeholder="Toate statusurile"
+            options={statusSmsOptions}
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          />
+        </div>
+        {processMsg && (
+          <span className="text-sm text-quasar-black">{processMsg}</span>
+        )}
+      </div>
+
+      {isLoading ? (
+        <Spinner />
+      ) : isError ? (
+        <p className="text-sm text-red-600">
+          Eroare la încărcare: {error instanceof Error ? error.message : ''}
+        </p>
+      ) : (
+        <>
+          <DataTable
+            columns={columns}
+            rows={data?.rows ?? []}
+            rowKey={(s) => s.id}
+            emptyMessage="Coada de SMS-uri este goală."
+          />
+
+          <div className="mt-4 flex items-center justify-between text-sm text-quasar-gray">
+            <span>
+              Pagina {page + 1} din {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                disabled={page === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+              >
+                ← Anterior
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={page + 1 >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Următor →
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {formOpen && (
+        <SmsQueueForm open onClose={() => setFormOpen(false)} />
+      )}
+    </div>
+  )
+}
