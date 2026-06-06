@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type { Cheltuiala, InsertDto, UpdateDto } from '@/types/db'
 
 export const PAGE_SIZE = 25
@@ -19,10 +20,7 @@ export async function listCheltuieli({
     .order('deadline', { ascending: true, nullsFirst: false })
     .range(from, to)
 
-  const term = search.trim()
-  if (term) {
-    query = query.or(`nume.ilike.%${term}%,descriere.ilike.%${term}%`)
-  }
+  query = applyWordSearch(query, search, ['nume', 'descriere'])
 
   const { data, error, count } = await query
   if (error) throw error

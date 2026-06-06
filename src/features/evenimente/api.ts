@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type { Eveniment, InsertDto, UpdateDto } from '@/types/db'
 
 export const PAGE_SIZE = 25
@@ -19,10 +20,7 @@ export async function listEvenimente({
     .order('data', { ascending: false, nullsFirst: false })
     .range(from, to)
 
-  const term = search.trim()
-  if (term) {
-    query = query.or(`nume_eveniment.ilike.%${term}%,locatia.ilike.%${term}%`)
-  }
+  query = applyWordSearch(query, search, ['nume_eveniment', 'locatia'])
 
   const { data, error, count } = await query
   if (error) throw error

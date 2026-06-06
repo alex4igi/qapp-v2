@@ -11,6 +11,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui'
 import { campaniiOptions } from '@/lib/lookups'
+import { matchesWords } from '@/lib/search'
 import type { Lead, StatusLead } from '@/types/db'
 import { PIPELINE_COLUMNS } from './constants'
 import { KanbanColumn } from './KanbanColumn'
@@ -73,13 +74,10 @@ export function KanbanBoard() {
   const filtered = useMemo(() => {
     return leads.filter((lead) => {
       if (filters.search) {
-        const q = filters.search.toLowerCase()
-        const name = [lead.prenume, lead.nume].filter(Boolean).join(' ')
-        if (
-          !name.toLowerCase().includes(q) &&
-          !(lead.telefon ?? '').includes(q)
-        )
-          return false
+        const hay = [lead.prenume, lead.nume, lead.telefon]
+          .filter(Boolean)
+          .join(' ')
+        if (!matchesWords(hay, filters.search)) return false
       }
       if (filters.sursa && lead.sursa !== filters.sursa) return false
       if (filters.grupa && lead.grupa_varsta !== filters.grupa) return false

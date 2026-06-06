@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { matchesWords } from '@/lib/search'
 import type { Evaluare, InsertDto, UpdateDto } from '@/types/db'
 import type { SelectOption } from '@/components/ui'
 
@@ -48,14 +49,12 @@ export async function listEvaluari({
   if (error) throw error
 
   let rows = (data ?? []) as unknown as EvaluareWithRefs[]
-  const term = search.trim().toLowerCase()
-  if (term) {
+  if (search.trim()) {
     rows = rows.filter((r) => {
       const label = [r.client_row?.nume, r.client_row?.prenume]
         .filter(Boolean)
         .join(' ')
-        .toLowerCase()
-      return label.includes(term)
+      return matchesWords(label, search)
     })
   }
 

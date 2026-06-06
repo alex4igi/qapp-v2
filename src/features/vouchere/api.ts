@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type { Voucher, InsertDto, UpdateDto, Enums } from '@/types/db'
 import { validateVoucher } from './calc'
 
@@ -29,12 +30,7 @@ export async function listVouchere({
     .order('cod_voucher', { ascending: true })
     .range(from, to)
 
-  const term = search.trim()
-  if (term) {
-    query = query.or(
-      `cod_voucher.ilike.%${term}%,descriere.ilike.%${term}%`,
-    )
-  }
+  query = applyWordSearch(query, search, ['cod_voucher', 'descriere'])
 
   const { data, error, count } = await query
   if (error) throw error

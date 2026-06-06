@@ -16,6 +16,7 @@ import {
   type OptOutListRow,
   type OptOutEntity,
 } from './api'
+import { matchesWords } from '@/lib/search'
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
@@ -86,15 +87,12 @@ export function OptOutListPage() {
 
   const filtered = useMemo(() => {
     if (!data) return []
-    const q = search.trim().toLowerCase()
     return data.filter((r) => {
       if (entityFilter && r.entity !== entityFilter) return false
-      if (!q) return true
       const hay = [r.nume_complet, r.email, r.telefon, r.motiv]
         .filter(Boolean)
         .join(' ')
-        .toLowerCase()
-      return hay.includes(q)
+      return matchesWords(hay, search)
     })
   }, [data, search, entityFilter])
 

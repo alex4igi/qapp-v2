@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type {
   AppFeedback,
   AppFeedbackStatus,
@@ -32,10 +33,7 @@ export async function listAppFeedback({
 
   if (status) query = query.eq('status', status)
 
-  const term = search.trim()
-  if (term) {
-    query = query.or(`titlu.ilike.%${term}%,detalii.ilike.%${term}%`)
-  }
+  query = applyWordSearch(query, search, ['titlu', 'detalii'])
 
   const { data, error, count } = await query
   if (error) throw error

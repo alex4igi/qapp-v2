@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type { Inventar, InsertDto, UpdateDto } from '@/types/db'
 
 export const PAGE_SIZE = 25
@@ -19,10 +20,7 @@ export async function listInventar({
     .order('articol', { ascending: true })
     .range(from, to)
 
-  const term = search.trim()
-  if (term) {
-    query = query.or(`articol.ilike.%${term}%,descriere.ilike.%${term}%`)
-  }
+  query = applyWordSearch(query, search, ['articol', 'descriere'])
 
   const { data, error, count } = await query
   if (error) throw error

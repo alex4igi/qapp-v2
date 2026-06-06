@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type { Concurs, InsertDto, UpdateDto } from '@/types/db'
 
 export const PAGE_SIZE = 25
@@ -19,10 +20,7 @@ export async function listConcursuri({
     .order('data_evenimentului', { ascending: false, nullsFirst: false })
     .range(from, to)
 
-  const term = search.trim()
-  if (term) {
-    query = query.ilike('numele_concursului', `%${term}%`)
-  }
+  query = applyWordSearch(query, search, ['numele_concursului'])
 
   const { data, error, count } = await query
   if (error) throw error

@@ -32,12 +32,11 @@ export function Combobox({
   const selected = options.find((o) => o.value === value) ?? null
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return options
+    const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    if (tokens.length === 0) return options
     return options.filter((o) => {
-      const label = o.label.toLowerCase()
-      const sec = (o.secondary ?? '').toLowerCase()
-      return label.includes(q) || sec.includes(q)
+      const haystack = `${o.label} ${o.secondary ?? ''}`.toLowerCase()
+      return tokens.every((t) => haystack.includes(t))
     })
   }, [options, query])
 

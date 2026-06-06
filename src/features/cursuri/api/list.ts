@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type { VListaCursuri } from '@/types/db'
 
 export const PAGE_SIZE = 25
@@ -30,10 +31,7 @@ export async function listCursuri({
     .order('numele_cursului', { ascending: true })
     .range(from, to)
 
-  const term = search.trim()
-  if (term) {
-    query = query.ilike('numele_cursului', `%${term}%`)
-  }
+  query = applyWordSearch(query, search, ['numele_cursului'])
   if (locatieId) {
     query = query.eq('id_locatie', locatieId)
   }

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { recordAuditLog } from '@/lib/auditLog'
+import { applyWordSearch } from '@/lib/search'
 import type { Enums, Views } from '@/types/db'
 
 export type StatLunara = Views<'statistica_restante_totale'>
@@ -327,8 +328,7 @@ export async function listIncasari({
   if (categorie)
     query = query.eq('categorie', categorie as Enums<'categorie_incasare'>)
 
-  const term = search.trim()
-  if (term) query = query.ilike('observatii', `%${term}%`)
+  query = applyWordSearch(query, search, ['observatii'])
 
   type Raw = {
     id: string
@@ -398,16 +398,7 @@ export async function listRestante({
     let q = supabase.from('plati_inrolari').select('*').gt('rest', 0)
     if (locatieId) q = q.eq('id_locatie', locatieId)
     if (cursId) q = q.eq('id_curs', cursId)
-    const term = search.trim()
-    if (term) {
-      q = q.or(
-        [
-          `nume_client.ilike.%${term}%`,
-          `prenume_client.ilike.%${term}%`,
-          `nume_curs.ilike.%${term}%`,
-        ].join(','),
-      )
-    }
+    q = applyWordSearch(q, search, ['nume_client', 'prenume_client', 'nume_curs'])
     return q
   }
 

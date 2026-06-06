@@ -13,6 +13,7 @@ import { formatRON } from '@/lib/format'
 import { downloadCsv } from '@/lib/csv'
 import { categorieCheltuialaOptions } from '@/lib/enums'
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type { Cheltuiala } from '@/types/db'
 import { CheltuialaForm } from '@/features/cheltuieli/CheltuialaForm'
 
@@ -39,8 +40,7 @@ async function listCheltuieliExt(f: Filtre): Promise<{
 
   const build = () => {
     let q = supabase.from('cheltuieli').select('*', { count: 'exact' })
-    const term = f.search.trim()
-    if (term) q = q.or(`nume.ilike.%${term}%,descriere.ilike.%${term}%`)
+    q = applyWordSearch(q, f.search, ['nume', 'descriere'])
     if (f.from) q = q.gte('deadline', f.from)
     if (f.to) q = q.lte('deadline', f.to)
     if (f.categorie)

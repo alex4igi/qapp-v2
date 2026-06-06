@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { recordAuditLog } from '@/lib/auditLog'
+import { applyWordSearch } from '@/lib/search'
 import type {
   Teacher,
   Curs,
@@ -80,11 +81,7 @@ export async function listTeacheri({
     query = query.in('id', ids)
   }
 
-  const term = search.trim()
-  if (term) {
-    const orFilter = SEARCH_FIELDS.map((f) => `${f}.ilike.%${term}%`).join(',')
-    query = query.or(orFilter)
-  }
+  query = applyWordSearch(query, search, SEARCH_FIELDS)
 
   const { data, error, count } = await query
   if (error) throw error

@@ -11,6 +11,7 @@ import {
   assignClientiToFamilie,
   listClientiForFamilieAssign,
 } from './api'
+import { matchesWords } from '@/lib/search'
 
 type Props = {
   open: boolean
@@ -32,14 +33,9 @@ export function AddMembersModal({ open, familieId, familieNume, onClose }: Props
   })
 
   const candidates = useMemo(() => {
-    const term = search.trim().toLowerCase()
     return (clientiQ.data ?? [])
       .filter((c) => c.familia !== familieId) // ascunde cei deja în familia asta
-      .filter((c) => {
-        if (!term) return true
-        const label = `${c.nume} ${c.prenume ?? ''}`.toLowerCase()
-        return label.includes(term)
-      })
+      .filter((c) => matchesWords(`${c.nume} ${c.prenume ?? ''}`, search))
   }, [clientiQ.data, familieId, search])
 
   // Avertizare: dacă ai bifat clienți care sunt deja în altă familie

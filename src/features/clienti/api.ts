@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import type { Client, InsertDto, UpdateDto } from '@/types/db'
 
 export const PAGE_SIZE = 25
@@ -34,11 +35,7 @@ export async function listClienti({
     .order('nume', { ascending: true })
     .range(from, to)
 
-  const term = search.trim()
-  if (term) {
-    const orFilter = SEARCH_FIELDS.map((f) => `${f}.ilike.%${term}%`).join(',')
-    query = query.or(orFilter)
-  }
+  query = applyWordSearch(query, search, SEARCH_FIELDS)
 
   const { data, error, count } = await query
   if (error) throw error
