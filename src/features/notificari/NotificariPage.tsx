@@ -35,6 +35,10 @@ function targetFor(n: Notification): string | null {
     const fid = (n.payload as { feedback_id?: string } | null)?.feedback_id
     return fid ? `/feedback-app?feedback=${fid}` : '/feedback-app'
   }
+  if (n.kind === 'anunt_staff') {
+    const aid = (n.payload as { anunt_id?: string } | null)?.anunt_id
+    return aid ? `/anunturi?anunt=${aid}` : '/anunturi'
+  }
   return null
 }
 
@@ -62,6 +66,7 @@ function NotificationCard({
   const isAudit = n.kind === 'audit_digest_weekly'
   const audit = isAudit ? (n.payload as AuditPayload | null) : null
   const isFeedback = n.kind === 'app_feedback_new'
+  const isAnunt = n.kind === 'anunt_staff'
 
   return (
     <article
@@ -86,6 +91,11 @@ function NotificationCard({
       {isFeedback && (
         <p className="text-xs font-semibold text-quasar-yellow-dark">
           Vezi detalii și triază →
+        </p>
+      )}
+      {isAnunt && (
+        <p className="text-xs font-semibold text-quasar-yellow-dark">
+          Vezi anunțul →
         </p>
       )}
       {audit && audit.by_action && audit.by_action.length > 0 && (

@@ -28,6 +28,7 @@ export const ROUTE_ACCESS = {
   '/sms': ALL_STAFF,
   '/feedback': ALL_STAFF,
   '/feedback-app': WITH_TEACHER,
+  '/anunturi': WITH_TEACHER,
   '/grupa': WITH_TEACHER,
   '/situatie-zilnica': ALL_STAFF,
   '/evaluari': WITH_TEACHER,

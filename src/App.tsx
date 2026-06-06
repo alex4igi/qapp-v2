@@ -19,6 +19,7 @@ import { LeadsPage } from '@/features/leads/LeadsPage'
 import { NotificariSmsPage } from '@/features/notificari-sms/NotificariSmsPage'
 import { FeedbackListPage } from '@/features/feedback/FeedbackListPage'
 import { AppFeedbackListPage } from '@/features/feedback-app/AppFeedbackListPage'
+import { AnunturiPage } from '@/features/announcements/AnunturiPage'
 import { FinanciarPage } from '@/features/financiar/FinanciarPage'
 import { StatisticiPage } from '@/features/statistici/StatisticiPage'
 import { AnsambluPage } from '@/features/ansamblu/AnsambluPage'
@@ -82,6 +83,13 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/feedback-app']} />}>
             <Route element={<AppLayout />}>
               <Route path="feedback-app" element={<AppFeedbackListPage />} />
+            </Route>
+          </Route>
+
+          {/* Anunțuri staff — accesibil tuturor rolurilor (trimit + primesc). */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/anunturi']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="anunturi" element={<AnunturiPage />} />
             </Route>
           </Route>
 

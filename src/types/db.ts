@@ -37,6 +37,7 @@ export type Inventar = Tables<'inventar'>
 export type Cheltuiala = Tables<'cheltuieli'>
 export type Feedback = Tables<'feedback'>
 export type AppFeedback = Tables<'app_feedback'>
+export type Anunt = Tables<'anunturi'>
 export type Evaluare = Tables<'evaluari'>
 export type SituatieSms = Tables<'situatie_sms_uri'>
 export type ParametruAplicatie = Tables<'parametri_aplicatie'>

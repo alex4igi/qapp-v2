@@ -39,6 +39,143 @@ export type Database = {
   }
   public: {
     Tables: {
+      anunturi: {
+        Row: {
+          audienta: Json | null
+          canal: string
+          continut: string
+          created: string
+          expeditor_email: string | null
+          expeditor_user_id: string | null
+          id: string
+          nr_destinatari: number
+          titlu: string
+        }
+        Insert: {
+          audienta?: Json | null
+          canal: string
+          continut: string
+          created?: string
+          expeditor_email?: string | null
+          expeditor_user_id?: string | null
+          id?: string
+          nr_destinatari?: number
+          titlu: string
+        }
+        Update: {
+          audienta?: Json | null
+          canal?: string
+          continut?: string
+          created?: string
+          expeditor_email?: string | null
+          expeditor_user_id?: string | null
+          id?: string
+          nr_destinatari?: number
+          titlu?: string
+        }
+        Relationships: []
+      }
+      anunturi_clienti: {
+        Row: {
+          anunt_id: string
+          client_id: string
+          read_at: string | null
+        }
+        Insert: {
+          anunt_id: string
+          client_id: string
+          read_at?: string | null
+        }
+        Update: {
+          anunt_id?: string
+          client_id?: string
+          read_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anunturi_clienti_anunt_id_fkey"
+            columns: ["anunt_id"]
+            isOneToOne: false
+            referencedRelation: "anunturi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anunturi_clienti_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anunturi_clienti_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anunturi_clienti_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "anunturi_clienti_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "anunturi_clienti_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anunturi_clienti_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "anunturi_clienti_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+        ]
+      }
+      anunturi_destinatari: {
+        Row: {
+          anunt_id: string
+          read_at: string | null
+          recipient_user_id: string
+        }
+        Insert: {
+          anunt_id: string
+          read_at?: string | null
+          recipient_user_id: string
+        }
+        Update: {
+          anunt_id?: string
+          read_at?: string | null
+          recipient_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anunturi_destinatari_anunt_id_fkey"
+            columns: ["anunt_id"]
+            isOneToOne: false
+            referencedRelation: "anunturi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_feedback: {
         Row: {
           autor_email: string | null
@@ -4384,6 +4521,10 @@ export type Database = {
       }
     }
     Functions: {
+      _anunt_staff_recipients: {
+        Args: { p_target_locatie_ids: string[]; p_target_roles: string[] }
+        Returns: string[]
+      }
       activate_eligible_sezoane: { Args: never; Returns: number }
       activate_reinscriere: {
         Args: { p_client_id: string; p_curs_id: string }
@@ -4631,6 +4772,7 @@ export type Database = {
           telefon: string
         }[]
       }
+      mark_anunt_read: { Args: { p_anunt_id: string }; Returns: undefined }
       mark_opt_out: {
         Args: { p_entity: string; p_id: string; p_motiv?: string }
         Returns: undefined
@@ -4675,10 +4817,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      preview_anunt_client: { Args: { p_curs_id?: string }; Returns: number }
+      preview_anunt_staff: {
+        Args: { p_target_locatie_ids: string[]; p_target_roles: string[] }
+        Returns: number
+      }
       prune_expired_leads: { Args: never; Returns: number }
       recalculate_pool_discount: {
         Args: { p_client: string }
         Returns: undefined
+      }
+      resolve_anunt_clienti: {
+        Args: { p_curs_id?: string }
+        Returns: {
+          client_id: string
+        }[]
+      }
+      send_anunt_client: {
+        Args: { p_continut: string; p_curs_id?: string; p_titlu: string }
+        Returns: Json
+      }
+      send_anunt_staff: {
+        Args: {
+          p_continut: string
+          p_target_locatie_ids: string[]
+          p_target_roles: string[]
+          p_titlu: string
+        }
+        Returns: Json
       }
       teacher_can_access_curs: { Args: { p_curs: string }; Returns: boolean }
       user_locatie_id: { Args: never; Returns: string }

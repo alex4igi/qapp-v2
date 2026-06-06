@@ -7,6 +7,7 @@ import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { canAccessRoute, isFrontDesk, ROLE_LABEL } from '@/lib/rolesMatrix'
 import { getUnreadCount } from '@/features/notificari/api'
 import { AppFeedbackModal } from '@/features/feedback-app/AppFeedbackModal'
+import { ComposeAnuntModal } from '@/features/announcements/ComposeAnuntModal'
 import { Logo } from './Logo'
 import { TopNav } from './TopNav'
 
@@ -24,6 +25,8 @@ export function Header() {
   const showEndShift = isFrontDesk(role)
   const showNotificari = canAccessRoute(role, '/notificari')
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [anuntOpen, setAnuntOpen] = useState(false)
+  const showAnunturi = canAccessRoute(role, '/anunturi')
 
   const notifQ = useQuery({
     queryKey: ['notificari-unread'],
@@ -103,6 +106,18 @@ export function Header() {
           💬
         </button>
 
+        {showAnunturi && (
+          <button
+            type="button"
+            onClick={() => setAnuntOpen(true)}
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-quasar-gray-light bg-white text-base hover:bg-quasar-gray-light"
+            title="Anunț nou către staff"
+            aria-label="Anunț nou"
+          >
+            📢
+          </button>
+        )}
+
         {showNotificari && (
           <Link
             to="/notificari"
@@ -161,6 +176,9 @@ export function Header() {
     </header>
     {feedbackOpen && (
       <AppFeedbackModal open onClose={() => setFeedbackOpen(false)} />
+    )}
+    {anuntOpen && (
+      <ComposeAnuntModal open onClose={() => setAnuntOpen(false)} />
     )}
     </>
   )

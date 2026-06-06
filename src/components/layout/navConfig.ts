@@ -54,6 +54,7 @@ export const navSections: NavSection[] = [
     label: 'Personal',
     items: [
       { label: 'Salariul meu',       path: '/salariul-meu' },
+      { label: 'Anunțuri',           path: '/anunturi' },
       { label: 'Feedback aplicație',  path: '/feedback-app' },
       { label: 'Audit log',          path: '/audit' },
       { label: 'Pontaj staff',       path: '/pontaj-staff' },
