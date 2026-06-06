@@ -8,11 +8,12 @@
 // locațiilor) păstrează diacriticele fiindcă vin din DB; doar valorile-text se
 // scriu fără diacritice.
 
+// Adrese SCURTE pentru SMS — alese ca textul total să încapă în 160 caractere
+// (1 SMS GSM-7). Păstrăm reperul (SYNEVO / intrarea) dar tăiem umplutura.
 const ADRESE: Record<string, string> = {
-  'Ștefan cel Mare':
-    'Galeriile Comerciale Stefan cel Mare, Et. 1 (vis-a-vis SYNEVO)',
-  Nicolina: 'Str. Izvor Nr. 14',
-  'Quasar 4 Kids': 'Str. Clopotari Nr. 24, intrarea prin spate, usa mov/roz',
+  'Ștefan cel Mare': 'Galeriile Stefan cel Mare, et. 1 (langa SYNEVO)',
+  Nicolina: 'Str. Izvor 14',
+  'Quasar 4 Kids': 'Str. Clopotari 24 (intrarea din spate, usa mov)',
 }
 
 const REVIEW_LINKS: Record<string, string> = {
@@ -78,10 +79,10 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
   // Texte fără diacritice și fără emoji — vezi REGULA din capul fișierului.
   switch (tip) {
     case 'confirmare':
-      return `Buna ${nume}! Ti-am confirmat sedinta gratuita la Quasar Dance pe ${data}. Ne vedem la ${adresa}. Daca ai intrebari, suna-ne!`
+      return `Buna ${nume}! Sedinta gratuita la Quasar Dance e confirmata pe ${data}. Ne vedem la ${adresa}!`
     case 'reminder': {
       const cand = params.cand === 'azi' ? 'AZI' : 'MAINE'
-      return `Reminder Quasar Dance: ${cand} te asteptam la sedinta gratuita, ${data}, la ${adresa}. Ne bucuram sa te cunoastem!`
+      return `Buna ${nume}! Reminder: ${cand} ai sedinta gratuita la Quasar Dance, ${data}, la ${adresa}. Te asteptam!`
     }
     case 'review':
       return `Buna ${nume}! Speram ca ti-a placut sedinta la Quasar Dance. Ne-ar ajuta enorm un review scurt: ${reviewLink} Multumim!`

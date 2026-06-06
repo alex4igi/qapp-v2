@@ -5015,6 +5015,17 @@ export type Database = {
           varsta: Database["public"]["Enums"]["varsta_curs"]
         }[]
       }
+      get_sms_recipients: {
+        Args: { p_cod?: string; p_locatie?: string; p_sezon?: string }
+        Returns: {
+          client_ids: string[]
+          familia_id: string
+          membri: Json
+          telefon: string
+          total_restanta: number
+          zile_depasire: number
+        }[]
+      }
       get_trend_prezente: {
         Args: {
           p_locatie?: string

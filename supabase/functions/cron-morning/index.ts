@@ -22,6 +22,21 @@ function endOfDay(date: Date) {
 
 const dateStr = (d: Date) => d.toISOString().slice(0, 10)
 
+// Ora locală țintă pentru reminder (Europe/Bucharest). pg_cron e programat la
+// AMBELE ore UTC (07:00 + 08:00); garda de mai jos lasă să ruleze o singură dată,
+// la 10:00 local, imun la ora de vară/iarnă. Override via env REMINDER_HOUR_LOCAL.
+const TARGET_HOUR_LOCAL = Number(Deno.env.get('REMINDER_HOUR_LOCAL') ?? '10')
+
+function localHourBucharest(d: Date): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Bucharest',
+      hour: '2-digit',
+      hour12: false,
+    }).format(d),
+  )
+}
+
 Deno.serve(async (req) => {
   const cronSecret = Deno.env.get('CRON_SECRET')
   if (cronSecret) {
@@ -29,6 +44,16 @@ Deno.serve(async (req) => {
     if (auth !== `Bearer ${cronSecret}`) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
+  }
+
+  // Rulează o singură dată pe zi, la ora locală țintă (10:00). Cealaltă invocare
+  // UTC (sezonul opus) cade pe altă oră locală și iese aici fără efect.
+  const localHour = localHourBucharest(new Date())
+  if (localHour !== TARGET_HOUR_LOCAL) {
+    return Response.json({
+      skipped: true,
+      reason: `ora locala ${localHour}:00 != ${TARGET_HOUR_LOCAL}:00`,
+    })
   }
 
   const supabase = createClient(

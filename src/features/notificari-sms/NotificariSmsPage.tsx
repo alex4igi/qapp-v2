@@ -15,7 +15,10 @@ import {
 } from '@/components/ui'
 import { statusSmsOptions } from '@/lib/enums'
 import type { SituatieSms } from '@/types/db'
+import { useAuth } from '@/hooks/useAuth'
+import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { SmsQueueForm } from './SmsQueueForm'
+import { SmsComposer } from './SmsComposer'
 import {
   listSmsQueue,
   deleteSmsQueueEntry,
@@ -32,9 +35,12 @@ const STATUS_STYLE: Record<string, string> = {
 
 export function NotificariSmsPage() {
   const queryClient = useQueryClient()
+  const { role } = useAuth()
+  const poateMesajLiber = isManagerOrHigher(role)
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
+  const [composerOpen, setComposerOpen] = useState(false)
   const [processMsg, setProcessMsg] = useState<string | null>(null)
 
   useEffect(() => setPage(0), [status])
@@ -123,14 +129,22 @@ export function NotificariSmsPage() {
         subtitle={data ? `${data.total} în coadă` : undefined}
         actions={
           <>
-            <Button
-              variant="secondary"
-              onClick={() => setFormOpen(true)}
-            >
-              + SMS în coadă
+            <Button variant="secondary" onClick={() => setComposerOpen(true)}>
+              Generează SMS-uri
             </Button>
+            {poateMesajLiber && (
+              <Button variant="ghost" onClick={() => setFormOpen(true)}>
+                + SMS manual
+              </Button>
+            )}
             <Button
               onClick={() => {
+                if (
+                  !window.confirm(
+                    'Sigur pornești trimiterea? TOATE SMS-urile cu status „De trimis" vor fi trimise efectiv.',
+                  )
+                )
+                  return
                 setProcessMsg(null)
                 process.mutate()
               }}
@@ -199,6 +213,9 @@ export function NotificariSmsPage() {
 
       {formOpen && (
         <SmsQueueForm open onClose={() => setFormOpen(false)} />
+      )}
+      {composerOpen && (
+        <SmsComposer open onClose={() => setComposerOpen(false)} />
       )}
     </div>
   )

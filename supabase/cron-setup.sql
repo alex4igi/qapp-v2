@@ -10,12 +10,19 @@
 -- Edge Functions-urile trebuie deja deployate:  supabase functions deploy
 --
 -- Ca să OPREȘTI cron-urile mai târziu:
---   select cron.unschedule('qapp-cron-morning');
+--   select cron.unschedule('qapp-cron-morning-a');
+--   select cron.unschedule('qapp-cron-morning-b');
 --   select cron.unschedule('qapp-cron-evening');
 --   select cron.unschedule('qapp-cron-season-end');
 --
 -- NOTĂ DST: orele sunt în UTC. cron-evening la 21:30 UTC = 23:30 EET (iarna)
 -- / 00:30 EEST (vara) — după ultimul curs (max ~22:00). Acceptabil tot anul.
+--
+-- cron-morning țintește 10:00 ORĂ LOCALĂ (Europe/Bucharest), fix tot anul. Cum
+-- pg_cron rulează în UTC, îl programăm la AMBELE ore UTC care pot fi 10:00 local
+-- (07:00 vara EEST, 08:00 iarna EET); funcția are o gardă internă care lasă să
+-- ruleze o singură dată, când ora locală e exact 10:00. Cealaltă invocare iese
+-- fără efect. Schimbi ora din env REMINDER_HOUR_LOCAL + orele UTC de mai jos.
 -- ============================================================
 
 create extension if not exists pg_cron;
@@ -23,12 +30,28 @@ create extension if not exists pg_net;
 
 -- (re)programare idempotentă
 select cron.unschedule('qapp-cron-morning')    where exists (select 1 from cron.job where jobname = 'qapp-cron-morning');
+select cron.unschedule('qapp-cron-morning-a')  where exists (select 1 from cron.job where jobname = 'qapp-cron-morning-a');
+select cron.unschedule('qapp-cron-morning-b')  where exists (select 1 from cron.job where jobname = 'qapp-cron-morning-b');
 select cron.unschedule('qapp-cron-evening')    where exists (select 1 from cron.job where jobname = 'qapp-cron-evening');
 select cron.unschedule('qapp-cron-season-end') where exists (select 1 from cron.job where jobname = 'qapp-cron-season-end');
 
--- Dimineață 08:00 UTC (10:00 EET / 11:00 EEST) — remindere + review întârziat
+-- Dimineață — remindere + review întârziat, țintind 10:00 ORA LOCALĂ.
+-- Două joburi (07:00 + 08:00 UTC); garda din funcție lasă să ruleze doar cel
+-- care pică pe 10:00 local (vara 07:00 UTC, iarna 08:00 UTC).
 select cron.schedule(
-  'qapp-cron-morning',
+  'qapp-cron-morning-a',
+  '0 7 * * *',
+  $$
+  select net.http_post(
+    url := 'https://cbftxkwvoboqahzsldcp.supabase.co/functions/v1/cron-morning',
+    headers := '{"Content-Type": "application/json"}'::jsonb,
+    body := '{}'::jsonb
+  );
+  $$
+);
+
+select cron.schedule(
+  'qapp-cron-morning-b',
   '0 8 * * *',
   $$
   select net.http_post(

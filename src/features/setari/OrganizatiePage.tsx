@@ -23,9 +23,9 @@ export function OrganizatiePage() {
           <ul className="space-y-2 text-sm text-quasar-black">
             <li className="flex items-center justify-between">
               <span>
-                <strong>SMS — smslink.com</strong>
+                <strong>SMS — smslink.ro</strong>
                 <span className="ml-2 text-xs text-quasar-gray">
-                  configurată via secrete edge function
+                  provider activ în beta (themarketer dormant); secrete în edge function
                 </span>
               </span>
               <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">

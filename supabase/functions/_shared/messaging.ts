@@ -1,24 +1,32 @@
-// Wrapper unificat pentru SMS + Email — backend themarketer.com (transactional API).
+// Wrapper unificat pentru SMS + Email.
 //
-// API themarketer transactional:
-//   POST https://t.themarketer.com/api/v1/transactional/send-sms?k={REST_KEY}&u={CUSTOMER_ID}
-//     body: { to: "+40...", content: "..." }
+// SMS — provider comutabil via env `SMS_PROVIDER`:
+//   - 'smslink'    (DEFAULT, beta) → SMSLink SMS Gateway, vezi [smslink.ts](smslink.ts)
+//   - 'themarketer'                → themarketer.com transactional (dormant, revenim mai târziu)
+//
+// Email — întotdeauna themarketer.com (transactional):
 //   POST https://t.themarketer.com/api/v1/transactional/send-email?k={REST_KEY}&u={CUSTOMER_ID}
 //     body: { to, subject, from, body, reply_to?, bcc?, attachments? }
 //
 // Strategie cost (vezi planul B0.5):
 //   - NU sincronizăm contacte cu Audience themarketer. Audience size = 0 → Free plan permanent.
 //   - Toate apelurile sunt transactional 1-la-1, taxate per mesaj trimis.
-//   - Cost SMS: 0.037 €/SMS (vs 0.049 €/SMS smslink legacy). Cost Email: ~10 €/10k.
 //
-// Sandbox mode: themarketer pornește în sandbox; SMS doar la numerele din lista
-// configurată în dashboard până activăm production + adăugăm credit. Email blocat
-// până validăm domeniul `quasardance.ro` (SPF + DKIM + DMARC).
+// Sandbox / Email: themarketer email blocat până validăm domeniul `quasardance.ro`
+// (SPF + DKIM + DMARC).
 //
-// Stub mode automat: dacă lipsesc THEMARKETER_REST_KEY sau THEMARKETER_CUSTOMER_ID,
-// logăm și returnăm success simulat. Util pentru dezvoltare locală + CI.
+// Stub mode automat: dacă lipsesc credențialele providerului SMS activ (sau
+// THEMARKETER_* pentru email), logăm și returnăm success simulat. Util pentru
+// dezvoltare locală + CI. `SMS_TEST_MODE` / `SMS_TEST_ALLOWLIST` rămân valabile
+// indiferent de provider.
+
+import { getSmslinkCreds, sendSmsSmslink } from './smslink.ts'
 
 const TM_BASE = 'https://t.themarketer.com/api/v1/transactional'
+
+function smsProvider(): 'smslink' | 'themarketer' {
+  return Deno.env.get('SMS_PROVIDER') === 'themarketer' ? 'themarketer' : 'smslink'
+}
 
 export type MessageType = 'tranzactional' | 'marketing'
 
@@ -62,12 +70,15 @@ export async function sendSms(
   mesaj: string,
   _type: MessageType = 'tranzactional',
 ): Promise<SendResult> {
-  const creds = getCreds()
+  const provider = smsProvider()
+  const hasCreds = provider === 'smslink' ? !!getSmslinkCreds() : !!getCreds()
   const testMode = Deno.env.get('SMS_TEST_MODE') === '1'
 
   let stubReason: string | null = null
-  if (!creds) {
-    stubReason = 'fără credențiale THEMARKETER_*'
+  if (!hasCreds) {
+    stubReason = provider === 'smslink'
+      ? 'fără credențiale SMSLINK_*'
+      : 'fără credențiale THEMARKETER_*'
   } else if (!isInAllowlist(telefon)) {
     stubReason = 'număr în afara allowlist-ului de test'
   } else if (testMode) {
@@ -75,12 +86,23 @@ export async function sendSms(
   }
 
   if (stubReason) {
-    console.log(`[SMS stub: ${stubReason}] → ${telefon}: ${mesaj}`)
+    console.log(`[SMS stub (${provider}): ${stubReason}] → ${telefon}: ${mesaj}`)
     return { ok: true, stub: true, testMode: stubReason === 'SMS_TEST_MODE=1' }
   }
 
+  if (provider === 'smslink') {
+    return sendSmsSmslink(telefon, mesaj)
+  }
+  return sendSmsThemarketer(telefon, mesaj)
+}
+
+async function sendSmsThemarketer(
+  telefon: string,
+  mesaj: string,
+): Promise<SendResult> {
+  const creds = getCreds()!
   try {
-    const url = `${TM_BASE}/send-sms?k=${encodeURIComponent(creds!.restKey)}&u=${encodeURIComponent(creds!.customerId)}`
+    const url = `${TM_BASE}/send-sms?k=${encodeURIComponent(creds.restKey)}&u=${encodeURIComponent(creds.customerId)}`
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

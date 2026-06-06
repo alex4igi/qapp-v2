@@ -9,6 +9,8 @@ import {
   Button,
 } from '@/components/ui'
 import { locatiiOptions } from '@/lib/lookups'
+import { formatRoMobile } from '@/lib/phone'
+import { faraDiacritice } from './templates'
 import { createSmsQueueEntry } from './api'
 
 type Props = {
@@ -32,8 +34,9 @@ export function SmsQueueForm({ open, onClose }: Props) {
   const save = useMutation({
     mutationFn: () =>
       createSmsQueueEntry({
-        telefon: telefon.trim(),
-        mesaj: mesaj.trim(),
+        telefon: formatRoMobile(telefon) ?? telefon.trim(),
+        mesaj: faraDiacritice(mesaj.trim()),
+        cod_mesaj: 'mesaj_liber',
         locatie: locatie || null,
         data_planificata: dataPlanificata || null,
         status: 'De trimis',
@@ -52,6 +55,10 @@ export function SmsQueueForm({ open, onClose }: Props) {
     setError(null)
     if (!telefon.trim()) {
       setError('Telefonul este obligatoriu.')
+      return
+    }
+    if (!formatRoMobile(telefon)) {
+      setError('Număr de telefon invalid (format așteptat: 07XXXXXXXX).')
       return
     }
     if (!mesaj.trim()) {
