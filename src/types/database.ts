@@ -4525,6 +4525,8 @@ export type Database = {
         Args: { p_target_locatie_ids: string[]; p_target_roles: string[] }
         Returns: string[]
       }
+      _is_anunt_expeditor: { Args: { p_anunt: string }; Returns: boolean }
+      _is_anunt_recipient: { Args: { p_anunt: string }; Returns: boolean }
       activate_eligible_sezoane: { Args: never; Returns: number }
       activate_reinscriere: {
         Args: { p_client_id: string; p_curs_id: string }
@@ -4676,7 +4678,9 @@ export type Database = {
           capacitate: number
           curs_id: string
           curs_nume: string
+          facultativ: boolean
           locatie_nume: string
+          media: number
           procent: number
           teacher_nume: string
         }[]

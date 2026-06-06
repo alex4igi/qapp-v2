@@ -33,7 +33,16 @@ export function OcupareList({ rows }: { rows: OcupareRow[] }) {
               className="border-b border-quasar-gray-light last:border-0"
             >
               <td className="px-3 py-2">
-                <div className="font-medium text-quasar-black">{r.curs_nume}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-quasar-black">
+                    {r.curs_nume}
+                  </span>
+                  {r.facultativ && (
+                    <span className="rounded-full bg-quasar-gray-light px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-quasar-gray">
+                      facultativ
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-quasar-gray">
                   {[r.teacher_nume, r.locatie_nume].filter(Boolean).join(' · ')}
                 </div>
@@ -49,7 +58,7 @@ export function OcupareList({ rows }: { rows: OcupareRow[] }) {
                   />
                 </div>
               </td>
-              <td className="w-24 whitespace-nowrap px-3 py-2 text-right">
+              <td className="w-28 whitespace-nowrap px-3 py-2 text-right">
                 <span className="font-semibold text-quasar-black">
                   {r.activi}
                   {r.capacitate != null && (
@@ -63,6 +72,14 @@ export function OcupareList({ rows }: { rows: OcupareRow[] }) {
                   >
                     {r.procent}%
                   </span>
+                )}
+                {r.facultativ && (
+                  <div className="text-[10px] leading-tight text-quasar-gray">
+                    vârf ședință
+                    {r.media != null && (
+                      <span> · media {r.media}/{r.capacitate}</span>
+                    )}
+                  </div>
                 )}
               </td>
             </tr>

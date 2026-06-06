@@ -17,6 +17,7 @@ import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { clientiOptions } from '@/lib/lookups'
 import type { Curs, Enums } from '@/types/db'
 import { listAvailableVouchere } from '@/features/vouchere/api'
+import { getCursOcupare } from '@/features/cursuri/api/profile'
 import { EligibilityAlerts } from '@/features/vouchere/EligibilityAlerts'
 import {
   createInrolari,
@@ -93,6 +94,19 @@ export function EnrollmentForm({
   const tipInrolare = deriveTip(cursSelectat)
   const isFacultativ = tipInrolare === 'facultativ'
   const isTrupa = tipInrolare === 'recurent-trupa'
+
+  // Avertisment soft: la cursurile recurente nu se pot înscrie mai mulți decât
+  // capacitatea sălii. Nu blocăm (override permis), doar semnalăm.
+  const ocupareQ = useQuery({
+    queryKey: ['curs-ocupare-inrolare', cursId],
+    queryFn: () => getCursOcupare(cursId),
+    enabled: Boolean(cursId) && Boolean(cursSelectat) && !isFacultativ,
+  })
+  const cursPlin =
+    !isFacultativ &&
+    ocupareQ.data != null &&
+    ocupareQ.data.capacitate != null &&
+    ocupareQ.data.activi >= ocupareQ.data.capacitate
 
   // Tip plata permis în funcție de tipul derivat din curs.
   // Default (fără curs ales) = setul recurent (cel mai comun).
@@ -375,6 +389,13 @@ export function EnrollmentForm({
               checked={forceReinrolare}
               onChange={(e) => setForceReinrolare(e.target.checked)}
             />
+          )}
+
+          {cursPlin && ocupareQ.data && (
+            <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              ⚠️ Curs plin ({ocupareQ.data.activi}/{ocupareQ.data.capacitate}).
+              Mai vrei să înscrii?
+            </p>
           )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}

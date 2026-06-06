@@ -62,6 +62,9 @@ async function fetchActiveEnrollmentsThisMonth(
 export type CursOcupare = {
   activi: number
   capacitate: number | null
+  facultativ: boolean
+  // Doar facultativ: media prezenților/ședință în luna curentă (informativă).
+  media: number | null
 }
 
 export async function getCursOcupare(cursId: string): Promise<CursOcupare> {
@@ -69,14 +72,55 @@ export async function getCursOcupare(cursId: string): Promise<CursOcupare> {
     fetchActiveEnrollmentsThisMonth(cursId),
     supabase
       .from('cursuri')
-      .select('capacitate_maxima')
+      .select('capacitate_maxima, facultativ')
       .eq('id', cursId)
       .single(),
   ])
   if (cursRow.error) throw cursRow.error
-  const unici = new Set<string>()
-  for (const e of enrRows) if (e.client) unici.add(e.client.id)
-  return { activi: unici.size, capacitate: cursRow.data.capacitate_maxima }
+  const capacitate = cursRow.data.capacitate_maxima
+  const facultativ = cursRow.data.facultativ ?? false
+
+  // Recurent: roster distinct activ în luna curentă (oamenii din sală).
+  if (!facultativ) {
+    const unici = new Set<string>()
+    for (const e of enrRows) if (e.client) unici.add(e.client.id)
+    return { activi: unici.size, capacitate, facultativ, media: null }
+  }
+
+  // Facultativ: capacitate_maxima e o limită PER ȘEDINȚĂ. Ocuparea = vârful ședinței
+  // (cei mai mulți prezenți distincți într-o ședință din luna curentă), nu suma unicilor.
+  if (enrRows.length === 0) {
+    return { activi: 0, capacitate, facultativ, media: null }
+  }
+  const { start, end } = monthBounds(todayIso())
+  const enrIds = enrRows.map((e) => e.id)
+  const { data: prez, error: pErr } = await supabase
+    .from('prezente')
+    .select('client, data')
+    .in('enrollment', enrIds)
+    .eq('status', 'Prezent')
+    .gte('data', start)
+    .lte('data', end)
+  if (pErr) throw pErr
+
+  // Per dată: clienți distincți prezenți.
+  const byData = new Map<string, Set<string>>()
+  for (const p of prez ?? []) {
+    if (!p.data || !p.client) continue
+    let set = byData.get(p.data)
+    if (!set) {
+      set = new Set<string>()
+      byData.set(p.data, set)
+    }
+    set.add(p.client)
+  }
+  const counts = Array.from(byData.values()).map((s) => s.size)
+  if (counts.length === 0) {
+    return { activi: 0, capacitate, facultativ, media: null }
+  }
+  const peak = Math.max(...counts)
+  const media = Math.round(counts.reduce((a, b) => a + b, 0) / counts.length)
+  return { activi: peak, capacitate, facultativ, media }
 }
 
 // ============================================================

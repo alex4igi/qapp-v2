@@ -1,12 +1,21 @@
 type Props = {
   initials: string
   numele: string
-  ocupare: { activi: number; capacitate: number | null } | undefined
+  ocupare:
+    | {
+        activi: number
+        capacitate: number | null
+        facultativ?: boolean
+        media?: number | null
+      }
+    | undefined
 }
 
 export function CursSidebar({ initials, numele, ocupare }: Props) {
   const cap = ocupare?.capacitate ?? null
   const activi = ocupare?.activi ?? 0
+  const facultativ = ocupare?.facultativ ?? false
+  const media = ocupare?.media ?? null
   const ratio = cap && cap > 0 ? activi / cap : 0
   const color =
     cap == null
@@ -30,6 +39,12 @@ export function CursSidebar({ initials, numele, ocupare }: Props) {
         <p className={`mt-1 text-xl font-bold ${color}`}>
           {activi} / {cap ?? '—'}
         </p>
+        {facultativ && (
+          <p className="mt-0.5 text-[11px] text-quasar-gray">
+            vârf ședință
+            {media != null && ` · media ${media}/${cap ?? '—'}`}
+          </p>
+        )}
       </div>
     </aside>
   )

@@ -19,7 +19,10 @@ export type OcupareRow = {
   curs_nume: string
   locatie_nume: string | null
   teacher_nume: string | null
+  facultativ: boolean
   activi: number
+  // Doar facultativ: media prezenților/ședință în luna curentă (informativă).
+  media: number | null
   capacitate: number | null
   procent: number | null
 }
