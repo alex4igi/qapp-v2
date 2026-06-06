@@ -2386,6 +2386,276 @@ export type Database = {
         }
         Relationships: []
       }
+      open_rezervari: {
+        Row: {
+          anulat_at: string | null
+          anulat_motiv: string | null
+          client: string
+          created: string
+          enrollment: string | null
+          id: string
+          incasare: string | null
+          sesiune: string
+          status: Database["public"]["Enums"]["status_rezervare"]
+          suma: number | null
+        }
+        Insert: {
+          anulat_at?: string | null
+          anulat_motiv?: string | null
+          client: string
+          created?: string
+          enrollment?: string | null
+          id?: string
+          incasare?: string | null
+          sesiune: string
+          status?: Database["public"]["Enums"]["status_rezervare"]
+          suma?: number | null
+        }
+        Update: {
+          anulat_at?: string | null
+          anulat_motiv?: string | null
+          client?: string
+          created?: string
+          enrollment?: string | null
+          id?: string
+          incasare?: string | null
+          sesiune?: string
+          status?: Database["public"]["Enums"]["status_rezervare"]
+          suma?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_rezervari_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_rezervari_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_rezervari_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "open_rezervari_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "open_rezervari_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_rezervari_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "open_rezervari_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "open_rezervari_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_rezervari_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_inrolare"]
+          },
+          {
+            foreignKeyName: "open_rezervari_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "open_rezervari_incasare_fkey"
+            columns: ["incasare"]
+            isOneToOne: false
+            referencedRelation: "incasari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_rezervari_incasare_fkey"
+            columns: ["incasare"]
+            isOneToOne: false
+            referencedRelation: "lista_incasari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_rezervari_sesiune_fkey"
+            columns: ["sesiune"]
+            isOneToOne: false
+            referencedRelation: "open_sesiuni"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      open_sesiuni: {
+        Row: {
+          capacitate: number
+          created: string
+          curs: string
+          data: string
+          id: string
+          instructor: string | null
+          observatii: string | null
+          status: string
+        }
+        Insert: {
+          capacitate?: number
+          created?: string
+          curs: string
+          data: string
+          id?: string
+          instructor?: string | null
+          observatii?: string | null
+          status?: string
+        }
+        Update: {
+          capacitate?: number
+          created?: string
+          curs?: string
+          data?: string
+          id?: string
+          instructor?: string | null
+          observatii?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_instructor_fkey"
+            columns: ["instructor"]
+            isOneToOne: false
+            referencedRelation: "incasari_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_instructor_fkey"
+            columns: ["instructor"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_instructor_fkey"
+            columns: ["instructor"]
+            isOneToOne: false
+            referencedRelation: "profil_teacher"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_instructor_fkey"
+            columns: ["instructor"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_instructor_fkey"
+            columns: ["instructor"]
+            isOneToOne: false
+            referencedRelation: "restante_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_instructor_fkey"
+            columns: ["instructor"]
+            isOneToOne: false
+            referencedRelation: "teacheri"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizatie_firme: {
         Row: {
           capital: number | null
@@ -4537,6 +4807,10 @@ export type Database = {
         Returns: number
       }
       activate_sezon: { Args: { p_sezon_id: string }; Returns: undefined }
+      anuleaza_rezervare_open: {
+        Args: { p_motiv?: string; p_rezervare: string }
+        Returns: undefined
+      }
       archive_expired_sezoane: { Args: never; Returns: number }
       audit_digest_dispatch_weekly: { Args: never; Returns: number }
       audit_log_record: {
@@ -4837,6 +5111,20 @@ export type Database = {
           client_id: string
         }[]
       }
+      rezerva_loc_open: {
+        Args: {
+          p_client: string
+          p_curs?: string
+          p_data?: string
+          p_data_incasare?: string
+          p_instructor?: string
+          p_locatie: string
+          p_metoda: Database["public"]["Enums"]["metoda_plata"]
+          p_sesiune?: string
+          p_suma: number
+        }
+        Returns: string
+      }
       send_anunt_client: {
         Args: { p_continut: string; p_curs_id?: string; p_titlu: string }
         Returns: Json
@@ -4933,6 +5221,7 @@ export type Database = {
         | "De revenit"
         | "Convertit"
         | "Nu doreste"
+      status_rezervare: "rezervat" | "platit" | "anulat"
       status_sms: "De trimis" | "In curs de trimitere" | "Trimis" | "Esuat"
       sub_status_lead: "de_revenit" | "nu_raspunde"
       sursa_prospect:
@@ -5171,6 +5460,7 @@ export const Constants = {
         "Convertit",
         "Nu doreste",
       ],
+      status_rezervare: ["rezervat", "platit", "anulat"],
       status_sms: ["De trimis", "In curs de trimitere", "Trimis", "Esuat"],
       sub_status_lead: ["de_revenit", "nu_raspunde"],
       sursa_prospect: [

@@ -12,7 +12,7 @@ import {
 } from '@/lib/lookups'
 import { ArchiveConfirmModal } from '@/features/shared/ArchiveConfirmModal'
 import { useAuth } from '@/hooks/useAuth'
-import { isManagerOrHigher } from '@/lib/rolesMatrix'
+import { isManagerOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { CursForm } from '../../CursForm'
 import {
   getCurs,
@@ -31,8 +31,9 @@ import { AbsentiTab } from './tabs/AbsentiTab'
 import { RestantieriTab } from './tabs/RestantieriTab'
 import { ClientiInactiviTab } from './tabs/ClientiInactiviTab'
 import { DetaliiTab } from './tabs/DetaliiTab'
+import { OpenSesiuniTab } from './tabs/OpenSesiuniTab'
 
-type TabId = 'activi' | 'absenti' | 'restantieri' | 'inactivi' | 'detalii'
+type TabId = 'activi' | 'absenti' | 'restantieri' | 'inactivi' | 'open' | 'detalii'
 
 export function CursProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -203,6 +204,9 @@ export function CursProfilePage() {
               { id: 'absenti',     label: 'Absenți' },
               { id: 'restantieri', label: 'Restanțieri' },
               { id: 'inactivi',    label: 'Clienți inactivi' },
+              ...(curs.facultativ
+                ? [{ id: 'open', label: 'Sesiuni OPEN' }]
+                : []),
               { id: 'detalii',     label: 'Detalii curs' },
             ]}
             active={tab}
@@ -249,6 +253,10 @@ export function CursProfilePage() {
               rows={inactiviQuery.data ?? []}
               onRowClick={(cid) => navigate(`/clienti/${cid}`)}
             />
+          )}
+
+          {tab === 'open' && curs.facultativ && (
+            <OpenSesiuniTab cursId={curs.id} canManage={!isTeacher(role)} />
           )}
 
           {tab === 'detalii' && (

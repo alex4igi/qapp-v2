@@ -55,6 +55,29 @@ async function fetchActiveEnrollmentsThisMonth(
   return (data ?? []) as unknown as ActiveEnrollmentRow[]
 }
 
+// Ultima dată „Prezent" per client la un curs. Filtrăm prin JOIN pe `enrollments.cursul`
+// (nu `.in(enrollmentIds)`): cursurile facultative au sute de înrolări „Per ședință"
+// (data_final null = active la infinit) → un `.in()` cu sute de ID-uri sparge URL-ul.
+// `prezente.client` ne dă direct clientul; ordonăm desc și păstrăm prima apariție.
+async function fetchUltimaPrezentaByClient(
+  cursId: string,
+): Promise<Map<string, string>> {
+  const { data, error } = await supabase
+    .from('prezente')
+    .select('client, data, enr:enrollments!inner(cursul)')
+    .eq('enr.cursul', cursId)
+    .eq('status', 'Prezent')
+    .order('data', { ascending: false })
+  if (error) throw error
+  const lastByClient = new Map<string, string>()
+  for (const p of (data ?? []) as Array<{ client: string | null; data: string | null }>) {
+    if (p.client && p.data && !lastByClient.has(p.client)) {
+      lastByClient.set(p.client, p.data)
+    }
+  }
+  return lastByClient
+}
+
 // ============================================================
 // Ocupare
 // ============================================================
@@ -68,20 +91,18 @@ export type CursOcupare = {
 }
 
 export async function getCursOcupare(cursId: string): Promise<CursOcupare> {
-  const [enrRows, cursRow] = await Promise.all([
-    fetchActiveEnrollmentsThisMonth(cursId),
-    supabase
-      .from('cursuri')
-      .select('capacitate_maxima, facultativ')
-      .eq('id', cursId)
-      .single(),
-  ])
-  if (cursRow.error) throw cursRow.error
-  const capacitate = cursRow.data.capacitate_maxima
-  const facultativ = cursRow.data.facultativ ?? false
+  const { data: curs, error: cErr } = await supabase
+    .from('cursuri')
+    .select('capacitate_maxima, facultativ')
+    .eq('id', cursId)
+    .single()
+  if (cErr) throw cErr
+  const capacitate = curs.capacitate_maxima
+  const facultativ = curs.facultativ ?? false
 
   // Recurent: roster distinct activ în luna curentă (oamenii din sală).
   if (!facultativ) {
+    const enrRows = await fetchActiveEnrollmentsThisMonth(cursId)
     const unici = new Set<string>()
     for (const e of enrRows) if (e.client) unici.add(e.client.id)
     return { activi: unici.size, capacitate, facultativ, media: null }
@@ -89,15 +110,13 @@ export async function getCursOcupare(cursId: string): Promise<CursOcupare> {
 
   // Facultativ: capacitate_maxima e o limită PER ȘEDINȚĂ. Ocuparea = vârful ședinței
   // (cei mai mulți prezenți distincți într-o ședință din luna curentă), nu suma unicilor.
-  if (enrRows.length === 0) {
-    return { activi: 0, capacitate, facultativ, media: null }
-  }
+  // Filtrăm prin JOIN pe curs — un `.in(enrollmentIds)` ar exploda URL-ul: cursurile
+  // facultative au sute de înrolări „Per ședință" (data_final null = active la infinit).
   const { start, end } = monthBounds(todayIso())
-  const enrIds = enrRows.map((e) => e.id)
   const { data: prez, error: pErr } = await supabase
     .from('prezente')
-    .select('client, data')
-    .in('enrollment', enrIds)
+    .select('client, data, enr:enrollments!inner(cursul)')
+    .eq('enr.cursul', cursId)
     .eq('status', 'Prezent')
     .gte('data', start)
     .lte('data', end)
@@ -143,29 +162,14 @@ export async function getCursClientiActivi(
 ): Promise<CursClientActiv[]> {
   const enrRows = await fetchActiveEnrollmentsThisMonth(cursId)
   if (enrRows.length === 0) return []
-  const enrIds = enrRows.map((e) => e.id)
 
-  const { data: prez, error: pErr } = await supabase
-    .from('prezente')
-    .select('enrollment, data')
-    .in('enrollment', enrIds)
-    .eq('status', 'Prezent')
-    .order('data', { ascending: false })
-  if (pErr) throw pErr
-
-  // Mapăm enrollmentId → ultima dată cu Prezent
-  const lastByEnr = new Map<string, string>()
-  for (const p of prez ?? []) {
-    if (p.enrollment && p.data && !lastByEnr.has(p.enrollment)) {
-      lastByEnr.set(p.enrollment, p.data)
-    }
-  }
+  const lastByClient = await fetchUltimaPrezentaByClient(cursId)
 
   // Deduplicăm pe client: păstrăm ultima prezență max + max(suma) între enrolări
   const byClient = new Map<string, CursClientActiv>()
   for (const e of enrRows) {
     if (!e.client) continue
-    const last = lastByEnr.get(e.id) ?? null
+    const last = lastByClient.get(e.client.id) ?? null
     const existing = byClient.get(e.client.id)
     if (!existing) {
       byClient.set(e.client.id, {
@@ -246,21 +250,8 @@ export async function getCursClientiInactivi(
   const activeClientIds = new Set<string>()
   for (const e of activeRows) if (e.client) activeClientIds.add(e.client.id)
 
-  // 3) ultima prezență per enrollment
-  const enrIds = allEnrRows.map((e) => e.id)
-  const { data: prez, error: pErr } = await supabase
-    .from('prezente')
-    .select('enrollment, data')
-    .in('enrollment', enrIds)
-    .eq('status', 'Prezent')
-    .order('data', { ascending: false })
-  if (pErr) throw pErr
-  const lastByEnr = new Map<string, string>()
-  for (const p of prez ?? []) {
-    if (p.enrollment && p.data && !lastByEnr.has(p.enrollment)) {
-      lastByEnr.set(p.enrollment, p.data)
-    }
-  }
+  // 3) ultima prezență per client (join pe curs, nu `.in(enrollmentIds)`)
+  const lastByClient = await fetchUltimaPrezentaByClient(cursId)
 
   // 4) păstrăm doar clienții cu cel puțin o prezență istorică (au fost cu adevărat la curs)
   //    și care NU mai sunt activi acum
@@ -268,7 +259,7 @@ export async function getCursClientiInactivi(
   for (const e of allEnrRows) {
     if (!e.client) continue
     if (activeClientIds.has(e.client.id)) continue
-    const last = lastByEnr.get(e.id)
+    const last = lastByClient.get(e.client.id)
     if (!last) continue
     const existing = byClient.get(e.client.id)
     if (!existing || last > (existing.ultimaPrezenta ?? '')) {
@@ -353,28 +344,15 @@ export async function getCursFaraPrezenteRecente(params: {
   const cutoff = isoDaysAgo(days)
   const enrRows = await fetchActiveEnrollmentsThisMonth(params.cursId)
   if (enrRows.length === 0) return []
-  const enrIds = enrRows.map((e) => e.id)
 
-  // Toate prezențele „Prezent" istorice → ne trebuie ultima per enrollment
-  const { data: prez, error: pErr } = await supabase
-    .from('prezente')
-    .select('enrollment, data')
-    .in('enrollment', enrIds)
-    .eq('status', 'Prezent')
-    .order('data', { ascending: false })
-  if (pErr) throw pErr
-  const lastByEnr = new Map<string, string>()
-  for (const p of prez ?? []) {
-    if (p.enrollment && p.data && !lastByEnr.has(p.enrollment)) {
-      lastByEnr.set(p.enrollment, p.data)
-    }
-  }
+  // Ultima prezență per client (join pe curs, nu `.in(enrollmentIds)`)
+  const ultimaByClient = await fetchUltimaPrezentaByClient(params.cursId)
 
   // Per client: ia max(ultima prezență) între enrolările lui
   const lastByClient = new Map<string, { nume: string; prenume: string | null; last: string | null }>()
   for (const e of enrRows) {
     if (!e.client) continue
-    const last = lastByEnr.get(e.id) ?? null
+    const last = ultimaByClient.get(e.client.id) ?? null
     const existing = lastByClient.get(e.client.id)
     if (!existing) {
       lastByClient.set(e.client.id, {

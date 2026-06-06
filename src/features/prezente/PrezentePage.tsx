@@ -70,9 +70,9 @@ export function PrezentePage() {
   })
 
   const roster = useQuery({
-    queryKey: ['prezente', 'roster', cursId],
-    queryFn: () => getCursRoster(cursId),
-    enabled: Boolean(cursId),
+    queryKey: ['prezente', 'roster', cursId, data],
+    queryFn: () => getCursRoster(cursId, data),
+    enabled: Boolean(cursId) && Boolean(data),
   })
 
   const enrollmentIds = useMemo(

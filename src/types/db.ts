@@ -43,6 +43,8 @@ export type SituatieSms = Tables<'situatie_sms_uri'>
 export type ParametruAplicatie = Tables<'parametri_aplicatie'>
 export type SalariuTeacher = Tables<'salarii_teacher'>
 export type ReconciliereCash = Tables<'reconcilieri_cash'>
+export type OpenSesiune = Tables<'open_sesiuni'>
+export type OpenRezervare = Tables<'open_rezervari'>
 
 // Enums folosite în UI
 export type StatusPrezenta = Enums<'status_prezenta'>
@@ -52,6 +54,7 @@ export type GrupaLead = Enums<'grupa_lead'>
 export type InteresLead = Enums<'interes_lead'>
 export type AppFeedbackTip = Enums<'app_feedback_tip'>
 export type AppFeedbackStatus = Enums<'app_feedback_status'>
+export type StatusRezervare = Enums<'status_rezervare'>
 
 // Row-uri view-uri folosite în UI
 export type VPlatiInrolari = Views<'plati_inrolari'>

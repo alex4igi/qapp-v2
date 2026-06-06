@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui'
 import { SimpleIncasareForm } from '../../SimpleIncasareForm'
 import { AbonamentTab } from './AbonamentTab'
+import { OpenClassTab } from './OpenClassTab'
 import { TipSelector } from './TipSelector'
 import type { TipPlata } from './helpers'
 
@@ -35,6 +36,8 @@ export function PlataNouaModal({
           onAddInrolare={onAddInrolare}
           defaultClientId={defaultClientId}
         />
+      ) : tip === 'Open' ? (
+        <OpenClassTab onClose={onClose} defaultClientId={defaultClientId} />
       ) : (
         <SimpleIncasareForm
           key={tip}
