@@ -4,13 +4,22 @@ import {
   PageHeader,
   Button,
   TextInput,
+  Select,
+  Field,
   DataTable,
   Spinner,
   type Column,
 } from '@/components/ui'
 import type { Eveniment } from '@/types/db'
 import { EvenimentForm } from './EvenimentForm'
-import { listEvenimente, PAGE_SIZE } from './api'
+import { listEvenimente, listEvenimenteAni, PAGE_SIZE } from './api'
+
+type Temporal = 'all' | 'viitoare' | 'trecute'
+const TEMPORAL_TABS: { key: Temporal; label: string }[] = [
+  { key: 'all', label: 'Toate' },
+  { key: 'viitoare', label: 'Viitoare' },
+  { key: 'trecute', label: 'Trecute' },
+]
 
 const columns: Column<Eveniment>[] = [
   {
@@ -26,8 +35,12 @@ export function EvenimenteListPage() {
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
+  const [an, setAn] = useState('')
+  const [temporal, setTemporal] = useState<Temporal>('all')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Eveniment | null>(null)
+
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), [])
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -37,9 +50,25 @@ export function EvenimenteListPage() {
     return () => clearTimeout(t)
   }, [searchInput])
 
+  const aniQ = useQuery({
+    queryKey: ['evenimente', 'ani'],
+    queryFn: listEvenimenteAni,
+  })
+  const aniOptions = useMemo(
+    () => (aniQ.data ?? []).map((y) => ({ value: String(y), label: String(y) })),
+    [aniQ.data],
+  )
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['evenimente', { search, page }],
-    queryFn: () => listEvenimente({ search, page }),
+    queryKey: ['evenimente', { search, page, an, temporal }],
+    queryFn: () =>
+      listEvenimente({
+        search,
+        page,
+        an: an ? Number(an) : null,
+        temporal,
+        today,
+      }),
     placeholderData: keepPreviousData,
   })
 
@@ -58,12 +87,45 @@ export function EvenimenteListPage() {
         }
       />
 
-      <div className="mb-4 max-w-sm">
-        <TextInput
-          placeholder="Caută după nume sau locație…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="w-72">
+          <Field label="Caută" htmlFor="ev-search">
+            <TextInput
+              id="ev-search"
+              placeholder="Caută după nume sau locație…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </Field>
+        </div>
+        <div className="w-40">
+          <Field label="An" htmlFor="ev-an">
+            <Select
+              id="ev-an"
+              placeholder="Toți anii"
+              options={aniOptions}
+              value={an}
+              onChange={(e) => {
+                setAn(e.target.value)
+                setPage(0)
+              }}
+            />
+          </Field>
+        </div>
+        <div className="flex gap-1">
+          {TEMPORAL_TABS.map((t) => (
+            <Button
+              key={t.key}
+              variant={temporal === t.key ? 'primary' : 'secondary'}
+              onClick={() => {
+                setTemporal(t.key)
+                setPage(0)
+              }}
+            >
+              {t.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (

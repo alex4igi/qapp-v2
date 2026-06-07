@@ -37,6 +37,7 @@ export type TeacheriListParams = {
   search: string
   page: number
   locatieId?: string | null
+  sezonId?: string | null
 }
 
 export type TeacheriListResult = {
@@ -44,18 +45,47 @@ export type TeacheriListResult = {
   total: number
 }
 
-// Returnează teacherii care au cel puțin un curs (via cursuri_teacheri M:N)
-// la o sală din locația dată. Folosit pentru filtrul de locație.
-async function teacherIdsForLocatie(locatieId: string): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('cursuri_teacheri')
-    .select('teacher_id, cursuri!inner(sala, sali!inner(locatie))')
-    .eq('cursuri.sali.locatie', locatieId)
-  if (error) throw error
+// Id-urile teacherilor care predau cursuri ce satisfac filtrele de locație și/sau sezon.
+// Teacherii n-au legătură directă cu locația/sezonul — o moștenesc prin cursuri:
+//   curs.sezon (sezon) și curs.sala → sali.locatie (locație).
+// Două surse, reunite: (1) titularul legacy `cursuri.teacher` — mereu populat;
+// (2) co-trainerii din `cursuri_teacheri` (M:N). Sursa M:N e backfilled o singură dată
+// la migrare, deci cursurile clonate ulterior pentru un sezon nou au doar titularul legacy —
+// de aceea NU ne bazăm exclusiv pe M:N. Ambele filtre se aplică în aceeași interogare (AND).
+async function teacherIdsForFilters(
+  locatieId?: string | null,
+  sezonId?: string | null,
+): Promise<string[]> {
   const ids = new Set<string>()
-  for (const r of (data ?? []) as Array<{ teacher_id: string }>) {
-    ids.add(r.teacher_id)
+
+  // Sursa 1: titular legacy (cursuri.teacher).
+  {
+    const sel: string = locatieId ? 'teacher, sali!inner(locatie)' : 'teacher'
+    let q = supabase.from('cursuri').select(sel).not('teacher', 'is', null)
+    if (sezonId) q = q.eq('sezon', sezonId)
+    if (locatieId) q = q.eq('sali.locatie', locatieId)
+    const { data, error } = await q
+    if (error) throw error
+    for (const r of (data ?? []) as unknown as Array<{ teacher: string | null }>) {
+      if (r.teacher) ids.add(r.teacher)
+    }
   }
+
+  // Sursa 2: co-traineri (cursuri_teacheri M:N).
+  {
+    const sel: string = locatieId
+      ? 'teacher_id, cursuri!inner(sezon, sali!inner(locatie))'
+      : 'teacher_id, cursuri!inner(sezon)'
+    let q = supabase.from('cursuri_teacheri').select(sel)
+    if (sezonId) q = q.eq('cursuri.sezon', sezonId)
+    if (locatieId) q = q.eq('cursuri.sali.locatie', locatieId)
+    const { data, error } = await q
+    if (error) throw error
+    for (const r of (data ?? []) as unknown as Array<{ teacher_id: string }>) {
+      ids.add(r.teacher_id)
+    }
+  }
+
   return Array.from(ids)
 }
 
@@ -63,6 +93,7 @@ export async function listTeacheri({
   search,
   page,
   locatieId,
+  sezonId,
 }: TeacheriListParams): Promise<TeacheriListResult> {
   const from = page * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
@@ -73,8 +104,8 @@ export async function listTeacheri({
     .order('nume', { ascending: true })
     .range(from, to)
 
-  if (locatieId) {
-    const ids = await teacherIdsForLocatie(locatieId)
+  if (locatieId || sezonId) {
+    const ids = await teacherIdsForFilters(locatieId, sezonId)
     if (ids.length === 0) {
       return { rows: [], total: 0 }
     }

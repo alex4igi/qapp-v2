@@ -8,6 +8,7 @@ export type CursuriListParams = {
   search: string
   page: number
   locatieId?: string | null
+  sezonId?: string | null
 }
 
 export type CursuriListResult = {
@@ -19,6 +20,7 @@ export async function listCursuri({
   search,
   page,
   locatieId,
+  sezonId,
   cursIds,
 }: CursuriListParams & { cursIds?: string[] | null }): Promise<CursuriListResult> {
   const from = page * PAGE_SIZE
@@ -34,6 +36,9 @@ export async function listCursuri({
   query = applyWordSearch(query, search, ['numele_cursului'])
   if (locatieId) {
     query = query.eq('id_locatie', locatieId)
+  }
+  if (sezonId) {
+    query = query.eq('sezon', sezonId)
   }
   if (cursIds) {
     if (cursIds.length === 0) return { rows: [], total: 0 }

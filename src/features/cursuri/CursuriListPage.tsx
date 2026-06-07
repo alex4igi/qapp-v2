@@ -6,11 +6,16 @@ import {
   Button,
   TextInput,
   Field,
+  Select,
   DataTable,
   Spinner,
   type Column,
 } from '@/components/ui'
-import { cursuriOptionsForCurrentTeacher } from '@/lib/lookups'
+import {
+  cursuriOptionsForCurrentTeacher,
+  sezoaneOptions,
+  sezonActivId,
+} from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { isTeacher, isManagerOrHigher } from '@/lib/rolesMatrix'
@@ -56,6 +61,8 @@ export function CursuriListPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
+  const [sezonFilter, setSezonFilter] = useState('')
+  const [sezonInit, setSezonInit] = useState(false)
 
   // Pentru teacher: limităm la cursurile asociate (via cursuri_teacheri M:N)
   const teacherCursuriQ = useQuery({
@@ -66,6 +73,23 @@ export function CursuriListPage() {
   const teacherCursIds = teacherMode
     ? (teacherCursuriQ.data ?? []).map((o) => o.value)
     : null
+
+  const sezoaneQ = useQuery({
+    queryKey: ['lookup', 'sezoane'],
+    queryFn: sezoaneOptions,
+  })
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
+  // Default = sezonul activ (decongestionează); userul poate alege „Toate sezoanele".
+  useEffect(() => {
+    if (!sezonInit && sezonActivQ.isSuccess) {
+      setSezonFilter(sezonActivQ.data ?? '')
+      setSezonInit(true)
+    }
+  }, [sezonInit, sezonActivQ.isSuccess, sezonActivQ.data])
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -80,16 +104,17 @@ export function CursuriListPage() {
   }, [locatieFilter])
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['cursuri', { search, page, locatieFilter, teacherCursIds }],
+    queryKey: ['cursuri', { search, page, locatieFilter, sezonFilter, teacherCursIds }],
     queryFn: () =>
       listCursuri({
         search,
         page,
         locatieId: locatieFilter || null,
+        sezonId: sezonFilter || null,
         cursIds: teacherCursIds,
       }),
     placeholderData: keepPreviousData,
-    enabled: !teacherMode || teacherCursuriQ.isSuccess,
+    enabled: (!teacherMode || teacherCursuriQ.isSuccess) && sezonInit,
   })
 
   const totalPages = useMemo(
@@ -126,14 +151,31 @@ export function CursuriListPage() {
         }
       />
 
-      <div className="mb-4 max-w-md">
-        <Field label="Caută">
-          <TextInput
-            placeholder="Nume curs…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-        </Field>
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="w-72">
+          <Field label="Caută" htmlFor="curs-search">
+            <TextInput
+              id="curs-search"
+              placeholder="Nume curs…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </Field>
+        </div>
+        <div className="w-56">
+          <Field label="Sezon" htmlFor="curs-sezon">
+            <Select
+              id="curs-sezon"
+              placeholder="Toate sezoanele"
+              options={sezoaneQ.data ?? []}
+              value={sezonFilter}
+              onChange={(e) => {
+                setSezonFilter(e.target.value)
+                setPage(0)
+              }}
+            />
+          </Field>
+        </div>
       </div>
 
       {isLoading ? (

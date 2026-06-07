@@ -12,7 +12,7 @@ import {
   type Column,
 } from '@/components/ui'
 import type { Teacher } from '@/types/db'
-import { locatiiOptions } from '@/lib/lookups'
+import { locatiiOptions, sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { TeacherForm } from './TeacherForm'
 import { listTeacheri, PAGE_SIZE } from './api'
@@ -39,6 +39,8 @@ export function TeacheriListPage() {
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [locatieId, setLocatieId] = useState<string>(globalLocatieId ?? '')
+  const [sezonId, setSezonId] = useState('')
+  const [sezonInit, setSezonInit] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -59,11 +61,34 @@ export function TeacheriListPage() {
     queryFn: locatiiOptions,
   })
 
+  const sezoaneQ = useQuery({
+    queryKey: ['lookup', 'sezoane'],
+    queryFn: sezoaneOptions,
+  })
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
+  // Default = sezonul activ (decongestionează); userul poate alege „Toate sezoanele".
+  useEffect(() => {
+    if (!sezonInit && sezonActivQ.isSuccess) {
+      setSezonId(sezonActivQ.data ?? '')
+      setSezonInit(true)
+    }
+  }, [sezonInit, sezonActivQ.isSuccess, sezonActivQ.data])
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['teacheri', { search, page, locatieId }],
+    queryKey: ['teacheri', { search, page, locatieId, sezonId }],
     queryFn: () =>
-      listTeacheri({ search, page, locatieId: locatieId || null }),
+      listTeacheri({
+        search,
+        page,
+        locatieId: locatieId || null,
+        sezonId: sezonId || null,
+      }),
     placeholderData: keepPreviousData,
+    enabled: sezonInit,
   })
 
   const totalPages = useMemo(
@@ -101,6 +126,20 @@ export function TeacheriListPage() {
               value={locatieId}
               onChange={(e) => {
                 setLocatieId(e.target.value)
+                setPage(0)
+              }}
+            />
+          </Field>
+        </div>
+        <div className="w-56">
+          <Field label="Sezon" htmlFor="teach-sezon">
+            <Select
+              id="teach-sezon"
+              placeholder="Toate sezoanele"
+              options={sezoaneQ.data ?? []}
+              value={sezonId}
+              onChange={(e) => {
+                setSezonId(e.target.value)
                 setPage(0)
               }}
             />
