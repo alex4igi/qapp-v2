@@ -68,6 +68,20 @@ export function TarifFields({ form, set }: Props) {
         </Field>
       </div>
 
+      {form.tip !== 'facultativ' && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Preț ședință (reziliere)" htmlFor="pret_sedinta_reziliere">
+            <TextInput
+              id="pret_sedinta_reziliere"
+              type="number"
+              min={0}
+              value={form.pret_sedinta_reziliere}
+              onChange={(e) => set('pret_sedinta_reziliere', e.target.value)}
+            />
+          </Field>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 pt-1">
         <Checkbox
           id="one_time"

@@ -2,7 +2,12 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Button, Spinner, Tabs } from '@/components/ui'
-import { listSezoane, rezilizaInrolari, endOfMonth } from '@/features/plati/api'
+import {
+  listSezoane,
+  rezilizaInrolari,
+  recalcUltimaLunaReziliere,
+  endOfMonth,
+} from '@/features/plati/api'
 import { reintegrateClientAsLead } from '@/features/leads/api'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
@@ -34,6 +39,7 @@ export function ClientProfilePage() {
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [confirmCursId, setConfirmCursId] = useState<string | null>(null)
   const [reintegrateAsLead, setReintegrateAsLead] = useState(false)
+  const [recalcUltimaLuna, setRecalcUltimaLuna] = useState(false)
   const [motivReziliere, setMotivReziliere] = useState('')
   const { role } = useAuth()
   const canManagerActions = isManagerOrHigher(role)
@@ -144,6 +150,7 @@ export function ClientProfilePage() {
     mutationFn: async (input: {
       cursId: string
       reintegrateAsLead: boolean
+      recalcUltimaLuna: boolean
       motiv: string
     }) => {
       await rezilizaInrolari({
@@ -151,6 +158,9 @@ export function ClientProfilePage() {
         cursId: input.cursId,
         motiv: input.motiv,
       })
+      if (input.recalcUltimaLuna) {
+        await recalcUltimaLunaReziliere({ clientId: id!, cursId: input.cursId })
+      }
       if (input.reintegrateAsLead) {
         await reintegrateClientAsLead(id!)
       }
@@ -167,6 +177,7 @@ export function ClientProfilePage() {
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
       setConfirmCursId(null)
       setReintegrateAsLead(false)
+      setRecalcUltimaLuna(false)
       setMotivReziliere('')
     },
   })
@@ -174,6 +185,7 @@ export function ClientProfilePage() {
   const closeReziliereModal = () => {
     setConfirmCursId(null)
     setReintegrateAsLead(false)
+    setRecalcUltimaLuna(false)
     setMotivReziliere('')
   }
 
@@ -257,6 +269,7 @@ export function ClientProfilePage() {
               onAskRezilia={(cId) => {
                 setConfirmCursId(cId)
                 setReintegrateAsLead(false)
+                setRecalcUltimaLuna(false)
                 setMotivReziliere('')
               }}
               onAdjustPrice={
@@ -317,16 +330,21 @@ export function ClientProfilePage() {
         <ConfirmReziliereModal
           open
           cursId={confirmCursId}
+          clientId={client.id}
           reziliereCount={reziliereByCurs.get(confirmCursId) ?? 0}
           motiv={motivReziliere}
           reintegrateAsLead={reintegrateAsLead}
+          canRecalc={canManagerActions}
+          recalcChecked={recalcUltimaLuna}
           isPending={rezilia.isPending}
           onMotivChange={setMotivReziliere}
           onReintegrateChange={setReintegrateAsLead}
+          onRecalcChange={setRecalcUltimaLuna}
           onConfirm={() =>
             rezilia.mutate({
               cursId: confirmCursId,
               reintegrateAsLead,
+              recalcUltimaLuna,
               motiv: motivReziliere,
             })
           }

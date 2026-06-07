@@ -36,6 +36,7 @@ export type FormState = {
   pret_anual: string
   pret_lunar: string
   pret_sedinta: string
+  pret_sedinta_reziliere: string
   pret_lunar_promo: string
   one_time: boolean
   suspendat: boolean
@@ -63,6 +64,7 @@ export function initialState(curs?: Curs | null): FormState {
     pret_anual: numOrEmpty(curs?.pret_anual),
     pret_lunar: numOrEmpty(curs?.pret_lunar),
     pret_sedinta: numOrEmpty(curs?.pret_sedinta),
+    pret_sedinta_reziliere: numOrEmpty(curs?.pret_sedinta_reziliere),
     pret_lunar_promo: numOrEmpty(curs?.pret_lunar_promo),
     one_time: curs?.one_time ?? false,
     suspendat: curs?.suspendat ?? false,

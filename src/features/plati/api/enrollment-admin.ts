@@ -2,6 +2,8 @@
 // Disponibile pentru manager+/admin/owner. Toate auditează cu motiv obligatoriu.
 import { supabase } from '@/lib/supabase'
 import { recordAuditLog } from '@/lib/auditLog'
+import { getEnrollmentIncasari } from './incasari'
+import { endOfMonth } from './calendar'
 
 // Locația via curs → sala → locatie (pentru filtrul de audit per locație)
 async function getLocatieFromCurs(cursId: string | null): Promise<string | null> {
@@ -28,6 +30,7 @@ export async function adjustEnrollmentPrice(params: {
   enrollmentId: string
   newSuma: number
   motiv: string
+  context?: 'ajustare' | 'reziliere'
 }): Promise<void> {
   const motiv = params.motiv.trim()
   if (!motiv) throw new Error('Motivul e obligatoriu.')
@@ -59,6 +62,126 @@ export async function adjustEnrollmentPrice(params: {
     reason: motiv,
     locatieId,
   })
+
+  // Notifică owner+admin la orice modificare efectivă de preț (manager+ → audit
+  // intern). Eșecul notificării nu trebuie să anuleze modificarea de preț.
+  if (cur.suma !== params.newSuma) {
+    const { error: nErr } = await supabase.rpc('notify_price_change', {
+      p_enrollment: params.enrollmentId,
+      p_old: cur.suma ?? 0,
+      p_new: params.newSuma,
+      p_motiv: motiv,
+      p_context: params.context ?? 'ajustare',
+    })
+    if (nErr) console.error('notify_price_change failed:', nErr.message)
+  }
+}
+
+// Previzualizare recalcul „ultima lună" la reziliere mid-lună: prețul de
+// recuperare (cursuri.pret_sedinta_reziliere) × ședințe PREZENT în luna curentă.
+// Aplicabil doar dacă există înrolare pe luna curentă și NU e deja plătită
+// (luna plătită integral rămâne la preț întreg, conform contractului).
+export type ReziliereRecalcPreview = {
+  applicable: boolean
+  reason?: string
+  enrollmentId?: string
+  sedinte?: number
+  pretSedintaReziliere?: number
+  suma?: number
+}
+
+async function loadReziliereRecalc(
+  clientId: string,
+  cursId: string,
+): Promise<ReziliereRecalcPreview> {
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+  // Înrolarea lunii curente (Per lună, activă, nereziliată) care acoperă azi
+  const { data: enr, error: eErr } = await supabase
+    .from('enrollments')
+    .select('id, suma, data_incepere, data_final')
+    .eq('client', clientId)
+    .eq('cursul', cursId)
+    .eq('tip_plata', 'Per luna')
+    .eq('reziliat', false)
+    .lte('data_incepere', todayStr)
+    .gte('data_final', todayStr)
+    .limit(1)
+  if (eErr) throw eErr
+  const row = enr?.[0]
+  if (!row) {
+    return { applicable: false, reason: 'Nu există înrolare pe luna curentă.' }
+  }
+
+  // Deja plătită? (orice încasare legată de înrolare) → nu recalculăm
+  const incasari = await getEnrollmentIncasari(row.id)
+  if (incasari.length > 0) {
+    return {
+      applicable: false,
+      reason: 'Luna curentă e deja plătită — rămâne la preț întreg (contract).',
+    }
+  }
+
+  // Prețul de recuperare al cursului
+  const { data: curs, error: cErr } = await supabase
+    .from('cursuri')
+    .select('pret_sedinta_reziliere')
+    .eq('id', cursId)
+    .single()
+  if (cErr) throw cErr
+  const pret = curs?.pret_sedinta_reziliere
+  if (pret == null || pret <= 0) {
+    return {
+      applicable: false,
+      reason: 'Cursul nu are setat un preț ședință (reziliere).',
+    }
+  }
+
+  // Ședințe PREZENT în luna curentă pentru această înrolare
+  const monthStart = `${todayStr.slice(0, 7)}-01`
+  const monthEnd = endOfMonth(monthStart)
+  const { count, error: pErr } = await supabase
+    .from('prezente')
+    .select('id', { count: 'exact', head: true })
+    .eq('enrollment', row.id)
+    .eq('status', 'Prezent')
+    .gte('data', monthStart)
+    .lte('data', monthEnd)
+  if (pErr) throw pErr
+  const sedinte = count ?? 0
+
+  return {
+    applicable: true,
+    enrollmentId: row.id,
+    sedinte,
+    pretSedintaReziliere: pret,
+    suma: sedinte * pret,
+  }
+}
+
+export async function getReziliereRecalcPreview(params: {
+  clientId: string
+  cursId: string
+}): Promise<ReziliereRecalcPreview> {
+  return loadReziliereRecalc(params.clientId, params.cursId)
+}
+
+// Recalculează suma ultimei luni (luna curentă) la prețul de recuperare.
+// Reutilizează adjustEnrollmentPrice → audit + notificare admini automat.
+export async function recalcUltimaLunaReziliere(params: {
+  clientId: string
+  cursId: string
+}): Promise<ReziliereRecalcPreview> {
+  const preview = await loadReziliereRecalc(params.clientId, params.cursId)
+  if (!preview.applicable || !preview.enrollmentId) return preview
+  await adjustEnrollmentPrice({
+    enrollmentId: preview.enrollmentId,
+    newSuma: preview.suma!,
+    motiv: `Recuperare reziliere: ${preview.sedinte} ședințe × ${preview.pretSedintaReziliere} RON`,
+    context: 'reziliere',
+  })
+  return preview
 }
 
 // Mută o înrolare la alt curs (păstrează plata curentă, fără prorata).

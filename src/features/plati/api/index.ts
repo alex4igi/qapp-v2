@@ -40,7 +40,10 @@ export {
 export {
   adjustEnrollmentPrice,
   moveEnrollmentToCurs,
+  getReziliereRecalcPreview,
+  recalcUltimaLunaReziliere,
 } from './enrollment-admin'
+export type { ReziliereRecalcPreview } from './enrollment-admin'
 
 export type {
   OpenSesiuneOcupare,

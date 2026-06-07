@@ -120,6 +120,8 @@ export function CursForm({ open, curs, onClose }: Props) {
         pret_anual: toNum(form.pret_anual),
         pret_lunar: toNum(form.pret_lunar),
         pret_sedinta: toNum(form.pret_sedinta),
+        pret_sedinta_reziliere:
+          form.tip === 'facultativ' ? null : toNum(form.pret_sedinta_reziliere),
         pret_lunar_promo:
           form.tip === 'facultativ' ? null : toNum(form.pret_lunar_promo),
         facultativ: form.tip === 'facultativ',
@@ -158,6 +160,31 @@ export function CursForm({ open, curs, onClose }: Props) {
     if (!form.numele.trim()) {
       setError('Numele cursului este obligatoriu.')
       return
+    }
+    // Toate sumele sunt obligatorii (>0), mai puțin prețul anual la facultativ.
+    const pos = (s: string) => {
+      const n = toNum(s)
+      return n != null && n > 0
+    }
+    if (!pos(form.pret_lunar)) {
+      setError('Prețul lunar este obligatoriu și trebuie să fie mai mare ca 0.')
+      return
+    }
+    if (!pos(form.pret_sedinta)) {
+      setError('Prețul pe ședință este obligatoriu și trebuie să fie mai mare ca 0.')
+      return
+    }
+    if (form.tip !== 'facultativ') {
+      if (!pos(form.pret_anual)) {
+        setError('Prețul anual este obligatoriu pentru cursurile recurente.')
+        return
+      }
+      if (!pos(form.pret_sedinta_reziliere)) {
+        setError(
+          'Prețul ședință (reziliere) este obligatoriu pentru cursurile recurente.',
+        )
+        return
+      }
     }
     mutation.mutate()
   }

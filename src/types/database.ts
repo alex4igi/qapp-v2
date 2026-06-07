@@ -546,6 +546,7 @@ export type Database = {
           pret_lunar: number | null
           pret_lunar_promo: number | null
           pret_sedinta: number | null
+          pret_sedinta_reziliere: number | null
           sala: string | null
           sezon: string | null
           stil: string | null
@@ -573,6 +574,7 @@ export type Database = {
           pret_lunar?: number | null
           pret_lunar_promo?: number | null
           pret_sedinta?: number | null
+          pret_sedinta_reziliere?: number | null
           sala?: string | null
           sezon?: string | null
           stil?: string | null
@@ -600,6 +602,7 @@ export type Database = {
           pret_lunar?: number | null
           pret_lunar_promo?: number | null
           pret_sedinta?: number | null
+          pret_sedinta_reziliere?: number | null
           sala?: string | null
           sezon?: string | null
           stil?: string | null
@@ -5069,6 +5072,16 @@ export type Database = {
       my_teacher_id: { Args: never; Returns: string }
       notifications_mark_all_read: { Args: never; Returns: number }
       notifications_unread_count: { Args: never; Returns: number }
+      notify_price_change: {
+        Args: {
+          p_context?: string
+          p_enrollment: string
+          p_motiv: string
+          p_new: number
+          p_old: number
+        }
+        Returns: number
+      }
       pontaj_auto_close_open_sessions: { Args: never; Returns: number }
       pontaj_close_session: {
         Args: { p_source?: string }
