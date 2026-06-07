@@ -2,6 +2,7 @@
 // inactiv/programat) pentru cursanți + leads programați la acest curs azi.
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
+import { endOfMonth } from '@/features/plati/api/calendar'
 import { isoDaysAgo } from './helpers'
 
 export type RosterStatus = 'prezent' | 'absent' | 'inactiv' | 'programat'
@@ -66,13 +67,26 @@ export async function getGrupaDashboard(params: {
     teacher: { nume: string; prenume: string | null } | null
   }
 
+  // Apartenența la grupă = înrolare NEreziliată care ACOPERĂ luna afișată.
+  // Înlocuiește vechiul filtru `activ=true` simplu, care avea două defecte:
+  //  1. rândurile lunilor trecute rămân `activ=true` pe veci → cursanții plecați
+  //     (sau mutați la altă grupă) rămâneau fantome permanente în roster;
+  //  2. arăta și rânduri `reziliat=true` dacă aveau `activ=true`.
+  // NU folosim `activ` ca semnal: la datele migrate din v1 e nesigur (rândul activ
+  // poate fi o lună veche reziliată, iar lunile reale curente sunt `activ=false`).
+  // Semnalele de încredere sunt `reziliat=false` + acoperirea lunii (data_final =
+  // sfârșitul lunii pentru recurent lunar → auto-curățitor).
+  const monthStart = params.date.slice(0, 7) + '-01'
+  const monthEnd = endOfMonth(monthStart)
   const { data: enrData, error: enrErr } = await supabase
     .from('enrollments')
     .select(
       'id, suma, client:clienti(id, nume, prenume, foto, data_nasterii)',
     )
     .eq('cursul', params.cursId)
-    .eq('activ', true)
+    .eq('reziliat', false)
+    .lte('data_incepere', monthEnd)
+    .or(`data_final.is.null,data_final.gte.${monthStart}`)
   if (enrErr) throw enrErr
   const enrollments = (enrData ?? []) as unknown as Array<{
     id: string

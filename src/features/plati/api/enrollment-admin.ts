@@ -196,7 +196,7 @@ export async function moveEnrollmentToCurs(params: {
 
   const { data: cur, error: gErr } = await supabase
     .from('enrollments')
-    .select('id, cursul, client')
+    .select('id, cursul, client, data_incepere')
     .eq('id', params.enrollmentId)
     .single()
   if (gErr) throw gErr
@@ -211,6 +211,27 @@ export async function moveEnrollmentToCurs(params: {
     .update({ cursul: params.newCursId, updated: new Date().toISOString() })
     .eq('id', params.enrollmentId)
   if (uErr) throw uErr
+
+  // Închide lunile viitoare rămase pe cursul VECHI (cele de după luna mutată),
+  // altfel rămân `activ=true` și cursantul apare fantomă în rosterul grupei
+  // vechi. Mutarea afectează un singur rând; restul seriei trebuie închis.
+  if (cur.data_incepere && cur.client && cur.cursul) {
+    const cutoff = endOfMonth(`${cur.data_incepere.slice(0, 7)}-01`)
+    const { error: closeErr } = await supabase
+      .from('enrollments')
+      .update({
+        reziliat: true,
+        activ: false,
+        data_reziliere: new Date().toISOString(),
+        motiv_reziliere: `Mutat la alt curs: ${motiv}`,
+      })
+      .eq('client', cur.client)
+      .eq('cursul', cur.cursul)
+      .neq('id', params.enrollmentId)
+      .eq('reziliat', false)
+      .gt('data_incepere', cutoff)
+    if (closeErr) throw closeErr
+  }
 
   await recordAuditLog({
     action: 'enrollment_moved',
