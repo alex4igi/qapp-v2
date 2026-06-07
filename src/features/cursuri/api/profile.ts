@@ -27,8 +27,9 @@ function monthBounds(iso: string): { start: string; end: string } {
 }
 
 // Înrolările active la cursul X care acoperă luna curentă, cu clientul atașat.
-// „Activă în luna curentă" = activ AND nereziliată AND (data_incepere <= sfârșit lună)
-// AND (data_final IS NULL OR data_final >= început lună).
+// „Activă în luna curentă" = NEreziliată AND (data_incepere <= sfârșit lună)
+// AND (data_final IS NULL OR data_final >= început lună). NU folosim `activ` —
+// la datele migrate din v1 e nesigur (vezi dashboard/api/grupa.ts).
 type ActiveEnrollmentRow = {
   id: string
   suma: number | null
@@ -47,7 +48,6 @@ async function fetchActiveEnrollmentsThisMonth(
       'id, suma, data_incepere, data_final, client:clienti(id, nume, prenume)',
     )
     .eq('cursul', cursId)
-    .eq('activ', true)
     .eq('reziliat', false)
     .lte('data_incepere', end)
     .or(`data_final.is.null,data_final.gte.${start}`)

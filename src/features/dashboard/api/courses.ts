@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { endOfMonth } from '@/features/plati/api/calendar'
 import { dayOfWeekRO } from './helpers'
 
 export type DashboardCourse = {
@@ -51,18 +52,38 @@ export async function getDashboardCourses(params: {
   const cursIds = cursRows.map((c) => c.id)
   if (cursIds.length === 0) return []
 
-  // Active enrollments per course
-  const { data: enr, error: enrErr } = await supabase
-    .from('enrollments')
-    .select('cursul')
-    .in('cursul', cursIds)
-    .eq('activ', true)
-  if (enrErr) throw enrErr
-  const enrolledByCurs = new Map<string, number>()
-  for (const e of enr ?? []) {
-    if (!e.cursul) continue
-    enrolledByCurs.set(e.cursul, (enrolledByCurs.get(e.cursul) ?? 0) + 1)
+  // Înrolați per curs = înrolare NEreziliată care ACOPERĂ luna afișată. NU
+  // folosim `activ` (nesigur la datele v1). Aceeași definiție ca rosterul din
+  // grupa.ts → countul de pe card == lungimea rosterului grupei.
+  // Paginăm: la datele v1 un client are mai multe rânduri care acoperă luna
+  // (data_final=null pe lunile vechi), deci un `.in()` peste toate cursurile zilei
+  // poate depăși limita PostgREST de 1000 → trunchiere și count subevaluat.
+  const monthStart = params.date.slice(0, 7) + '-01'
+  const monthEnd = endOfMonth(monthStart)
+  const clientsByCurs = new Map<string, Set<string>>()
+  for (let offset = 0; ; offset += 1000) {
+    const { data: enr, error: enrErr } = await supabase
+      .from('enrollments')
+      .select('cursul, client')
+      .in('cursul', cursIds)
+      .eq('reziliat', false)
+      .lte('data_incepere', monthEnd)
+      .or(`data_final.is.null,data_final.gte.${monthStart}`)
+      .range(offset, offset + 999)
+    if (enrErr) throw enrErr
+    for (const e of enr ?? []) {
+      if (!e.cursul || !e.client) continue
+      let set = clientsByCurs.get(e.cursul)
+      if (!set) {
+        set = new Set<string>()
+        clientsByCurs.set(e.cursul, set)
+      }
+      set.add(e.client)
+    }
+    if (!enr || enr.length < 1000) break
   }
+  const enrolledByCurs = new Map<string, number>()
+  for (const [c, set] of clientsByCurs) enrolledByCurs.set(c, set.size)
 
   // Prezenti azi per course (join through enrollments → cursul)
   const { data: prez, error: prezErr } = await supabase

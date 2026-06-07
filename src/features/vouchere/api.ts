@@ -116,9 +116,9 @@ export async function getClientEligibilityContext(
     .from('enrollments')
     .select('cursul, cursuri:cursul(numele)')
     .eq('client', clientId)
-    .eq('activ', true)
     .eq('reziliat', false)
     .in('tip_plata', ['Per luna', 'Per an'])
+    .lte('data_incepere', today)
     .or(`data_final.is.null,data_final.gte.${today}`)
   if (ownErr) throw ownErr
 
@@ -149,9 +149,9 @@ export async function getClientEligibilityContext(
         .from('enrollments')
         .select('client')
         .in('client', siblingIds)
-        .eq('activ', true)
         .eq('reziliat', false)
         .in('tip_plata', ['Per luna', 'Per an'])
+        .lte('data_incepere', today)
         .or(`data_final.is.null,data_final.gte.${today}`)
       if (sibEnrErr) throw sibEnrErr
 

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { matchesWords } from '@/lib/search'
+import { endOfMonth } from '@/features/plati/api/calendar'
 import type { Evaluare, InsertDto, UpdateDto } from '@/types/db'
 import type { SelectOption } from '@/components/ui'
 
@@ -130,21 +131,33 @@ export async function cursuriByTeacher(
   return (data ?? []).map((c) => ({ value: c.id, label: c.numele }))
 }
 
-// Cursanții (clienti) înrolați la un curs.
+// Cursanții (clienti) înrolați la un curs, în luna curentă. Apartenența =
+// înrolare NEreziliată care acoperă luna; NU folosim `activ` (nesigur pe datele
+// migrate din v1 — vezi dashboard/api/grupa.ts).
 export async function clientiByCurs(cursId: string): Promise<SelectOption[]> {
+  const monthStart = new Date().toISOString().slice(0, 7) + '-01'
+  const monthEnd = endOfMonth(monthStart)
   const { data, error } = await supabase
     .from('enrollments')
     .select('client(id, nume, prenume)')
     .eq('cursul', cursId)
-    .eq('activ', true)
+    .eq('reziliat', false)
+    .lte('data_incepere', monthEnd)
+    .or(`data_final.is.null,data_final.gte.${monthStart}`)
   if (error) throw error
 
   const rows = (data ?? []) as unknown as Array<{
     client: { id: string; nume: string; prenume: string | null } | null
   }>
 
+  // Dedup per client: un client poate avea mai multe rânduri care acoperă luna.
+  const seen = new Set<string>()
   return rows
-    .filter((r) => r.client)
+    .filter((r) => {
+      if (!r.client || seen.has(r.client.id)) return false
+      seen.add(r.client.id)
+      return true
+    })
     .map((r) => ({
       value: r.client!.id,
       label: `${r.client!.nume} ${r.client!.prenume ?? ''}`.trim(),

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Prezenta, StatusPrezenta } from '@/types/db'
+import { endOfMonth } from '@/features/plati/api/calendar'
 
 export type RosterRow = {
   enrollmentId: string
@@ -43,14 +44,38 @@ export async function getCursRoster(
     if (curs.facultativ) return getOpenRosterForDate(cursId, data)
   }
 
+  // Apartenența la curs (recurent) = înrolare NEreziliată care ACOPERĂ luna
+  // referinței. NU folosim `activ` (nesigur la datele migrate din v1 — vezi
+  // dashboard/api/grupa.ts): altfel rămân fantome (înrolări vechi activ=true) și
+  // lipsesc activi al căror rând curent e activ=false.
+  const refDay = data ?? new Date().toISOString().slice(0, 10)
+  const monthStart = refDay.slice(0, 7) + '-01'
+  const monthEnd = endOfMonth(monthStart)
   const { data: rows, error } = await supabase
     .from('enrollments')
-    .select('id, client(id, nume, prenume)')
+    .select('id, data_incepere, client(id, nume, prenume)')
     .eq('cursul', cursId)
-    .eq('activ', true)
+    .eq('reziliat', false)
+    .lte('data_incepere', monthEnd)
+    .or(`data_final.is.null,data_final.gte.${monthStart}`)
   if (error) throw error
+  // Dedup per client: la datele v1 un client poate avea mai multe rânduri care
+  // acoperă luna (data_final=null pe lunile vechi). Păstrăm rândul cu cea mai
+  // recentă data_incepere (înrolarea lunii curente) ca enrollment de marcare.
+  const byClient = new Map<string, { id: string; data_incepere: string | null; client: { id: string; nume: string; prenume: string | null } | null }>()
+  for (const r of (rows ?? []) as unknown as Array<{
+    id: string
+    data_incepere: string | null
+    client: { id: string; nume: string; prenume: string | null } | null
+  }>) {
+    if (!r.client) continue
+    const ex = byClient.get(r.client.id)
+    if (!ex || (r.data_incepere ?? '') > (ex.data_incepere ?? '')) {
+      byClient.set(r.client.id, r)
+    }
+  }
   return toRosterRows(
-    (rows ?? []) as unknown as Parameters<typeof toRosterRows>[0],
+    Array.from(byClient.values()) as Parameters<typeof toRosterRows>[0],
   )
 }
 
@@ -97,7 +122,6 @@ export async function getOpenRosterForDate(
     .from('enrollments')
     .select('id, client:clienti(id, nume, prenume)')
     .eq('cursul', cursId)
-    .eq('activ', true)
     .eq('reziliat', false)
     .eq('tip_plata', 'Per luna')
     .lte('data_incepere', data)
