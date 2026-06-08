@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, TextInput, Select, Button } from '@/components/ui'
 import { VacantaWarning } from '@/features/shared/VacantaWarning'
-import { locatiiOptions } from '@/lib/lookups'
+import { locatiiOptions, sezonActivId } from '@/lib/lookups'
 import type { Lead, GrupaLead } from '@/types/db'
 import {
   GRUPE,
@@ -26,10 +26,15 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
   const [cursId, setCursId] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const cursuri = useQuery({
-    queryKey: ['cursuri', 'programabile'],
-    queryFn: listCursuriProgramabile,
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
     enabled: open,
+  })
+  const cursuri = useQuery({
+    queryKey: ['cursuri', 'programabile', sezonActivQ.data ?? null],
+    queryFn: () => listCursuriProgramabile(sezonActivQ.data ?? null),
+    enabled: open && sezonActivQ.isSuccess,
   })
   const locatii = useQuery({
     queryKey: ['lookup', 'locatii'],

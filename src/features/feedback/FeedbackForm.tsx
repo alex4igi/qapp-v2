@@ -10,11 +10,8 @@ import {
   Button,
 } from '@/components/ui'
 import { tipFeedbackOptions } from '@/lib/enums'
-import {
-  clientiOptions,
-  familiiOptions,
-  cursuriOptions,
-} from '@/lib/lookups'
+import { clientiOptions, familiiOptions } from '@/lib/lookups'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import type { Feedback } from '@/types/db'
@@ -66,10 +63,7 @@ export function FeedbackForm({ open, feedback, onClose }: Props) {
     queryKey: ['lookup', 'familii'],
     queryFn: familiiOptions,
   })
-  const cursuri = useQuery({
-    queryKey: ['lookup', 'cursuri'],
-    queryFn: () => cursuriOptions(),
-  })
+  const cursuri = useCursuriOptions()
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))

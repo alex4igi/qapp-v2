@@ -13,7 +13,8 @@ import {
 import { formatRON } from '@/lib/format'
 import { downloadCsv } from '@/lib/csv'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { locatiiOptions, cursuriOptions } from '@/lib/lookups'
+import { locatiiOptions } from '@/lib/lookups'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { listRestante, PAGE_SIZE, type RestantaRow } from './api'
 
 const columns: Column<RestantaRow>[] = [
@@ -88,10 +89,7 @@ export function RestanteTab() {
     queryFn: locatiiOptions,
   })
 
-  const cursuriQ = useQuery({
-    queryKey: ['lookup', 'cursuri'],
-    queryFn: () => cursuriOptions(),
-  })
+  const cursuriQ = useCursuriOptions({ locatieId })
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['restante', { search, page, locatieId, cursId }],

@@ -14,7 +14,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { clientiOptions } from '@/lib/lookups'
+import { clientiOptions, sezonActivId } from '@/lib/lookups'
 import type { Curs, Enums } from '@/types/db'
 import { listAvailableVouchere } from '@/features/vouchere/api'
 import { getCursOcupare } from '@/features/cursuri/api/profile'
@@ -64,9 +64,15 @@ export function EnrollmentForm({
     queryFn: clientiOptions,
   })
 
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
   const cursuriQ = useQuery<Curs[]>({
-    queryKey: ['cursuri-pentru-inrolare', locatieId],
-    queryFn: () => listCursuriPentruInrolare(locatieId),
+    queryKey: ['cursuri-pentru-inrolare', locatieId, sezonActivQ.data ?? null],
+    queryFn: () => listCursuriPentruInrolare(locatieId, sezonActivQ.data ?? null),
+    enabled: sezonActivQ.isSuccess,
   })
 
   // Dacă deschidem modalul cu un curs prestabilit care nu e la locația

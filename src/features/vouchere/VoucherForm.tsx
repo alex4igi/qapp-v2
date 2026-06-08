@@ -9,7 +9,8 @@ import {
   Button,
 } from '@/components/ui'
 import { tipVoucherOptions, tipPlataOptions } from '@/lib/enums'
-import { clientiOptions, cursuriOptions } from '@/lib/lookups'
+import { clientiOptions } from '@/lib/lookups'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import type { Voucher } from '@/types/db'
 import {
   createVoucher,
@@ -66,10 +67,7 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
     queryKey: ['lookup', 'clienti'],
     queryFn: clientiOptions,
   })
-  const cursuri = useQuery({
-    queryKey: ['lookup', 'cursuri'],
-    queryFn: () => cursuriOptions(),
-  })
+  const cursuri = useCursuriOptions()
 
   const set = (key: keyof FormState) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))

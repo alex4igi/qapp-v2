@@ -9,7 +9,8 @@ import {
   Spinner,
   type Column,
 } from '@/components/ui'
-import { teacheriOptions, cursuriOptions } from '@/lib/lookups'
+import { teacheriOptions } from '@/lib/lookups'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useAuth } from '@/hooks/useAuth'
 import type { Evaluare } from '@/types/db'
 import { EvaluareForm } from './EvaluareForm'
@@ -68,11 +69,7 @@ export function EvaluariListPage() {
     enabled: !isTeacher,
   })
 
-  const cursuriAllQ = useQuery({
-    queryKey: ['lookup', 'cursuri'],
-    queryFn: () => cursuriOptions(),
-    enabled: !isTeacher && !teacherId,
-  })
+  const cursuriAllQ = useCursuriOptions({ enabled: !isTeacher && !teacherId })
 
   const cursuriForTeacherQ = useQuery({
     queryKey: ['lookup', 'cursuri-by-teacher', effectiveTeacherId],

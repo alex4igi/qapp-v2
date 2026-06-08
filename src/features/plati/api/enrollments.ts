@@ -74,16 +74,19 @@ export async function getCursForInrolare(id: string): Promise<Curs> {
   return data
 }
 
-// Toate cursurile active, opțional filtrate după locația sălii.
+// Toate cursurile active, opțional filtrate după locația sălii și sezon.
 // Tipul de înrolare se derivă din curs (facultativ + nivelul) în UI.
 export async function listCursuriPentruInrolare(
   locatieId: string | null,
+  sezonId?: string | null,
 ): Promise<Curs[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('cursuri')
     .select('*, sala_rel:sali!fk_cursuri_sala(locatie)')
     .eq('suspendat', false)
     .order('numele', { ascending: true })
+  if (sezonId) query = query.eq('sezon', sezonId)
+  const { data, error } = await query
   if (error) throw error
   const rows = data ?? []
   const filtered = locatieId

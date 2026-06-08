@@ -1,10 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Field, Select, TextInput, Spinner } from '@/components/ui'
-import { cursuriOptions, cursuriOptionsForCurrentTeacher } from '@/lib/lookups'
-import { useAuth } from '@/hooks/useAuth'
-import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { isTeacher } from '@/lib/rolesMatrix'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import type { StatusPrezenta } from '@/types/db'
 import {
   getCursRoster,
@@ -55,19 +52,10 @@ function StatusToggle({
 
 export function PrezentePage() {
   const queryClient = useQueryClient()
-  const { role } = useAuth()
-  const { locatieId: workingLocatieId } = useWorkingLocatie()
-  const teacherMode = isTeacher(role)
   const [cursId, setCursId] = useState('')
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10))
 
-  const cursuri = useQuery({
-    queryKey: ['lookup', 'cursuri', teacherMode ? 'teacher' : workingLocatieId ?? 'all'],
-    queryFn: () =>
-      teacherMode
-        ? cursuriOptionsForCurrentTeacher()
-        : cursuriOptions(workingLocatieId),
-  })
+  const cursuri = useCursuriOptions()
 
   const roster = useQuery({
     queryKey: ['prezente', 'roster', cursId, data],

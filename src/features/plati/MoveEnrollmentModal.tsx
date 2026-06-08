@@ -10,6 +10,7 @@ import {
 } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { sezonActivId } from '@/lib/lookups'
 import { listCursuriPentruInrolare, moveEnrollmentToCurs } from './api'
 
 type Props = {
@@ -61,10 +62,15 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
     enabled: open,
   })
 
-  const cursuriQ = useQuery({
-    queryKey: ['cursuri-pentru-inrolare', locatieId],
-    queryFn: () => listCursuriPentruInrolare(locatieId),
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
     enabled: open,
+  })
+  const cursuriQ = useQuery({
+    queryKey: ['cursuri-pentru-inrolare', locatieId, sezonActivQ.data ?? null],
+    queryFn: () => listCursuriPentruInrolare(locatieId, sezonActivQ.data ?? null),
+    enabled: open && sezonActivQ.isSuccess,
   })
 
   useEffect(() => {

@@ -8,7 +8,8 @@ import {
   Select,
   Button,
 } from '@/components/ui'
-import { teacheriOptions, cursuriOptions } from '@/lib/lookups'
+import { teacheriOptions } from '@/lib/lookups'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import type { Evaluare, InsertDto, UpdateDto } from '@/types/db'
@@ -90,11 +91,7 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
     queryFn: teacheriOptions,
   })
 
-  const cursuriAllQ = useQuery({
-    queryKey: ['lookup', 'cursuri'],
-    queryFn: () => cursuriOptions(),
-    enabled: !isTeacher && !form.teacher,
-  })
+  const cursuriAllQ = useCursuriOptions({ enabled: !isTeacher && !form.teacher })
 
   const cursuriByTeacherQ = useQuery({
     queryKey: ['lookup', 'cursuri-by-teacher', form.teacher],

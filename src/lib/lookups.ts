@@ -69,13 +69,16 @@ export async function sezonActivId(): Promise<string | null> {
 
 export async function cursuriOptions(
   locatieId?: string | null,
+  sezonId?: string | null,
 ): Promise<SelectOption[]> {
   if (locatieId) {
-    // Filtru pe locație via cursuri → sali.locatie
-    const { data, error } = await supabase
+    // Filtru pe locație via cursuri → sali.locatie (relația nu permite .eq direct)
+    let q = supabase
       .from('cursuri')
       .select('id, numele, sala_rel:sali!fk_cursuri_sala(locatie)')
       .order('numele', { ascending: true })
+    if (sezonId) q = q.eq('sezon', sezonId)
+    const { data, error } = await q
     if (error) throw error
     const rows = (data ?? []) as unknown as Array<{
       id: string
@@ -86,10 +89,12 @@ export async function cursuriOptions(
       .filter((r) => r.sala_rel?.locatie === locatieId)
       .map((c) => ({ value: c.id, label: c.numele }))
   }
-  const { data, error } = await supabase
+  let q = supabase
     .from('cursuri')
     .select('id, numele')
     .order('numele', { ascending: true })
+  if (sezonId) q = q.eq('sezon', sezonId)
+  const { data, error } = await q
   if (error) throw error
   return (data ?? []).map((c) => ({ value: c.id, label: c.numele }))
 }

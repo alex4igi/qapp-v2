@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Field, TextInput, Select, Combobox, Button, Spinner } from '@/components/ui'
-import { clientiOptions, teacheriOptions } from '@/lib/lookups'
+import { clientiOptions, teacheriOptions, sezonActivId } from '@/lib/lookups'
 import { metodaPlataOptions } from '@/lib/enums'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { VacantaWarning } from '@/features/shared/VacantaWarning'
@@ -33,9 +33,14 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
   const [metoda, setMetoda] = useState<Enums<'metoda_plata'>>('Cash')
   const [error, setError] = useState<string | null>(null)
 
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
   const cursuriQ = useQuery<Curs[]>({
-    queryKey: ['cursuri-facultative', locatieId],
-    queryFn: () => listCursuriFacultative(locatieId),
+    queryKey: ['cursuri-facultative', locatieId, sezonActivQ.data ?? null],
+    queryFn: () => listCursuriFacultative(locatieId, sezonActivQ.data ?? null),
+    enabled: sezonActivQ.isSuccess,
   })
   const clientiQ = useQuery({ queryKey: ['lookup', 'clienti'], queryFn: clientiOptions })
   const teacheriQ = useQuery({ queryKey: ['lookup', 'teacheri'], queryFn: teacheriOptions })

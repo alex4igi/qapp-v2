@@ -5,8 +5,9 @@ import { listCursuriPentruInrolare } from './enrollments'
 // Cursuri facultative (OPEN class) la care se pot face rezervări pe sesiune.
 export async function listCursuriFacultative(
   locatieId: string | null,
+  sezonId?: string | null,
 ): Promise<Curs[]> {
-  const cursuri = await listCursuriPentruInrolare(locatieId)
+  const cursuri = await listCursuriPentruInrolare(locatieId, sezonId)
   return cursuri.filter((c) => c.facultativ)
 }
 

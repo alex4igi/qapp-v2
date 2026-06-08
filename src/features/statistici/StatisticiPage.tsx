@@ -9,7 +9,8 @@ import {
   Button,
 } from '@/components/ui'
 import { formatRON } from '@/lib/format'
-import { locatiiOptions, cursuriOptions } from '@/lib/lookups'
+import { locatiiOptions } from '@/lib/lookups'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import {
   getKpis,
   getBalantaLocatie,
@@ -98,10 +99,7 @@ export function StatisticiPage() {
     queryFn: locatiiOptions,
   })
 
-  const cursuriQ = useQuery({
-    queryKey: ['lookup', 'cursuri'],
-    queryFn: () => cursuriOptions(),
-  })
+  const cursuriQ = useCursuriOptions({ locatieId: null })
 
   const sezoaneTintaQ = useQuery({
     queryKey: ['stat', 'sezoane-tinta'],

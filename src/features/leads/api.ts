@@ -387,12 +387,16 @@ export type CursProgramabil = {
 }
 
 // Cursurile nesuspendate, pentru dropdown-ul de programare din ScheduleModal.
-export async function listCursuriProgramabile(): Promise<CursProgramabil[]> {
-  const { data, error } = await supabase
+export async function listCursuriProgramabile(
+  sezonId?: string | null,
+): Promise<CursProgramabil[]> {
+  let query = supabase
     .from('cursuri')
     .select('id, numele, varsta, zile, locatie')
     .eq('suspendat', false)
     .order('numele', { ascending: true })
+  if (sezonId) query = query.eq('sezon', sezonId)
+  const { data, error } = await query
   if (error) throw error
   return (data ?? []) as CursProgramabil[]
 }
