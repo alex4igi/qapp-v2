@@ -45,6 +45,8 @@ export type SalariuTeacher = Tables<'salarii_teacher'>
 export type ReconciliereCash = Tables<'reconcilieri_cash'>
 export type OpenSesiune = Tables<'open_sesiuni'>
 export type OpenRezervare = Tables<'open_rezervari'>
+export type CampanieReinscriere = Tables<'campanii_reinscriere'>
+export type ReinscriereGate = Tables<'reinscrieri_gate'>
 
 // Enums folosite în UI
 export type StatusPrezenta = Enums<'status_prezenta'>

@@ -348,6 +348,59 @@ export type Database = {
         }
         Relationships: []
       }
+      campanii_reinscriere: {
+        Row: {
+          created: string
+          created_by: string | null
+          data_final: string
+          data_incepere: string
+          id: string
+          inchisa_la: string | null
+          nume: string
+          sezon_tinta: string
+          target_clienti: number
+          taxa_rezervare: number
+          updated: string
+          zile_procesare: number
+        }
+        Insert: {
+          created?: string
+          created_by?: string | null
+          data_final: string
+          data_incepere: string
+          id?: string
+          inchisa_la?: string | null
+          nume: string
+          sezon_tinta: string
+          target_clienti?: number
+          taxa_rezervare: number
+          updated?: string
+          zile_procesare?: number
+        }
+        Update: {
+          created?: string
+          created_by?: string | null
+          data_final?: string
+          data_incepere?: string
+          id?: string
+          inchisa_la?: string | null
+          nume?: string
+          sezon_tinta?: string
+          target_clienti?: number
+          taxa_rezervare?: number
+          updated?: string
+          zile_procesare?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanii_reinscriere_sezon_tinta_fkey"
+            columns: ["sezon_tinta"]
+            isOneToOne: true
+            referencedRelation: "sezoane"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cheltuieli: {
         Row: {
           achitat: boolean
@@ -3113,6 +3166,221 @@ export type Database = {
           },
         ]
       }
+      reinscrieri_gate: {
+        Row: {
+          act_canal: string | null
+          act_semnat_la: string | null
+          act_status: string
+          act_verificat_de: string | null
+          act_verificat_la: string | null
+          activat_la: string | null
+          campanie_id: string
+          client_id: string
+          created: string
+          curs_tinta_id: string
+          document_link: string | null
+          enrollment_id: string | null
+          esemneaza_request_id: string | null
+          id: string
+          taxa_incasare_id: string | null
+          taxa_platita_la: string | null
+          updated: string
+        }
+        Insert: {
+          act_canal?: string | null
+          act_semnat_la?: string | null
+          act_status?: string
+          act_verificat_de?: string | null
+          act_verificat_la?: string | null
+          activat_la?: string | null
+          campanie_id: string
+          client_id: string
+          created?: string
+          curs_tinta_id: string
+          document_link?: string | null
+          enrollment_id?: string | null
+          esemneaza_request_id?: string | null
+          id?: string
+          taxa_incasare_id?: string | null
+          taxa_platita_la?: string | null
+          updated?: string
+        }
+        Update: {
+          act_canal?: string | null
+          act_semnat_la?: string | null
+          act_status?: string
+          act_verificat_de?: string | null
+          act_verificat_la?: string | null
+          activat_la?: string | null
+          campanie_id?: string
+          client_id?: string
+          created?: string
+          curs_tinta_id?: string
+          document_link?: string | null
+          enrollment_id?: string | null
+          esemneaza_request_id?: string | null
+          id?: string
+          taxa_incasare_id?: string | null
+          taxa_platita_la?: string | null
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reinscrieri_gate_campanie_id_fkey"
+            columns: ["campanie_id"]
+            isOneToOne: false
+            referencedRelation: "campanii_reinscriere"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_inrolare"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_taxa_incasare_id_fkey"
+            columns: ["taxa_incasare_id"]
+            isOneToOne: false
+            referencedRelation: "incasari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_taxa_incasare_id_fkey"
+            columns: ["taxa_incasare_id"]
+            isOneToOne: false
+            referencedRelation: "lista_incasari"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salarii_teacher: {
         Row: {
           anul: number
@@ -4806,6 +5074,7 @@ export type Database = {
       }
       _is_anunt_expeditor: { Args: { p_anunt: string }; Returns: boolean }
       _is_anunt_recipient: { Args: { p_anunt: string }; Returns: boolean }
+      _try_activate_gate: { Args: { p_gate_id: string }; Returns: undefined }
       activate_eligible_sezoane: { Args: never; Returns: number }
       activate_reinscriere: {
         Args: { p_client_id: string; p_curs_id: string }
@@ -4819,6 +5088,14 @@ export type Database = {
       anuleaza_rezervare_open: {
         Args: { p_motiv?: string; p_rezervare: string }
         Returns: undefined
+      }
+      approve_act_aditional: {
+        Args: {
+          p_campanie_id: string
+          p_client_id: string
+          p_curs_tinta_id: string
+        }
+        Returns: string
       }
       archive_expired_sezoane: { Args: never; Returns: number }
       audit_digest_dispatch_weekly: { Args: never; Returns: number }
@@ -4886,6 +5163,10 @@ export type Database = {
         }
         Returns: string
       }
+      close_campanie_reinscriere: {
+        Args: { p_campanie_id: string }
+        Returns: undefined
+      }
       confirma_salariu_teacher: {
         Args: {
           p_anul: number
@@ -4912,7 +5193,49 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_campanie_reinscriere: {
+        Args: {
+          p_data_final: string
+          p_data_incepere: string
+          p_nume: string
+          p_sezon_tinta: string
+          p_target: number
+          p_taxa: number
+          p_zile_procesare?: number
+        }
+        Returns: string
+      }
       current_teacher_id: { Args: never; Returns: string }
+      get_campanie_progress: {
+        Args: { p_campanie_id: string }
+        Returns: {
+          act_de_verificat: number
+          act_done: number
+          in_proces: number
+          procent: number
+          re_inscrisi: number
+          target_clienti: number
+          taxa_done: number
+        }[]
+      }
+      get_campanie_progress_curs: {
+        Args: { p_campanie_id: string }
+        Returns: {
+          act_de_verificat: number
+          act_done: number
+          activi: number
+          ambele: number
+          capacitate: number
+          curs_id: string
+          curs_nume: string
+          procent: number
+          procent_ocupare: number
+          ramasi: number
+          taxa_done: number
+          total_eligibili: number
+          varsta: Database["public"]["Enums"]["varsta_curs"]
+        }[]
+      }
       get_clienti_activi: {
         Args: never
         Returns: {
@@ -5063,6 +5386,22 @@ export type Database = {
       is_manager: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_teacher: { Args: never; Returns: boolean }
+      list_campanie_clienti_curs: {
+        Args: { p_campanie_id: string; p_curs_tinta_id: string }
+        Returns: {
+          act_canal: string
+          act_status: string
+          activat_la: string
+          client_id: string
+          document_link: string
+          email: string
+          esemneaza_request_id: string
+          nume: string
+          prenume: string
+          taxa_platita_la: string
+          telefon: string
+        }[]
+      }
       list_reinscrieri_clienti: {
         Args: { p_curs_tinta_id: string }
         Returns: {
@@ -5139,6 +5478,23 @@ export type Database = {
         Args: { p_client: string }
         Returns: undefined
       }
+      record_taxa_rezervare: {
+        Args: {
+          p_campanie_id: string
+          p_client_id: string
+          p_curs_tinta_id: string
+          p_incasare_id: string
+        }
+        Returns: string
+      }
+      reject_act_aditional: {
+        Args: {
+          p_campanie_id: string
+          p_client_id: string
+          p_curs_tinta_id: string
+        }
+        Returns: string
+      }
       resolve_anunt_clienti: {
         Args: { p_curs_id?: string }
         Returns: {
@@ -5171,6 +5527,15 @@ export type Database = {
           p_titlu: string
         }
         Returns: Json
+      }
+      set_act_aditional_manual: {
+        Args: {
+          p_campanie_id: string
+          p_client_id: string
+          p_curs_tinta_id: string
+          p_document_link: string
+        }
+        Returns: string
       }
       teacher_can_access_curs: { Args: { p_curs: string }; Returns: boolean }
       user_locatie_id: { Args: never; Returns: string }

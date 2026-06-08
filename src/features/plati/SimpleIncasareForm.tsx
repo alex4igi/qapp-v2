@@ -15,7 +15,7 @@ import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { formatRON } from '@/lib/format'
 import { listAvailableVouchere } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
-import type { Enums, InsertDto, Voucher } from '@/types/db'
+import type { Enums, Incasare, InsertDto, Voucher } from '@/types/db'
 import {
   createIncasare,
   listBiletSurse,
@@ -29,6 +29,10 @@ type Props = {
   tip: SimpleTip
   onClose: () => void
   defaultClientId?: string
+  defaultSuma?: string
+  defaultObservatii?: string
+  /** Apelat cu încasarea creată (înainte de onClose) — folosit ca să legăm taxa de campania de reînscrieri. */
+  onCreated?: (incasare: Incasare) => void
 }
 
 function todayIso(): string {
@@ -50,17 +54,24 @@ function voucherLabel(v: Voucher): string {
   return `${v.cod_voucher} — ${val}`
 }
 
-export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
+export function SimpleIncasareForm({
+  tip,
+  onClose,
+  defaultClientId,
+  defaultSuma,
+  defaultObservatii,
+  onCreated,
+}: Props) {
   const queryClient = useQueryClient()
   const { locatieId, locatieNume } = useWorkingLocatie()
 
   const [clientId, setClientId] = useState(defaultClientId ?? '')
   const [sursaId, setSursaId] = useState('') // bilet/inventar id
   const [bucati, setBucati] = useState('1')
-  const [suma, setSuma] = useState('')
+  const [suma, setSuma] = useState(defaultSuma ?? '')
   const [data, setData] = useState(todayIso())
   const [metoda, setMetoda] = useState<Enums<'metoda_plata'>>('Cash')
-  const [observatii, setObservatii] = useState('')
+  const [observatii, setObservatii] = useState(defaultObservatii ?? '')
   const [voucherId, setVoucherId] = useState('')
   const [guestMode, setGuestMode] = useState(false)
   const [guestNume, setGuestNume] = useState('')
@@ -187,11 +198,12 @@ export function SimpleIncasareForm({ tip, onClose, defaultClientId }: Props) {
       }
       return createIncasare(payload)
     },
-    onSuccess: () => {
+    onSuccess: (incasare) => {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['stat'] })
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
+      onCreated?.(incasare)
       onClose()
     },
     onError: (e: unknown) =>
