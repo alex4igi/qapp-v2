@@ -3,6 +3,8 @@ export type FormState = {
   tip: 'principal' | 'extra'
   data_incepere: string
   data_final: string
+  scadenta_prima_rata: string
+  scadenta_ultima_rata: string
 }
 
 export const STARE_LABEL: Record<string, string> = {

@@ -144,6 +144,28 @@ export function SezonEditModal({
               />
             </Field>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Scadență prima rată" htmlFor="sez-scad-prima">
+              <TextInput
+                id="sez-scad-prima"
+                type="date"
+                value={form.scadenta_prima_rata}
+                onChange={(e) => set('scadenta_prima_rata')(e.target.value)}
+              />
+            </Field>
+            <Field label="Scadență ultima rată" htmlFor="sez-scad-ultima">
+              <TextInput
+                id="sez-scad-ultima"
+                type="date"
+                value={form.scadenta_ultima_rata}
+                onChange={(e) => set('scadenta_ultima_rata')(e.target.value)}
+              />
+            </Field>
+          </div>
+          <p className="text-xs text-quasar-gray">
+            Termenele lunilor de început (ex. sept.) și de final (ex. iunie) ale
+            abonamentului recurent. Necompletate = ziua 15 (ca celelalte luni).
+          </p>
           {error && <p className="text-sm text-red-600">{error}</p>}
         </form>
       )}

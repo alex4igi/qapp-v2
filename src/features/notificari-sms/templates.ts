@@ -51,6 +51,7 @@ export type SmsRecipient = {
   familia_id: string
   telefon: string
   locatie_nume: string | null
+  scadenta: string | null
   membri: SmsRecipientMembru[]
   total_restanta: number
   zile_depasire: number | null
@@ -74,9 +75,17 @@ function joinSi(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} si ${items[items.length - 1]}`
 }
 
-// Zile până la termenul lunii (15). Construit aici ca să nu depindă de fusul DB.
+// Zile până la termenul lunii (15). Fallback când sezonul n-are scadență explicită.
 function zilePanaLaTermen(azi: Date): number {
   return 15 - azi.getDate()
+}
+
+// Zile (calendaristice) de azi până la scadența 'YYYY-MM-DD'.
+function zilePanaLaScadenta(scadentaISO: string, azi: Date): number {
+  const [y, m, d] = scadentaISO.slice(0, 10).split('-').map(Number)
+  const scad = new Date(y, m - 1, d)
+  const az = new Date(azi.getFullYear(), azi.getMonth(), azi.getDate())
+  return Math.round((scad.getTime() - az.getTime()) / 86_400_000)
 }
 
 // Construiește textul SMS pentru un destinatar + un cod. Pentru mesaj_liber,
@@ -90,7 +99,10 @@ export function buildBulkSms(
 
   switch (cod) {
     case 'reminder_plata': {
-      const n = zilePanaLaTermen(azi)
+      // Scadența reală a rândului (prima/ultima rată din sezon sau ziua 15).
+      const n = r.scadenta
+        ? zilePanaLaScadenta(r.scadenta, azi)
+        : zilePanaLaTermen(azi)
       const cand =
         n > 1 ? `peste ${n} zile` : n === 1 ? 'maine' : 'astazi'
       return `Buna ziua! Va reamintim ca ${cand} este termenul de plata pentru cursurile Quasar Dance. Echipa Quasar Dance`

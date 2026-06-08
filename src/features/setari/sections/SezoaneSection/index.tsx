@@ -22,6 +22,8 @@ export function SezoaneSection() {
     tip: 'principal',
     data_incepere: '',
     data_final: '',
+    scadenta_prima_rata: '',
+    scadenta_ultima_rata: '',
   })
   const [error, setError] = useState<string | null>(null)
 
@@ -37,6 +39,8 @@ export function SezoaneSection() {
       tip: (s?.tip as 'principal' | 'extra') ?? 'principal',
       data_incepere: s?.data_incepere ?? '',
       data_final: s?.data_final ?? '',
+      scadenta_prima_rata: s?.scadenta_prima_rata ?? '',
+      scadenta_ultima_rata: s?.scadenta_ultima_rata ?? '',
     })
     setError(null)
   }
@@ -56,6 +60,8 @@ export function SezoaneSection() {
         tip: form.tip,
         data_incepere: form.data_incepere || null,
         data_final: form.data_final || null,
+        scadenta_prima_rata: form.scadenta_prima_rata || null,
+        scadenta_ultima_rata: form.scadenta_ultima_rata || null,
       }
       return isEdit ? updateSezon(editing!.id, payload) : createSezon(payload)
     },

@@ -3276,6 +3276,8 @@ export type Database = {
           data_incepere: string | null
           id: string
           numele_sezonului: string
+          scadenta_prima_rata: string | null
+          scadenta_ultima_rata: string | null
           stare: string
           tip: string
           updated: string
@@ -3287,6 +3289,8 @@ export type Database = {
           data_incepere?: string | null
           id?: string
           numele_sezonului: string
+          scadenta_prima_rata?: string | null
+          scadenta_ultima_rata?: string | null
           stare?: string
           tip?: string
           updated?: string
@@ -3298,6 +3302,8 @@ export type Database = {
           data_incepere?: string | null
           id?: string
           numele_sezonului?: string
+          scadenta_prima_rata?: string | null
+          scadenta_ultima_rata?: string | null
           stare?: string
           tip?: string
           updated?: string
@@ -5025,6 +5031,7 @@ export type Database = {
           familia_id: string
           membri: Json
           nume_locatie: string
+          scadenta: string
           telefon: string
           total_restanta: number
           zile_depasire: number

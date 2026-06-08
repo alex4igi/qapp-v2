@@ -97,6 +97,7 @@ export async function getSmsRecipients({
     familia_id: r.familia_id,
     telefon: r.telefon ?? '',
     locatie_nume: r.nume_locatie ?? null,
+    scadenta: r.scadenta ?? null,
     membri: (r.membri as unknown as SmsRecipientMembru[]) ?? [],
     total_restanta: Number(r.total_restanta ?? 0),
     zile_depasire: r.zile_depasire,
