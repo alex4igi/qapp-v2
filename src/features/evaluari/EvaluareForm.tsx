@@ -8,8 +8,8 @@ import {
   Select,
   Button,
 } from '@/components/ui'
-import { teacheriOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
+import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import type { Evaluare, InsertDto, UpdateDto } from '@/types/db'
@@ -86,10 +86,7 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
   }, [isTeacher, teacherIdQ.data, form.teacher])
 
   // Liste pentru dropdown-uri.
-  const teacheriQ = useQuery({
-    queryKey: ['lookup', 'teacheri'],
-    queryFn: teacheriOptions,
-  })
+  const teacheriQ = useTeacheriOptions()
 
   const cursuriAllQ = useCursuriOptions({ enabled: !isTeacher && !form.teacher })
 

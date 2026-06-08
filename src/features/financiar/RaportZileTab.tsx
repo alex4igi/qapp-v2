@@ -12,8 +12,9 @@ import {
 import { formatRON } from '@/lib/format'
 import { downloadCsv } from '@/lib/csv'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { locatiiOptions, saliOptions, teacheriOptions } from '@/lib/lookups'
+import { locatiiOptions, saliOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
+import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import {
   getRaportZile,
   RAPORT_DIMENSIUNI,
@@ -93,11 +94,7 @@ export function RaportZileTab() {
     enabled: dimensiune === 'sala',
   })
   const cursuriQ = useCursuriOptions({ enabled: dimensiune === 'curs' })
-  const teacheriQ = useQuery({
-    queryKey: ['lookup', 'teacheri'],
-    queryFn: teacheriOptions,
-    enabled: dimensiune === 'teacher',
-  })
+  const teacheriQ = useTeacheriOptions({ enabled: dimensiune === 'teacher' })
 
   const entityOptions =
     dimensiune === 'locatie'

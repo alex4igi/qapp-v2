@@ -9,8 +9,8 @@ import {
   Spinner,
   type Column,
 } from '@/components/ui'
-import { teacheriOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
+import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { useAuth } from '@/hooks/useAuth'
 import type { Evaluare } from '@/types/db'
 import { EvaluareForm } from './EvaluareForm'
@@ -63,11 +63,7 @@ export function EvaluariListPage() {
     ? (teacherIdQ.data ?? '')
     : teacherId
 
-  const teacheriQ = useQuery({
-    queryKey: ['lookup', 'teacheri'],
-    queryFn: teacheriOptions,
-    enabled: !isTeacher,
-  })
+  const teacheriQ = useTeacheriOptions({ enabled: !isTeacher })
 
   const cursuriAllQ = useCursuriOptions({ enabled: !isTeacher && !teacherId })
 

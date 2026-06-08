@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { recordAuditLog } from '@/lib/auditLog'
 import { applyWordSearch } from '@/lib/search'
+import type { SelectOption } from '@/components/ui'
 import type {
   Teacher,
   Curs,
@@ -87,6 +88,27 @@ async function teacherIdsForFilters(
   }
 
   return Array.from(ids)
+}
+
+// Opțiuni pentru selectoarele de teacher, restrânse la cei care predau cursuri
+// în sezonul/locația dată (aceeași logică cu lista — vezi teacherIdsForFilters).
+// Pentru cazul „fără filtru" folosește teacheriOptions() din lib/lookups.
+export async function teacheriOptionsFiltrate(
+  locatieId: string | null,
+  sezonId: string | null,
+): Promise<SelectOption[]> {
+  const ids = await teacherIdsForFilters(locatieId, sezonId)
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from('teacheri')
+    .select('id, nume, prenume')
+    .in('id', ids)
+    .order('nume', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map((t) => ({
+    value: t.id,
+    label: `${t.nume} ${t.prenume ?? ''}`.trim(),
+  }))
 }
 
 export async function listTeacheri({
