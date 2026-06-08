@@ -36,6 +36,8 @@ export function SezonCloneWizard({ onClose, onCreated }: Props) {
   const [tip, setTip] = useState<Tip>('principal')
   const [dataIncepere, setDataIncepere] = useState('')
   const [dataFinal, setDataFinal] = useState('')
+  const [scadentaPrimaRata, setScadentaPrimaRata] = useState('')
+  const [scadentaUltimaRata, setScadentaUltimaRata] = useState('')
 
   // Pas 2
   const [cursuri, setCursuri] = useState<CursRow[]>([])
@@ -102,6 +104,8 @@ export function SezonCloneWizard({ onClose, onCreated }: Props) {
         tip,
         data_incepere: dataIncepere,
         data_final: dataFinal,
+        scadenta_prima_rata: scadentaPrimaRata || null,
+        scadenta_ultima_rata: scadentaUltimaRata || null,
         cursuri: cursuri
           .filter((c) => c.selected)
           .map((c) => {
@@ -203,6 +207,10 @@ export function SezonCloneWizard({ onClose, onCreated }: Props) {
           setDataIncepere={setDataIncepere}
           dataFinal={dataFinal}
           setDataFinal={setDataFinal}
+          scadentaPrimaRata={scadentaPrimaRata}
+          setScadentaPrimaRata={setScadentaPrimaRata}
+          scadentaUltimaRata={scadentaUltimaRata}
+          setScadentaUltimaRata={setScadentaUltimaRata}
         />
       )}
 
@@ -225,6 +233,8 @@ export function SezonCloneWizard({ onClose, onCreated }: Props) {
           tip={tip}
           dataIncepere={dataIncepere}
           dataFinal={dataFinal}
+          scadentaPrimaRata={scadentaPrimaRata}
+          scadentaUltimaRata={scadentaUltimaRata}
           cursuri={cursuri}
           vacante={vacante}
         />

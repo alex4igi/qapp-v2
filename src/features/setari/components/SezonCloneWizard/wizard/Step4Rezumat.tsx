@@ -5,6 +5,8 @@ type Props = {
   tip: Tip
   dataIncepere: string
   dataFinal: string
+  scadentaPrimaRata: string
+  scadentaUltimaRata: string
   cursuri: CursRow[]
   vacante: VacantaRow[]
 }
@@ -14,6 +16,8 @@ export function Step4Rezumat({
   tip,
   dataIncepere,
   dataFinal,
+  scadentaPrimaRata,
+  scadentaUltimaRata,
   cursuri,
   vacante,
 }: Props) {
@@ -29,6 +33,10 @@ export function Step4Rezumat({
         </li>
         <li>
           <strong>Interval:</strong> {dataIncepere} → {dataFinal}
+        </li>
+        <li>
+          <strong>Scadență prima / ultima rată:</strong>{' '}
+          {scadentaPrimaRata || 'ziua 15'} / {scadentaUltimaRata || 'ziua 15'}
         </li>
         <li>
           <strong>Cursuri clonate:</strong>{' '}

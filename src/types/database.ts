@@ -4878,6 +4878,8 @@ export type Database = {
           p_data_final: string
           p_data_incepere: string
           p_nume: string
+          p_scadenta_prima_rata?: string
+          p_scadenta_ultima_rata?: string
           p_sezon_sursa: string
           p_tip: string
           p_vacante?: Json

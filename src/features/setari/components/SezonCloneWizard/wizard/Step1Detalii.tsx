@@ -14,6 +14,10 @@ type Props = {
   setDataIncepere: (v: string) => void
   dataFinal: string
   setDataFinal: (v: string) => void
+  scadentaPrimaRata: string
+  setScadentaPrimaRata: (v: string) => void
+  scadentaUltimaRata: string
+  setScadentaUltimaRata: (v: string) => void
 }
 
 export function Step1Detalii({
@@ -29,6 +33,10 @@ export function Step1Detalii({
   setDataIncepere,
   dataFinal,
   setDataFinal,
+  scadentaPrimaRata,
+  setScadentaPrimaRata,
+  scadentaUltimaRata,
+  setScadentaUltimaRata,
 }: Props) {
   return (
     <div className="space-y-3">
@@ -90,6 +98,27 @@ export function Step1Detalii({
           />
         </Field>
       </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Scadență prima rată">
+          <TextInput
+            type="date"
+            value={scadentaPrimaRata}
+            onChange={(e) => setScadentaPrimaRata(e.target.value)}
+          />
+        </Field>
+        <Field label="Scadență ultima rată">
+          <TextInput
+            type="date"
+            value={scadentaUltimaRata}
+            onChange={(e) => setScadentaUltimaRata(e.target.value)}
+          />
+        </Field>
+      </div>
+      <p className="text-xs text-quasar-gray">
+        Termenele de plată ale primei (luna de început, ex. sept.) și ultimei rate
+        (luna de final, ex. iunie). Necompletate = ziua 15, le poți pune și mai târziu
+        din editarea sezonului.
+      </p>
     </div>
   )
 }

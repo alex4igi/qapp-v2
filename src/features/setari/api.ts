@@ -222,6 +222,8 @@ export type CloneSezonInput = {
   tip: 'principal' | 'extra'
   data_incepere: string
   data_final: string
+  scadenta_prima_rata: string | null
+  scadenta_ultima_rata: string | null
   cursuri: CloneSezonCursInput[]
   vacante: CloneSezonVacantaInput[]
 }
@@ -235,6 +237,8 @@ export async function cloneSezon(input: CloneSezonInput): Promise<string> {
     p_data_final: input.data_final,
     p_cursuri: input.cursuri,
     p_vacante: input.vacante,
+    p_scadenta_prima_rata: input.scadenta_prima_rata ?? undefined,
+    p_scadenta_ultima_rata: input.scadenta_ultima_rata ?? undefined,
   })
   if (error) throw error
   return data as string
