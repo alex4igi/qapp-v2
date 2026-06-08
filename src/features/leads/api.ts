@@ -367,6 +367,15 @@ export async function linkLeadToClient(
     })
     .eq('id', leadId)
   if (error) throw error
+
+  // SMS review la conversie (dedup pe sms_logs tip='review' în edge function).
+  try {
+    await supabase.functions.invoke('send-lead-sms', {
+      body: { leadId, tip: 'review' },
+    })
+  } catch (e) {
+    console.error('[linkLeadToClient] review sms', e)
+  }
 }
 
 export type CursProgramabil = {

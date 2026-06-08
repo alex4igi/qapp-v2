@@ -17,7 +17,8 @@ export async function triggerLeadSms(
     lead.data_programare
   )
     tips.push('confirmare')
-  // review NU se trimite imediat la a_venit — îl trimite cron-morning a doua zi.
+  // review = la conversie (lead → client), NU după prezența la demo.
+  if (lead.status === 'convertit' && prev !== 'convertit') tips.push('review')
   if (lead.status === 'nu_a_venit' && prev !== 'nu_a_venit')
     tips.push('followup')
   if (lead.status === 'waiting_list' && prev !== 'waiting_list')

@@ -37,7 +37,7 @@ Buna {prenume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}. Va aste
 Buna {prenume}! Va reamintim de sedinta gratuita la Quasar Dance {AZI/MAINE}, {data}, la {adresa}. Te asteptam!
 ```
 
-### 3. `review` — la conversie (lead → client) — TODO #1 (trigger-ul de după demo a fost scos)
+### 3. `review` — la conversie (lead → client) — ✅ LIVRAT 2026-06-08
 ```
 Buna {prenume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: {link} Multumim!
 ```
@@ -66,9 +66,10 @@ Buna ziua! Va reamintim ca {N zile/maine/astazi} este termenul de plata pentru c
 Buna ziua! Exista {plati restante/o plata restanta} la cursurile Quasar Dance pentru {nume + suma}. Se poate achita cash/card la studio sau prin transfer la IBAN RO85 INGB 0000 9999 1498 9082. Pentru intrebari, contactati-ne la {nr telefon locatia inrolarii}. Echipa Quasar Dance
 ```
 
-### 8. `avertisment_loc` — pierderea locului (restanță ≥ 50 zile)
+### 8. `avertisment_loc` — pierderea locului (restanță > 50 zile) — ✅ LIVRAT 2026-06-08
+Un SMS / familie (listează copiii în pericol + suma totală). `{termen}` = data trimiterii + 2 zile.
 ```
-Buna ziua! Pentru a pastra locul lui {prenume-copil} la Quasar Dance, te rugam sa achiti {suma} {termen limita}. Pentru intrebari, contactati-ne la {telefon locatie inrolare}. Echipa Quasar Dance
+Buna ziua! Pentru a pastra {locul lui X / locurile lui X si Y} la Quasar Dance, te rugam sa achiti {total} RON pana pe {termen}. Pentru intrebari, contactati-ne la {telefon locatie}. Echipa Quasar Dance
 ```
 
 ### 9. `mesaj_liber` — text liber ad-hoc
@@ -110,11 +111,10 @@ Buna ziua! Pentru a pastra locul lui {prenume-copil} la Quasar Dance, te rugam s
 ---
 
 ## De implementat (TODO — cerut 2026-06-08)
-Reformulările de mai sus introduc placeholdere/comportamente care depind de aceste 4 funcții; până sunt construite, textele respective NU pot intra în producție:
-1. **Review pe conversie** — review-ul după prezența la demo a fost SCOS din cron-morning (2026-06-08). RĂMAS: să plece `review` (#3) când lead-ul e mutat în client (convertit).
-2. **Telefonul locației** — placeholderul `{telefon locatie}` în `followup` (#4), `notificare_restante` (#7), `avertisment_loc` (#8). **Decizie: hardcoded în cod** (ca ADRESE/REVIEW_LINKS), nu coloană DB.
-3. **`avertisment_loc` > 50 zile + termen dinamic** — prag > 50 zile de la scadență; `{termen limita}` = data trimiterii + 2 zile. **Decizie: un SMS per familie** (listează copiii în pericol + suma totală, nu per copil) — de ajustat textul #8 față de `{prenume-copil}`/`{suma}` singular.
-4. **Scadențe prima/ultima rată** — la abonamentul recurent prima și ultima rată au scadențe diferite de „ziua 15"; de luat în calcul la `reminder_plata` / `avertisment_loc` / `zile_depasire`.
+1. ✅ **Review pe conversie** (LIVRAT 2026-06-08) — `review` (#3) pleacă când lead-ul ajunge `convertit` (drag în coloană sau `linkLeadToClient`). Dedup pe `sms_logs` tip='review'. Trigger-ul de după demo (cron-morning) a rămas scos.
+2. ✅ **Telefonul locației** (LIVRAT 2026-06-08) — hardcoded `TELEFOANE` în `_shared/sms.ts` (kanban `followup`) și `TELEFOANE_LOCATIE` în `templates.ts` (bulk). `get_sms_recipients` întoarce `nume_locatie` pentru maparea pe telefon.
+3. ✅ **`avertisment_loc` > 50 zile + termen dinamic** (LIVRAT 2026-06-08) — prag `zile_dep > 50` în RPC; un SMS / familie cu suma totală; `{termen}` = data trimiterii + 2 zile.
+4. ⏳ **Scadențe prima/ultima rată** — la abonamentul recurent prima și ultima rată au scadențe diferite de „ziua 15"; de luat în calcul la `reminder_plata` / `avertisment_loc` / `zile_depasire`. **BLOCAT:** nu există coloană `scadenta` în `plati_inrolari` (view) — scadența e derivată ca ziua 15 a lunii înrolării. Necesită reguli de business + posibil coloană nouă. De făcut într-o sesiune dedicată.
 
 ### Gata de sincronizat acum (text pur, fără funcții noi)
 - `confirmare` (#1) — 162 car. worst-case (2 SMS la combinațiile lungi)

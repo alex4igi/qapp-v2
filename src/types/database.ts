@@ -5024,6 +5024,7 @@ export type Database = {
           client_ids: string[]
           familia_id: string
           membri: Json
+          nume_locatie: string
           telefon: string
           total_restanta: number
           zile_depasire: number

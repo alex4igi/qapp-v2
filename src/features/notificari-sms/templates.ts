@@ -6,6 +6,29 @@
 
 const IBAN = 'RO85 INGB 0000 9999 1498 9082'
 
+// Telefonul locației (hardcoded, ca în _shared/sms.ts — nu există în DB).
+// Cheia = numele locației înrolării (plati_inrolari.nume_locatie).
+const TELEFOANE_LOCATIE: Record<string, string> = {
+  'Ștefan cel Mare': '0730 534 172',
+  Nicolina: '0770 227 580',
+  'Quasar 4 Kids': '0745 371 200',
+  'Quasar for Kids': '0745 371 200',
+}
+const TELEFON_DEFAULT = '0730 534 172'
+
+function telefonLocatie(nume: string | null): string {
+  return TELEFOANE_LOCATIE[nume ?? ''] ?? TELEFON_DEFAULT
+}
+
+const MONTHS = [
+  'ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
+  'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie',
+]
+
+function formatZiLuna(d: Date): string {
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`
+}
+
 export const SMS_BULK_CODES = [
   'reminder_plata',
   'notificare_restante',
@@ -18,7 +41,7 @@ export type SmsBulkCod = (typeof SMS_BULK_CODES)[number]
 export const SMS_BULK_LABEL: Record<SmsBulkCod, string> = {
   reminder_plata: 'Reminder plată (termen 15)',
   notificare_restante: 'Notificare restanțe',
-  avertisment_loc: 'Avertisment pierdere loc (45 zile)',
+  avertisment_loc: 'Avertisment pierdere loc (50 zile)',
   mesaj_liber: 'Mesaj liber (ad-hoc)',
 }
 
@@ -27,6 +50,7 @@ export type SmsRecipientMembru = { nume: string; rest: number }
 export type SmsRecipient = {
   familia_id: string
   telefon: string
+  locatie_nume: string | null
   membri: SmsRecipientMembru[]
   total_restanta: number
   zile_depasire: number | null
@@ -80,14 +104,20 @@ export function buildBulkSms(
         detalii.length > 1
           ? 'Exista plati restante'
           : 'Exista o plata restanta'
-      return `Buna ziua! ${intro} la cursurile Quasar Dance pentru ${joinSi(detalii)}. Se poate achita cash/card la studio sau prin transfer la IBAN ${IBAN}. Pentru intrebari, contactati-ne. Echipa Quasar Dance`
+      const tel = telefonLocatie(r.locatie_nume)
+      return `Buna ziua! ${intro} la cursurile Quasar Dance pentru ${joinSi(detalii)}. Se poate achita cash/card la studio sau prin transfer la IBAN ${IBAN}. Pentru intrebari, contactati-ne la ${tel}. Echipa Quasar Dance`
     }
 
     case 'avertisment_loc': {
+      // Un SMS / familie: listează copiii în pericol + suma totală. Termen
+      // limită = data trimiterii + 2 zile (vezi scripts/sms/templates.md #3).
       const nume = numeMembri(r.membri)
       const subiect =
-        nume.length > 1 ? `Locurile lui ${joinSi(nume)}` : `Locul lui ${nume[0] ?? ''}`
-      return `Buna ziua! ${subiect} in grupa la Quasar Dance este in pericol din cauza unei plati restante mai vechi de 45 de zile. Te rugam sa achiti pentru a pastra locul. Pentru intrebari, contactati-ne. Echipa Quasar Dance`
+        nume.length > 1 ? `locurile lui ${joinSi(nume)}` : `locul lui ${nume[0] ?? ''}`
+      const termen = new Date(azi)
+      termen.setDate(termen.getDate() + 2)
+      const tel = telefonLocatie(r.locatie_nume)
+      return `Buna ziua! Pentru a pastra ${subiect} la Quasar Dance, te rugam sa achiti ${Math.round(r.total_restanta)} RON pana pe ${formatZiLuna(termen)}. Pentru intrebari, contactati-ne la ${tel}. Echipa Quasar Dance`
     }
 
     case 'mesaj_liber':
