@@ -11,6 +11,7 @@ import {
 import { formatRON } from '@/lib/format'
 import { locatiiOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
+import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import {
   getKpis,
   getBalantaLocatie,
@@ -18,6 +19,7 @@ import {
   getMixMetode,
   getMixCategoriiIncasari,
   getMixCategoriiCheltuieli,
+  getStatisticaPrezenteAchitare,
   getSezonActiv,
   lunaCurenta,
   lunaCuOffset,
@@ -29,6 +31,7 @@ import {
 } from './api'
 import { KpiCard } from './KpiCard'
 import { BalantaChart } from './BalantaChart'
+import { PrezenteAchitareChart } from './PrezenteAchitareChart'
 import { MetodePlataChart } from './MetodePlataChart'
 import { CategorieChart } from './CategorieChart'
 import { ReinscrieriKpiChart } from './ReinscrieriKpiChart'
@@ -54,6 +57,8 @@ export function StatisticiPage() {
   const [toLuna, setToLuna] = useState(lunaCurenta())
   const [locatieId, setLocatieId] = useState('')
   const [cursId, setCursId] = useState('')
+  const [prezLocatieId, setPrezLocatieId] = useState('')
+  const [prezTeacherId, setPrezTeacherId] = useState('')
   const [sezonTintaId, setSezonTintaId] = useState('')
 
   const interval: Interval = useMemo(() => {
@@ -99,7 +104,19 @@ export function StatisticiPage() {
     queryFn: locatiiOptions,
   })
 
+  const teacheriQ = useTeacheriOptions({ locatieId: null })
+
   const cursuriQ = useCursuriOptions({ locatieId: null })
+
+  const prezAchitareQ = useQuery({
+    queryKey: ['stat', 'prezente-achitare', interval, prezLocatieId, prezTeacherId],
+    queryFn: () =>
+      getStatisticaPrezenteAchitare(
+        interval,
+        prezLocatieId || null,
+        prezTeacherId || null,
+      ),
+  })
 
   const sezoaneTintaQ = useQuery({
     queryKey: ['stat', 'sezoane-tinta'],
@@ -277,6 +294,46 @@ export function StatisticiPage() {
               rows={balCursQ.data ?? []}
               baseColor="#1d4ed8"
               topColor="#bfdbfe"
+            />
+          )}
+        </div>
+
+        <div>
+          <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-sm font-semibold text-quasar-black">
+              Prezențe pe achitare
+            </h2>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-56">
+                <Field label="Locație" htmlFor="stat-prez-locatie">
+                  <Select
+                    id="stat-prez-locatie"
+                    placeholder="Toate locațiile"
+                    options={locatiiQ.data ?? []}
+                    value={prezLocatieId}
+                    onChange={(e) => setPrezLocatieId(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <div className="w-56">
+                <Field label="Instructor" htmlFor="stat-prez-teacher">
+                  <Select
+                    id="stat-prez-teacher"
+                    placeholder="Toți instructorii"
+                    options={teacheriQ.data ?? []}
+                    value={prezTeacherId}
+                    onChange={(e) => setPrezTeacherId(e.target.value)}
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
+          {prezAchitareQ.isLoading ? (
+            <Spinner />
+          ) : (
+            <PrezenteAchitareChart
+              title="Prezențe achitate / neachitate / din trecut pe lună"
+              rows={prezAchitareQ.data ?? []}
             />
           )}
         </div>

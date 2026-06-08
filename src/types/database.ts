@@ -5362,6 +5362,20 @@ export type Database = {
           zile_depasire: number
         }[]
       }
+      get_statistica_prezente_achitare: {
+        Args: {
+          p_from: string
+          p_locatie?: string
+          p_teacher?: string
+          p_to: string
+        }
+        Returns: {
+          achitate: number
+          din_trecut: number
+          luna: string
+          neachitate: number
+        }[]
+      }
       get_trend_prezente: {
         Args: {
           p_locatie?: string

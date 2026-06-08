@@ -309,6 +309,38 @@ export async function getIncasariPerSezon(): Promise<IncasariSezonRow[]> {
   }))
 }
 
+// ============================================================================
+// Prezențe pe achitare (model lună-cu-lună, mărginit la intervalul afișat)
+// ============================================================================
+
+export type PrezentaAchitareRow = {
+  luna: string
+  achitate: number
+  neachitate: number
+  din_trecut: number
+}
+
+export async function getStatisticaPrezenteAchitare(
+  i: Interval,
+  locatieId: string | null,
+  teacherId: string | null,
+): Promise<PrezentaAchitareRow[]> {
+  const { from, to } = intervalToDateRange(i)
+  const { data, error } = await supabase.rpc('get_statistica_prezente_achitare', {
+    p_from: from,
+    p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+    ...(teacherId ? { p_teacher: teacherId } : {}),
+  })
+  if (error) throw error
+  return ((data ?? []) as PrezentaAchitareRow[]).map((r) => ({
+    luna: r.luna,
+    achitate: Number(r.achitate ?? 0),
+    neachitate: Number(r.neachitate ?? 0),
+    din_trecut: Number(r.din_trecut ?? 0),
+  }))
+}
+
 export async function getMixMetode(i: Interval): Promise<MetodaPunct[]> {
   const { from, to } = intervalToDateRange(i)
   const { data, error } = await supabase
