@@ -1,10 +1,10 @@
 // Edge Function cron — dimineață.
-// 1. Remindere programări, cu text adaptiv:
+// Remindere programări, cu text adaptiv:
 //    - Luni-Vineri → reminder "AZI" pentru programările zilei
 //    - dacă mâine e Sâmbătă/Duminică → reminder "MAINE" (deci Vineri trimite
 //      AZI + MAINE, Sâmbătă trimite doar MAINE pentru Duminică)
-// 2. Review întârziat — SMS review pentru participanții de ieri (o zi după
-//    ședință, ca leadul "să doarmă peste experiență").
+// NB: review-ul NU se mai trimite aici (decizie 2026-06-08) — se cere doar după
+// conversie (lead → client). Vezi scripts/sms/templates.md → De implementat #1.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms } from '../_shared/sms.ts'
 
@@ -19,8 +19,6 @@ function endOfDay(date: Date) {
   d.setUTCHours(23, 59, 59, 999)
   return d.toISOString()
 }
-
-const dateStr = (d: Date) => d.toISOString().slice(0, 10)
 
 // Ora locală țintă pentru reminder (Europe/Bucharest). pg_cron e programat la
 // AMBELE ore UTC (07:00 + 08:00); garda de mai jos lasă să ruleze o singură dată,
@@ -64,7 +62,6 @@ Deno.serve(async (req) => {
 
   const now = new Date()
   const sent: string[] = []
-  const reviews: string[] = []
   const errors: string[] = []
 
   // --- 1. Remindere adaptive ---
@@ -122,50 +119,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  // --- 2. Review întârziat — participanții de ieri ---
-  const yesterday = new Date(now.getTime() - 86_400_000)
-  const { data: prezente } = await supabase
-    .from('programari_leads')
-    .select(
-      'lead, leads(id, prenume, nume, telefon, locatia, grupa_varsta, status)',
-    )
-    .eq('data_programarii', dateStr(yesterday))
-    .eq('prezenta', 'prezent')
-
-  for (const p of prezente ?? []) {
-    const lead = Array.isArray(p.leads) ? p.leads[0] : p.leads
-    if (!lead || lead.status !== 'a_venit' || !lead.telefon) continue
-
-    const { data: existing } = await supabase
-      .from('sms_logs')
-      .select('id')
-      .eq('lead_id', lead.id)
-      .eq('tip', 'review')
-      .eq('status', 'sent')
-      .maybeSingle()
-    if (existing) continue
-
-    const mesaj = buildSms('review', {
-      prenume: lead.prenume || lead.nume,
-      locatie: lead.locatia,
-      grupa: lead.grupa_varsta,
-    })
-
-    const result = await sendSms(lead.telefon, mesaj)
-    await supabase.from('sms_logs').insert({
-      lead_id: lead.id,
-      tip: 'review',
-      telefon: lead.telefon,
-      mesaj,
-      status: result.ok ? 'sent' : 'failed',
-      error: result.ok ? null : result.error,
-    })
-    if (result.ok) reviews.push(`${lead.prenume ?? ''} ${lead.nume}`.trim())
-    else errors.push(`${lead.nume}: ${result.error}`)
-  }
+  // NB: review-ul NU se mai trimite după prezența la demo. Decizie 2026-06-08:
+  // review-ul se cere DOAR după conversie (lead mutat în client) — de implementat
+  // separat (vezi scripts/sms/templates.md → De implementat #1).
 
   console.log(
-    `[cron/morning] remindere: ${sent.length}, review: ${reviews.length}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, erori: ${errors.length}`,
   )
-  return Response.json({ sent, reviews, errors, rulatLa: now.toISOString() })
+  return Response.json({ sent, errors, rulatLa: now.toISOString() })
 })

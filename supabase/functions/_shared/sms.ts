@@ -1,3 +1,6 @@
+// Textele de mai jos OGLINDESC documentul de referință scripts/sms/templates.md —
+// la orice modificare, ține-le sincronizate.
+//
 // Logică SMS partajată — template-uri + delivery via messaging.ts (themarketer).
 // Folosită de send-lead-sms și cron-morning. Provider-ul concret e abstractizat
 // în [_shared/messaging.ts](messaging.ts); aici păstrăm doar template-urile +
@@ -79,17 +82,17 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
   // Texte fără diacritice și fără emoji — vezi REGULA din capul fișierului.
   switch (tip) {
     case 'confirmare':
-      return `Buna ${nume}! Sedinta gratuita la Quasar Dance e confirmata pe ${data}. Ne vedem la ${adresa}!`
+      return `Buna ${nume}! Sedinta gratuita la Quasar Dance e confirmata pe ${data}. Va asteptam cu drag la ${adresa}!`
     case 'reminder': {
       const cand = params.cand === 'azi' ? 'AZI' : 'MAINE'
-      return `Buna ${nume}! Reminder: ${cand} ai sedinta gratuita la Quasar Dance, ${data}, la ${adresa}. Te asteptam!`
+      return `Buna ${nume}! Va reamintim de sedinta gratuita la Quasar Dance ${cand}, ${data}, la ${adresa}. Te asteptam!`
     }
     case 'review':
       return `Buna ${nume}! Speram ca ti-a placut sedinta la Quasar Dance. Ne-ar ajuta enorm un review scurt: ${reviewLink} Multumim!`
     case 'followup':
       return `Buna ${nume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Te asteptam cu drag - suna-ne sau scrie-ne sa stabilim o noua data!`
     case 'waiting_list':
-      return `Buna ${nume}! Multumim pentru interes la Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!`
+      return `Buna ${nume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!`
     default:
       return ''
   }

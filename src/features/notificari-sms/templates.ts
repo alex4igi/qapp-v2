@@ -1,3 +1,5 @@
+// Textele OGLINDESC documentul de referință scripts/sms/templates.md — ține-le sincronizate.
+//
 // Template-uri SMS bulk pentru plăți/restanțe (fluxul „double-check").
 // Mesajul final e construit aici și stocat în situatie_sms_uri.mesaj — processorul
 // doar îl trimite. REGULĂ: text fără diacritice și fără emoji (GSM-7).
@@ -67,7 +69,7 @@ export function buildBulkSms(
       const n = zilePanaLaTermen(azi)
       const cand =
         n > 1 ? `peste ${n} zile` : n === 1 ? 'maine' : 'astazi'
-      return `Buna ziua! Un reminder ca ${cand} este termenul de plata pentru cursurile Quasar Dance. #nevermissachancetotdance Echipa Quasar Dance`
+      return `Buna ziua! Va reamintim ca ${cand} este termenul de plata pentru cursurile Quasar Dance. Echipa Quasar Dance`
     }
 
     case 'notificare_restante': {

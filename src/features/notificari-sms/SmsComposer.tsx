@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Modal,
@@ -9,7 +9,7 @@ import {
   Button,
   Spinner,
 } from '@/components/ui'
-import { locatiiOptions, sezoaneOptions } from '@/lib/lookups'
+import { locatiiOptions, sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import { formatRoMobile } from '@/lib/phone'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
@@ -55,6 +55,20 @@ export function SmsComposer({ open, onClose }: Props) {
 
   const locatii = useQuery({ queryKey: ['lookup', 'locatii'], queryFn: locatiiOptions })
   const sezoane = useQuery({ queryKey: ['lookup', 'sezoane'], queryFn: sezoaneOptions })
+  const sezonActiv = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
+  // Presetează sezonul activ (o singură dată) — evită trimiterea către oameni
+  // din sezoane vechi care nu mai sunt în oraș. Operatorul poate trece pe „Toate".
+  const [sezonInit, setSezonInit] = useState(false)
+  useEffect(() => {
+    if (!sezonInit && sezonActiv.data) {
+      setSezon(sezonActiv.data)
+      setSezonInit(true)
+    }
+  }, [sezonInit, sezonActiv.data])
 
   // mesaj_liber are nevoie de locație (ca să nu trimitem aiurea tuturor).
   const needsLocatie = cod === 'mesaj_liber'

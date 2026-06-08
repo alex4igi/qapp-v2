@@ -56,6 +56,17 @@ export async function sezoaneOptions(): Promise<SelectOption[]> {
   }))
 }
 
+// Id-ul sezonului activ (stare='activ', unic). null dacă nu există unul activ.
+export async function sezonActivId(): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('sezoane')
+    .select('id')
+    .eq('stare', 'activ')
+    .maybeSingle()
+  if (error) throw error
+  return data?.id ?? null
+}
+
 export async function cursuriOptions(
   locatieId?: string | null,
 ): Promise<SelectOption[]> {
