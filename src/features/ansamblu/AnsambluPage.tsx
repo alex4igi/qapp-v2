@@ -19,10 +19,9 @@ import {
 } from './api'
 import { TrendPrezenteSection } from './TrendPrezenteSection'
 import { ClientiActiviPieChart } from './ClientiActiviPieChart'
-import { CrestereNetaChart } from './CrestereNetaChart'
+import { TotalClientiChart } from './TotalClientiChart'
 import { OcupareList } from './OcupareList'
 import { TeacherMarjaTable } from './TeacherMarjaTable'
-import { ReinscrieriSection } from './ReinscrieriSection'
 
 export function AnsambluPage() {
   const { role } = useAuth()
@@ -114,7 +113,7 @@ export function AnsambluPage() {
                     <div>
                       <div className="mb-2 flex items-end justify-between gap-3">
                         <h2 className="text-sm font-semibold text-quasar-black">
-                          Creștere netă (ultimele 12 luni)
+                          Total clienți (ultimele 12 luni)
                         </h2>
                         <span className="text-xs text-quasar-gray">
                           {locatieId ? locatieNume : 'toate locațiile'}
@@ -123,7 +122,7 @@ export function AnsambluPage() {
                       {crestereQ.isLoading ? (
                         <Spinner />
                       ) : (
-                        <CrestereNetaChart rows={crestereQ.data ?? []} />
+                        <TotalClientiChart rows={crestereQ.data ?? []} />
                       )}
                     </div>
                   </div>
@@ -185,8 +184,6 @@ export function AnsambluPage() {
             </div>
           </section>
         )}
-
-        {!teacher && privileged && <ReinscrieriSection />}
 
         {isAdminOrHigher(role) && (
           <section>
