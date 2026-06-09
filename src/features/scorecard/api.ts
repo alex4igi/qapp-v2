@@ -1,0 +1,179 @@
+import { supabase } from '@/lib/supabase'
+import type { Tables } from '@/types/db'
+import type { Clasa } from './constants'
+
+export type ScorecardRow = {
+  user_id: string
+  contacte_total: number
+  contacte_verificate: number
+  contacte_telefon: number
+  contacte_sms: number
+  contacte_email: number
+  contacte_dm: number
+  leaduri_lucrate: number
+  viteza_med_ore: number | null
+  viteza_clasa: Clasa
+  persistenta_med: number | null
+  persistenta_clasa: Clasa
+  followup_onorat_pct: number | null
+  igiena_crm_pct: number | null
+  igiena_clasa: Clasa
+  conversie_pct: number | null
+  conversie_clasa: Clasa
+  show_rate_pct: number | null
+  show_rate_clasa: Clasa
+  volum_clasa: Clasa
+  nota_lipsa_pct: number | null
+  rafala_flag: boolean
+  decalaj_flag: boolean
+  scor_total: number | null
+  scor_pct: number | null
+  clasa_generala: Clasa
+}
+
+export type ScorecardRestanteRow = {
+  user_id: string
+  contacte_recuperare: number
+  clienti_contactati: number
+  suma_recuperata: number
+  rest_ramas: number
+  rata_recuperare_pct: number | null
+  rata_clasa: Clasa
+  igiena_pct: number | null
+  igiena_clasa: Clasa
+  volum_clasa: Clasa
+  rafala_flag: boolean
+  decalaj_flag: boolean
+  scor_total: number | null
+  scor_pct: number | null
+  clasa_generala: Clasa
+}
+
+export type ScorecardReactivariRow = {
+  user_id: string
+  contacte_reactivare: number
+  clienti_contactati: number
+  reactivati: number
+  rata_reactivare_pct: number | null
+  rata_clasa: Clasa
+  igiena_pct: number | null
+  igiena_clasa: Clasa
+  volum_clasa: Clasa
+  rafala_flag: boolean
+  decalaj_flag: boolean
+  scor_total: number | null
+  scor_pct: number | null
+  clasa_generala: Clasa
+}
+
+export type Prag = Tables<'scorecard_praguri'>
+
+// Lună 'YYYY-MM' → marginile zilei (prima/ultima zi a lunii, ISO).
+export function lunaToBounds(luna: string): { from: string; to: string } {
+  const [y, m] = luna.split('-').map(Number)
+  const start = new Date(Date.UTC(y, m - 1, 1))
+  const end = new Date(Date.UTC(y, m, 0))
+  const iso = (d: Date) => d.toISOString().slice(0, 10)
+  return { from: iso(start), to: iso(end) }
+}
+
+export function lunaCurenta(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+export async function getScorecard(
+  luna: string,
+  locatie: string | null,
+): Promise<ScorecardRow[]> {
+  const { from, to } = lunaToBounds(luna)
+  const { data, error } = await supabase.rpc('get_scorecard_operatori', {
+    p_from: from,
+    p_to: to,
+    ...(locatie ? { p_locatie: locatie } : {}),
+  })
+  if (error) throw error
+  return (data ?? []) as unknown as ScorecardRow[]
+}
+
+export async function getScorecardRestante(
+  luna: string,
+  locatieId: string | null,
+): Promise<ScorecardRestanteRow[]> {
+  const { from, to } = lunaToBounds(luna)
+  const { data, error } = await supabase.rpc('get_scorecard_restante', {
+    p_from: from,
+    p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
+  if (error) throw error
+  return (data ?? []) as unknown as ScorecardRestanteRow[]
+}
+
+export async function getScorecardReactivari(
+  luna: string,
+  locatieId: string | null,
+): Promise<ScorecardReactivariRow[]> {
+  const { from, to } = lunaToBounds(luna)
+  const { data, error } = await supabase.rpc('get_scorecard_reactivari', {
+    p_from: from,
+    p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
+  if (error) throw error
+  return (data ?? []) as unknown as ScorecardReactivariRow[]
+}
+
+export type RataRestante = {
+  rest: number
+  de_incasat: number
+  rata_pct: number | null
+}
+
+// Rată restanțe de portofoliu (echipă/locație) pe o lună: rest ÷ de-încasat.
+// Din view-ul restante_locatie_luna (agregat client-side când locatie=toate).
+export async function getRataRestante(
+  luna: string,
+  locatieId: string | null,
+): Promise<RataRestante> {
+  let q = supabase
+    .from('restante_locatie_luna')
+    .select('id_locatie, total_de_incasat, total_incasat')
+    .eq('luna', luna)
+  if (locatieId) q = q.eq('id_locatie', locatieId)
+  const { data, error } = await q
+  if (error) throw error
+  let de = 0
+  let inc = 0
+  for (const r of data ?? []) {
+    de += Number(r.total_de_incasat ?? 0)
+    inc += Number(r.total_incasat ?? 0)
+  }
+  const rest = Math.max(0, de - inc)
+  return {
+    rest,
+    de_incasat: de,
+    rata_pct: de > 0 ? Math.round((rest / de) * 1000) / 10 : null,
+  }
+}
+
+export async function listPraguri(): Promise<Prag[]> {
+  const { data, error } = await supabase
+    .from('scorecard_praguri')
+    .select('*')
+    .order('faza', { ascending: true })
+    .order('cheie', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function updatePrag(
+  cheie: string,
+  patch: { prag_standard: number; prag_peste: number; pondere: number },
+): Promise<void> {
+  const { error } = await supabase
+    .from('scorecard_praguri')
+    .update({ ...patch, updated: new Date().toISOString() })
+    .eq('cheie', cheie)
+  if (error) throw error
+}
