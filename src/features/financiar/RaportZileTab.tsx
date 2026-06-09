@@ -34,10 +34,10 @@ function todayIso(): string {
     .slice(0, 10)
 }
 
-const columns: Column<RaportZiRow>[] = [
+const baseColumns: Column<RaportZiRow>[] = [
   { header: 'Data', cell: (r) => r.data, className: 'w-32' },
   {
-    header: 'Total',
+    header: 'Încasări',
     cell: (r) => (
       <span className="font-semibold text-quasar-black">
         {formatRON(r.total)}
@@ -63,6 +63,31 @@ const columns: Column<RaportZiRow>[] = [
   {
     header: 'Revolut',
     cell: (r) => (r.revolut > 0 ? formatRON(r.revolut) : '—'),
+    className: 'w-32 text-right',
+  },
+]
+
+// Cheltuielile nu au atribuire pe dimensiune → doar în „Toate locațiile".
+const cheltuieliColumns: Column<RaportZiRow>[] = [
+  {
+    header: 'Cheltuieli',
+    cell: (r) =>
+      r.cheltuieli > 0 ? (
+        <span className="text-red-600">{formatRON(r.cheltuieli)}</span>
+      ) : (
+        '—'
+      ),
+    className: 'w-32 text-right',
+  },
+  {
+    header: 'Net',
+    cell: (r) => (
+      <span
+        className={`font-semibold ${r.net < 0 ? 'text-red-600' : 'text-green-700'}`}
+      >
+        {formatRON(r.net)}
+      </span>
+    ),
     className: 'w-32 text-right',
   },
 ]
@@ -123,14 +148,37 @@ export function RaportZileTab() {
   })
 
   const summary = data?.summary
+  const showCheltuieli = dimensiune === 'all'
+  const columns = showCheltuieli
+    ? [...baseColumns, ...cheltuieliColumns]
+    : baseColumns
 
   const onExport = () => {
     const rows = data?.rows ?? []
-    downloadCsv(
-      `raport-zile-${from}_${to}.csv`,
-      ['Data', 'Total', 'Cash', 'Card', 'Transfer', 'Revolut'],
-      rows.map((r) => [r.data, r.total, r.cash, r.card, r.transfer, r.revolut]),
-    )
+    const headers = ['Data', 'Încasări', 'Cash', 'Card', 'Transfer', 'Revolut']
+    const body: (string | number)[][] = rows.map((r) => [
+      r.data,
+      r.total,
+      r.cash,
+      r.card,
+      r.transfer,
+      r.revolut,
+    ])
+    const totalRow: (string | number)[] = [
+      'TOTAL',
+      summary?.total ?? 0,
+      summary?.cash ?? 0,
+      summary?.card ?? 0,
+      summary?.transfer ?? 0,
+      summary?.revolut ?? 0,
+    ]
+    if (showCheltuieli) {
+      headers.push('Cheltuieli', 'Net')
+      rows.forEach((r, i) => body[i].push(r.cheltuieli, r.net))
+      totalRow.push(summary?.cheltuieli ?? 0, summary?.net ?? 0)
+    }
+    body.push(totalRow)
+    downloadCsv(`raport-zile-${from}_${to}.csv`, headers, body)
   }
 
   return (
@@ -195,7 +243,7 @@ export function RaportZileTab() {
 
       {summary && (
         <p className="mb-3 text-sm">
-          <strong>Total: {formatRON(summary.total)}</strong>
+          <strong>Încasări: {formatRON(summary.total)}</strong>
           {summary.total > 0 && (
             <span className="text-quasar-gray">
               {' '}
@@ -203,6 +251,20 @@ export function RaportZileTab() {
               {formatRON(summary.card)} · Transfer{' '}
               {formatRON(summary.transfer)} · Revolut{' '}
               {formatRON(summary.revolut)}
+            </span>
+          )}
+          {showCheltuieli && (
+            <span>
+              {' · '}
+              <span className="text-red-600">
+                Cheltuieli {formatRON(summary.cheltuieli)}
+              </span>
+              {' · '}
+              <strong
+                className={summary.net < 0 ? 'text-red-600' : 'text-green-700'}
+              >
+                Net {formatRON(summary.net)}
+              </strong>
             </span>
           )}
         </p>
@@ -219,7 +281,11 @@ export function RaportZileTab() {
           columns={columns}
           rows={data?.rows ?? []}
           rowKey={(r) => r.data}
-          emptyMessage="Nicio încasare în intervalul ales."
+          emptyMessage={
+            showCheltuieli
+              ? 'Nicio mișcare în intervalul ales.'
+              : 'Nicio încasare în intervalul ales.'
+          }
         />
       )}
     </div>

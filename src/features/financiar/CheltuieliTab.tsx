@@ -41,8 +41,8 @@ async function listCheltuieliExt(f: Filtre): Promise<{
   const build = () => {
     let q = supabase.from('cheltuieli').select('*', { count: 'exact' })
     q = applyWordSearch(q, f.search, ['nume', 'descriere'])
-    if (f.from) q = q.gte('deadline', f.from)
-    if (f.to) q = q.lte('deadline', f.to)
+    if (f.from) q = q.gte('data', f.from)
+    if (f.to) q = q.lte('data', f.to)
     if (f.categorie)
       q = q.eq(
         'categorie',
@@ -54,7 +54,7 @@ async function listCheltuieliExt(f: Filtre): Promise<{
   }
 
   const paginated = build()
-    .order('deadline', { ascending: true, nullsFirst: false })
+    .order('data', { ascending: false, nullsFirst: false })
     .range(rangeFrom, rangeTo)
   const { data, error, count } = await paginated
   if (error) throw error
@@ -82,6 +82,24 @@ async function listCheltuieliExt(f: Filtre): Promise<{
   }
 }
 
+// Export: toate cheltuielile filtrate (fără paginare) pentru CSV cu total real.
+async function exportCheltuieli(f: Omit<Filtre, 'page'>): Promise<Cheltuiala[]> {
+  let q = supabase.from('cheltuieli').select('*')
+  q = applyWordSearch(q, f.search, ['nume', 'descriere'])
+  if (f.from) q = q.gte('data', f.from)
+  if (f.to) q = q.lte('data', f.to)
+  if (f.categorie)
+    q = q.eq('categorie', f.categorie as 'Administrativa' | 'Salariala' | 'Alta')
+  if (f.achitat === 'da') q = q.eq('achitat', true)
+  if (f.achitat === 'nu') q = q.eq('achitat', false)
+  const { data, error } = await q.order('data', {
+    ascending: false,
+    nullsFirst: false,
+  })
+  if (error) throw error
+  return data ?? []
+}
+
 const columns: Column<Cheltuiala>[] = [
   {
     header: 'Nume',
@@ -93,8 +111,8 @@ const columns: Column<Cheltuiala>[] = [
     className: 'w-36',
   },
   {
-    header: 'Deadline',
-    cell: (c) => c.deadline ?? '—',
+    header: 'Data',
+    cell: (c) => c.data ?? '—',
     className: 'w-32',
   },
   {
@@ -150,20 +168,29 @@ export function CheltuieliTab() {
     [data],
   )
 
-  const onExport = () => {
-    const rows = data?.rows ?? []
-    downloadCsv(
-      `cheltuieli-${from || 'all'}_${to || 'all'}_${categorie || 'toate-cat'}.csv`,
-      ['Nume', 'Categorie', 'Deadline', 'Valoare (RON)', 'Achitată', 'Descriere'],
-      rows.map((r) => [
+  const [exporting, setExporting] = useState(false)
+  const onExport = async () => {
+    setExporting(true)
+    try {
+      const rows = await exportCheltuieli({ search, from, to, categorie, achitat })
+      const body: (string | number)[][] = rows.map((r) => [
         r.nume,
         r.categorie ?? '',
-        r.deadline ?? '',
+        r.data ?? '',
         Number(r.valoare ?? 0),
         r.achitat ? 'Da' : 'Nu',
         r.descriere ?? '',
-      ]),
-    )
+      ])
+      const totalVal = rows.reduce((a, r) => a + Number(r.valoare ?? 0), 0)
+      body.push(['TOTAL', '', '', totalVal, '', ''])
+      downloadCsv(
+        `cheltuieli-${from || 'all'}_${to || 'all'}_${categorie || 'toate-cat'}.csv`,
+        ['Nume', 'Categorie', 'Data', 'Valoare (RON)', 'Achitată', 'Descriere'],
+        body,
+      )
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -180,7 +207,7 @@ export function CheltuieliTab() {
           </Field>
         </div>
         <div className="w-40">
-          <Field label="Deadline de la" htmlFor="ch-from">
+          <Field label="Data de la" htmlFor="ch-from">
             <TextInput
               id="ch-from"
               type="date"
@@ -240,9 +267,9 @@ export function CheltuieliTab() {
           <Button
             variant="secondary"
             onClick={onExport}
-            disabled={!data?.rows.length}
+            disabled={!data?.rows.length || exporting}
           >
-            ⬇ Export CSV
+            {exporting ? 'Se exportă…' : '⬇ Export CSV'}
           </Button>
           <Button onClick={() => setFormOpen(true)}>+ Cheltuială nouă</Button>
         </div>

@@ -53,6 +53,8 @@ export type RaportZiRow = {
   card: number
   transfer: number
   revolut: number
+  cheltuieli: number
+  net: number
 }
 
 export type RaportZileResult = {
@@ -94,6 +96,8 @@ export async function getRaportZile(params: {
     card: 0,
     transfer: 0,
     revolut: 0,
+    cheltuieli: 0,
+    net: 0,
   })
 
   const byDate = new Map<string, RaportZiRow>()
@@ -111,6 +115,31 @@ export async function getRaportZile(params: {
     }
     byDate.set(r.data, row)
   }
+
+  // Cheltuielile nu au atribuire pe locație/sală/curs/profesor, deci le afișăm
+  // doar în raportul „Toate locațiile" (altfel netul ar amesteca venit filtrat
+  // cu cheltuieli pe tot clubul).
+  if (params.dimensiune === 'all') {
+    let cq = supabase
+      .from('cheltuieli')
+      .select('data, valoare')
+      .not('data', 'is', null)
+    if (params.from) cq = cq.gte('data', params.from)
+    if (params.to) cq = cq.lte('data', params.to)
+    const { data: chel, error: chelErr } = await cq
+    if (chelErr) throw chelErr
+    for (const r of chel ?? []) {
+      if (!r.data) continue
+      const row = byDate.get(r.data) ?? empty(r.data)
+      const v = Number(r.valoare ?? 0)
+      row.cheltuieli += v
+      summary.cheltuieli += v
+      byDate.set(r.data, row)
+    }
+  }
+
+  for (const row of byDate.values()) row.net = row.total - row.cheltuieli
+  summary.net = summary.total - summary.cheltuieli
 
   const rows = Array.from(byDate.values()).sort((a, b) =>
     a.data.localeCompare(b.data),
@@ -296,6 +325,50 @@ export type IncasariListResult = {
   total: number
 }
 
+const INCASARI_SELECT = `
+      id, data, suma, metoda, observatii, categorie, bucati,
+      clienti(nume, prenume),
+      enrollments(cursuri(numele)),
+      inventar(articol),
+      locatii(nume)
+      `
+
+type IncasareRaw = {
+  id: string
+  data: string | null
+  suma: number | null
+  metoda: string | null
+  observatii: string | null
+  categorie: string | null
+  bucati: number | null
+  clienti: { nume: string | null; prenume: string | null } | null
+  enrollments: { cursuri: { numele: string | null } | null } | null
+  inventar: { articol: string | null } | null
+  locatii: { nume: string | null } | null
+}
+
+function mapIncasareRow(r: IncasareRaw): IncasareRow {
+  return {
+    id: r.id,
+    data: r.data,
+    suma: Number(r.suma ?? 0),
+    metoda: r.metoda,
+    observatii: r.observatii,
+    categorie: r.categorie,
+    bucati: r.bucati,
+    client_nume: r.clienti
+      ? `${r.clienti.nume ?? ''} ${r.clienti.prenume ?? ''}`.trim() || null
+      : null,
+    detalii:
+      r.categorie === 'Abonament'
+        ? (r.enrollments?.cursuri?.numele ?? null)
+        : r.categorie === 'Merch'
+          ? (r.inventar?.articol ?? null)
+          : null,
+    locatie_nume: r.locatii?.nume ?? null,
+  }
+}
+
 export async function listIncasari({
   search,
   page,
@@ -309,16 +382,7 @@ export async function listIncasari({
 
   let query = supabase
     .from('incasari')
-    .select(
-      `
-      id, data, suma, metoda, observatii, categorie, bucati,
-      clienti(nume, prenume),
-      enrollments(cursuri(numele)),
-      inventar(articol),
-      locatii(nume)
-      `,
-      { count: 'exact' },
-    )
+    .select(INCASARI_SELECT, { count: 'exact' })
     .order('data', { ascending: false, nullsFirst: false })
     .range(rangeFrom, rangeTo)
 
@@ -330,46 +394,39 @@ export async function listIncasari({
 
   query = applyWordSearch(query, search, ['observatii'])
 
-  type Raw = {
-    id: string
-    data: string | null
-    suma: number | null
-    metoda: string | null
-    observatii: string | null
-    categorie: string | null
-    bucati: number | null
-    clienti: { nume: string | null; prenume: string | null } | null
-    enrollments: { cursuri: { numele: string | null } | null } | null
-    inventar: { articol: string | null } | null
-    locatii: { nume: string | null } | null
-  }
-
   const { data, error, count } = await query
   if (error) throw error
 
-  const rows: IncasareRow[] = (data as unknown as Raw[] | null ?? []).map(
-    (r) => ({
-      id: r.id,
-      data: r.data,
-      suma: Number(r.suma ?? 0),
-      metoda: r.metoda,
-      observatii: r.observatii,
-      categorie: r.categorie,
-      bucati: r.bucati,
-      client_nume: r.clienti
-        ? `${r.clienti.nume ?? ''} ${r.clienti.prenume ?? ''}`.trim() || null
-        : null,
-      detalii:
-        r.categorie === 'Abonament'
-          ? (r.enrollments?.cursuri?.numele ?? null)
-          : r.categorie === 'Merch'
-            ? (r.inventar?.articol ?? null)
-            : null,
-      locatie_nume: r.locatii?.nume ?? null,
-    }),
+  const rows = (data as unknown as IncasareRaw[] | null ?? []).map(
+    mapIncasareRow,
   )
 
   return { rows, total: count ?? 0 }
+}
+
+// Export: toate încasările filtrate (fără paginare) pentru CSV cu total real.
+export async function exportIncasari(
+  params: Omit<IncasariListParams, 'page'>,
+): Promise<IncasareRow[]> {
+  let query = supabase
+    .from('incasari')
+    .select(INCASARI_SELECT)
+    .order('data', { ascending: false, nullsFirst: false })
+
+  if (params.from) query = query.gte('data', params.from)
+  if (params.to) query = query.lte('data', params.to)
+  if (params.locatieId) query = query.eq('locatie', params.locatieId)
+  if (params.categorie)
+    query = query.eq(
+      'categorie',
+      params.categorie as Enums<'categorie_incasare'>,
+    )
+
+  query = applyWordSearch(query, params.search, ['observatii'])
+
+  const { data, error } = await query
+  if (error) throw error
+  return (data as unknown as IncasareRaw[] | null ?? []).map(mapIncasareRow)
 }
 
 export type RestanteListParams = {
@@ -421,4 +478,24 @@ export async function listRestante({
   const total = allRows?.length ?? 0
 
   return { rows: data ?? [], total, sumRest }
+}
+
+// Export: toate restanțele filtrate (fără paginare) pentru CSV cu total real.
+export async function exportRestante(
+  params: Omit<RestanteListParams, 'page'>,
+): Promise<RestantaRow[]> {
+  let q = supabase.from('plati_inrolari').select('*').gt('rest', 0)
+  if (params.locatieId) q = q.eq('id_locatie', params.locatieId)
+  if (params.cursId) q = q.eq('id_curs', params.cursId)
+  q = applyWordSearch(q, params.search, [
+    'nume_client',
+    'prenume_client',
+    'nume_curs',
+  ])
+  const { data, error } = await q.order('data_incepere', {
+    ascending: false,
+    nullsFirst: false,
+  })
+  if (error) throw error
+  return data ?? []
 }

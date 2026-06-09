@@ -91,8 +91,8 @@ export async function getKpis(i: Interval): Promise<Kpis> {
     supabase
       .from('cheltuieli')
       .select('valoare')
-      .gte('deadline', from)
-      .lte('deadline', to),
+      .gte('data', from)
+      .lte('data', to),
     supabase.from('plati_inrolari').select('rest').gt('rest', 0),
   ])
 
@@ -215,8 +215,8 @@ export async function getMixCategoriiCheltuieli(
   const { data, error } = await supabase
     .from('cheltuieli')
     .select('valoare, categorie')
-    .gte('deadline', from)
-    .lte('deadline', to)
+    .gte('data', from)
+    .lte('data', to)
   if (error) throw error
 
   const map = new Map<string, number>()
@@ -252,24 +252,6 @@ export async function listSezoaneTinta(): Promise<SezonOption[]> {
   return (data ?? []) as SezonOption[]
 }
 
-export type ReinscriereKpiRow = {
-  curs_id: string
-  curs_nume: string
-  varsta: string | null
-}
-
-export type PierdereRow = ReinscriereKpiRow & {
-  activati_curent: number
-  pierduti: number
-  procent_pierdere: number
-}
-
-export type ConversieRow = ReinscriereKpiRow & {
-  activati: number
-  platiti: number
-  procent_conversie: number
-}
-
 export type IncasariSezonRow = {
   sezon_id: string
   numele_sezonului: string
@@ -280,33 +262,20 @@ export type IncasariSezonRow = {
   total_incasari: number
 }
 
-export async function getReinscrieriPierderi(
-  sezonTintaId: string,
-): Promise<PierdereRow[]> {
-  const { data, error } = await supabase.rpc('get_reinscrieri_pierderi', {
-    p_sezon_tinta: sezonTintaId,
-  })
-  if (error) throw error
-  return (data ?? []) as PierdereRow[]
-}
-
-export async function getReinscrieriConversie(
-  sezonTintaId: string,
-): Promise<ConversieRow[]> {
-  const { data, error } = await supabase.rpc('get_reinscrieri_conversie', {
-    p_sezon_tinta: sezonTintaId,
-  })
-  if (error) throw error
-  return (data ?? []) as ConversieRow[]
-}
-
 export async function getIncasariPerSezon(): Promise<IncasariSezonRow[]> {
   const { data, error } = await supabase.rpc('get_incasari_per_sezon')
   if (error) throw error
-  return ((data ?? []) as IncasariSezonRow[]).map((r) => ({
-    ...r,
-    total_incasari: Number(r.total_incasari ?? 0),
-  }))
+  return ((data ?? []) as IncasariSezonRow[])
+    .map((r) => ({
+      ...r,
+      total_incasari: Number(r.total_incasari ?? 0),
+    }))
+    // Cronologic (vechi → nou), ca restul graficelor; sezoanele fără dată la final.
+    .sort((a, b) => {
+      if (!a.data_incepere) return 1
+      if (!b.data_incepere) return -1
+      return a.data_incepere.localeCompare(b.data_incepere)
+    })
 }
 
 // ============================================================================

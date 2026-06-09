@@ -24,17 +24,16 @@ import {
   lunaCurenta,
   lunaCuOffset,
   listSezoaneTinta,
-  getReinscrieriPierderi,
-  getReinscrieriConversie,
   getIncasariPerSezon,
   type Interval,
 } from './api'
+import { getReinscrieriProgress } from '@/features/reinscrieri/api'
 import { KpiCard } from './KpiCard'
 import { BalantaChart } from './BalantaChart'
 import { PrezenteAchitareChart } from './PrezenteAchitareChart'
 import { MetodePlataChart } from './MetodePlataChart'
 import { CategorieChart } from './CategorieChart'
-import { ReinscrieriKpiChart } from './ReinscrieriKpiChart'
+import { ReinscrieriDonut } from './ReinscrieriDonut'
 import { IncasariSezonChart } from './IncasariSezonChart'
 
 const CATEG_INCASARI_PALETTE: Record<string, string> = {
@@ -138,17 +137,19 @@ export function StatisticiPage() {
     }
   }, [sezonTintaId, sezoaneTintaOptions])
 
-  const pierderiQ = useQuery({
-    queryKey: ['stat', 'reinscrieri-pierderi', sezonTintaId],
+  const reinscrieriProgresQ = useQuery({
+    queryKey: ['stat', 'reinscrieri-progres', sezonTintaId],
     enabled: Boolean(sezonTintaId),
-    queryFn: () => getReinscrieriPierderi(sezonTintaId),
+    queryFn: () => getReinscrieriProgress(sezonTintaId),
   })
 
-  const conversieQ = useQuery({
-    queryKey: ['stat', 'reinscrieri-conversie', sezonTintaId],
-    enabled: Boolean(sezonTintaId),
-    queryFn: () => getReinscrieriConversie(sezonTintaId),
-  })
+  const { potential, reinscrisi } = useMemo(() => {
+    const rows = reinscrieriProgresQ.data ?? []
+    return {
+      potential: rows.reduce((a, r) => a + Number(r.total_eligibili ?? 0), 0),
+      reinscrisi: rows.reduce((a, r) => a + Number(r.activati ?? 0), 0),
+    }
+  }, [reinscrieriProgresQ.data])
 
   const incasariSezonQ = useQuery({
     queryKey: ['stat', 'incasari-per-sezon'],
@@ -211,7 +212,7 @@ export function StatisticiPage() {
           label="Cheltuieli"
           value={kpisQ.data ? formatRON(kpisQ.data.cheltuieli) : '—'}
           tone="negative"
-          hint="cu deadline în interval"
+          hint="făcute în interval"
         />
         <KpiCard
           label="Profit"
@@ -405,44 +406,27 @@ export function StatisticiPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div>
-              {pierderiQ.isLoading ? (
-                <Spinner />
-              ) : (
-                <ReinscrieriKpiChart
-                  title="Pierderi promo (anulări cron)"
-                  rows={pierderiQ.data ?? []}
-                  baseKey="activati_curent"
-                  baseLabel="Activi"
-                  baseColor="#10b981"
-                  topKey="pierduti"
-                  topLabel="Pierduți"
-                  topColor="#ef4444"
-                  percentKey="procent_pierdere"
-                  percentSuffix="% pierdere"
-                />
-              )}
-            </div>
-            <div>
-              {conversieQ.isLoading ? (
-                <Spinner />
-              ) : (
-                <ReinscrieriKpiChart
-                  title="Conversie reînscriere → plată"
-                  rows={(conversieQ.data ?? []).map((r) => ({
-                    ...r,
-                    neplatiti: Math.max(0, r.activati - r.platiti),
-                  }))}
-                  baseKey="platiti"
-                  baseLabel="Plătiți"
-                  baseColor="#3b82f6"
-                  topKey="neplatiti"
-                  topLabel="Neplătiți încă"
-                  topColor="#dbeafe"
-                  percentKey="procent_conversie"
-                  percentSuffix="% conversie"
-                />
-              )}
+            {reinscrieriProgresQ.isLoading ? (
+              <Spinner />
+            ) : (
+              <ReinscrieriDonut reinscrisi={reinscrisi} potential={potential} />
+            )}
+            <div className="grid grid-cols-1 gap-3 self-start sm:grid-cols-2">
+              <KpiCard label="Potențial (eligibili)" value={potential} />
+              <KpiCard label="Reînscriși" value={reinscrisi} tone="positive" />
+              <KpiCard
+                label="Rămași"
+                value={Math.max(0, potential - reinscrisi)}
+              />
+              <KpiCard
+                label="Rată reînscriere"
+                value={
+                  potential > 0
+                    ? `${Math.round((100 * reinscrisi) / potential)}%`
+                    : '—'
+                }
+                tone="positive"
+              />
             </div>
           </div>
 

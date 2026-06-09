@@ -142,6 +142,34 @@ export function ReconcilieriTab() {
 
   const onExport = () => {
     const rows = data ?? []
+    const body: (string | number)[][] = rows.map((r) => {
+      const dif = Number(r.total_numarat ?? 0) -
+        (Number(r.fond_inceput ?? 0) + Number(r.total_sistem ?? 0))
+      return [
+        r.data ?? '',
+        r.locatii?.nume ?? '',
+        Number(r.total_sistem ?? 0),
+        Number(r.fond_inceput ?? 0),
+        Number(r.total_numarat ?? 0),
+        dif,
+        Number(r.de_depus ?? 0),
+        Number(r.fond_ramas ?? 0),
+        r.notite ?? '',
+      ]
+    })
+    // Total doar pe coloanele aditive; fondurile sunt solduri zilnice, nu se cumulează.
+    const sum = (pick: (r: Row) => number) => rows.reduce((a, r) => a + pick(r), 0)
+    body.push([
+      'TOTAL',
+      '',
+      sum((r) => Number(r.total_sistem ?? 0)),
+      '',
+      sum((r) => Number(r.total_numarat ?? 0)),
+      sumar.difTotal,
+      sumar.depus,
+      '',
+      '',
+    ])
     downloadCsv(
       `reconcilieri-cash-${from}_${to}.csv`,
       [
@@ -155,21 +183,7 @@ export function ReconcilieriTab() {
         'Fond mâine',
         'Notițe',
       ],
-      rows.map((r) => {
-        const dif = Number(r.total_numarat ?? 0) -
-          (Number(r.fond_inceput ?? 0) + Number(r.total_sistem ?? 0))
-        return [
-          r.data ?? '',
-          r.locatii?.nume ?? '',
-          Number(r.total_sistem ?? 0),
-          Number(r.fond_inceput ?? 0),
-          Number(r.total_numarat ?? 0),
-          dif,
-          Number(r.de_depus ?? 0),
-          Number(r.fond_ramas ?? 0),
-          r.notite ?? '',
-        ]
-      }),
+      body,
     )
   }
 

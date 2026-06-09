@@ -80,15 +80,20 @@ function TotaleSubTab() {
   ]
 
   const onExport = () => {
+    const rows = data ?? []
+    const body: (string | number)[][] = rows.map((r) => [
+      r.id ?? '',
+      Number(r.total ?? 0),
+      Number(r.incasat ?? 0),
+      Number(r.total ?? 0) - Number(r.incasat ?? 0),
+    ])
+    const sumTotal = rows.reduce((a, r) => a + Number(r.total ?? 0), 0)
+    const sumIncasat = rows.reduce((a, r) => a + Number(r.incasat ?? 0), 0)
+    body.push(['TOTAL', sumTotal, sumIncasat, sumTotal - sumIncasat])
     downloadCsv(
       `evolutie-totala-${new Date().toISOString().slice(0, 10)}.csv`,
       ['Luna', 'De încasat (RON)', 'Încasat (RON)', 'Rest (RON)'],
-      (data ?? []).map((r) => [
-        r.id ?? '',
-        Number(r.total ?? 0),
-        Number(r.incasat ?? 0),
-        Number(r.total ?? 0) - Number(r.incasat ?? 0),
-      ]),
+      body,
     )
   }
 
@@ -137,15 +142,23 @@ function TeacherSubTab() {
   ]
 
   const onExport = () => {
+    const rows = data ?? []
+    const body: (string | number)[][] = rows.map((r) => [
+      r.luna ?? '',
+      r.nume_teacher ?? '',
+      Number(r.total_de_incasat ?? 0),
+      Number(r.total_incasat ?? 0),
+    ])
+    body.push([
+      'TOTAL',
+      '',
+      rows.reduce((a, r) => a + Number(r.total_de_incasat ?? 0), 0),
+      rows.reduce((a, r) => a + Number(r.total_incasat ?? 0), 0),
+    ])
     downloadCsv(
       `evolutie-teacher-${new Date().toISOString().slice(0, 10)}.csv`,
       ['Luna', 'Teacher', 'De încasat (RON)', 'Încasat (RON)'],
-      (data ?? []).map((r) => [
-        r.luna ?? '',
-        r.nume_teacher ?? '',
-        Number(r.total_de_incasat ?? 0),
-        Number(r.total_incasat ?? 0),
-      ]),
+      body,
     )
   }
 
@@ -194,15 +207,23 @@ function LocatieSubTab() {
   ]
 
   const onExport = () => {
+    const rows = data ?? []
+    const body: (string | number)[][] = rows.map((r) => [
+      r.luna ?? '',
+      r.nume_locatie ?? '',
+      Number(r.total_de_incasat ?? 0),
+      Number(r.total_incasat ?? 0),
+    ])
+    body.push([
+      'TOTAL',
+      '',
+      rows.reduce((a, r) => a + Number(r.total_de_incasat ?? 0), 0),
+      rows.reduce((a, r) => a + Number(r.total_incasat ?? 0), 0),
+    ])
     downloadCsv(
       `evolutie-locatie-${new Date().toISOString().slice(0, 10)}.csv`,
       ['Luna', 'Locație', 'De încasat (RON)', 'Încasat (RON)'],
-      (data ?? []).map((r) => [
-        r.luna ?? '',
-        r.nume_locatie ?? '',
-        Number(r.total_de_incasat ?? 0),
-        Number(r.total_incasat ?? 0),
-      ]),
+      body,
     )
   }
 

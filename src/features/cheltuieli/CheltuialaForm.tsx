@@ -27,7 +27,7 @@ type FormState = {
   nume: string
   descriere: string
   valoare: string
-  deadline: string
+  data: string
   achitat: boolean
   categorie: string
 }
@@ -37,7 +37,7 @@ function initialState(c?: Cheltuiala | null): FormState {
     nume: c?.nume ?? '',
     descriere: c?.descriere ?? '',
     valoare: c?.valoare != null ? String(c.valoare) : '',
-    deadline: c?.deadline ?? '',
+    data: c?.data ?? '',
     achitat: c?.achitat ?? false,
     categorie: c?.categorie ?? '',
   }
@@ -53,8 +53,10 @@ export function CheltuialaForm({ open, cheltuiala, onClose }: Props) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['cheltuieli'] })
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['cheltuieli'] })
+    void queryClient.invalidateQueries({ queryKey: ['cheltuieli-ext'] })
+  }
 
   const save = useMutation({
     mutationFn: () => {
@@ -62,7 +64,7 @@ export function CheltuialaForm({ open, cheltuiala, onClose }: Props) {
         nume: form.nume.trim(),
         descriere: form.descriere.trim() || null,
         valoare: form.valoare.trim() ? Number(form.valoare) : null,
-        deadline: form.deadline || null,
+        data: form.data || null,
         achitat: form.achitat,
         categorie: (form.categorie || null) as Cheltuiala['categorie'],
       }
@@ -174,12 +176,12 @@ export function CheltuialaForm({ open, cheltuiala, onClose }: Props) {
               onChange={(e) => set('valoare', e.target.value)}
             />
           </Field>
-          <Field label="Deadline" htmlFor="deadline">
+          <Field label="Data cheltuielii" htmlFor="data">
             <TextInput
-              id="deadline"
+              id="data"
               type="date"
-              value={form.deadline}
-              onChange={(e) => set('deadline', e.target.value)}
+              value={form.data}
+              onChange={(e) => set('data', e.target.value)}
             />
           </Field>
         </div>

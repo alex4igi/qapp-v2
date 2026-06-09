@@ -17,7 +17,7 @@ export async function listCheltuieli({
   let query = supabase
     .from('cheltuieli')
     .select('*', { count: 'exact' })
-    .order('deadline', { ascending: true, nullsFirst: false })
+    .order('data', { ascending: false, nullsFirst: false })
     .range(from, to)
 
   query = applyWordSearch(query, search, ['nume', 'descriere'])

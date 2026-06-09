@@ -15,7 +15,7 @@ import { downloadCsv } from '@/lib/csv'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { locatiiOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
-import { listRestante, PAGE_SIZE, type RestantaRow } from './api'
+import { listRestante, exportRestante, PAGE_SIZE, type RestantaRow } from './api'
 
 const columns: Column<RestantaRow>[] = [
   {
@@ -108,12 +108,16 @@ export function RestanteTab() {
     [data],
   )
 
-  const onExport = () => {
-    const rows = data?.rows ?? []
-    downloadCsv(
-      `restante-${locatieId ? 'loc' : 'toate-loc'}_${cursId ? 'curs' : 'toate-curs'}.csv`,
-      ['Client', 'Curs', 'Locație', 'Început', 'Total (RON)', 'Plătit (RON)', 'Rest (RON)'],
-      rows.map((r) => [
+  const [exporting, setExporting] = useState(false)
+  const onExport = async () => {
+    setExporting(true)
+    try {
+      const rows = await exportRestante({
+        search,
+        locatieId: locatieId || null,
+        cursId: cursId || null,
+      })
+      const body: (string | number)[][] = rows.map((r) => [
         `${r.nume_client ?? ''} ${r.prenume_client ?? ''}`.trim(),
         r.nume_curs ?? '',
         r.nume_locatie ?? '',
@@ -121,8 +125,26 @@ export function RestanteTab() {
         Number(r.total_de_plata ?? 0),
         Number(r.platit ?? 0),
         Number(r.rest ?? 0),
-      ]),
-    )
+      ])
+      const sum = (pick: (r: RestantaRow) => number) =>
+        rows.reduce((a, r) => a + pick(r), 0)
+      body.push([
+        'TOTAL',
+        '',
+        '',
+        '',
+        sum((r) => Number(r.total_de_plata ?? 0)),
+        sum((r) => Number(r.platit ?? 0)),
+        sum((r) => Number(r.rest ?? 0)),
+      ])
+      downloadCsv(
+        `restante-${locatieId ? 'loc' : 'toate-loc'}_${cursId ? 'curs' : 'toate-curs'}.csv`,
+        ['Client', 'Curs', 'Locație', 'Început', 'Total (RON)', 'Plătit (RON)', 'Rest (RON)'],
+        body,
+      )
+    } finally {
+      setExporting(false)
+    }
   }
 
   const cursLabel = cursuriQ.data?.find((c) => c.value === cursId)?.label
@@ -172,9 +194,9 @@ export function RestanteTab() {
           <Button
             variant="secondary"
             onClick={onExport}
-            disabled={!data?.rows.length}
+            disabled={!data?.rows.length || exporting}
           >
-            ⬇ Export CSV
+            {exporting ? 'Se exportă…' : '⬇ Export CSV'}
           </Button>
         </div>
       </div>

@@ -406,7 +406,7 @@ export type Database = {
           achitat: boolean
           categorie: Database["public"]["Enums"]["categorie_cheltuiala"] | null
           created: string
-          deadline: string | null
+          data: string | null
           descriere: string | null
           id: string
           nume: string
@@ -417,7 +417,7 @@ export type Database = {
           achitat?: boolean
           categorie?: Database["public"]["Enums"]["categorie_cheltuiala"] | null
           created?: string
-          deadline?: string | null
+          data?: string | null
           descriere?: string | null
           id?: string
           nume: string
@@ -428,7 +428,7 @@ export type Database = {
           achitat?: boolean
           categorie?: Database["public"]["Enums"]["categorie_cheltuiala"] | null
           created?: string
-          deadline?: string | null
+          data?: string | null
           descriere?: string | null
           id?: string
           nume?: string

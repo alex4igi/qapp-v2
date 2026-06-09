@@ -16,7 +16,7 @@ import { locatiiOptions } from '@/lib/lookups'
 import { categorieIncasareOptions } from '@/lib/enums'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
-import { listIncasari, PAGE_SIZE, type IncasareRow } from './api'
+import { listIncasari, exportIncasari, PAGE_SIZE, type IncasareRow } from './api'
 import { IncasareEditModal } from './IncasareEditModal'
 
 function buildColumns(
@@ -119,18 +119,24 @@ export function IncasariTab() {
     [data],
   )
 
-  const onExport = () => {
-    const rows = data?.rows ?? []
+  const [exporting, setExporting] = useState(false)
+  const onExport = async () => {
     const suffix = [
       from || 'all',
       to || 'all',
       locatieId ? 'loc' : 'toate-loc',
       categorie || 'toate-cat',
     ].join('_')
-    downloadCsv(
-      `incasari-${suffix}.csv`,
-      ['Data', 'Client', 'Categorie', 'Detalii', 'Locație', 'Metodă', 'Sumă (RON)', 'Observații'],
-      rows.map((r) => [
+    setExporting(true)
+    try {
+      const rows = await exportIncasari({
+        search,
+        from,
+        to,
+        locatieId: locatieId || null,
+        categorie: categorie || null,
+      })
+      const body: (string | number)[][] = rows.map((r) => [
         r.data ?? '',
         r.client_nume ?? '',
         r.categorie ?? '',
@@ -139,8 +145,17 @@ export function IncasariTab() {
         r.metoda ?? '',
         r.suma,
         r.observatii ?? '',
-      ]),
-    )
+      ])
+      const totalSuma = rows.reduce((a, r) => a + Number(r.suma ?? 0), 0)
+      body.push(['TOTAL', '', '', '', '', '', totalSuma, ''])
+      downloadCsv(
+        `incasari-${suffix}.csv`,
+        ['Data', 'Client', 'Categorie', 'Detalii', 'Locație', 'Metodă', 'Sumă (RON)', 'Observații'],
+        body,
+      )
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -214,9 +229,9 @@ export function IncasariTab() {
           <Button
             variant="secondary"
             onClick={onExport}
-            disabled={!data?.rows.length}
+            disabled={!data?.rows.length || exporting}
           >
-            ⬇ Export CSV
+            {exporting ? 'Se exportă…' : '⬇ Export CSV'}
           </Button>
         </div>
       </div>
