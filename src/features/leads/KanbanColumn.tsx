@@ -20,6 +20,7 @@ type Props = {
   campaniiById: Map<string, string>
   onLeadClick: (lead: Lead) => void
   onAddLead: (status: string) => void
+  onLogContact: (lead: Lead) => void
 }
 
 const ts = (iso: string) => new Date(iso).getTime()
@@ -59,6 +60,7 @@ export function KanbanColumn({
   campaniiById,
   onLeadClick,
   onAddLead,
+  onLogContact,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: column.status })
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
@@ -174,6 +176,7 @@ export function KanbanColumn({
                 lead={lead}
                 campaniiById={campaniiById}
                 onClick={onLeadClick}
+                onLogContact={onLogContact}
               />
             </Fragment>
           ))}

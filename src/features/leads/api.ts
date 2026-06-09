@@ -7,9 +7,14 @@ import type {
   InteresLead,
   InsertDto,
   UpdateDto,
+  Enums,
 } from '@/types/db'
 import { normalizeTelefon } from '@/lib/phone'
+import { prependObservatie } from './constants'
 import { triggerLeadSms } from './sms'
+
+export type CanalContact = Enums<'canal_contact'>
+export type RezultatContact = Enums<'rezultat_contact'>
 
 export { normalizeTelefon }
 
@@ -399,6 +404,71 @@ export async function listCursuriProgramabile(
   const { data, error } = await query
   if (error) throw error
   return (data ?? []) as CursProgramabil[]
+}
+
+export type LogContactInput = {
+  leadId: string
+  canal: CanalContact
+  rezultat: RezultatContact
+  observatii?: string
+  dataCallback?: string // doar pentru follow_up (callback la o dată)
+}
+
+// Butonul hibrid „Loghează contact": (1) inserează un rând în lead_contacte
+// (sursa de adevăr pentru scorecard, atribuit operatorului curent), apoi
+// (2) reflectă rezultatul în lead prin updateLead — care deja gestionează
+// nr_contactari, sub_status, auto-nurture și triggerele SMS. Nu dublăm logica.
+export async function logContact(input: LogContactInput): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { error: insErr } = await supabase.from('lead_contacte').insert({
+    lead_id: input.leadId,
+    user_id: user?.id,
+    canal: input.canal,
+    rezultat: input.rezultat,
+    observatii: input.observatii?.trim() || null,
+  })
+  if (insErr) throw insErr
+
+  const { data: current } = await supabase
+    .from('leads')
+    .select('status, observatii')
+    .eq('id', input.leadId)
+    .single()
+
+  const patch: Partial<LeadForm> = {}
+  const eticheta =
+    input.rezultat === 'reusit'
+      ? 'Contact reușit'
+      : input.rezultat === 'follow_up'
+        ? 'Follow-up'
+        : 'Pierdut'
+  if (input.observatii?.trim()) {
+    patch.observatii = prependObservatie(
+      eticheta,
+      input.observatii,
+      current?.observatii ?? null,
+    )
+  }
+
+  if (input.rezultat === 'follow_up') {
+    patch.sub_status = 'de_revenit'
+    if (input.dataCallback) patch.data_callback_dorit = input.dataCallback
+    if (current?.status === 'nou') patch.status = 'contactat'
+  } else if (input.rezultat === 'pierdut') {
+    patch.status = 'pierdut'
+    if (input.observatii?.trim()) patch.motiv_pierdut = input.observatii.trim()
+  } else {
+    // reușit: contactul a răspuns — curățăm sub_status-ul „de revenit / nu răspunde"
+    patch.sub_status = ''
+    if (current?.status === 'nou') patch.status = 'contactat'
+  }
+
+  if (Object.keys(patch).length > 0) {
+    await updateLead(input.leadId, patch)
+  }
 }
 
 // Creează rândul de programare care leagă lead-ul de un curs la o dată.

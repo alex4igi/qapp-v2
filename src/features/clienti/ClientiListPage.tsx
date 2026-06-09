@@ -5,13 +5,22 @@ import {
   PageHeader,
   Button,
   TextInput,
+  Select,
+  Field,
   DataTable,
   Spinner,
   type Column,
 } from '@/components/ui'
 import type { Client } from '@/types/db'
 import { ClientForm } from './ClientForm'
+import { LogReactivareModal } from './LogReactivareModal'
 import { listClienti, PAGE_SIZE } from './api'
+
+const STATUS_OPTIONS = [
+  { label: 'Activ', value: 'Activ' },
+  { label: 'Inactiv', value: 'Inactiv' },
+  { label: 'EXclient', value: 'EXclient' },
+]
 
 const columns: Column<Client>[] = [
   {
@@ -35,8 +44,10 @@ export function ClientiListPage() {
   const navigate = useNavigate()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('')
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
+  const [reactivareClient, setReactivareClient] = useState<Client | null>(null)
 
   // Debounce căutare
   useEffect(() => {
@@ -48,10 +59,33 @@ export function ClientiListPage() {
   }, [searchInput])
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['clienti', { search, page }],
-    queryFn: () => listClienti({ search, page }),
+    queryKey: ['clienti', { search, page, status }],
+    queryFn: () => listClienti({ search, page, status: status || null }),
     placeholderData: keepPreviousData,
   })
+
+  // Pentru clienții inactivi/exclienți: buton de log reactivare (Faza 3 scorecard).
+  const tableColumns: Column<Client>[] = [
+    ...columns,
+    {
+      header: '',
+      cell: (c) =>
+        c.status === 'Inactiv' || c.status === 'EXclient' ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setReactivareClient(c)
+            }}
+            className="rounded-md border border-quasar-gray-light px-2 py-1 text-xs text-quasar-gray transition-colors hover:border-quasar-yellow hover:text-quasar-black"
+            title="Loghează contact de reactivare"
+          >
+            📞 Reactivare
+          </button>
+        ) : null,
+      className: 'w-36 text-right',
+    },
+  ]
 
   const totalPages = useMemo(
     () => (data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1),
@@ -68,12 +102,31 @@ export function ClientiListPage() {
         }
       />
 
-      <div className="mb-4 max-w-sm">
-        <TextInput
-          placeholder="Caută după nume, telefon, email…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="w-72">
+          <Field label="Caută" htmlFor="cl-search">
+            <TextInput
+              id="cl-search"
+              placeholder="Caută după nume, telefon, email…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </Field>
+        </div>
+        <div className="w-44">
+          <Field label="Status" htmlFor="cl-status">
+            <Select
+              id="cl-status"
+              placeholder="Toate statusurile"
+              options={STATUS_OPTIONS}
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value)
+                setPage(0)
+              }}
+            />
+          </Field>
+        </div>
       </div>
 
       {isLoading ? (
@@ -85,7 +138,7 @@ export function ClientiListPage() {
       ) : (
         <>
           <DataTable
-            columns={columns}
+            columns={tableColumns}
             rows={data?.rows ?? []}
             rowKey={(c) => c.id}
             onRowClick={(c) => navigate(`/clienti/${c.id}`)}
@@ -118,6 +171,14 @@ export function ClientiListPage() {
 
       {formOpen && (
         <ClientForm open onClose={() => setFormOpen(false)} />
+      )}
+
+      {reactivareClient && (
+        <LogReactivareModal
+          open
+          client={reactivareClient}
+          onClose={() => setReactivareClient(null)}
+        />
       )}
     </div>
   )

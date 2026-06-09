@@ -17,6 +17,7 @@ import { PIPELINE_COLUMNS } from './constants'
 import { KanbanColumn } from './KanbanColumn'
 import { LeadCard } from './LeadCard'
 import { LeadModal } from './LeadModal'
+import { LogContactModal } from './LogContactModal'
 import { ScheduleModal } from './ScheduleModal'
 import { PierdutModal } from './PierdutModal'
 import { ContactareModal } from './ContactareModal'
@@ -45,6 +46,7 @@ export function KanbanBoard() {
   const [waitingLead, setWaitingLead] = useState<Lead | null>(null)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
   const [enrollData, setEnrollData] = useState<ConversieResult | null>(null)
+  const [logContactLead, setLogContactLead] = useState<Lead | null>(null)
   const [dragError, setDragError] = useState<string | null>(null)
 
   const leadsQuery = useQuery({
@@ -197,6 +199,7 @@ export function KanbanBoard() {
               campaniiById={campaniiById}
               onLeadClick={(lead) => setEditingLead(lead)}
               onAddLead={(status) => setAddingToStatus(status)}
+              onLogContact={(lead) => setLogContactLead(lead)}
             />
           ))}
         </div>
@@ -274,6 +277,13 @@ export function KanbanBoard() {
           defaultClientId={enrollData.clientId}
           defaultCursId={enrollData.cursId ?? undefined}
           onClose={() => setEnrollData(null)}
+        />
+      )}
+      {logContactLead && (
+        <LogContactModal
+          open
+          lead={logContactLead}
+          onClose={() => setLogContactLead(null)}
         />
       )}
 

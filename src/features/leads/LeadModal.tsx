@@ -29,6 +29,7 @@ import {
   type LeadForm,
 } from './api'
 import { LeadHistory } from './LeadHistory'
+import { LogContactModal } from './LogContactModal'
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
 
 type Props = {
@@ -93,6 +94,7 @@ export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
   const [dupWarning, setDupWarning] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'detalii' | 'istoric'>('detalii')
+  const [showLogContact, setShowLogContact] = useState(false)
 
   const campanii = useQuery({
     queryKey: ['lookup', 'campanii'],
@@ -172,6 +174,7 @@ export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
   }
 
   return (
+    <>
     <Modal
       open={open}
       title={isEdit ? 'Editare lead' : 'Lead nou'}
@@ -205,6 +208,14 @@ export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
                 </Button>
               )}
             </div>
+          )}
+          {isEdit && lead && tab === 'detalii' && (
+            <Button
+              variant="secondary"
+              onClick={() => setShowLogContact(true)}
+            >
+              📞 Loghează contact
+            </Button>
           )}
           <Button variant="secondary" onClick={onClose}>
             {tab === 'istoric' ? 'Închide' : 'Anulează'}
@@ -461,5 +472,13 @@ export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
     </Modal>
+    {isEdit && lead && (
+      <LogContactModal
+        open={showLogContact}
+        lead={lead}
+        onClose={() => setShowLogContact(false)}
+      />
+    )}
+    </>
   )
 }

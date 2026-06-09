@@ -1,8 +1,34 @@
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
-import type { Client, InsertDto, UpdateDto } from '@/types/db'
+import type { Client, InsertDto, UpdateDto, Enums } from '@/types/db'
 
 export const PAGE_SIZE = 25
+
+export type CanalContact = Enums<'canal_contact'>
+export type RezultatContact = Enums<'rezultat_contact'>
+
+// Loghează un contact de reactivare pe un client inactiv (alimentează
+// scorecard-ul Faza 3). „Reactivat" se determină din prezențe reale ulterioare
+// (vezi get_scorecard_reactivari), nu de aici.
+export async function logReactivareContact(input: {
+  clientId: string
+  canal: CanalContact
+  rezultat: RezultatContact
+  observatii?: string
+}): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { error } = await supabase.from('client_contacte').insert({
+    client_id: input.clientId,
+    user_id: user?.id,
+    canal: input.canal,
+    rezultat: input.rezultat,
+    scop: 'reactivare',
+    observatii: input.observatii?.trim() || null,
+  })
+  if (error) throw error
+}
 
 const SEARCH_FIELDS = [
   'nume',
@@ -15,6 +41,7 @@ const SEARCH_FIELDS = [
 export type ClientiListParams = {
   search: string
   page: number
+  status?: string | null
 }
 
 export type ClientiListResult = {
@@ -25,6 +52,7 @@ export type ClientiListResult = {
 export async function listClienti({
   search,
   page,
+  status,
 }: ClientiListParams): Promise<ClientiListResult> {
   const from = page * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
@@ -35,6 +63,7 @@ export async function listClienti({
     .order('nume', { ascending: true })
     .range(from, to)
 
+  if (status) query = query.eq('status', status as Enums<'status_client'>)
   query = applyWordSearch(query, search, SEARCH_FIELDS)
 
   const { data, error, count } = await query
