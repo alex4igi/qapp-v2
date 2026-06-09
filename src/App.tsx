@@ -22,6 +22,8 @@ import { AppFeedbackListPage } from '@/features/feedback-app/AppFeedbackListPage
 import { AnunturiPage } from '@/features/announcements/AnunturiPage'
 import { FinanciarPage } from '@/features/financiar/FinanciarPage'
 import { StatisticiPage } from '@/features/statistici/StatisticiPage'
+import { ScorecardPage } from '@/features/scorecard/ScorecardPage'
+import { RecuperarePage } from '@/features/recuperare/RecuperarePage'
 import { AnsambluPage } from '@/features/ansamblu/AnsambluPage'
 import { VouchereListPage } from '@/features/vouchere/VouchereListPage'
 import { InventarListPage } from '@/features/inventar/InventarListPage'
@@ -117,6 +119,7 @@ function App() {
               <Route path="teacheri/:id" element={<TeacherProfilePage />} />
               <Route path="plati" element={<PlatiListPage />} />
               <Route path="leads" element={<LeadsPage />} />
+              <Route path="recuperare" element={<RecuperarePage />} />
               <Route path="sms" element={<NotificariSmsPage />} />
               <Route path="feedback" element={<FeedbackListPage />} />
               <Route path="situatie-zilnica" element={<SituatieZilnicaPage />} />
@@ -133,6 +136,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="financiar" element={<FinanciarPage />} />
               <Route path="statistici" element={<StatisticiPage />} />
+              <Route path="scorecard" element={<ScorecardPage />} />
               <Route path="vouchere" element={<VouchereListPage />} />
               <Route path="inventar" element={<InventarListPage />} />
               <Route path="evenimente" element={<EvenimenteListPage />} />

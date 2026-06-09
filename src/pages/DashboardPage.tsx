@@ -15,6 +15,7 @@ import {
 } from '@/features/dashboard/api'
 import { CircleCourseCard } from '@/features/dashboard/CircleCourseCard'
 import { DashboardChart } from '@/features/dashboard/DashboardChart'
+import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
 
 function KpiBand({ label, value }: { label: string; value: string }) {
   return (
@@ -136,6 +137,8 @@ export function DashboardPage() {
           />
         </div>
       )}
+
+      {!teacherMode && <DatorniciWorklistCard locatieId={locatieId ?? null} />}
 
       {coursesQ.isLoading || (teacherMode && teacherCursuriQ.isLoading) ? (
         <Spinner />

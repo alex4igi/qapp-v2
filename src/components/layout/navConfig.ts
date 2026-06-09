@@ -20,6 +20,7 @@ export const navSections: NavSection[] = [
       { label: 'Clienți',        path: '/clienti' },
       { label: 'Familii',        path: '/familii' },
       { label: 'Leads',          path: '/leads' },
+      { label: 'Recuperare',     path: '/recuperare' },
       { label: 'Plăți',          path: '/plati' },
       { label: 'Prezențe',       path: '/prezente' },
       { label: 'Evaluări',       path: '/evaluari' },
@@ -34,6 +35,7 @@ export const navSections: NavSection[] = [
       { label: 'Situație zilnică', path: '/situatie-zilnica' },
       { label: 'Financiar',        path: '/financiar' },
       { label: 'Statistici',       path: '/statistici' },
+      { label: 'Scorecard CC',     path: '/scorecard' },
     ],
   },
   {
