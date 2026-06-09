@@ -437,6 +437,92 @@ export type Database = {
         }
         Relationships: []
       }
+      client_contacte: {
+        Row: {
+          canal: Database["public"]["Enums"]["canal_contact"]
+          client_id: string
+          created: string
+          id: string
+          observatii: string | null
+          rezultat: Database["public"]["Enums"]["rezultat_contact"]
+          scop: string
+          suma_promisa: number | null
+          user_id: string
+        }
+        Insert: {
+          canal: Database["public"]["Enums"]["canal_contact"]
+          client_id: string
+          created?: string
+          id?: string
+          observatii?: string | null
+          rezultat: Database["public"]["Enums"]["rezultat_contact"]
+          scop: string
+          suma_promisa?: number | null
+          user_id?: string
+        }
+        Update: {
+          canal?: Database["public"]["Enums"]["canal_contact"]
+          client_id?: string
+          created?: string
+          id?: string
+          observatii?: string | null
+          rezultat?: Database["public"]["Enums"]["rezultat_contact"]
+          scop?: string
+          suma_promisa?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contacte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contacte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "client_contacte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "client_contacte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contacte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "client_contacte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+        ]
+      }
       clienti: {
         Row: {
           created: string
@@ -2158,6 +2244,44 @@ export type Database = {
           },
         ]
       }
+      lead_contacte: {
+        Row: {
+          canal: Database["public"]["Enums"]["canal_contact"]
+          created: string
+          id: string
+          lead_id: string
+          observatii: string | null
+          rezultat: Database["public"]["Enums"]["rezultat_contact"]
+          user_id: string
+        }
+        Insert: {
+          canal: Database["public"]["Enums"]["canal_contact"]
+          created?: string
+          id?: string
+          lead_id: string
+          observatii?: string | null
+          rezultat: Database["public"]["Enums"]["rezultat_contact"]
+          user_id?: string
+        }
+        Update: {
+          canal?: Database["public"]["Enums"]["canal_contact"]
+          created?: string
+          id?: string
+          lead_id?: string
+          observatii?: string | null
+          rezultat?: Database["public"]["Enums"]["rezultat_contact"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_contacte_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_history: {
         Row: {
           action_type: Database["public"]["Enums"]["lead_action_type"]
@@ -3535,6 +3659,48 @@ export type Database = {
             referencedColumns: ["id_locatie"]
           },
         ]
+      }
+      scorecard_praguri: {
+        Row: {
+          cheie: string
+          descriere: string | null
+          directie: string
+          eticheta: string
+          faza: number
+          pondere: number
+          prag_peste: number
+          prag_standard: number
+          scorat: boolean
+          unitate: string
+          updated: string
+        }
+        Insert: {
+          cheie: string
+          descriere?: string | null
+          directie?: string
+          eticheta: string
+          faza?: number
+          pondere?: number
+          prag_peste: number
+          prag_standard: number
+          scorat?: boolean
+          unitate: string
+          updated?: string
+        }
+        Update: {
+          cheie?: string
+          descriere?: string | null
+          directie?: string
+          eticheta?: string
+          faza?: number
+          pondere?: number
+          prag_peste?: number
+          prag_standard?: number
+          scorat?: boolean
+          unitate?: string
+          updated?: string
+        }
+        Relationships: []
       }
       sezoane: {
         Row: {
@@ -5145,6 +5311,10 @@ export type Database = {
         Returns: Json
       }
       cancel_expired_reinscrieri: { Args: never; Returns: number }
+      clasifica_prag: {
+        Args: { p_cheie: string; p_val: number }
+        Returns: string
+      }
       clear_opt_out: {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
@@ -5349,6 +5519,92 @@ export type Database = {
           varsta: Database["public"]["Enums"]["varsta_curs"]
         }[]
       }
+      get_restante_worklist: {
+        Args: { p_locatie?: string }
+        Returns: {
+          client_id: string
+          nr_rate_neachitate: number
+          nume: string
+          nume_locatie: string
+          prenume: string
+          rest_total: number
+          telefon: string
+          ultim_apel_at: string
+          ultim_apel_rezultat: string
+          ultima_prezenta: string
+          zile_depasire: number
+        }[]
+      }
+      get_scorecard_operatori: {
+        Args: { p_from: string; p_locatie?: string; p_to: string }
+        Returns: {
+          clasa_generala: string
+          contacte_dm: number
+          contacte_email: number
+          contacte_sms: number
+          contacte_telefon: number
+          contacte_total: number
+          contacte_verificate: number
+          conversie_clasa: string
+          conversie_pct: number
+          decalaj_flag: boolean
+          followup_onorat_pct: number
+          igiena_clasa: string
+          igiena_crm_pct: number
+          leaduri_lucrate: number
+          nota_lipsa_pct: number
+          persistenta_clasa: string
+          persistenta_med: number
+          rafala_flag: boolean
+          scor_pct: number
+          scor_total: number
+          show_rate_clasa: string
+          show_rate_pct: number
+          user_id: string
+          viteza_clasa: string
+          viteza_med_ore: number
+          volum_clasa: string
+        }[]
+      }
+      get_scorecard_reactivari: {
+        Args: { p_from: string; p_locatie?: string; p_to: string }
+        Returns: {
+          clasa_generala: string
+          clienti_contactati: number
+          contacte_reactivare: number
+          decalaj_flag: boolean
+          igiena_clasa: string
+          igiena_pct: number
+          rafala_flag: boolean
+          rata_clasa: string
+          rata_reactivare_pct: number
+          reactivati: number
+          scor_pct: number
+          scor_total: number
+          user_id: string
+          volum_clasa: string
+        }[]
+      }
+      get_scorecard_restante: {
+        Args: { p_from: string; p_locatie?: string; p_to: string }
+        Returns: {
+          clasa_generala: string
+          clienti_contactati: number
+          contacte_recuperare: number
+          decalaj_flag: boolean
+          igiena_clasa: string
+          igiena_pct: number
+          rafala_flag: boolean
+          rata_clasa: string
+          rata_recuperare_pct: number
+          rest_ramas: number
+          scor_pct: number
+          scor_total: number
+          suma_recuperata: number
+          user_id: string
+          volum_clasa: string
+        }[]
+      }
       get_sms_recipients: {
         Args: { p_cod?: string; p_locatie?: string; p_sezon?: string }
         Returns: {
@@ -5445,6 +5701,10 @@ export type Database = {
         }
         Returns: number
       }
+      ore_lucratoare: {
+        Args: { p_end: string; p_start: string }
+        Returns: number
+      }
       pontaj_auto_close_open_sessions: { Args: never; Returns: number }
       pontaj_close_session: {
         Args: { p_source?: string }
@@ -5529,6 +5789,7 @@ export type Database = {
         }
         Returns: string
       }
+      scor_num: { Args: { p_clasa: string }; Returns: number }
       send_anunt_client: {
         Args: { p_continut: string; p_curs_id?: string; p_titlu: string }
         Returns: Json
@@ -5563,6 +5824,7 @@ export type Database = {
         | "Respins"
       app_feedback_tip: "Bug" | "Idee" | "Intrebare"
       canal_comunicare: "Online" | "Offline"
+      canal_contact: "telefon" | "sms" | "email" | "dm"
       canale_online: "Meta ADS" | "Google ADS" | "TikTok Ads" | "Organic"
       categorie_cheltuiala: "Administrativa" | "Salariala" | "Alta"
       categorie_incasare: "Abonament" | "Bilet" | "Merch" | "Taxa" | "Workshop"
@@ -5614,6 +5876,7 @@ export type Database = {
       nivel_curs: "Incepator" | "Intermediar" | "Avansat" | "Trupa"
       nivel_teacher: "Junior" | "Senior" | "Expert"
       prezenta_lead: "programat" | "prezent" | "absent"
+      rezultat_contact: "reusit" | "follow_up" | "pierdut"
       sex: "B" | "F"
       status_client: "Activ" | "Inactiv" | "EXclient"
       status_eveniment: "Urmator" | "Finalizat" | "Anulat"
@@ -5802,6 +6065,7 @@ export const Constants = {
       ],
       app_feedback_tip: ["Bug", "Idee", "Intrebare"],
       canal_comunicare: ["Online", "Offline"],
+      canal_contact: ["telefon", "sms", "email", "dm"],
       canale_online: ["Meta ADS", "Google ADS", "TikTok Ads", "Organic"],
       categorie_cheltuiala: ["Administrativa", "Salariala", "Alta"],
       categorie_incasare: ["Abonament", "Bilet", "Merch", "Taxa", "Workshop"],
@@ -5851,6 +6115,7 @@ export const Constants = {
       nivel_curs: ["Incepator", "Intermediar", "Avansat", "Trupa"],
       nivel_teacher: ["Junior", "Senior", "Expert"],
       prezenta_lead: ["programat", "prezent", "absent"],
+      rezultat_contact: ["reusit", "follow_up", "pierdut"],
       sex: ["B", "F"],
       status_client: ["Activ", "Inactiv", "EXclient"],
       status_eveniment: ["Urmator", "Finalizat", "Anulat"],
