@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
+import { getGradOcupare, getCrestereNeta } from '@/features/ansamblu/api'
 
 export type Kpis = {
   incasari: number
@@ -308,6 +309,104 @@ export async function getStatisticaPrezenteAchitare(
     neachitate: Number(r.neachitate ?? 0),
     din_trecut: Number(r.din_trecut ?? 0),
   }))
+}
+
+// ============================================================================
+// Overview „luna curentă" (independent de selectorul de interval)
+// ============================================================================
+
+export type RataPrezentaLuna = {
+  global: { prezenti: number; posibile: number; rata: number }
+  perLocatie: {
+    nume: string
+    prezenti: number
+    posibile: number
+    rata: number
+  }[]
+}
+
+function rata(prezenti: number, posibile: number): number {
+  return posibile > 0 ? Math.round((100 * prezenti) / posibile) : 0
+}
+
+// Rată prezență (engagement) pe luna curentă, doar cursuri recurent + trupă.
+// global = sumă peste locații; perLocatie = defalcare.
+export async function getRataPrezentaLuna(): Promise<RataPrezentaLuna> {
+  const { data, error } = await supabase.rpc('get_rata_prezenta_luna')
+  if (error) throw error
+
+  const rows = (data ?? []).map((r) => ({
+    nume: r.locatie_nume ?? 'Necunoscut',
+    prezenti: Number(r.prezenti ?? 0),
+    posibile: Number(r.posibile ?? 0),
+    rata: rata(Number(r.prezenti ?? 0), Number(r.posibile ?? 0)),
+  }))
+
+  const prezenti = rows.reduce((a, r) => a + r.prezenti, 0)
+  const posibile = rows.reduce((a, r) => a + r.posibile, 0)
+
+  return {
+    global: { prezenti, posibile, rata: rata(prezenti, posibile) },
+    perLocatie: rows.sort((a, b) => b.posibile - a.posibile),
+  }
+}
+
+export type OcupareTotala = {
+  activi: number
+  capacitate: number
+  procent: number
+}
+
+// Grad de ocupare total al grupelor (luna curentă) — sumă peste get_grad_ocupare.
+// Doar recurent + trupă (facultativ=false): la open class capacitatea e o limită
+// per ședință, nu locuri de grupă — ar amesteca unități diferite. Consistent cu
+// rata de prezență.
+export async function getOcupareTotala(): Promise<OcupareTotala> {
+  const rows = await getGradOcupare(null)
+  let activi = 0
+  let capacitate = 0
+  for (const r of rows) {
+    if (r.facultativ) continue
+    const cap = Number(r.capacitate ?? 0)
+    if (cap <= 0) continue
+    activi += Number(r.activi ?? 0)
+    capacitate += cap
+  }
+  return { activi, capacitate, procent: rata(activi, capacitate) }
+}
+
+export type RetentieLuna = {
+  retinuti: number
+  pierduti: number
+  bazaPrev: number
+  rata: number
+}
+
+// Retenție membri (înrolare): din cei activi luna trecută, câți au rămas luna asta.
+// rata = (activi_prev − pierduti_curent) / activi_prev.
+export async function getRetentieLuna(): Promise<RetentieLuna> {
+  const rows = await getCrestereNeta(null, 2)
+  if (rows.length < 2) {
+    return { retinuti: 0, pierduti: 0, bazaPrev: 0, rata: 0 }
+  }
+  const prev = rows[rows.length - 2]
+  const curent = rows[rows.length - 1]
+  const bazaPrev = Number(prev.activi ?? 0)
+  const pierduti = Number(curent.pierduti ?? 0)
+  const retinuti = Math.max(0, bazaPrev - pierduti)
+  return { retinuti, pierduti, bazaPrev, rata: rata(retinuti, bazaPrev) }
+}
+
+// Venit (încasări) pe luna curentă.
+export async function getVenitLunaCurenta(): Promise<number> {
+  const { from, to } = lunaToBounds(lunaCurenta())
+  const { data, error } = await supabase
+    .from('incasari')
+    .select('suma')
+    .gte('data', from)
+    .lte('data', to)
+  if (error) throw error
+  return (data ?? []).reduce((acc, r) => acc + Number(r.suma ?? 0), 0)
 }
 
 export async function getMixMetode(i: Interval): Promise<MetodaPunct[]> {

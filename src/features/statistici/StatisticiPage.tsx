@@ -25,10 +25,15 @@ import {
   lunaCuOffset,
   listSezoaneTinta,
   getIncasariPerSezon,
+  getRataPrezentaLuna,
+  getOcupareTotala,
+  getRetentieLuna,
+  getVenitLunaCurenta,
   type Interval,
 } from './api'
 import { getReinscrieriProgress } from '@/features/reinscrieri/api'
 import { KpiCard } from './KpiCard'
+import { OverviewDonut } from './OverviewDonut'
 import { BalantaChart } from './BalantaChart'
 import { PrezenteAchitareChart } from './PrezenteAchitareChart'
 import { MetodePlataChart } from './MetodePlataChart'
@@ -68,9 +73,35 @@ export function StatisticiPage() {
       : { fromLuna: f, toLuna: t }
   }, [fromLuna, toLuna])
 
+  const lunaLabel = useMemo(() => {
+    const [y, m] = lunaCurenta().split('-').map(Number)
+    return new Intl.DateTimeFormat('ro-RO', {
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(y, m - 1, 1))
+  }, [])
+
   const kpisQ = useQuery({
     queryKey: ['stat', 'kpis', interval],
     queryFn: () => getKpis(interval),
+  })
+
+  // Overview „luna curentă" — independent de selectorul de interval
+  const rataPrezentaQ = useQuery({
+    queryKey: ['stat', 'rata-prezenta'],
+    queryFn: getRataPrezentaLuna,
+  })
+  const ocupareTotalaQ = useQuery({
+    queryKey: ['stat', 'ocupare-totala'],
+    queryFn: getOcupareTotala,
+  })
+  const retentieQ = useQuery({
+    queryKey: ['stat', 'retentie'],
+    queryFn: getRetentieLuna,
+  })
+  const venitLunaQ = useQuery({
+    queryKey: ['stat', 'venit-luna'],
+    queryFn: getVenitLunaCurenta,
   })
 
   const balLocQ = useQuery({
@@ -201,6 +232,145 @@ export function StatisticiPage() {
         }
       />
 
+      <div className="mb-8">
+        <h2 className="mb-3 text-base font-bold text-quasar-black">
+          Privire de ansamblu — {lunaLabel}
+        </h2>
+
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label="Venit luna curentă"
+            value={venitLunaQ.data != null ? formatRON(venitLunaQ.data) : '—'}
+            tone="positive"
+            hint="încasări în luna în curs"
+          />
+          <KpiCard
+            label="Rată prezență"
+            value={
+              rataPrezentaQ.data ? `${rataPrezentaQ.data.global.rata}%` : '—'
+            }
+            hint="prezenți / roster (recurent)"
+          />
+          <KpiCard
+            label="Ocupare grupe"
+            value={
+              ocupareTotalaQ.data ? `${ocupareTotalaQ.data.procent}%` : '—'
+            }
+            hint="total ocupat / capacitate"
+          />
+          <KpiCard
+            label="Retenție"
+            value={retentieQ.data ? `${retentieQ.data.rata}%` : '—'}
+            tone="positive"
+            hint="membri păstrați vs luna trecută"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div>
+            {rataPrezentaQ.isLoading ? (
+              <Spinner />
+            ) : (
+              <OverviewDonut
+                title="Rată prezență"
+                percent={rataPrezentaQ.data?.global.rata ?? 0}
+                centerSub={
+                  rataPrezentaQ.data
+                    ? `${rataPrezentaQ.data.global.prezenti} din ${rataPrezentaQ.data.global.posibile}`
+                    : undefined
+                }
+                slices={[
+                  {
+                    name: 'Prezenți',
+                    value: rataPrezentaQ.data?.global.prezenti ?? 0,
+                  },
+                  {
+                    name: 'Lipsă',
+                    value: Math.max(
+                      0,
+                      (rataPrezentaQ.data?.global.posibile ?? 0) -
+                        (rataPrezentaQ.data?.global.prezenti ?? 0),
+                    ),
+                  },
+                ]}
+                emptyMessage="Nicio prezență marcată luna aceasta."
+              >
+                {rataPrezentaQ.data &&
+                  rataPrezentaQ.data.perLocatie.length > 0 && (
+                    <ul className="mt-3 space-y-1 border-t border-quasar-gray-light pt-3 text-sm">
+                      {rataPrezentaQ.data.perLocatie.map((l) => (
+                        <li
+                          key={l.nume}
+                          className="flex justify-between gap-2"
+                        >
+                          <span className="text-quasar-gray">{l.nume}</span>
+                          <span className="font-medium text-quasar-black">
+                            {l.rata}%{' '}
+                            <span className="text-xs font-normal text-quasar-gray">
+                              ({l.prezenti}/{l.posibile})
+                            </span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </OverviewDonut>
+            )}
+          </div>
+
+          <div>
+            {ocupareTotalaQ.isLoading ? (
+              <Spinner />
+            ) : (
+              <OverviewDonut
+                title="Grad de ocupare grupe"
+                percent={ocupareTotalaQ.data?.procent ?? 0}
+                centerSub={
+                  ocupareTotalaQ.data
+                    ? `${ocupareTotalaQ.data.activi} din ${ocupareTotalaQ.data.capacitate}`
+                    : undefined
+                }
+                slices={[
+                  { name: 'Ocupat', value: ocupareTotalaQ.data?.activi ?? 0 },
+                  {
+                    name: 'Liber',
+                    value: Math.max(
+                      0,
+                      (ocupareTotalaQ.data?.capacitate ?? 0) -
+                        (ocupareTotalaQ.data?.activi ?? 0),
+                    ),
+                  },
+                ]}
+              />
+            )}
+          </div>
+
+          <div>
+            {retentieQ.isLoading ? (
+              <Spinner />
+            ) : (
+              <OverviewDonut
+                title="Retenție membri"
+                percent={retentieQ.data?.rata ?? 0}
+                centerSub={
+                  retentieQ.data
+                    ? `${retentieQ.data.retinuti} din ${retentieQ.data.bazaPrev}`
+                    : undefined
+                }
+                slices={[
+                  { name: 'Reținuți', value: retentieQ.data?.retinuti ?? 0 },
+                  { name: 'Pierduți', value: retentieQ.data?.pierduti ?? 0 },
+                ]}
+                emptyMessage="Fără bază de comparație luna trecută."
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      <h2 className="mb-3 text-base font-bold text-quasar-black">
+        Financiar — interval ales
+      </h2>
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Încasări"
