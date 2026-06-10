@@ -5485,6 +5485,15 @@ export type Database = {
           teacher_nume: string
         }[]
       }
+      get_rata_prezenta_luna: {
+        Args: { p_locatie?: string }
+        Returns: {
+          locatie_id: string
+          locatie_nume: string
+          posibile: number
+          prezenti: number
+        }[]
+      }
       get_reinscrieri_conversie: {
         Args: { p_sezon_tinta: string }
         Returns: {
@@ -5844,11 +5853,9 @@ export type Database = {
       interes_lead:
         | "Street Dance"
         | "K-pop"
-        | "Gimnastică"
-        | "Zumba"
         | "Acrobatică"
-        | "Quasar for Kids"
-        | "Altceva"
+        | "Zumba"
+        | "Nu știu încă"
       interes_programare: "Dans" | "Gimnastica"
       lead_action_type:
         | "created"
@@ -6080,11 +6087,9 @@ export const Constants = {
       interes_lead: [
         "Street Dance",
         "K-pop",
-        "Gimnastică",
-        "Zumba",
         "Acrobatică",
-        "Quasar for Kids",
-        "Altceva",
+        "Zumba",
+        "Nu știu încă",
       ],
       interes_programare: ["Dans", "Gimnastica"],
       lead_action_type: [

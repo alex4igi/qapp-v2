@@ -25,6 +25,7 @@ import { WaitingListModal } from './WaitingListModal'
 import { ConversieModal, type ConversieResult } from './ConversieModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { LeadFilters, type LeadFiltersValue } from './LeadFilters'
+import { TodayPanel } from './TodayPanel'
 import { listLeads, pruneExpiredLeads, updateLeadStatus } from './api'
 
 const EMPTY_FILTERS: LeadFiltersValue = {
@@ -184,6 +185,13 @@ export function KanbanBoard() {
           onChange={setFilters}
         />
       </div>
+
+      {/* Pe lista nefiltrată — „de lucrat azi" nu depinde de filtrele kanban. */}
+      <TodayPanel
+        leads={leads}
+        onLeadClick={setEditingLead}
+        onLogContact={setLogContactLead}
+      />
 
       <DndContext
         sensors={sensors}

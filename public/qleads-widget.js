@@ -2,15 +2,13 @@
   'use strict'
 
   // Aliniat cu src/features/leads/constants.ts (INTERESE, GRUPE, GRUPA_LABELS,
-  // CURSURI, LOCATII). Dacă lista se schimbă în recepție, actualizează aici.
+  // LOCATII). Dacă lista se schimbă în recepție, actualizează aici.
   var INTERESE = [
     'Street Dance',
     'K-pop',
-    'Gimnastică',
-    'Zumba',
     'Acrobatică',
-    'Quasar for Kids',
-    'Altceva',
+    'Zumba',
+    'Nu știu încă',
   ]
   var GRUPE = [
     { value: 'Tiny',     label: 'Tiny (4-6 ani)' },
@@ -19,14 +17,6 @@
     { value: 'Teens',    label: 'Teens (15-19 ani)' },
     { value: 'Students', label: 'Students (20-25 ani)' },
     { value: 'Adults',   label: 'Adulți (>25)' },
-  ]
-  var CURSURI = [
-    'Street Dance',
-    'Acrobatică',
-    'K-pop Covers',
-    'Quasar for Kids',
-    'Zumba',
-    'Tabără de dans',
   ]
   var LOCATII = ['Ștefan cel Mare', 'Nicolina']
 
@@ -113,7 +103,6 @@
       return
     }
     var campanie = trigger.getAttribute('data-qleads-campanie') || 'Website quasardance.ro'
-    var defaultCurs = trigger.getAttribute('data-qleads-curs') || ''
 
     var prenume = field('prenume', 'Prenume', {})
     var nume = field('nume', 'Nume', { required: true })
@@ -123,11 +112,8 @@
     var dataNasterii = field('data_nasterii', 'Data nașterii cursantului', { type: 'date' })
     var interes = selectField('interes', 'Interes principal', INTERESE)
     var grupa = selectField('grupa_varsta', 'Grupa de vârstă', GRUPE)
-    var cursInteres = selectField('curs_interes', 'Curs preferat', CURSURI)
     var locatia = selectField('locatia', 'Locație preferată', LOCATII)
     var mesaj = textareaField('mesaj', 'Mesaj (opțional)')
-
-    if (defaultCurs) cursInteres.input.value = defaultCurs
 
     var submitBtn = el('button', {
       class: 'qleads-submit',
@@ -141,7 +127,7 @@
       row([telefon.wrap, email.wrap]),
       row([numeParinte.wrap, dataNasterii.wrap]),
       row([interes.wrap, grupa.wrap]),
-      row([cursInteres.wrap, locatia.wrap]),
+      row([locatia.wrap]),
       mesaj.wrap,
       submitBtn,
       status,
@@ -155,7 +141,7 @@
     closeBtn.textContent = '×'
 
     var title = el('h3', { class: 'qleads-title' })
-    title.textContent = defaultCurs ? 'Înscriere — ' + defaultCurs : 'Înscriere Quasar Dance'
+    title.textContent = 'Înscriere Quasar Dance'
 
     var subtitle = el('p', { class: 'qleads-subtitle' })
     subtitle.textContent = 'Te contactăm în cel mai scurt timp pentru a stabili o ședință gratuită.'
@@ -186,7 +172,6 @@
         email: email.input.value.trim() || null,
         data_nasterii: dataNasterii.input.value || null,
         interes: interes.input.value || null,
-        curs_interes: cursInteres.input.value || null,
         grupa_varsta: grupa.input.value || null,
         locatia: locatia.input.value || null,
         mesaj: mesaj.input.value.trim() || null,

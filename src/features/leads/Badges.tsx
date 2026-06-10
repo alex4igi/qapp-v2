@@ -12,11 +12,9 @@ export function StatusBadge({ status }: { status: StatusLead }) {
 const INTERES_COLORS: Record<string, string> = {
   'Street Dance': 'bg-sky-50 text-sky-700 border-sky-200',
   'K-pop': 'bg-pink-50 text-pink-700 border-pink-200',
-  Gimnastică: 'bg-teal-50 text-teal-700 border-teal-200',
   Zumba: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
   Acrobatică: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-  'Quasar for Kids': 'bg-amber-50 text-amber-700 border-amber-200',
-  Altceva: 'bg-zinc-100 text-zinc-600 border-zinc-300',
+  'Nu știu încă': 'bg-zinc-100 text-zinc-600 border-zinc-300',
 }
 
 export function InteresBadge({ interes }: { interes: string | null }) {

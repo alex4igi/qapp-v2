@@ -28,3 +28,15 @@ export function normalizeTelefon(raw: string): string {
   const n = roMobileNational(raw)
   return n ? `+40${n}` : raw.trim()
 }
+
+// Link WhatsApp click-to-chat (wa.me cere doar cifre, fără +).
+// null dacă numărul nu e mobil RO valid.
+export function waLink(
+  telefon: string | null | undefined,
+  mesaj?: string,
+): string | null {
+  const n = roMobileNational(telefon)
+  if (!n) return null
+  const base = `https://wa.me/40${n}`
+  return mesaj ? `${base}?text=${encodeURIComponent(mesaj)}` : base
+}

@@ -18,7 +18,6 @@ import {
   INTERESE,
   GRUPE,
   GRUPA_LABELS,
-  CURSURI,
   LOCATII,
 } from './constants'
 import {
@@ -28,6 +27,8 @@ import {
   checkDuplicateTelefon,
   type LeadForm,
 } from './api'
+import { waLink } from '@/lib/phone'
+import { waLeadMessage } from './constants'
 import { LeadHistory } from './LeadHistory'
 import { LogContactModal } from './LogContactModal'
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
@@ -48,7 +49,6 @@ const EMPTY: LeadForm = {
   data_nasterii: '',
   sursa: '',
   interes: '',
-  curs_interes: '',
   grupa_varsta: '',
   status: 'nou',
   sub_status: '',
@@ -69,7 +69,6 @@ function fromLead(lead: Lead): LeadForm {
     data_nasterii: lead.data_nasterii ?? '',
     sursa: lead.sursa ?? '',
     interes: lead.interes ?? '',
-    curs_interes: lead.curs_interes ?? '',
     grupa_varsta: lead.grupa_varsta ?? '',
     status: lead.status,
     sub_status: lead.sub_status ?? '',
@@ -210,12 +209,24 @@ export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
             </div>
           )}
           {isEdit && lead && tab === 'detalii' && (
-            <Button
-              variant="secondary"
-              onClick={() => setShowLogContact(true)}
-            >
-              📞 Loghează contact
-            </Button>
+            <>
+              {waLink(form.telefon) && (
+                <a
+                  href={waLink(form.telefon, waLeadMessage(form))!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100"
+                >
+                  WhatsApp
+                </a>
+              )}
+              <Button
+                variant="secondary"
+                onClick={() => setShowLogContact(true)}
+              >
+                📞 Loghează contact
+              </Button>
+            </>
           )}
           <Button variant="secondary" onClick={onClose}>
             {tab === 'istoric' ? 'Închide' : 'Anulează'}
@@ -368,15 +379,6 @@ export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Curs de interes" htmlFor="curs_interes">
-            <Select
-              id="curs_interes"
-              placeholder="— selectează —"
-              options={CURSURI.map((c) => ({ label: c, value: c }))}
-              value={form.curs_interes}
-              onChange={(e) => set('curs_interes', e.target.value)}
-            />
-          </Field>
           <Field label="Status" htmlFor="status">
             <Select
               id="status"
@@ -390,16 +392,15 @@ export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
               }
             />
           </Field>
+          <Field label="Data programare" htmlFor="data_programare">
+            <TextInput
+              id="data_programare"
+              type="datetime-local"
+              value={form.data_programare}
+              onChange={(e) => set('data_programare', e.target.value)}
+            />
+          </Field>
         </div>
-
-        <Field label="Data programare" htmlFor="data_programare">
-          <TextInput
-            id="data_programare"
-            type="datetime-local"
-            value={form.data_programare}
-            onChange={(e) => set('data_programare', e.target.value)}
-          />
-        </Field>
 
         {form.status === 'contactat' && (
           <Field label="Sub-status" htmlFor="sub_status">

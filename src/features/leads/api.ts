@@ -27,7 +27,6 @@ export type LeadForm = {
   data_nasterii: string
   sursa: string
   interes: string
-  curs_interes: string
   grupa_varsta: string
   status: StatusLead
   sub_status: string
@@ -50,7 +49,6 @@ function normalize(form: Partial<LeadForm>): UpdateDto<'leads'> {
   if ('sursa' in form) out.sursa = form.sursa || null
   if ('interes' in form)
     out.interes = (form.interes || null) as InteresLead | null
-  if ('curs_interes' in form) out.curs_interes = form.curs_interes?.trim() || null
   if ('grupa_varsta' in form)
     out.grupa_varsta = (form.grupa_varsta || null) as GrupaLead | null
   if ('status' in form) out.status = form.status
@@ -95,13 +93,30 @@ async function syncProgramarePrezenta(
   }
 }
 
+// PostgREST returnează max 1000 rânduri/request.
+const PAGE = 1000
+
 export async function listLeads(): Promise<Lead[]> {
   const { data, error } = await supabase
     .from('leads')
     .select('*')
     .order('created', { ascending: false })
+    .range(0, PAGE - 1)
   if (error) throw error
-  return data ?? []
+  let all = data ?? []
+  // Paginăm ca să nu trunchiem silențios pipeline-ul — kanban, rapoartele și
+  // „De lucrat azi" au nevoie de TOT setul.
+  while (all.length > 0 && all.length % PAGE === 0) {
+    const { data: page, error: pageError } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created', { ascending: false })
+      .range(all.length, all.length + PAGE - 1)
+    if (pageError) throw pageError
+    if (!page?.length) break
+    all = all.concat(page)
+  }
+  return all
 }
 
 // Mută lead-urile cu programări doar în trecut din `programat` → `nu_a_venit`

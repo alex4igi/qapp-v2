@@ -34,14 +34,14 @@ export const SUB_STATUS_OPTIONS: {
   { value: 'nu_raspunde', label: 'Nu răspunde', cls: 'bg-red-50 text-red-700 border-red-200' },
 ]
 
+// interes_lead v3 — sincron cu migrations/20260611100000_interes_lead_v3.sql,
+// _shared/intake.ts și public/qleads-widget.js.
 export const INTERESE = [
   'Street Dance',
   'K-pop',
-  'Gimnastică',
-  'Zumba',
   'Acrobatică',
-  'Quasar for Kids',
-  'Altceva',
+  'Zumba',
+  'Nu știu încă',
 ] as const
 
 export const GRUPE: GrupaLead[] = [
@@ -78,15 +78,6 @@ export const GRUPA_LABELS: Record<GrupaLead, string> = {
   Adults: 'Adulți (>25)',
 }
 
-export const CURSURI = [
-  'Street Dance',
-  'Acrobatică',
-  'K-pop Covers',
-  'Quasar for Kids',
-  'Zumba',
-  'Tabără de dans',
-] as const
-
 // Locațiile relevante pentru lead-uri (folosite și de logica SMS — adresă/review link).
 export const LOCATII = ['Ștefan cel Mare', 'Nicolina'] as const
 
@@ -99,6 +90,15 @@ export const MOTIVE_PIERDUT_RAPIDE = [
   'Prea multe activități',
   'Nu mai dorește să fie contactat (opt-out)',
 ]
+
+// Mesaj precompletat pentru butonul WhatsApp de pe lead.
+export function waLeadMessage(lead: {
+  prenume: string | null
+  nume_parinte: string | null
+}): string {
+  const salut = lead.nume_parinte || lead.prenume
+  return `Bună${salut ? ` ${salut}` : ''}! Suntem Quasar Dance — am primit solicitarea ta. Când te putem suna pentru a stabili ședința gratuită de probă?`
+}
 
 const LUNI_SCURT = [
   'ian', 'feb', 'mar', 'apr', 'mai', 'iun',

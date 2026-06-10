@@ -143,11 +143,11 @@ export function LeadReports() {
       ),
     [leads, campaniiById],
   )
-  const perCurs = useMemo(
+  const perInteres = useMemo(
     () =>
       aggregate(
         leads,
-        (l) => l.curs_interes ?? '—',
+        (l) => l.interes ?? '—',
         (k) => (k === '—' ? 'Necompletat' : k),
       ),
     [leads],
@@ -233,9 +233,9 @@ export function LeadReports() {
         buckets={perSursa}
       />
       <BreakdownTable
-        titlu="Conversie pe curs"
-        coloana="Curs"
-        buckets={perCurs}
+        titlu="Conversie pe interes"
+        coloana="Interes"
+        buckets={perInteres}
       />
       <BreakdownTable
         titlu="Conversie pe grupă"

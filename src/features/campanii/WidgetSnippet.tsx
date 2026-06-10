@@ -63,7 +63,7 @@ export function WidgetSnippet({ campanieNume }: Props) {
           Lipește acest cod în pagina unde vrei butonul de înscriere. Formularul
           colectează aceleași câmpuri ca „Lead nou" din recepție:
           prenume, nume, nume părinte, telefon, email, data nașterii, interes,
-          curs preferat, grupa de vârstă, locație, mesaj.
+          grupa de vârstă, locație, mesaj.
           UTM-urile din URL sunt capturate automat (utm_source, utm_medium, utm_campaign).
         </p>
         <textarea
