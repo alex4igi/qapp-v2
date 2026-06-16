@@ -35,3 +35,6 @@ dist-ssr
 
 # v1 reference dumps (PocketBase extract, backups, JSON exports) — local-only, migration v1→v2 done
 /v1 sources/
+
+# Surse exemple (referință, nu produs)
+Surse exemple/

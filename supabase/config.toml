@@ -407,6 +407,14 @@ verify_jwt = false
 [functions.intake-meta-lead]
 verify_jwt = false
 
+# Portal membri — plată online. create-payment cere JWT-ul părintelui; webhook-ul IPN
+# e public (verificat prin Verification-token / cheia publică Netopia, nu prin JWT-ul nostru).
+[functions.netopia-create-payment]
+verify_jwt = true
+
+[functions.netopia-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

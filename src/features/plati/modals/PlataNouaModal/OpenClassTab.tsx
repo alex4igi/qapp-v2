@@ -32,6 +32,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
   const [suma, setSuma] = useState('')
   const [sumaTouched, setSumaTouched] = useState(false)
   const [metoda, setMetoda] = useState<Enums<'metoda_plata'>>('Cash')
+  const [overbook, setOverbook] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const sezonActivQ = useQuery({
@@ -94,6 +95,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
         cursId,
         data,
         instructorId: instructorId || null,
+        permiteOverbook: overbook,
       })
     },
     onSuccess: () => {
@@ -171,6 +173,16 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
                   ))}
                 </ul>
               )}
+              {plin && (
+                <label className="mt-2 flex items-center gap-2 text-xs text-quasar-black">
+                  <input
+                    type="checkbox"
+                    checked={overbook}
+                    onChange={(e) => setOverbook(e.target.checked)}
+                  />
+                  Adaugă peste limită (walk-in la sală)
+                </label>
+              )}
             </>
           ) : null}
         </div>
@@ -229,9 +241,13 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
         </Button>
         <Button
           onClick={() => mutation.mutate()}
-          disabled={mutation.isPending || plin}
+          disabled={mutation.isPending || (plin && !overbook)}
         >
-          {mutation.isPending ? 'Se rezervă…' : plin ? 'Sesiune completă' : 'Rezervă + încasează'}
+          {mutation.isPending
+            ? 'Se rezervă…'
+            : plin && !overbook
+              ? 'Sesiune completă'
+              : 'Rezervă + încasează'}
         </Button>
       </div>
     </div>

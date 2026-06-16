@@ -1,4 +1,5 @@
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
+import { PortalAccountSection } from '@/components/PortalAccountSection'
 import type { getClient } from '../../../api'
 import { DetailRow, Section } from '../helpers'
 
@@ -58,6 +59,19 @@ export function DatePersonaleTab({ client, familia, teacherMode = false }: Props
         la={client.opt_out_la ?? null}
         invalidateKey={['client', client.id]}
       />
+      {!client.familia ? (
+        <PortalAccountSection
+          kind="client"
+          id={client.id}
+          authUserId={client.auth_user_id ?? null}
+          defaultEmail={client.email}
+          invalidateKey={['client', client.id]}
+        />
+      ) : (
+        <div className="rounded-lg border border-quasar-gray-light bg-white p-5 text-sm text-quasar-gray">
+          Contul de portal se gestionează la nivel de <strong>familie</strong>.
+        </div>
+      )}
     </div>
   )
 }

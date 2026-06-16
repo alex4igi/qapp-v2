@@ -50,6 +50,7 @@ export type {
   OpenSesiuneRow,
   RezervareRow,
   RezervaLocParams,
+  CreateOpenSesiuneParams,
 } from './open-class'
 export {
   listCursuriFacultative,
@@ -57,5 +58,6 @@ export {
   listOpenSesiuni,
   listRezervariSesiune,
   rezervaLocOpen,
+  createOpenSesiune,
   anuleazaRezervare,
 } from './open-class'

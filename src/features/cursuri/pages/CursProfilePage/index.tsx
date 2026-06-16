@@ -256,7 +256,11 @@ export function CursProfilePage() {
           )}
 
           {tab === 'open' && curs.facultativ && (
-            <OpenSesiuniTab cursId={curs.id} canManage={!isTeacher(role)} />
+            <OpenSesiuniTab
+              cursId={curs.id}
+              canManage={!isTeacher(role)}
+              capacitateImplicita={curs.capacitate_maxima ?? 35}
+            />
           )}
 
           {tab === 'detalii' && (

@@ -525,6 +525,7 @@ export type Database = {
       }
       clienti: {
         Row: {
+          auth_user_id: string | null
           created: string
           data_nasterii: string | null
           email: string | null
@@ -548,6 +549,7 @@ export type Database = {
           updated: string
         }
         Insert: {
+          auth_user_id?: string | null
           created?: string
           data_nasterii?: string | null
           email?: string | null
@@ -571,6 +573,7 @@ export type Database = {
           updated?: string
         }
         Update: {
+          auth_user_id?: string | null
           created?: string
           data_nasterii?: string | null
           email?: string | null
@@ -1719,9 +1722,17 @@ export type Database = {
       }
       familii: {
         Row: {
+          auth_user_id: string | null
           created: string
           doreste_sa_apara_in_poze: boolean
           email: string | null
+          factura_pe_firma: boolean
+          firma_adresa: string | null
+          firma_banca: string | null
+          firma_cif: string | null
+          firma_denumire: string | null
+          firma_iban: string | null
+          firma_reg_com: string | null
           id: string
           metoda_comunicare: string | null
           metoda_plata: string | null
@@ -1737,9 +1748,17 @@ export type Database = {
           updated: string
         }
         Insert: {
+          auth_user_id?: string | null
           created?: string
           doreste_sa_apara_in_poze?: boolean
           email?: string | null
+          factura_pe_firma?: boolean
+          firma_adresa?: string | null
+          firma_banca?: string | null
+          firma_cif?: string | null
+          firma_denumire?: string | null
+          firma_iban?: string | null
+          firma_reg_com?: string | null
           id?: string
           metoda_comunicare?: string | null
           metoda_plata?: string | null
@@ -1755,9 +1774,17 @@ export type Database = {
           updated?: string
         }
         Update: {
+          auth_user_id?: string | null
           created?: string
           doreste_sa_apara_in_poze?: boolean
           email?: string | null
+          factura_pe_firma?: boolean
+          firma_adresa?: string | null
+          firma_banca?: string | null
+          firma_cif?: string | null
+          firma_denumire?: string | null
+          firma_iban?: string | null
+          firma_reg_com?: string | null
           id?: string
           metoda_comunicare?: string | null
           metoda_plata?: string | null
@@ -2532,6 +2559,108 @@ export type Database = {
           updated?: string
         }
         Relationships: []
+      }
+      netopia_orders: {
+        Row: {
+          amount: number
+          auth_user_id: string
+          client_id: string
+          created: string
+          fifo_plan: Json
+          id: string
+          netopia_transaction_id: string | null
+          order_ref: string
+          order_type: string
+          rezervare_id: string | null
+          status: string
+          updated: string
+        }
+        Insert: {
+          amount: number
+          auth_user_id: string
+          client_id: string
+          created?: string
+          fifo_plan: Json
+          id?: string
+          netopia_transaction_id?: string | null
+          order_ref: string
+          order_type?: string
+          rezervare_id?: string | null
+          status?: string
+          updated?: string
+        }
+        Update: {
+          amount?: number
+          auth_user_id?: string
+          client_id?: string
+          created?: string
+          fifo_plan?: Json
+          id?: string
+          netopia_transaction_id?: string | null
+          order_ref?: string
+          order_type?: string
+          rezervare_id?: string | null
+          status?: string
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "netopia_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "netopia_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "netopia_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "netopia_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "netopia_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "netopia_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "netopia_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "netopia_orders_rezervare_id_fkey"
+            columns: ["rezervare_id"]
+            isOneToOne: false
+            referencedRelation: "open_rezervari"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -5306,11 +5435,19 @@ export type Database = {
           reactivati: number
         }[]
       }
+      build_fifo_plan_membru: {
+        Args: { p_client: string; p_pana_la?: string }
+        Returns: Json
+      }
       calculeaza_salariu_teacher: {
         Args: { p_anul: number; p_luna: number; p_teacher: string }
         Returns: Json
       }
       cancel_expired_reinscrieri: { Args: never; Returns: number }
+      cancel_netopia_order: {
+        Args: { p_order_ref: string }
+        Returns: undefined
+      }
       clasifica_prag: {
         Args: { p_cheie: string; p_val: number }
         Returns: string
@@ -5319,6 +5456,7 @@ export type Database = {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
       }
+      client_member_ids: { Args: never; Returns: string[] }
       clone_sezon: {
         Args: {
           p_cursuri?: Json
@@ -5336,6 +5474,14 @@ export type Database = {
       close_campanie_reinscriere: {
         Args: { p_campanie_id: string }
         Returns: undefined
+      }
+      confirm_netopia_payment: {
+        Args: {
+          p_amount: number
+          p_order_ref: string
+          p_transaction_id: string
+        }
+        Returns: Json
       }
       confirma_salariu_teacher: {
         Args: {
@@ -5375,7 +5521,10 @@ export type Database = {
         }
         Returns: string
       }
+      current_client: { Args: never; Returns: string }
+      current_familie: { Args: never; Returns: string }
       current_teacher_id: { Args: never; Returns: string }
+      expire_open_holds: { Args: never; Returns: number }
       get_campanie_progress: {
         Args: { p_campanie_id: string }
         Returns: {
@@ -5473,6 +5622,74 @@ export type Database = {
           stare: string
           tip: string
           total_incasari: number
+        }[]
+      }
+      get_membri_familie: {
+        Args: never
+        Returns: {
+          client_id: string
+          data_nasterii: string
+          nume: string
+          prenume: string
+        }[]
+      }
+      get_plati_client: {
+        Args: { p_client: string }
+        Returns: {
+          cod_voucher: string
+          curs_nume: string
+          data_incepere: string
+          enrollment_id: string
+          platit: number
+          rest: number
+          sezon_id: string
+          sezon_nume: string
+          tip_plata: Database["public"]["Enums"]["tip_plata"]
+          total_de_plata: number
+        }[]
+      }
+      get_prezente_client: {
+        Args: { p_client: string }
+        Returns: {
+          curs_nume: string
+          data: string
+          status: Database["public"]["Enums"]["status_prezenta"]
+        }[]
+      }
+      get_profil_client: {
+        Args: { p_client: string }
+        Returns: {
+          client_id: string
+          data_nasterii: string
+          email: string
+          marime_tricou: string
+          nume: string
+          prenume: string
+          telefon: string
+          telefonul_2: string
+          unitate_invatamant: string
+        }[]
+      }
+      get_profil_familie: {
+        Args: never
+        Returns: {
+          doreste_sa_apara_in_poze: boolean
+          email: string
+          factura_pe_firma: boolean
+          familie_id: string
+          firma_adresa: string
+          firma_banca: string
+          firma_cif: string
+          firma_denumire: string
+          firma_iban: string
+          firma_reg_com: string
+          metoda_comunicare: string
+          nume_familie: string
+          nume_reprezentant: string
+          opt_out_marketing: boolean
+          prenume_reprezentant: string
+          telefon: string
+          telefon_2: string
         }[]
       }
       get_profitabilitate_teacher: {
@@ -5627,6 +5844,15 @@ export type Database = {
           zile_depasire: number
         }[]
       }
+      get_sold_familie: {
+        Args: never
+        Returns: {
+          client_id: string
+          nume: string
+          prenume: string
+          restanta: number
+        }[]
+      }
       get_statistica_prezente_achitare: {
         Args: {
           p_from: string
@@ -5659,11 +5885,16 @@ export type Database = {
           teacher_nume: string
         }[]
       }
+      hold_loc_open: {
+        Args: { p_client: string; p_sesiune: string }
+        Returns: Json
+      }
       is_admin: { Args: never; Returns: boolean }
       is_front_desk: { Args: never; Returns: boolean }
       is_in_my_locatie: { Args: { loc: string }; Returns: boolean }
       is_manager: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      is_parinte: { Args: never; Returns: boolean }
       is_teacher: { Args: never; Returns: boolean }
       list_campanie_clienti_curs: {
         Args: { p_campanie_id: string; p_curs_tinta_id: string }
@@ -5679,6 +5910,18 @@ export type Database = {
           prenume: string
           taxa_platita_la: string
           telefon: string
+        }[]
+      }
+      list_open_sesiuni_client: {
+        Args: { p_locatie?: string }
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          data: string
+          instructor_nume: string
+          locuri_ramase: number
+          pret: number
+          sesiune_id: string
         }[]
       }
       list_reinscrieri_clienti: {
@@ -5793,6 +6036,7 @@ export type Database = {
           p_instructor?: string
           p_locatie: string
           p_metoda: Database["public"]["Enums"]["metoda_plata"]
+          p_permite_overbook?: boolean
           p_sesiune?: string
           p_suma: number
         }
@@ -5822,6 +6066,37 @@ export type Database = {
         Returns: string
       }
       teacher_can_access_curs: { Args: { p_curs: string }; Returns: boolean }
+      update_profil_client: {
+        Args: {
+          p_client: string
+          p_email?: string
+          p_marime_tricou?: string
+          p_telefon?: string
+          p_telefonul_2?: string
+          p_unitate_invatamant?: string
+        }
+        Returns: undefined
+      }
+      update_profil_familie: {
+        Args: {
+          p_doreste_poze?: boolean
+          p_email?: string
+          p_factura_pe_firma?: boolean
+          p_firma_adresa?: string
+          p_firma_banca?: string
+          p_firma_cif?: string
+          p_firma_denumire?: string
+          p_firma_iban?: string
+          p_firma_reg_com?: string
+          p_metoda_comunicare?: string
+          p_nume_reprezentant?: string
+          p_opt_out_marketing?: boolean
+          p_prenume_reprezentant?: string
+          p_telefon?: string
+          p_telefon_2?: string
+        }
+        Returns: undefined
+      }
       user_locatie_id: { Args: never; Returns: string }
     }
     Enums: {

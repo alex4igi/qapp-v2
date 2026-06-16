@@ -149,6 +149,8 @@ export type RezervaLocParams = {
   data?: string | null
   instructorId?: string | null
   dataIncasare?: string | null
+  // walk-in la recepție: permite depășirea limitei sesiunii (limita rămâne strictă online)
+  permiteOverbook?: boolean
 }
 
 // Rezervă un loc + încasează, atomic (blocare strictă la capacitate în RPC).
@@ -163,6 +165,7 @@ export async function rezervaLocOpen(params: RezervaLocParams): Promise<string> 
     p_data: params.data ?? undefined,
     p_instructor: params.instructorId ?? undefined,
     p_data_incasare: params.dataIncasare ?? undefined,
+    p_permite_overbook: params.permiteOverbook ?? undefined,
   })
   if (error) {
     if (error.code === '23505') {
@@ -171,6 +174,35 @@ export async function rezervaLocOpen(params: RezervaLocParams): Promise<string> 
     throw new Error(error.message)
   }
   return data as string
+}
+
+export type CreateOpenSesiuneParams = {
+  cursId: string
+  data: string
+  capacitate: number
+  instructorId?: string | null
+}
+
+// Creează o sesiune OPEN goală în viitor (staff), ca să fie vizibilă pentru rezervare
+// din portalul de membru. RLS: doar admin/owner/manager/front_desk pot insera.
+export async function createOpenSesiune(params: CreateOpenSesiuneParams): Promise<string> {
+  const { data, error } = await supabase
+    .from('open_sesiuni')
+    .insert({
+      curs: params.cursId,
+      data: params.data,
+      capacitate: params.capacitate,
+      instructor: params.instructorId || null,
+    })
+    .select('id')
+    .single()
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Există deja o sesiune la această dată pentru acest curs.')
+    }
+    throw new Error(error.message)
+  }
+  return data.id as string
 }
 
 export async function anuleazaRezervare(params: {

@@ -19,6 +19,7 @@ import {
 } from './api'
 import { listSezoane } from '@/features/plati/api'
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
+import { PortalAccountSection } from '@/components/PortalAccountSection'
 
 function calcAge(dataNasterii: string | null): number | null {
   if (!dataNasterii) return null
@@ -455,6 +456,13 @@ function DatePersonaleTab({ familie }: { familie: Familie }) {
         optOut={familie.opt_out_marketing ?? false}
         motiv={familie.opt_out_motiv ?? null}
         la={familie.opt_out_la ?? null}
+        invalidateKey={['familie', familie.id]}
+      />
+      <PortalAccountSection
+        kind="familie"
+        id={familie.id}
+        authUserId={familie.auth_user_id ?? null}
+        defaultEmail={familie.email}
         invalidateKey={['familie', familie.id]}
       />
     </div>
