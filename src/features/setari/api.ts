@@ -4,6 +4,7 @@ import type {
   Sala,
   Sezon,
   Vacanta,
+  TarifPublic,
   InsertDto,
   UpdateDto,
 } from '@/types/db'
@@ -183,6 +184,49 @@ export async function updateVacanta(
 
 export async function deleteVacanta(id: string): Promise<void> {
   const { error } = await supabase.from('vacante').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ---------- Tarife publice ----------
+// Oferta publică afișată pe portalul de membri (/servicii). Decuplată de prețurile
+// per-curs — owner/admin/manager o editează aici, portalul o citește live.
+export async function listTarifePublice(): Promise<TarifPublic[]> {
+  const { data, error } = await supabase
+    .from('tarife_publice')
+    .select('*')
+    .order('ordine', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createTarifPublic(
+  dto: InsertDto<'tarife_publice'>,
+): Promise<TarifPublic> {
+  const { data, error } = await supabase
+    .from('tarife_publice')
+    .insert(dto)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateTarifPublic(
+  id: string,
+  dto: UpdateDto<'tarife_publice'>,
+): Promise<TarifPublic> {
+  const { data, error } = await supabase
+    .from('tarife_publice')
+    .update(dto)
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteTarifPublic(id: string): Promise<void> {
+  const { error } = await supabase.from('tarife_publice').delete().eq('id', id)
   if (error) throw error
 }
 

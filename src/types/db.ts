@@ -47,6 +47,7 @@ export type OpenSesiune = Tables<'open_sesiuni'>
 export type OpenRezervare = Tables<'open_rezervari'>
 export type CampanieReinscriere = Tables<'campanii_reinscriere'>
 export type ReinscriereGate = Tables<'reinscrieri_gate'>
+export type TarifPublic = Tables<'tarife_publice'>
 
 // Enums folosite în UI
 export type StatusPrezenta = Enums<'status_prezenta'>

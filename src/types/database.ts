@@ -2560,6 +2560,30 @@ export type Database = {
         }
         Relationships: []
       }
+      netopia_ipn_debug: {
+        Row: {
+          body: string | null
+          created: string
+          headers: Json | null
+          id: string
+          verified: boolean | null
+        }
+        Insert: {
+          body?: string | null
+          created?: string
+          headers?: Json | null
+          id?: string
+          verified?: boolean | null
+        }
+        Update: {
+          body?: string | null
+          created?: string
+          headers?: Json | null
+          id?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       netopia_orders: {
         Row: {
           amount: number
@@ -4071,6 +4095,42 @@ export type Database = {
             referencedColumns: ["id_locatie"]
           },
         ]
+      }
+      tarife_publice: {
+        Row: {
+          activ: boolean
+          created: string
+          descriere: string | null
+          id: string
+          ordine: number
+          pret: string
+          program: string
+          taxa_rezervare: string | null
+          updated: string
+        }
+        Insert: {
+          activ?: boolean
+          created?: string
+          descriere?: string | null
+          id?: string
+          ordine?: number
+          pret: string
+          program: string
+          taxa_rezervare?: string | null
+          updated?: string
+        }
+        Update: {
+          activ?: boolean
+          created?: string
+          descriere?: string | null
+          id?: string
+          ordine?: number
+          pret?: string
+          program?: string
+          taxa_rezervare?: string | null
+          updated?: string
+        }
+        Relationships: []
       }
       teacheri: {
         Row: {
