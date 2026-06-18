@@ -3972,6 +3972,27 @@ export type Database = {
           },
         ]
       }
+      scorecard_obiective: {
+        Row: {
+          luna: string
+          metric: string
+          target: number
+          updated: string
+        }
+        Insert: {
+          luna: string
+          metric: string
+          target: number
+          updated?: string
+        }
+        Update: {
+          luna?: string
+          metric?: string
+          target?: number
+          updated?: string
+        }
+        Relationships: []
+      }
       scorecard_praguri: {
         Row: {
           cheie: string

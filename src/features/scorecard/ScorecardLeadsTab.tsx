@@ -4,6 +4,7 @@ import { Field, Select, Button, Spinner } from '@/components/ui'
 import { downloadCsv } from '@/lib/csv'
 import { listUsers } from '@/features/setari/utilizatoriApi'
 import { getScorecard } from './api'
+import { ObiectiveCard } from './ObiectiveCard'
 import { ScorecardTable } from './ScorecardTable'
 import { DATA_LANSARE_SCORECARD, LOCATII_SCORECARD } from './constants'
 
@@ -69,6 +70,8 @@ export function ScorecardLeadsTab({ luna }: { luna: string }) {
           </Button>
         </div>
       </div>
+
+      <ObiectiveCard luna={luna} locatie={locatie || null} rows={rows} />
 
       <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
         <strong>Logat vs verificat:</strong> „Contacte verificate" numără doar

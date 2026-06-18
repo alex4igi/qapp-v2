@@ -177,3 +177,57 @@ export async function updatePrag(
     .eq('cheie', cheie)
   if (error) throw error
 }
+
+// ── Obiective lunare de echipă (quota) ──────────────────────────────────
+export type ObiectivMetric = 'conversii' | 'contacte_verificate'
+
+export async function listObiective(
+  luna: string,
+): Promise<Record<ObiectivMetric, number | null>> {
+  const { data, error } = await supabase
+    .from('scorecard_obiective')
+    .select('metric, target')
+    .eq('luna', luna)
+  if (error) throw error
+  const out: Record<ObiectivMetric, number | null> = {
+    conversii: null,
+    contacte_verificate: null,
+  }
+  for (const r of data ?? []) {
+    out[r.metric as ObiectivMetric] = Number(r.target)
+  }
+  return out
+}
+
+export async function upsertObiectiv(
+  luna: string,
+  metric: ObiectivMetric,
+  target: number,
+): Promise<void> {
+  const { error } = await supabase
+    .from('scorecard_obiective')
+    .upsert(
+      { luna, metric, target, updated: new Date().toISOString() },
+      { onConflict: 'luna,metric' },
+    )
+  if (error) throw error
+}
+
+// Conversii reale ale lunii (count pe leads.data_conversie), filtrabile pe
+// locație. Sursa de adevăr pentru „realizat" la obiectivul de conversii —
+// independent de atribuirea per operator din scorecard.
+export async function getConversiiCount(
+  luna: string,
+  locatie: string | null,
+): Promise<number> {
+  const { from, to } = lunaToBounds(luna)
+  let q = supabase
+    .from('leads')
+    .select('id', { count: 'exact', head: true })
+    .gte('data_conversie', from)
+    .lte('data_conversie', `${to}T23:59:59.999`)
+  if (locatie) q = q.eq('locatia', locatie)
+  const { count, error } = await q
+  if (error) throw error
+  return count ?? 0
+}

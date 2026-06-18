@@ -14,10 +14,18 @@ type TodayGroups = {
   programatiAzi: Lead[]
   callbacks: Lead[]
   staleNew: Lead[]
+  noFollowup: Lead[]
+  inactive: Lead[]
 }
 
 const TERMINAL: StatusLead[] = ['convertit', 'pierdut']
 const DAY = 24 * 60 * 60 * 1000
+// Pipeline activ pentru listele de neglijență (exclude stările „parcate":
+// programat are demo, waiting_list/nurture sunt intenționat în așteptare).
+const ACTIVE_PIPELINE: StatusLead[] = ['nou', 'contactat']
+// Praguri escaladare: contactat dar cald 7–30z → „fără follow-up"; >30z → „inactiv".
+const FOLLOWUP_DAYS = 7
+const INACTIVE_DAYS = 30
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.toDateString() === b.toDateString()
@@ -28,10 +36,14 @@ export function groupTodayLeads(leads: Lead[], now = new Date()): TodayGroups {
   const endOfToday = new Date(now)
   endOfToday.setHours(23, 59, 59, 999)
   const cutoff24h = now.getTime() - DAY
+  const cutoffFollowup = now.getTime() - FOLLOWUP_DAYS * DAY
+  const cutoffInactive = now.getTime() - INACTIVE_DAYS * DAY
   const reminders: Lead[] = []
   const programatiAzi: Lead[] = []
   const callbacks: Lead[] = []
   const staleNew: Lead[] = []
+  const noFollowup: Lead[] = []
+  const inactive: Lead[] = []
   for (const l of leads) {
     if (TERMINAL.includes(l.status)) continue
     if (l.flag_reminder) {
@@ -57,6 +69,20 @@ export function groupTodayLeads(leads: Lead[], now = new Date()): TodayGroups {
       !l.ultima_contactare_la
     ) {
       staleNew.push(l)
+      continue
+    }
+    // Listele de neglijență: doar pipeline activ, fără callback viitor programat
+    // (cele scadente sunt deja în `callbacks`). Ultima activitate = ultimul
+    // contact sau, dacă n-a fost contactat, data intrării.
+    if (ACTIVE_PIPELINE.includes(l.status) && !l.data_callback_dorit) {
+      const lastActivity = new Date(
+        l.ultima_contactare_la ?? l.created,
+      ).getTime()
+      if (lastActivity < cutoffInactive) {
+        inactive.push(l)
+      } else if (l.ultima_contactare_la && lastActivity < cutoffFollowup) {
+        noFollowup.push(l)
+      }
     }
   }
   programatiAzi.sort((a, b) =>
@@ -66,7 +92,13 @@ export function groupTodayLeads(leads: Lead[], now = new Date()): TodayGroups {
     (a.data_callback_dorit ?? '').localeCompare(b.data_callback_dorit ?? ''),
   )
   staleNew.sort((a, b) => a.created.localeCompare(b.created))
-  return { reminders, programatiAzi, callbacks, staleNew }
+  const byLastActivity = (a: Lead, b: Lead) =>
+    (a.ultima_contactare_la ?? a.created).localeCompare(
+      b.ultima_contactare_la ?? b.created,
+    )
+  noFollowup.sort(byLastActivity)
+  inactive.sort(byLastActivity)
+  return { reminders, programatiAzi, callbacks, staleNew, noFollowup, inactive }
 }
 
 function formatOra(iso: string): string {
@@ -189,7 +221,9 @@ export function TodayPanel({ leads, onLeadClick, onLogContact }: Props) {
     groups.reminders.length +
     groups.programatiAzi.length +
     groups.callbacks.length +
-    groups.staleNew.length
+    groups.staleNew.length +
+    groups.noFollowup.length +
+    groups.inactive.length
 
   if (!total) return null
 
@@ -222,6 +256,16 @@ export function TodayPanel({ leads, onLeadClick, onLogContact }: Props) {
           {groups.staleNew.length > 0 && (
             <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-zinc-700">
               🕐 {groups.staleNew.length}
+            </span>
+          )}
+          {groups.noFollowup.length > 0 && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700">
+              ⏳ {groups.noFollowup.length}
+            </span>
+          )}
+          {groups.inactive.length > 0 && (
+            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-slate-600">
+              💤 {groups.inactive.length}
             </span>
           )}
         </span>
@@ -272,6 +316,28 @@ export function TodayPanel({ leads, onLeadClick, onLogContact }: Props) {
             extraOf={(l) => (
               <span className="text-quasar-gray">
                 intrat {timpRelativ(l.created)}
+              </span>
+            )}
+            onLeadClick={onLeadClick}
+            onLogContact={onLogContact}
+          />
+          <Group
+            title="Fără follow-up >7 zile"
+            leads={groups.noFollowup}
+            extraOf={(l) => (
+              <span className="text-amber-600">
+                contact {timpRelativ(l.ultima_contactare_la ?? l.created)}
+              </span>
+            )}
+            onLeadClick={onLeadClick}
+            onLogContact={onLogContact}
+          />
+          <Group
+            title="Inactive >30 zile"
+            leads={groups.inactive}
+            extraOf={(l) => (
+              <span className="text-slate-500">
+                {timpRelativ(l.ultima_contactare_la ?? l.created)}
               </span>
             )}
             onLeadClick={onLeadClick}
