@@ -2,6 +2,7 @@
 //   node scripts/migrate/import.mjs --sample   # subset coerent (verificare în browser)
 //   node scripts/migrate/import.mjs            # import complet (tot istoricul)
 import { sb, uuid, load, pbDate, pbTimestamp, pbFirst, pbArr, nz, bool, upsertAll } from './lib.mjs'
+import { backfillCursuriTeacheri } from './backfill-cursuri-teacheri.mjs'
 
 const SAMPLE = process.argv.includes('--sample')
 const WIPE = process.argv.includes('--wipe')
@@ -247,6 +248,12 @@ async function main() {
     interes: nz(p.Interes), prezenta: 'programat', observatii: nz(p.Observatii),
     created: ts(p.created), updated: ts(p.updated),
   })))
+
+  // ---------- post-import: M:N profesor↔curs (din titular legacy) ----------
+  // wipe() șterge `cursuri` → cascade golește cursuri_teacheri. Reconstruim M:N
+  // ca profesorii logați să-și vadă grupele. Idempotent. Vezi [[project-reimport-luni-beta]].
+  const { courses } = await backfillCursuriTeacheri()
+  console.log(`  backfill cursuri_teacheri: ${courses} legături titular`)
 
   console.log('\n✅ Gata.')
 }
