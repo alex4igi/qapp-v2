@@ -20,6 +20,8 @@ export type GrupaRosterRow = {
   nume: string
   prenume: string | null
   poza: string | null
+  // Telefon de contact (părinte/cursant). Doar pentru clienți; leads = null.
+  telefon: string | null
   status: RosterStatus
   restanta: number
   esteZiua: boolean
@@ -81,7 +83,7 @@ export async function getGrupaDashboard(params: {
   const { data: enrData, error: enrErr } = await supabase
     .from('enrollments')
     .select(
-      'id, suma, client:clienti(id, nume, prenume, foto, data_nasterii)',
+      'id, suma, client:clienti(id, nume, prenume, foto, data_nasterii, telefon)',
     )
     .eq('cursul', params.cursId)
     .eq('reziliat', false)
@@ -97,6 +99,7 @@ export async function getGrupaDashboard(params: {
       prenume: string | null
       foto: string | null
       data_nasterii: string | null
+      telefon: string | null
     } | null
   }>
   const enrollmentIds = enrollments.map((e) => e.id)
@@ -206,6 +209,7 @@ export async function getGrupaDashboard(params: {
         nume: e.client.nume,
         prenume: e.client.prenume,
         poza: e.client.foto,
+        telefon: e.client.telefon,
         status,
         restanta: restantaByClient.get(e.client.id) ?? 0,
         esteZiua: Boolean(
@@ -259,6 +263,7 @@ export async function getGrupaDashboard(params: {
       nume: p.lead.nume,
       prenume: p.lead.prenume,
       poza: null,
+      telefon: null,
       status,
       restanta: 0,
       esteZiua: Boolean(
