@@ -2757,6 +2757,7 @@ export type Database = {
           rezervare_id: string | null
           status: string
           updated: string
+          voucher_id: string | null
         }
         Insert: {
           amount: number
@@ -2771,6 +2772,7 @@ export type Database = {
           rezervare_id?: string | null
           status?: string
           updated?: string
+          voucher_id?: string | null
         }
         Update: {
           amount?: number
@@ -2785,6 +2787,7 @@ export type Database = {
           rezervare_id?: string | null
           status?: string
           updated?: string
+          voucher_id?: string | null
         }
         Relationships: [
           {
@@ -2841,6 +2844,13 @@ export type Database = {
             columns: ["rezervare_id"]
             isOneToOne: false
             referencedRelation: "open_rezervari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "netopia_orders_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchere"
             referencedColumns: ["id"]
           },
         ]

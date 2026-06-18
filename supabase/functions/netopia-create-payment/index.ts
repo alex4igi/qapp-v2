@@ -23,6 +23,17 @@ type Body = {
   // abonament: plătește restanța până la (și inclusiv) această înrolare/lună (FIFO);
   // null => toată restanța. Garda cronologică e validată server-side în RPC.
   panaLa?: string
+  // rezervare: cod de voucher opțional, aplicat pe prețul ședinței (validat server-side).
+  voucherCod?: string
+}
+
+// Aplică reducerea pe sumă pornind de la tip+valoare (validitatea e verificată în DB).
+// Oglindă a applyVoucher() din src/features/vouchere/calc.ts. 'Special' => fără reducere.
+function applyVoucherAmount(base: number, tip: string | null, valoare: number | null): number {
+  if (tip == null || valoare == null) return base
+  if (tip === 'Procent') return Math.max(0, Math.round((base * (100 - valoare)) ) / 100)
+  if (tip === 'Valoare') return Math.max(0, base - valoare)
+  return base
 }
 
 Deno.serve(async (req) => {
@@ -42,7 +53,7 @@ Deno.serve(async (req) => {
       return json({ error: 'forbidden' }, 403)
     }
 
-    const { clientId, kind = 'abonament', sesiuneId, panaLa } = (await req.json()) as Body
+    const { clientId, kind = 'abonament', sesiuneId, panaLa, voucherCod } = (await req.json()) as Body
     if (!clientId) return json({ error: 'clientId obligatoriu' }, 400)
 
     // Client scopat pe JWT-ul părintelui => RPC-urile validează apartenența la familie
@@ -54,6 +65,7 @@ Deno.serve(async (req) => {
     let amount = 0
     let plan: unknown[] = []
     let rezervareId: string | null = null
+    let voucherId: string | null = null
 
     if (kind === 'rezervare') {
       // Rezervare OPEN class: creează un hold (loc 'rezervat', fără bani) → prețul ședinței.
@@ -66,6 +78,32 @@ Deno.serve(async (req) => {
       amount = Number(holdRes?.amount ?? 0)
       rezervareId = (holdRes?.rezervare_id as string) ?? null
       if (amount <= 0 || !rezervareId) return json({ error: 'Rezervare invalidă.' }, 400)
+
+      // Voucher opțional pe rezervare: validăm server-side, apoi aplicăm reducerea.
+      const cod = (voucherCod ?? '').trim()
+      if (cod) {
+        const releaseHold = () =>
+          admin.from('open_rezervari').update({
+            status: 'anulat', anulat_at: new Date().toISOString(), anulat_motiv: 'voucher invalid',
+          }).eq('id', rezervareId)
+
+        const { data: ses } = await admin.from('open_sesiuni').select('curs').eq('id', sesiuneId).single()
+        const { data: vres, error: vErr } = await userClient.rpc('validate_voucher_code', {
+          p_cod: cod, p_client: clientId, p_curs: ses?.curs ?? undefined, p_tip: 'Per sedinta',
+        })
+        const verdict = Array.isArray(vres) ? vres[0] : vres
+        if (vErr || !verdict?.valid) {
+          await releaseHold()
+          return json({ error: verdict?.reason ?? vErr?.message ?? 'Voucher invalid.' }, 400)
+        }
+        const redus = applyVoucherAmount(amount, verdict.tip, Number(verdict.valoare))
+        if (redus <= 0) {
+          await releaseHold()
+          return json({ error: 'Voucherul acoperă integral ședința — rezervarea gratuită se face la recepție.' }, 400)
+        }
+        amount = redus
+        voucherId = verdict.voucher_id as string
+      }
     } else {
       // Abonament: recalculează restanța FIFO server-side (sursa de adevăr a sumei).
       const { data: planRes, error: planErr } = await userClient.rpc('build_fifo_plan_membru', {
@@ -108,6 +146,7 @@ Deno.serve(async (req) => {
       status: 'pending',
       order_type: kind,
       rezervare_id: rezervareId,
+      voucher_id: voucherId,
     })
     if (insErr) {
       // dacă a rămas un hold orfan, eliberează-l
