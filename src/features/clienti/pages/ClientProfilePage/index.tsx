@@ -29,8 +29,9 @@ import { calcAge, getInitials } from './helpers'
 import { InrolariSezonTab } from './tabs/InrolariSezonTab'
 import { PrezenteSezonTab } from './tabs/PrezenteSezonTab'
 import { DatePersonaleTab } from './tabs/DatePersonaleTab'
+import { DocumenteTab } from './tabs/DocumenteTab'
 
-type TabId = 'inrolari' | 'prezente' | 'date'
+type TabId = 'inrolari' | 'prezente' | 'date' | 'documente'
 
 export function ClientProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -274,9 +275,10 @@ export function ClientProfilePage() {
                     { id: 'date',     label: 'Detalii personale' },
                   ]
                 : [
-                    { id: 'inrolari', label: 'Detalii înrolări' },
-                    { id: 'prezente', label: 'Detalii prezențe' },
-                    { id: 'date',     label: 'Detalii personale' },
+                    { id: 'inrolari',  label: 'Detalii înrolări' },
+                    { id: 'prezente',  label: 'Detalii prezențe' },
+                    { id: 'date',      label: 'Detalii personale' },
+                    { id: 'documente', label: 'Documente' },
                   ]
             }
             active={tab}
@@ -298,9 +300,9 @@ export function ClientProfilePage() {
               onAdjustPrice={
                 canManagerActions ? (eId) => setAdjustEnrollmentId(eId) : undefined
               }
-              onMoveCurs={
-                canManagerActions ? (eId) => setMoveEnrollmentId(eId) : undefined
-              }
+              // Mutarea între grupe e permisă și front_desk-ului; managerul
+              // primește o notificare informativă (vezi notify_enrollment_move).
+              onMoveCurs={(eId) => setMoveEnrollmentId(eId)}
             />
           )}
 
@@ -317,6 +319,10 @@ export function ClientProfilePage() {
               familia={familiaLabel}
               teacherMode={teacherMode}
             />
+          )}
+
+          {!teacherMode && tab === 'documente' && (
+            <DocumenteTab client={client} />
           )}
         </div>
       </div>

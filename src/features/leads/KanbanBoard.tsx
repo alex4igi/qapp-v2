@@ -132,10 +132,9 @@ export function KanbanBoard() {
     const newStatus: StatusLead =
       targetColumn?.status ?? overLead?.status ?? dragged.status
 
-    if (newStatus === dragged.status) return
-
     // Coloane terminale — lead-urile pierdute/convertite nu se mai mută.
     if (dragged.status === 'pierdut' || dragged.status === 'convertit') {
+      if (newStatus === dragged.status) return
       setDragError(
         'Lead-urile pierdute sau convertite nu mai pot fi mutate.',
       )
@@ -143,10 +142,14 @@ export function KanbanBoard() {
       return
     }
 
+    // Re-drop pe „Programat" (chiar dacă e deja programat) = reprogramare:
+    // redeschide modalul, care re-sincronizează programarea în roster.
     if (newStatus === 'programat') {
       setSchedulingLead(dragged)
       return
     }
+
+    if (newStatus === dragged.status) return
     if (newStatus === 'pierdut') {
       setPierdutLead(dragged)
       return
@@ -231,6 +234,10 @@ export function KanbanBoard() {
           open
           lead={editingLead}
           onClose={() => setEditingLead(null)}
+          onReschedule={(lead) => {
+            setEditingLead(null)
+            setSchedulingLead(lead)
+          }}
         />
       )}
       {addingToStatus && (

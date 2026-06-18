@@ -242,4 +242,16 @@ export async function moveEnrollmentToCurs(params: {
     reason: motiv,
     locatieId,
   })
+
+  // Notifică managerul (+ owner/admin) la mutare — informativ, fără aprobare.
+  // Eșecul notificării nu trebuie să anuleze mutarea.
+  if (cur.cursul) {
+    const { error: nErr } = await supabase.rpc('notify_enrollment_move', {
+      p_enrollment: params.enrollmentId,
+      p_from_curs: cur.cursul,
+      p_to_curs: params.newCursId,
+      p_motiv: motiv,
+    })
+    if (nErr) console.error('notify_enrollment_move failed:', nErr.message)
+  }
 }

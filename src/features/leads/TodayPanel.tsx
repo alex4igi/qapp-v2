@@ -11,6 +11,7 @@ type Props = {
 
 type TodayGroups = {
   reminders: Lead[]
+  programatiAzi: Lead[]
   callbacks: Lead[]
   staleNew: Lead[]
 }
@@ -18,18 +19,31 @@ type TodayGroups = {
 const TERMINAL: StatusLead[] = ['convertit', 'pierdut']
 const DAY = 24 * 60 * 60 * 1000
 
+function isSameDay(a: Date, b: Date): boolean {
+  return a.toDateString() === b.toDateString()
+}
+
 // Un lead apare o singură dată, în primul grup care îl prinde.
 export function groupTodayLeads(leads: Lead[], now = new Date()): TodayGroups {
   const endOfToday = new Date(now)
   endOfToday.setHours(23, 59, 59, 999)
   const cutoff24h = now.getTime() - DAY
   const reminders: Lead[] = []
+  const programatiAzi: Lead[] = []
   const callbacks: Lead[] = []
   const staleNew: Lead[] = []
   for (const l of leads) {
     if (TERMINAL.includes(l.status)) continue
     if (l.flag_reminder) {
       reminders.push(l)
+      continue
+    }
+    if (
+      l.status === 'programat' &&
+      l.data_programare &&
+      isSameDay(new Date(l.data_programare), now)
+    ) {
+      programatiAzi.push(l)
       continue
     }
     if (l.data_callback_dorit && new Date(l.data_callback_dorit) <= endOfToday) {
@@ -45,11 +59,19 @@ export function groupTodayLeads(leads: Lead[], now = new Date()): TodayGroups {
       staleNew.push(l)
     }
   }
+  programatiAzi.sort((a, b) =>
+    (a.data_programare ?? '').localeCompare(b.data_programare ?? ''),
+  )
   callbacks.sort((a, b) =>
     (a.data_callback_dorit ?? '').localeCompare(b.data_callback_dorit ?? ''),
   )
   staleNew.sort((a, b) => a.created.localeCompare(b.created))
-  return { reminders, callbacks, staleNew }
+  return { reminders, programatiAzi, callbacks, staleNew }
+}
+
+function formatOra(iso: string): string {
+  const d = new Date(iso)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 function formatCallback(iso: string): { text: string; overdue: boolean } {
@@ -164,7 +186,10 @@ export function TodayPanel({ leads, onLeadClick, onLogContact }: Props) {
   const [expanded, setExpanded] = useState(false)
   const groups = useMemo(() => groupTodayLeads(leads), [leads])
   const total =
-    groups.reminders.length + groups.callbacks.length + groups.staleNew.length
+    groups.reminders.length +
+    groups.programatiAzi.length +
+    groups.callbacks.length +
+    groups.staleNew.length
 
   if (!total) return null
 
@@ -182,6 +207,11 @@ export function TodayPanel({ leads, onLeadClick, onLogContact }: Props) {
           {groups.reminders.length > 0 && (
             <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">
               ⚑ {groups.reminders.length}
+            </span>
+          )}
+          {groups.programatiAzi.length > 0 && (
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700">
+              📅 {groups.programatiAzi.length}
             </span>
           )}
           {groups.callbacks.length > 0 && (
@@ -207,6 +237,17 @@ export function TodayPanel({ leads, onLeadClick, onLogContact }: Props) {
             leads={groups.reminders}
             extraOf={(l) => (
               <span className="text-red-600">⚑ {timpRelativ(l.updated)}</span>
+            )}
+            onLeadClick={onLeadClick}
+            onLogContact={onLogContact}
+          />
+          <Group
+            title="Programați azi la demo"
+            leads={groups.programatiAzi}
+            extraOf={(l) => (
+              <span className="text-blue-600">
+                {l.data_programare ? `azi ${formatOra(l.data_programare)}` : 'azi'}
+              </span>
             )}
             onLeadClick={onLeadClick}
             onLogContact={onLogContact}

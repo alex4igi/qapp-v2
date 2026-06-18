@@ -22,6 +22,7 @@ import { EligibilityAlerts } from '@/features/vouchere/EligibilityAlerts'
 import {
   createInrolari,
   getCursForInrolare,
+  getOpenSesiuneByDate,
   listCursuriPentruInrolare,
 } from '../../api'
 import {
@@ -113,6 +114,17 @@ export function EnrollmentForm({
     ocupareQ.data != null &&
     ocupareQ.data.capacitate != null &&
     ocupareQ.data.activi >= ocupareQ.data.capacitate
+
+  // Facultativ per ședință: capacitatea e per-sesiune (curs + dată), exact ca în
+  // fluxul Open class. Cheia de query e comună cu OpenClassTab → cache partajat.
+  const isFacultativPerSedinta = isFacultativ && tipPlata === 'Per sedinta'
+  const sesiuneQ = useQuery({
+    queryKey: ['open-sesiune', cursId, dataIncepere],
+    queryFn: () => getOpenSesiuneByDate(cursId, dataIncepere),
+    enabled: Boolean(cursId) && isFacultativPerSedinta && Boolean(dataIncepere),
+  })
+  const sesiunePlina =
+    sesiuneQ.data != null && sesiuneQ.data.ocupate >= sesiuneQ.data.capacitate
 
   // Tip plata permis în funcție de tipul derivat din curs.
   // Default (fără curs ales) = setul recurent (cel mai comun).
@@ -401,6 +413,23 @@ export function EnrollmentForm({
             <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               ⚠️ Curs plin ({ocupareQ.data.activi}/{ocupareQ.data.capacitate}).
               Mai vrei să înscrii?
+            </p>
+          )}
+
+          {isFacultativPerSedinta && cursId && dataIncepere && sesiuneQ.data && (
+            <p
+              className={[
+                'rounded-md border px-3 py-2 text-sm',
+                sesiunePlina
+                  ? 'border-amber-300 bg-amber-50 text-amber-800'
+                  : 'border-quasar-gray-light bg-quasar-gray-light/30 text-quasar-gray',
+              ].join(' ')}
+            >
+              {sesiunePlina ? '⚠️ Sesiune completă' : 'Locuri sesiune'}:{' '}
+              <strong className="text-quasar-black">
+                {sesiuneQ.data.ocupate}/{sesiuneQ.data.capacitate}
+              </strong>
+              {sesiunePlina && ' — mai vrei să înscrii?'}
             </p>
           )}
 

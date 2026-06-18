@@ -1073,6 +1073,92 @@ export type Database = {
           },
         ]
       }
+      documente_client: {
+        Row: {
+          client: string
+          created: string
+          created_by: string | null
+          data_expirarii: string | null
+          id: string
+          link: string
+          observatii: string | null
+          tip: Database["public"]["Enums"]["tip_document"]
+          titlu: string | null
+        }
+        Insert: {
+          client: string
+          created?: string
+          created_by?: string | null
+          data_expirarii?: string | null
+          id?: string
+          link: string
+          observatii?: string | null
+          tip?: Database["public"]["Enums"]["tip_document"]
+          titlu?: string | null
+        }
+        Update: {
+          client?: string
+          created?: string
+          created_by?: string | null
+          data_expirarii?: string | null
+          id?: string
+          link?: string
+          observatii?: string | null
+          tip?: Database["public"]["Enums"]["tip_document"]
+          titlu?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documente_client_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documente_client_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documente_client_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "documente_client_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "documente_client_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documente_client_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "documente_client_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           client_id: string | null
@@ -6076,6 +6162,15 @@ export type Database = {
       my_teacher_id: { Args: never; Returns: string }
       notifications_mark_all_read: { Args: never; Returns: number }
       notifications_unread_count: { Args: never; Returns: number }
+      notify_enrollment_move: {
+        Args: {
+          p_enrollment: string
+          p_from_curs: string
+          p_motiv: string
+          p_to_curs: string
+        }
+        Returns: number
+      }
       notify_price_change: {
         Args: {
           p_context?: string
@@ -6244,7 +6339,13 @@ export type Database = {
       canal_contact: "telefon" | "sms" | "email" | "dm"
       canale_online: "Meta ADS" | "Google ADS" | "TikTok Ads" | "Organic"
       categorie_cheltuiala: "Administrativa" | "Salariala" | "Alta"
-      categorie_incasare: "Abonament" | "Bilet" | "Merch" | "Taxa" | "Workshop"
+      categorie_incasare:
+        | "Abonament"
+        | "Bilet"
+        | "Merch"
+        | "Taxa"
+        | "Workshop"
+        | "Auditie"
       categorie_inventar:
         | "Haine"
         | "Accesorii"
@@ -6321,7 +6422,14 @@ export type Database = {
         | "Events"
         | "Website"
         | "Organic"
-      tip_eveniment: "Eveniment" | "Workshop"
+      tip_document:
+        | "Contract"
+        | "Anexa"
+        | "Reziliere"
+        | "Medical"
+        | "Declaratie"
+        | "Altul"
+      tip_eveniment: "Eveniment" | "Workshop" | "Auditie"
       tip_feedback: "Sesizare" | "Review"
       tip_plata: "Per sedinta" | "Per luna" | "Per an"
       tip_voucher: "Valoare" | "Procent" | "Special"
@@ -6483,7 +6591,14 @@ export const Constants = {
       canal_contact: ["telefon", "sms", "email", "dm"],
       canale_online: ["Meta ADS", "Google ADS", "TikTok Ads", "Organic"],
       categorie_cheltuiala: ["Administrativa", "Salariala", "Alta"],
-      categorie_incasare: ["Abonament", "Bilet", "Merch", "Taxa", "Workshop"],
+      categorie_incasare: [
+        "Abonament",
+        "Bilet",
+        "Merch",
+        "Taxa",
+        "Workshop",
+        "Auditie",
+      ],
       categorie_inventar: [
         "Haine",
         "Accesorii",
@@ -6561,7 +6676,15 @@ export const Constants = {
         "Website",
         "Organic",
       ],
-      tip_eveniment: ["Eveniment", "Workshop"],
+      tip_document: [
+        "Contract",
+        "Anexa",
+        "Reziliere",
+        "Medical",
+        "Declaratie",
+        "Altul",
+      ],
+      tip_eveniment: ["Eveniment", "Workshop", "Auditie"],
       tip_feedback: ["Sesizare", "Review"],
       tip_plata: ["Per sedinta", "Per luna", "Per an"],
       tip_voucher: ["Valoare", "Procent", "Special"],

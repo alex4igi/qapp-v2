@@ -9,6 +9,8 @@ import {
   Button,
 } from '@/components/ui'
 import { formatRON } from '@/lib/format'
+import { useAuth } from '@/hooks/useAuth'
+import { isPrivileged } from '@/lib/rolesMatrix'
 import { locatiiOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
@@ -57,6 +59,10 @@ const CATEG_CHELTUIELI_PALETTE: Record<string, string> = {
 }
 
 export function StatisticiPage() {
+  const { role } = useAuth()
+  // Cheltuieli + profit sunt doar pentru manager+. Front_desk vede încasări,
+  // restanțe, conversie, prezențe, ocupare — „satisfacția muncii", fără profit.
+  const privileged = isPrivileged(role)
   const [fromLuna, setFromLuna] = useState(lunaCuOffset(-11))
   const [toLuna, setToLuna] = useState(lunaCurenta())
   const [locatieId, setLocatieId] = useState('')
@@ -127,6 +133,7 @@ export function StatisticiPage() {
   const categChelQ = useQuery({
     queryKey: ['stat', 'categ-cheltuieli', interval],
     queryFn: () => getMixCategoriiCheltuieli(interval),
+    enabled: privileged,
   })
 
   const locatiiQ = useQuery({
@@ -378,20 +385,24 @@ export function StatisticiPage() {
           tone="positive"
           hint="în intervalul ales"
         />
-        <KpiCard
-          label="Cheltuieli"
-          value={kpisQ.data ? formatRON(kpisQ.data.cheltuieli) : '—'}
-          tone="negative"
-          hint="făcute în interval"
-        />
-        <KpiCard
-          label="Profit"
-          value={kpisQ.data ? formatRON(kpisQ.data.profit) : '—'}
-          tone={
-            kpisQ.data && kpisQ.data.profit < 0 ? 'negative' : 'positive'
-          }
-          hint="încasări − cheltuieli"
-        />
+        {privileged && (
+          <KpiCard
+            label="Cheltuieli"
+            value={kpisQ.data ? formatRON(kpisQ.data.cheltuieli) : '—'}
+            tone="negative"
+            hint="făcute în interval"
+          />
+        )}
+        {privileged && (
+          <KpiCard
+            label="Profit"
+            value={kpisQ.data ? formatRON(kpisQ.data.profit) : '—'}
+            tone={
+              kpisQ.data && kpisQ.data.profit < 0 ? 'negative' : 'positive'
+            }
+            hint="încasări − cheltuieli"
+          />
+        )}
         <KpiCard
           label="Restanțe"
           value={kpisQ.data ? formatRON(kpisQ.data.restanteTotal) : '—'}
@@ -534,20 +545,22 @@ export function StatisticiPage() {
               />
             )}
           </div>
-          <div>
-            <h2 className="mb-2 text-sm font-semibold text-quasar-black">
-              Cheltuieli pe categorie
-            </h2>
-            {categChelQ.isLoading ? (
-              <Spinner />
-            ) : (
-              <CategorieChart
-                title="Distribuție cheltuieli"
-                rows={categChelQ.data ?? []}
-                palette={CATEG_CHELTUIELI_PALETTE}
-              />
-            )}
-          </div>
+          {privileged && (
+            <div>
+              <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+                Cheltuieli pe categorie
+              </h2>
+              {categChelQ.isLoading ? (
+                <Spinner />
+              ) : (
+                <CategorieChart
+                  title="Distribuție cheltuieli"
+                  rows={categChelQ.data ?? []}
+                  palette={CATEG_CHELTUIELI_PALETTE}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         <div className="mt-8 border-t border-quasar-gray-light pt-6">

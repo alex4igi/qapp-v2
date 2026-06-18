@@ -33,8 +33,10 @@ export const ROUTE_ACCESS = {
   '/grupa': WITH_TEACHER,
   '/situatie-zilnica': ALL_STAFF,
   '/evaluari': WITH_TEACHER,
-  '/financiar': PRIVILEGED,
-  '/statistici': PRIVILEGED,
+  // Front_desk vede rapoartele (satisfacția muncii). Tabul „Cheltuieli"
+  // (salarii) din /financiar e ascuns intern pentru non-privileged.
+  '/financiar': ALL_STAFF,
+  '/statistici': ALL_STAFF,
   '/scorecard': PRIVILEGED,
   '/vouchere': PRIVILEGED,
   '/inventar': PRIVILEGED,

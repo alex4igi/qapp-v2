@@ -110,7 +110,8 @@ export function SimpleIncasareForm({
     () => inventarQ.data?.find((i) => i.value === sursaId),
     [inventarQ.data, sursaId],
   )
-  const isWorkshop = tip === 'Bilet' && (selectedBilet?.isWorkshop ?? false)
+  const needsParticipant =
+    tip === 'Bilet' && (selectedBilet?.needsParticipant ?? false)
 
   const voucherSelectat = useMemo(
     () => vouchereQ.data?.find((v) => v.id === voucherId) ?? null,
@@ -156,10 +157,10 @@ export function SimpleIncasareForm({
         )
       }
 
-      // La workshop, persoana e obligatorie: client existent SAU guest (nume+telefon).
+      // La workshop / audiție, persoana e obligatorie: client existent SAU guest (nume+telefon).
       let clientField: string | null = clientId || null
       let leadField: string | null = null
-      if (isWorkshop) {
+      if (needsParticipant) {
         if (guestMode) {
           if (!guestNume.trim() || !guestTelefon.trim()) {
             throw new Error('Pentru guest, completează nume și telefon.')
@@ -186,7 +187,7 @@ export function SimpleIncasareForm({
         data: data || null,
         metoda,
         observatii: observatii.trim() || null,
-        categorie: isWorkshop ? 'Workshop' : tip,
+        categorie: selectedBilet?.categorie ?? tip,
         voucher: voucherId || null,
       }
       if (tip === 'Bilet') {
@@ -212,7 +213,7 @@ export function SimpleIncasareForm({
 
   const labels: Record<SimpleTip, { sursa: string; placeholder: string }> = {
     Bilet: {
-      sursa: 'Eveniment / Concurs / Workshop',
+      sursa: 'Eveniment / Concurs / Workshop / Audiție',
       placeholder: 'Alege sursa biletului…',
     },
     Merch: {
@@ -243,7 +244,7 @@ export function SimpleIncasareForm({
         </Field>
       )}
 
-      {isWorkshop ? (
+      {needsParticipant ? (
         <div className="space-y-3 rounded-md border border-quasar-gray-light p-3">
           <Checkbox
             label="Participant din afara clubului (guest nou)"

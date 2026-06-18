@@ -124,7 +124,7 @@ export function LeadCard({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="rounded p-1 text-quasar-gray opacity-0 transition-colors group-hover:opacity-100 hover:bg-green-50 hover:text-green-600"
+              className="rounded p-1 text-quasar-gray opacity-60 transition-colors group-hover:opacity-100 hover:bg-green-50 hover:text-green-600"
               title="Scrie pe WhatsApp"
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -140,7 +140,7 @@ export function LeadCard({
                 onLogContact(lead)
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="rounded p-1 text-quasar-gray opacity-0 transition-colors group-hover:opacity-100 hover:bg-quasar-gray-light hover:text-quasar-black"
+              className="rounded p-1 text-quasar-gray opacity-60 transition-colors group-hover:opacity-100 hover:bg-quasar-gray-light hover:text-quasar-black"
               title="Loghează contact"
             >
               📞
@@ -153,7 +153,7 @@ export function LeadCard({
               onClick(lead)
             }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="rounded p-1 text-quasar-gray opacity-0 transition-colors group-hover:opacity-100 hover:bg-quasar-gray-light hover:text-quasar-black"
+            className="rounded p-1 text-quasar-gray opacity-60 transition-colors group-hover:opacity-100 hover:bg-quasar-gray-light hover:text-quasar-black"
             title="Editează"
           >
             <svg

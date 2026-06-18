@@ -32,6 +32,7 @@ export type ProgramareLead = Tables<'programari_leads'>
 export type Prospect = Tables<'prospecti'>
 export type CampaniePromovare = Tables<'campanii_promovare'>
 export type Eveniment = Tables<'evenimente'>
+export type DocumentClient = Tables<'documente_client'>
 export type Concurs = Tables<'concursuri'>
 export type Inventar = Tables<'inventar'>
 export type Cheltuiala = Tables<'cheltuieli'>

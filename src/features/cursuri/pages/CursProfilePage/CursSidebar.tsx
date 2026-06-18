@@ -17,6 +17,7 @@ export function CursSidebar({ initials, numele, ocupare }: Props) {
   const facultativ = ocupare?.facultativ ?? false
   const media = ocupare?.media ?? null
   const ratio = cap && cap > 0 ? activi / cap : 0
+  const libere = cap != null ? Math.max(0, cap - activi) : null
   const color =
     cap == null
       ? 'text-quasar-gray'
@@ -39,6 +40,15 @@ export function CursSidebar({ initials, numele, ocupare }: Props) {
         <p className={`mt-1 text-xl font-bold ${color}`}>
           {activi} / {cap ?? '—'}
         </p>
+        {libere != null && (
+          <p className="mt-0.5 text-[11px] font-medium text-quasar-gray">
+            {libere === 0
+              ? facultativ
+                ? 'sesiune plină'
+                : 'fără locuri libere'
+              : `${libere} ${libere === 1 ? 'loc liber' : 'locuri libere'}`}
+          </p>
+        )}
         {facultativ && (
           <p className="mt-0.5 text-[11px] text-quasar-gray">
             vârf ședință

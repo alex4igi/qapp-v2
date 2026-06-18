@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
-import type { Client, InsertDto, UpdateDto, Enums } from '@/types/db'
+import type { Client, InsertDto, UpdateDto, Enums, DocumentClient } from '@/types/db'
 
 export const PAGE_SIZE = 25
 
@@ -216,4 +216,34 @@ export async function getClientPrezenteSezon(params: {
     status: r.status,
     cursul: r.enrollment?.cursul ?? null,
   }))
+}
+
+// ── Documente client (faza 1: linkuri Google Drive) ───────────────────────
+export async function listDocumenteClient(
+  clientId: string,
+): Promise<DocumentClient[]> {
+  const { data, error } = await supabase
+    .from('documente_client')
+    .select('*')
+    .eq('client', clientId)
+    .order('created', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createDocumentClient(
+  dto: InsertDto<'documente_client'>,
+): Promise<DocumentClient> {
+  const { data, error } = await supabase
+    .from('documente_client')
+    .insert(dto)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteDocumentClient(id: string): Promise<void> {
+  const { error } = await supabase.from('documente_client').delete().eq('id', id)
+  if (error) throw error
 }

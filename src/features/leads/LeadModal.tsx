@@ -38,6 +38,9 @@ type Props = {
   lead?: Lead | null
   defaultStatus?: string
   onClose: () => void
+  /** Deschide fluxul de (re)programare — sincronizează programarea în roster
+   *  + retrimite confirmarea. Editarea directă a câmpului de mai jos NU face asta. */
+  onReschedule?: (lead: Lead) => void
 }
 
 const EMPTY: LeadForm = {
@@ -84,7 +87,7 @@ function fromLead(lead: Lead): LeadForm {
   }
 }
 
-export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
+export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: Props) {
   const queryClient = useQueryClient()
   const { role } = useAuth()
   const isEdit = Boolean(lead)
@@ -401,6 +404,20 @@ export function LeadModal({ open, lead, defaultStatus, onClose }: Props) {
             />
           </Field>
         </div>
+
+        {lead?.status === 'programat' && onReschedule && (
+          <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            <button
+              type="button"
+              onClick={() => onReschedule(lead)}
+              className="font-semibold underline-offset-2 hover:underline"
+            >
+              📅 Reprogramează
+            </button>{' '}
+            — schimbarea datei direct în câmpul de mai sus nu actualizează
+            programarea din roster. Folosește butonul pentru reprogramare corectă.
+          </div>
+        )}
 
         {form.status === 'contactat' && (
           <Field label="Sub-status" htmlFor="sub_status">

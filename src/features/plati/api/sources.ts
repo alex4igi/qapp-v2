@@ -1,13 +1,24 @@
 // Surse pentru drop-down-urile din PlataNouaModal: bilete (din evenimente +
 // concursuri) și articole de inventar (workflow merch).
 import { supabase } from '@/lib/supabase'
+import type { Enums } from '@/types/db'
 
 export type BiletSursaOption = {
   value: string
   label: string
   pret?: number | null
-  isWorkshop?: boolean
+  /** Workshop și Audiție cer un participant (cursant sau guest) la încasare. */
+  needsParticipant?: boolean
+  /** Categoria de încasare implicată de tipul evenimentului (Workshop / Auditie);
+   *  null pentru evenimente/concursuri obișnuite (→ 'Bilet'). */
+  categorie?: Enums<'categorie_incasare'> | null
   nume?: string
+}
+
+// Tipul evenimentului → categoria de încasare + dacă cere participant nominal.
+const EVENIMENT_CATEGORIE: Record<string, Enums<'categorie_incasare'>> = {
+  Workshop: 'Workshop',
+  Auditie: 'Auditie',
 }
 
 export async function listBiletSurse(): Promise<BiletSursaOption[]> {
@@ -25,13 +36,14 @@ export async function listBiletSurse(): Promise<BiletSursaOption[]> {
   if (coRes.error) throw coRes.error
   const out: BiletSursaOption[] = []
   for (const e of evRes.data ?? []) {
-    const isWorkshop = e.tip === 'Workshop'
-    const prefix = isWorkshop ? 'Workshop' : 'Eveniment'
+    const categorie = EVENIMENT_CATEGORIE[e.tip ?? ''] ?? null
+    const prefix = e.tip && e.tip !== 'Eveniment' ? e.tip : 'Eveniment'
     out.push({
       value: e.id,
       label: `${prefix} · ${e.nume_eveniment}${e.data ? ' · ' + e.data : ''}`,
       pret: e.pret_bilet,
-      isWorkshop,
+      needsParticipant: categorie != null,
+      categorie,
       nume: e.nume_eveniment,
     })
   }
