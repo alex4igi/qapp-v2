@@ -10,6 +10,7 @@ import {
   type Column,
 } from '@/components/ui'
 import type { CampaniePromovare } from '@/types/db'
+import { formatRON } from '@/lib/format'
 import { CampanieForm } from './CampanieForm'
 import { listCampanii, type CampanieWithLeadCount } from './api'
 
@@ -19,6 +20,23 @@ function groupKey(c: CampanieWithLeadCount): string {
     return `Online — ${c.canale_online ?? '(fără sub-canal)'}`
   }
   return c.canal_comunicare ?? '(fără canal)'
+}
+
+// Bugetul e stocat ca text liber (ex: „500 RON", „1.500"). Extragem cifrele.
+function parseBani(bani: string | null): number | null {
+  if (!bani) return null
+  const digits = bani.replace(/[^\d]/g, '')
+  if (!digits) return null
+  const n = parseInt(digits, 10)
+  return Number.isFinite(n) ? n : null
+}
+
+// CAC = cost de achiziție pe lead = buget ÷ nr. lead-uri atribuite campaniei.
+function cacLabel(c: CampanieWithLeadCount): string {
+  const buget = parseBani(c.bani)
+  if (buget == null) return '—'
+  if (c.nr_leads <= 0) return 'fără lead-uri'
+  return `${formatRON(Math.round(buget / c.nr_leads))}/lead`
 }
 
 const columns: Column<CampanieWithLeadCount>[] = [
@@ -38,8 +56,11 @@ const columns: Column<CampanieWithLeadCount>[] = [
   },
   {
     header: 'Buget',
-    cell: (c) => c.bani ?? '—',
-    className: 'w-28',
+    cell: (c) => {
+      const b = parseBani(c.bani)
+      return b != null ? formatRON(b) : (c.bani ?? '—')
+    },
+    className: 'w-28 text-right',
   },
   {
     header: 'Rezultate vizate',
@@ -50,6 +71,11 @@ const columns: Column<CampanieWithLeadCount>[] = [
     header: 'Lead-uri',
     cell: (c) => <span className="font-medium">{c.nr_leads}</span>,
     className: 'w-24 text-right',
+  },
+  {
+    header: 'CAC (cost/lead)',
+    cell: (c) => <span className="font-medium">{cacLabel(c)}</span>,
+    className: 'w-32 text-right',
   },
 ]
 
