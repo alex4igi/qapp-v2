@@ -13,7 +13,7 @@ import {
 } from '@/components/ui'
 import type { TarifPublic } from '@/types/db'
 import { useAuth } from '@/hooks/useAuth'
-import { isAdminOrHigher } from '@/lib/rolesMatrix'
+import { isPrivileged } from '@/lib/rolesMatrix'
 import {
   listTarifePublice,
   createTarifPublic,
@@ -40,10 +40,10 @@ const empty: FormState = {
 }
 
 // Oferta publică afișată pe portalul de membri (/servicii). Editabilă de
-// owner/admin/manager; restul staff-ului o vede read-only (scrierea e gated și de RLS).
+// manager/admin/owner; restul staff-ului o vede read-only (scrierea e gated și de RLS).
 export function TarifePubliceSection() {
   const { role } = useAuth()
-  const canEdit = isAdminOrHigher(role)
+  const canEdit = isPrivileged(role)
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<TarifPublic | null | undefined>(undefined)
   const [form, setForm] = useState<FormState>(empty)

@@ -49,8 +49,9 @@ export const navSections: NavSection[] = [
       { label: 'Evenimente',  path: '/evenimente' },
       { label: 'Concursuri',  path: '/concursuri' },
       { label: 'Campanii',    path: '/campanii' },
-      { label: 'Reînscrieri', path: '/reinscrieri' },
-      { label: 'Setări',      path: '/setari' },
+      { label: 'Reînscrieri',    path: '/reinscrieri' },
+      { label: 'Ofertă publică', path: '/oferta-publica' },
+      { label: 'Setări',         path: '/setari' },
     ],
   },
   {

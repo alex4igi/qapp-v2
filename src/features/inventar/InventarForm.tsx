@@ -6,6 +6,7 @@ import {
   TextInput,
   TextArea,
   Select,
+  Checkbox,
   Button,
 } from '@/components/ui'
 import { categorieInventarOptions } from '@/lib/enums'
@@ -26,6 +27,10 @@ type FormState = {
   pret: string
   locatie: string
   categorie: string
+  public: boolean
+  pretPublic: string
+  descrierePublica: string
+  ordinePublic: string
 }
 
 function initialState(a?: Inventar | null): FormState {
@@ -36,6 +41,10 @@ function initialState(a?: Inventar | null): FormState {
     pret: a?.pret ?? '',
     locatie: a?.locatie ?? '',
     categorie: a?.categorie ?? '',
+    public: a?.public ?? false,
+    pretPublic: a?.pret_public ?? '',
+    descrierePublica: a?.descriere_publica ?? '',
+    ordinePublic: a?.ordine_public != null ? String(a.ordine_public) : '0',
   }
 }
 
@@ -51,7 +60,7 @@ export function InventarForm({ open, articol, onClose }: Props) {
     queryFn: locatiiOptions,
   })
 
-  const set = (key: keyof FormState) => (value: string) =>
+  const set = (key: keyof FormState) => (value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
   const invalidate = () =>
@@ -66,6 +75,10 @@ export function InventarForm({ open, articol, onClose }: Props) {
         pret: form.pret.trim() || null,
         locatie: form.locatie || null,
         categorie: (form.categorie || null) as Inventar['categorie'],
+        public: form.public,
+        pret_public: form.pretPublic.trim() || null,
+        descriere_publica: form.descrierePublica.trim() || null,
+        ordine_public: form.ordinePublic.trim() ? Number(form.ordinePublic) : 0,
       }
       return isEdit
         ? updateInventar(articol!.id, payload)
@@ -94,6 +107,10 @@ export function InventarForm({ open, articol, onClose }: Props) {
     setError(null)
     if (!form.articol.trim()) {
       setError('Articolul este obligatoriu.')
+      return
+    }
+    if (form.public && !form.pret.trim() && !form.pretPublic.trim()) {
+      setError('Un articol public are nevoie de preț (intern sau public).')
       return
     }
     save.mutate()
@@ -199,6 +216,46 @@ export function InventarForm({ open, articol, onClose }: Props) {
               onChange={(e) => set('locatie')(e.target.value)}
             />
           </Field>
+        </div>
+
+        <div className="rounded-md border border-quasar-gray-light p-3">
+          <Checkbox
+            id="inventar-public"
+            label="Afișează pe portalul de membri (/servicii)"
+            checked={form.public}
+            onChange={(e) => set('public')(e.target.checked)}
+          />
+          {form.public && (
+            <div className="mt-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Preț public" htmlFor="pret-public">
+                  <TextInput
+                    id="pret-public"
+                    placeholder="implicit: prețul intern"
+                    value={form.pretPublic}
+                    onChange={(e) => set('pretPublic')(e.target.value)}
+                  />
+                </Field>
+                <Field label="Ordine afișare" htmlFor="ordine-public">
+                  <TextInput
+                    id="ordine-public"
+                    type="number"
+                    value={form.ordinePublic}
+                    onChange={(e) => set('ordinePublic')(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Field label="Descriere publică" htmlFor="descriere-publica">
+                <TextArea
+                  id="descriere-publica"
+                  rows={2}
+                  placeholder="implicit: descrierea internă"
+                  value={form.descrierePublica}
+                  onChange={(e) => set('descrierePublica')(e.target.value)}
+                />
+              </Field>
+            </div>
+          )}
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

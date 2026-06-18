@@ -50,7 +50,8 @@ export type OpenRezervare = Tables<'open_rezervari'>
 export type CampanieReinscriere = Tables<'campanii_reinscriere'>
 export type ReinscriereGate = Tables<'reinscrieri_gate'>
 export type TarifPublic = Tables<'tarife_publice'>
-export type ProdusPublic = Tables<'produse_publice'>
+// produse_publice e un VIEW peste inventar (vezi migrația 20260620100100) → Views, nu Tables.
+export type ProdusPublic = Views<'produse_publice'>
 
 // Enums folosite în UI
 export type StatusPrezenta = Enums<'status_prezenta'>

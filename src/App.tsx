@@ -32,6 +32,7 @@ import { ConcursuriListPage } from '@/features/concursuri/ConcursuriListPage'
 import { CampaniiListPage } from '@/features/campanii/CampaniiListPage'
 import { ReinscrieriPage } from '@/features/reinscrieri/ReinscrieriPage'
 import { SetariPage } from '@/features/setari/SetariPage'
+import { OfertaPublicaPage } from '@/features/oferta-publica/OfertaPublicaPage'
 import { OrganizatiePage } from '@/features/setari/OrganizatiePage'
 import { EvaluariListPage } from '@/features/evaluari/EvaluariListPage'
 import { SalariulMeuPage } from '@/features/salariu-teacher/SalariulMeuPage'
@@ -148,6 +149,12 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/setari']} />}>
             <Route element={<AppLayout />}>
               <Route path="setari" element={<SetariPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/oferta-publica']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="oferta-publica" element={<OfertaPublicaPage />} />
             </Route>
           </Route>
 

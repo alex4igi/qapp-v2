@@ -44,6 +44,7 @@ export const ROUTE_ACCESS = {
   '/concursuri': PRIVILEGED,
   '/campanii': ALL_STAFF,
   '/reinscrieri': PRIVILEGED,
+  '/oferta-publica': PRIVILEGED,
   '/setari': PRIVILEGED,
   '/opt-out': PRIVILEGED,
   '/salariul-meu': TEACHER_ONLY,

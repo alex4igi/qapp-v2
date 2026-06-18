@@ -24,6 +24,16 @@ const columns: Column<Inventar>[] = [
     className: 'w-20',
   },
   { header: 'Preț', cell: (a) => a.pret ?? '—', className: 'w-24' },
+  {
+    header: 'Portal',
+    cell: (a) =>
+      a.public ? (
+        <span title="Afișat pe portalul de membri">🌐</span>
+      ) : (
+        '—'
+      ),
+    className: 'w-20 text-center',
+  },
 ]
 
 export function InventarListPage() {
