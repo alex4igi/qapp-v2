@@ -1623,6 +1623,103 @@ export type Database = {
           },
         ]
       }
+      evaluari_teacher: {
+        Row: {
+          anul: number
+          created: string
+          evaluator_id: string
+          feedback_cursanti: number | null
+          id: string
+          luna: number
+          observatii: string | null
+          scor_comunicare: number | null
+          scor_disciplina: number | null
+          scor_energie: number | null
+          scor_pregatire: number | null
+          scor_punctualitate: number | null
+          scor_rezultate: number | null
+          teacher_id: string
+          updated: string
+        }
+        Insert: {
+          anul: number
+          created?: string
+          evaluator_id?: string
+          feedback_cursanti?: number | null
+          id?: string
+          luna: number
+          observatii?: string | null
+          scor_comunicare?: number | null
+          scor_disciplina?: number | null
+          scor_energie?: number | null
+          scor_pregatire?: number | null
+          scor_punctualitate?: number | null
+          scor_rezultate?: number | null
+          teacher_id: string
+          updated?: string
+        }
+        Update: {
+          anul?: number
+          created?: string
+          evaluator_id?: string
+          feedback_cursanti?: number | null
+          id?: string
+          luna?: number
+          observatii?: string | null
+          scor_comunicare?: number | null
+          scor_disciplina?: number | null
+          scor_energie?: number | null
+          scor_pregatire?: number | null
+          scor_punctualitate?: number | null
+          scor_rezultate?: number | null
+          teacher_id?: string
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluari_teacher_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "evaluari_teacher_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "evaluari_teacher_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profil_teacher"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluari_teacher_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "evaluari_teacher_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "restante_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "evaluari_teacher_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacheri"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evenimente: {
         Row: {
           capacitate: number | null
@@ -2557,30 +2654,6 @@ export type Database = {
           nume?: string
           telefon?: string | null
           updated?: string
-        }
-        Relationships: []
-      }
-      netopia_ipn_debug: {
-        Row: {
-          body: string | null
-          created: string
-          headers: Json | null
-          id: string
-          verified: boolean | null
-        }
-        Insert: {
-          body?: string | null
-          created?: string
-          headers?: Json | null
-          id?: string
-          verified?: boolean | null
-        }
-        Update: {
-          body?: string | null
-          created?: string
-          headers?: Json | null
-          id?: string
-          verified?: boolean | null
         }
         Relationships: []
       }

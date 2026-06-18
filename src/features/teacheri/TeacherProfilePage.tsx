@@ -8,6 +8,7 @@ import { getTeacher, toggleTeacherArchived } from './api'
 import { TeacherTabCursuri } from './TeacherTabCursuri'
 import { TeacherTabSalarii } from './TeacherTabSalarii'
 import { TeacherTabPersonale } from './TeacherTabPersonale'
+import { TeacherTabEvaluari } from './TeacherTabEvaluari'
 import { ArchiveConfirmModal } from '@/features/shared/ArchiveConfirmModal'
 
 function initials(nume: string, prenume: string | null) {
@@ -21,7 +22,7 @@ export function TeacherProfilePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { role } = useAuth()
-  const [tab, setTab] = useState<'cursuri' | 'salarii' | 'personale'>(
+  const [tab, setTab] = useState<'cursuri' | 'salarii' | 'personale' | 'evaluari'>(
     'cursuri',
   )
   const [archiveOpen, setArchiveOpen] = useState(false)
@@ -56,11 +57,14 @@ export function TeacherProfilePage() {
   const canSeeSalarii = isAdminOrHigher(role) || role === 'teacher'
   const canEditPersonale = isManagerOrHigher(role)
   const canArchive = isManagerOrHigher(role)
+  // Evaluările profesorului sunt private pentru management (owner/admin/manager).
+  const canSeeEvaluari = isManagerOrHigher(role)
 
   const tabs = [
     { id: 'cursuri', label: 'Detalii cursuri' },
     ...(canSeeSalarii ? [{ id: 'salarii', label: 'Detalii salarii' }] : []),
     { id: 'personale', label: 'Detalii personale' },
+    ...(canSeeEvaluari ? [{ id: 'evaluari', label: 'Evaluări' }] : []),
   ]
 
   return (
@@ -110,6 +114,9 @@ export function TeacherProfilePage() {
           )}
           {tab === 'personale' && (
             <TeacherTabPersonale teacher={teacher} canEdit={canEditPersonale} />
+          )}
+          {tab === 'evaluari' && canSeeEvaluari && (
+            <TeacherTabEvaluari teacherId={teacher.id} />
           )}
         </div>
       </div>

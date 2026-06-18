@@ -39,6 +39,7 @@ export type Feedback = Tables<'feedback'>
 export type AppFeedback = Tables<'app_feedback'>
 export type Anunt = Tables<'anunturi'>
 export type Evaluare = Tables<'evaluari'>
+export type EvaluareTeacher = Tables<'evaluari_teacher'>
 export type SituatieSms = Tables<'situatie_sms_uri'>
 export type ParametruAplicatie = Tables<'parametri_aplicatie'>
 export type SalariuTeacher = Tables<'salarii_teacher'>
