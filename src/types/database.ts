@@ -4440,6 +4440,125 @@ export type Database = {
           },
         ]
       }
+      voucher_redemptions: {
+        Row: {
+          client: string
+          created: string
+          enrollment: string | null
+          id: string
+          incasare: string | null
+          voucher: string
+        }
+        Insert: {
+          client: string
+          created?: string
+          enrollment?: string | null
+          id?: string
+          incasare?: string | null
+          voucher: string
+        }
+        Update: {
+          client?: string
+          created?: string
+          enrollment?: string | null
+          id?: string
+          incasare?: string | null
+          voucher?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_redemptions_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_inrolare"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_incasare_fkey"
+            columns: ["incasare"]
+            isOneToOne: false
+            referencedRelation: "incasari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_incasare_fkey"
+            columns: ["incasare"]
+            isOneToOne: false
+            referencedRelation: "lista_incasari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_voucher_fkey"
+            columns: ["voucher"]
+            isOneToOne: false
+            referencedRelation: "vouchere"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vouchere: {
         Row: {
           client: string | null
@@ -4450,6 +4569,7 @@ export type Database = {
           data_inceperii: string | null
           descriere: string | null
           id: string
+          limita_per_client: number | null
           numar_utilizari: number | null
           tip: Database["public"]["Enums"]["tip_voucher"] | null
           tip_enrollment: Database["public"]["Enums"]["tip_plata"] | null
@@ -4465,6 +4585,7 @@ export type Database = {
           data_inceperii?: string | null
           descriere?: string | null
           id?: string
+          limita_per_client?: number | null
           numar_utilizari?: number | null
           tip?: Database["public"]["Enums"]["tip_voucher"] | null
           tip_enrollment?: Database["public"]["Enums"]["tip_plata"] | null
@@ -4480,6 +4601,7 @@ export type Database = {
           data_inceperii?: string | null
           descriere?: string | null
           id?: string
+          limita_per_client?: number | null
           numar_utilizari?: number | null
           tip?: Database["public"]["Enums"]["tip_voucher"] | null
           tip_enrollment?: Database["public"]["Enums"]["tip_plata"] | null
@@ -5871,6 +5993,29 @@ export type Database = {
           status: string
         }[]
       }
+      get_documente_client: {
+        Args: { p_client: string }
+        Returns: {
+          data_expirarii: string
+          id: string
+          link: string
+          observatii: string
+          tip: Database["public"]["Enums"]["tip_document"]
+          titlu: string
+        }[]
+      }
+      get_evenimente_client: {
+        Args: never
+        Returns: {
+          data: string
+          descriere: string
+          eveniment_id: string
+          locatie: string
+          nume: string
+          pret_bilet: number
+          tip: Database["public"]["Enums"]["tip_eveniment"]
+        }[]
+      }
       get_grad_ocupare: {
         Args: { p_locatie?: string }
         Returns: {
@@ -5883,6 +6028,25 @@ export type Database = {
           media: number
           procent: number
           teacher_nume: string
+        }[]
+      }
+      get_grupe_client: {
+        Args: { p_client: string }
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          data_final: string
+          data_incepere: string
+          enrollment_id: string
+          instructori: string[]
+          locatie_nume: string
+          nivel: Database["public"]["Enums"]["nivel_curs"]
+          ora: string
+          sala: string
+          stil: string
+          tip_plata: Database["public"]["Enums"]["tip_plata"]
+          varsta: Database["public"]["Enums"]["varsta_curs"]
+          zile: Database["public"]["Enums"]["zi_saptamana"][]
         }[]
       }
       get_incasari_per_sezon: {
@@ -5904,6 +6068,16 @@ export type Database = {
           data_nasterii: string
           nume: string
           prenume: string
+        }[]
+      }
+      get_participari_client: {
+        Args: { p_client: string }
+        Returns: {
+          data: string
+          eveniment_id: string
+          locatie: string
+          nume: string
+          tip: Database["public"]["Enums"]["tip_eveniment"]
         }[]
       }
       get_plati_client: {
@@ -6032,6 +6206,18 @@ export type Database = {
           ultim_apel_rezultat: string
           ultima_prezenta: string
           zile_depasire: number
+        }[]
+      }
+      get_rezultate_concursuri: {
+        Args: never
+        Returns: {
+          data: string
+          id: string
+          locul_i: number
+          locul_ii: number
+          locul_iii: number
+          nume: string
+          rezultate: string
         }[]
       }
       get_scorecard_operatori: {
@@ -6380,6 +6566,22 @@ export type Database = {
         Returns: undefined
       }
       user_locatie_id: { Args: never; Returns: string }
+      validate_voucher_code: {
+        Args: {
+          p_client: string
+          p_cod: string
+          p_curs?: string
+          p_tip?: Database["public"]["Enums"]["tip_plata"]
+        }
+        Returns: {
+          cod: string
+          reason: string
+          tip: Database["public"]["Enums"]["tip_voucher"]
+          valid: boolean
+          valoare: number
+          voucher_id: string
+        }[]
+      }
     }
     Enums: {
       app_feedback_status:

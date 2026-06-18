@@ -33,6 +33,7 @@ type FormState = {
   data_inceperii: string
   data_expirarii: string
   numar_utilizari: string
+  limita_per_client: string
   client: string
   curs: string
   tip_enrollment: string
@@ -48,6 +49,8 @@ function initialState(v?: Voucher | null): FormState {
     data_expirarii: v?.data_expirarii ?? '',
     numar_utilizari:
       v?.numar_utilizari != null ? String(v.numar_utilizari) : '',
+    limita_per_client:
+      v?.limita_per_client != null ? String(v.limita_per_client) : '',
     client: v?.client ?? '',
     curs: v?.curs ?? '',
     tip_enrollment: v?.tip_enrollment ?? '',
@@ -85,6 +88,7 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
         data_inceperii: form.data_inceperii || null,
         data_expirarii: form.data_expirarii || null,
         numar_utilizari: toNum(form.numar_utilizari),
+        limita_per_client: toNum(form.limita_per_client),
         client: form.client || null,
         curs: form.curs || null,
         tip_enrollment: (form.tip_enrollment ||
@@ -262,7 +266,7 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
               onChange={(e) => set('data_expirarii')(e.target.value)}
             />
           </Field>
-          <Field label="Nr. utilizări" htmlFor="numar_utilizari">
+          <Field label="Nr. utilizări (total)" htmlFor="numar_utilizari">
             <TextInput
               id="numar_utilizari"
               type="number"
@@ -272,6 +276,17 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
             />
           </Field>
         </div>
+
+        <Field label="Limită utilizări / client (opțional)" htmlFor="limita_per_client">
+          <TextInput
+            id="limita_per_client"
+            type="number"
+            min={1}
+            placeholder="nelimitat"
+            value={form.limita_per_client}
+            onChange={(e) => set('limita_per_client')(e.target.value)}
+          />
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Client (opțional)" htmlFor="client">
