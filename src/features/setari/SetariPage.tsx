@@ -5,6 +5,7 @@ import { isOwner, ROLE_LABEL } from '@/lib/rolesMatrix'
 import { SaliSection } from './SaliSection'
 import { SezoaneSection } from './SezoaneSection'
 import { TarifePubliceSection } from './TarifePubliceSection'
+import { ProdusePubliceSection } from './ProdusePubliceSection'
 import { UtilizatoriSection } from './UtilizatoriSection'
 
 export function SetariPage() {
@@ -27,6 +28,7 @@ export function SetariPage() {
         <SaliSection />
         <SezoaneSection />
         <TarifePubliceSection />
+        <ProdusePubliceSection />
         <UtilizatoriSection />
       </div>
     </div>

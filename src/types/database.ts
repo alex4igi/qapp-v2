@@ -3306,6 +3306,39 @@ export type Database = {
           },
         ]
       }
+      produse_publice: {
+        Row: {
+          activ: boolean
+          created: string
+          descriere: string | null
+          id: string
+          nume: string
+          ordine: number
+          pret: string
+          updated: string
+        }
+        Insert: {
+          activ?: boolean
+          created?: string
+          descriere?: string | null
+          id?: string
+          nume: string
+          ordine?: number
+          pret: string
+          updated?: string
+        }
+        Update: {
+          activ?: boolean
+          created?: string
+          descriere?: string | null
+          id?: string
+          nume?: string
+          ordine?: number
+          pret?: string
+          updated?: string
+        }
+        Relationships: []
+      }
       programari_leads: {
         Row: {
           created: string

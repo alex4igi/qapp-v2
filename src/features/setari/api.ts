@@ -5,6 +5,7 @@ import type {
   Sezon,
   Vacanta,
   TarifPublic,
+  ProdusPublic,
   InsertDto,
   UpdateDto,
 } from '@/types/db'
@@ -227,6 +228,49 @@ export async function updateTarifPublic(
 
 export async function deleteTarifPublic(id: string): Promise<void> {
   const { error } = await supabase.from('tarife_publice').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ---------- Produse publice (merchandise) ----------
+// Listă informativă afișată pe portalul de membri (/servicii) — justifică CAEN-ul
+// secundar pentru Netopia. Fără magazin online; owner/admin o editează aici.
+export async function listProdusePublice(): Promise<ProdusPublic[]> {
+  const { data, error } = await supabase
+    .from('produse_publice')
+    .select('*')
+    .order('ordine', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createProdusPublic(
+  dto: InsertDto<'produse_publice'>,
+): Promise<ProdusPublic> {
+  const { data, error } = await supabase
+    .from('produse_publice')
+    .insert(dto)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateProdusPublic(
+  id: string,
+  dto: UpdateDto<'produse_publice'>,
+): Promise<ProdusPublic> {
+  const { data, error } = await supabase
+    .from('produse_publice')
+    .update(dto)
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteProdusPublic(id: string): Promise<void> {
+  const { error } = await supabase.from('produse_publice').delete().eq('id', id)
   if (error) throw error
 }
 
