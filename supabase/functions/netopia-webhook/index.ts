@@ -12,10 +12,14 @@
 // confirm_netopia_payment). Răspundem cu { errorCode: 0 } ca Netopia să nu reîncerce.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-// v2 payment.status: 3 = paid, 5 = confirmed (banii s-au mișcat) => confirmăm.
+// v2 payment.status (constante din SDK-ul oficial netopia-payment2):
+// 3 = paid, 5 = confirmed (banii s-au mișcat) => confirmăm (idempotent).
 const SUCCESS_STATUSES = new Set([3, 5])
-// stări terminale de eșec/anulare
-const FAILED_STATUSES = new Set([12, 14, 0])
+// Stări TERMINALE de eșec/anulare => anulăm comanda + eliberăm holdul de rezervare.
+// 4 = canceled, 11 = error, 12 = declined, 13 = fraud, 17 = reversed, 23 = expired.
+const FAILED_STATUSES = new Set([4, 11, 12, 13, 17, 23])
+// Orice altă stare (1 new, 2 opened, 6 pending, 7 scheduled, 14 pending_auth, 15 3ds,
+// 18 pending_any, …) = tranzacție în desfășurare => lăsăm comanda 'pending', dar confirmăm primirea.
 
 Deno.serve(async (req) => {
   try {

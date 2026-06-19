@@ -12,9 +12,10 @@ const corsHeaders = {
 }
 
 // Netopia v2 — endpoint card/start (sandbox vs live după NETOPIA_ENV).
+// URL-uri preluate ad literam din SDK-ul oficial netopia-payment2 (javascript-sdk).
 const NETOPIA_BASE = (Deno.env.get('NETOPIA_ENV') ?? 'sandbox') === 'live'
-  ? 'https://secure.mobilpay.ro/pay'
-  : 'https://secure.sandbox.netopia-payments.com'
+  ? 'https://secure.netopia-payments.com'
+  : 'https://secure-sandbox.netopia-payments.com'
 
 type Body = {
   clientId: string
