@@ -29,6 +29,16 @@ const columns: Column<Eveniment>[] = [
   { header: 'Data', cell: (e) => e.data ?? '—', className: 'w-32' },
   { header: 'Locație', cell: (e) => e.locatia ?? '—' },
   { header: 'Status', cell: (e) => e.status ?? '—', className: 'w-28' },
+  {
+    header: 'Portal',
+    cell: (e) =>
+      e.public ? (
+        <span title="Bilet afișat pe portalul de membri">🌐</span>
+      ) : (
+        '—'
+      ),
+    className: 'w-20 text-center',
+  },
 ]
 
 export function EvenimenteListPage() {

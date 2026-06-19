@@ -1820,6 +1820,7 @@ export type Database = {
           organizator: string | null
           participant: string[]
           pret_bilet: number | null
+          public: boolean
           status: Database["public"]["Enums"]["status_eveniment"] | null
           tip: Database["public"]["Enums"]["tip_eveniment"]
           updated: string
@@ -1837,6 +1838,7 @@ export type Database = {
           organizator?: string | null
           participant?: string[]
           pret_bilet?: number | null
+          public?: boolean
           status?: Database["public"]["Enums"]["status_eveniment"] | null
           tip?: Database["public"]["Enums"]["tip_eveniment"]
           updated?: string
@@ -1854,6 +1856,7 @@ export type Database = {
           organizator?: string | null
           participant?: string[]
           pret_bilet?: number | null
+          public?: boolean
           status?: Database["public"]["Enums"]["status_eveniment"] | null
           tip?: Database["public"]["Enums"]["tip_eveniment"]
           updated?: string
@@ -2238,6 +2241,13 @@ export type Database = {
             columns: ["articol_inventar"]
             isOneToOne: false
             referencedRelation: "produse_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_incasari_bilet"
+            columns: ["bilet"]
+            isOneToOne: false
+            referencedRelation: "bilete_publice"
             referencedColumns: ["id"]
           },
           {
@@ -4721,6 +4731,36 @@ export type Database = {
       }
     }
     Views: {
+      bilete_publice: {
+        Row: {
+          capacitate: number | null
+          data: string | null
+          descriere: string | null
+          id: string | null
+          locatie: string | null
+          nume: string | null
+          pret_bilet: number | null
+        }
+        Insert: {
+          capacitate?: number | null
+          data?: string | null
+          descriere?: string | null
+          id?: string | null
+          locatie?: string | null
+          nume?: string | null
+          pret_bilet?: number | null
+        }
+        Update: {
+          capacitate?: number | null
+          data?: string | null
+          descriere?: string | null
+          id?: string | null
+          locatie?: string | null
+          nume?: string | null
+          pret_bilet?: number | null
+        }
+        Relationships: []
+      }
       clienti_unici: {
         Row: {
           clients: string | null

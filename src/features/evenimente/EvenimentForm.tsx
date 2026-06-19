@@ -6,6 +6,7 @@ import {
   TextInput,
   TextArea,
   Select,
+  Checkbox,
   Button,
 } from '@/components/ui'
 import { statusEvenimentOptions, tipEvenimentOptions } from '@/lib/enums'
@@ -31,6 +32,7 @@ type FormState = {
   cost_organizare: string
   status: string
   notite: string
+  public: boolean
 }
 
 function initialState(e?: Eveniment | null): FormState {
@@ -47,6 +49,7 @@ function initialState(e?: Eveniment | null): FormState {
       e?.cost_organizare != null ? String(e.cost_organizare) : '',
     status: e?.status ?? '',
     notite: e?.notite ?? '',
+    public: e?.public ?? false,
   }
 }
 
@@ -64,7 +67,7 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
     queryFn: teacheriOptions,
   })
 
-  const set = (key: keyof FormState) => (value: string) =>
+  const set = (key: keyof FormState) => (value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
   const invalidate = () =>
@@ -84,6 +87,7 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
         cost_organizare: toNum(form.cost_organizare),
         status: (form.status || null) as Eveniment['status'],
         notite: form.notite.trim() || null,
+        public: form.public,
       }
       return isEdit
         ? updateEveniment(eveniment!.id, payload)
@@ -112,6 +116,10 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
     setError(null)
     if (!form.nume_eveniment.trim()) {
       setError('Numele evenimentului este obligatoriu.')
+      return
+    }
+    if (form.public && !form.data) {
+      setError('Un eveniment afișat pe portal are nevoie de o dată.')
       return
     }
     save.mutate()
@@ -270,6 +278,21 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
             onChange={(e) => set('notite')(e.target.value)}
           />
         </Field>
+
+        <div className="rounded-md border border-quasar-gray-light p-3">
+          <Checkbox
+            id="eveniment-public"
+            label="Afișează biletul pe portalul de membri (/servicii)"
+            checked={form.public}
+            onChange={(e) => set('public')(e.target.checked)}
+          />
+          {form.public && (
+            <p className="mt-2 text-xs text-quasar-gray">
+              Apare pe portal cât timp data e în viitor și statusul nu e „Anulat".
+              Se afișează numele, descrierea, data, locația și prețul biletului.
+            </p>
+          )}
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>

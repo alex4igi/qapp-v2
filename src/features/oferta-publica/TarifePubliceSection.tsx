@@ -20,6 +20,7 @@ import {
   updateTarifPublic,
   deleteTarifPublic,
 } from './api'
+import { PreturiReferintaPanel } from './PreturiReferintaPanel'
 
 type FormState = {
   program: string
@@ -166,6 +167,8 @@ export function TarifePubliceSection() {
           emptyMessage="Niciun tarif public."
         />
       )}
+
+      <PreturiReferintaPanel />
 
       {isOpen && (
         <Modal
