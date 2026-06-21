@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PageHeader, Field, TextInput, Button, Tabs } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
-import { isOwner } from '@/lib/rolesMatrix'
+import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { lunaCurenta } from './api'
 import { ScorecardLeadsTab } from './ScorecardLeadsTab'
 import { ScorecardRestanteTab } from './ScorecardRestanteTab'
@@ -26,7 +26,7 @@ export function ScorecardPage() {
         title="Scorecard call-center"
         subtitle="Activitate per operator — Faza 1: leads · Faza 2: restanțe"
         actions={
-          isOwner(role) ? (
+          isAdminOrHigher(role) ? (
             <Button variant="secondary" onClick={() => setShowPraguri(true)}>
               ⚙ Praguri
             </Button>
