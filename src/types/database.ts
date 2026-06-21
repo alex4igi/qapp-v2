@@ -39,6 +39,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      qbot_kb: {
+        Row: {
+          activ: boolean
+          audienta: string
+          categorie: string
+          continut: string
+          id: string
+          pagina: string | null
+          rol_necesar: string | null
+          titlu: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activ?: boolean
+          audienta: string
+          categorie: string
+          continut: string
+          id?: string
+          pagina?: string | null
+          rol_necesar?: string | null
+          titlu: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activ?: boolean
+          audienta?: string
+          categorie?: string
+          continut?: string
+          id?: string
+          pagina?: string | null
+          rol_necesar?: string | null
+          titlu?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      chat_logs: {
+        Row: {
+          answer: string | null
+          audienta: string
+          created_at: string
+          id: string
+          locatie_id: string | null
+          question: string
+          role: string
+          tools_used: string[] | null
+          user_id: string
+        }
+        Insert: {
+          answer?: string | null
+          audienta: string
+          created_at?: string
+          id?: string
+          locatie_id?: string | null
+          question: string
+          role: string
+          tools_used?: string[] | null
+          user_id: string
+        }
+        Update: {
+          answer?: string | null
+          audienta?: string
+          created_at?: string
+          id?: string
+          locatie_id?: string | null
+          question?: string
+          role?: string
+          tools_used?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       anunturi: {
         Row: {
           audienta: Json | null
@@ -669,6 +744,64 @@ export type Database = {
         }
         Relationships: []
       }
+      confirmari_inrolare_sms: {
+        Row: {
+          created: string
+          enrollment_id: string
+          error: string | null
+          id: string
+          mesaj: string | null
+          send_after: string
+          status: string
+          telefon: string | null
+          trimis_la: string | null
+        }
+        Insert: {
+          created?: string
+          enrollment_id: string
+          error?: string | null
+          id?: string
+          mesaj?: string | null
+          send_after?: string
+          status?: string
+          telefon?: string | null
+          trimis_la?: string | null
+        }
+        Update: {
+          created?: string
+          enrollment_id?: string
+          error?: string | null
+          id?: string
+          mesaj?: string | null
+          send_after?: string
+          status?: string
+          telefon?: string | null
+          trimis_la?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmari_inrolare_sms_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmari_inrolare_sms_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_inrolare"]
+          },
+          {
+            foreignKeyName: "confirmari_inrolare_sms_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_enrollment"]
+          },
+        ]
+      }
       cursuri: {
         Row: {
           capacitate_maxima: number | null
@@ -677,6 +810,7 @@ export type Database = {
           durata_cursului: number | null
           facultativ: boolean
           id: string
+          link_whatsapp: string | null
           locatie: string | null
           nivelul: Database["public"]["Enums"]["nivel_curs"] | null
           numele: string
@@ -705,6 +839,7 @@ export type Database = {
           durata_cursului?: number | null
           facultativ?: boolean
           id?: string
+          link_whatsapp?: string | null
           locatie?: string | null
           nivelul?: Database["public"]["Enums"]["nivel_curs"] | null
           numele: string
@@ -733,6 +868,7 @@ export type Database = {
           durata_cursului?: number | null
           facultativ?: boolean
           id?: string
+          link_whatsapp?: string | null
           locatie?: string | null
           nivelul?: Database["public"]["Enums"]["nivel_curs"] | null
           numele?: string

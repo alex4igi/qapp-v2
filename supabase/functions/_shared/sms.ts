@@ -61,6 +61,12 @@ const MONTHS = [
   'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie',
 ]
 
+// Elimina diacriticele (ă â î ș ț + majuscule) prin descompunere NFD. Aplicat pe
+// valorile dinamice care vin din DB (nume curs, zile, instructor) — vezi REGULA.
+function faraDiacritice(s: string): string {
+  return s.normalize("NFD").replace(/\p{Diacritic}/gu, "")
+}
+
 function formatDataProgramare(iso: string): string {
   const d = new Date(iso)
   const h = String(d.getHours()).padStart(2, '0')
@@ -110,6 +116,38 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
     default:
       return ''
   }
+}
+
+// Confirmare inrolare recurenta — trimisa la cronul de a doua zi (cron-morning),
+// nu imediat: lasa o fereastra de undo de ore intregi. Spre deosebire de lead-uri,
+// parametrii vin direct din curs/client, deci foloseste un builder propriu (nu
+// trece prin buildSms). Mesajul depaseste 160 caractere => ~2 segmente SMS
+// (decizie asumata: includem instructor + WhatsApp).
+export type ConfirmareInrolareParams = {
+  prenume?: string | null
+  curs: string
+  zile?: string[] | null
+  ora?: string | null
+  instructor?: string | null
+  pretLunar?: number | null
+  linkWhatsapp?: string | null
+}
+
+export function buildConfirmareInrolareSms(p: ConfirmareInrolareParams): string {
+  const nume = p.prenume?.trim() || 'bun venit'
+  const detalii: string[] = []
+  const zile = (p.zile ?? []).filter(Boolean)
+  if (zile.length) detalii.push(`in zilele de ${zile.join(', ')}`)
+  if (p.ora?.trim()) detalii.push(`la ora ${p.ora.trim()}`)
+  if (p.instructor?.trim()) detalii.push(`cu instructor ${p.instructor.trim()}`)
+  const detaliiStr = detalii.length ? `, ${detalii.join(', ')}` : ''
+  const pret =
+    p.pretLunar != null ? ` Abonamentul lunar este ${p.pretLunar} RON.` : ''
+  const wa = p.linkWhatsapp?.trim()
+    ? ` Grup WhatsApp: ${p.linkWhatsapp.trim()}`
+    : ''
+  const text = `Buna ${nume}! Iti confirmam locul in grupa ${p.curs}${detaliiStr}.${pret}${wa}`
+  return faraDiacritice(text)
 }
 
 // Re-export `sendSms` din messaging.ts pentru backwards compat la callsite-uri.

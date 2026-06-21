@@ -3,7 +3,7 @@
 > **Document de referință** — sursă unică pentru textele SMS. Codul oglindește acest
 > document. Când schimbi un text aici, anunță-l ca să-l sincronizez în cod (nu se
 > citește automat la runtime). Fișiere oglindă:
-> - Kanban (leads): [`supabase/functions/_shared/sms.ts`](../../supabase/functions/_shared/sms.ts)
+> - Kanban (leads) + confirmare inrolare: [`supabase/functions/_shared/sms.ts`](../../supabase/functions/_shared/sms.ts)
 > - Bulk (restanțe): [`src/features/notificari-sms/templates.ts`](../../src/features/notificari-sms/templates.ts)
 
 ## Reguli de conținut
@@ -51,6 +51,26 @@ Buna {prenume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. 
 ```
 Buna {prenume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!
 ```
+
+---
+
+## A2. Confirmare înrolare recurentă — trimisă AUTOMAT, la cronul de a doua zi
+
+### `confirmare_inrolare` — la crearea unei înrolări recurente (grupă/trupă)
+La înrolare se pune un rând în coada `confirmari_inrolare_sms` (`send_after` =
+mâine 00:00 local), iar **`cron-morning`** (10:00 local, a doua zi) îl trimite.
+Asta lasă o **fereastră de undo de ore întregi**: dacă înrolarea e ștearsă în
+interval (greșeală), rândul dispare prin `ON DELETE CASCADE` și SMS-ul nu mai
+pleacă; dacă e reziliată/dezactivată, cronul îl marchează `anulat` fără SMS.
+Părțile opționale (zile/oră/instructor/preț/link) se omit dacă lipsesc.
+> **~2 segmente SMS** (depășește 160 car. cu instructor + link WhatsApp — decizie asumată).
+```
+Buna {prenume}! Iti confirmam locul in grupa {nume curs}, in zilele de {zile}, la ora {ora}, cu instructor {nume instructor}. Abonamentul lunar este {pret} RON. Grup WhatsApp: {link_whatsapp}
+```
+- `{nume curs}` = `cursuri.numele` · `{zile}` = `cursuri.zile` · `{ora}` = `cursuri.ora`
+- `{nume instructor}` = titular din `cursuri_teacheri` (rol='titular'), fallback `cursuri.teacher`
+- `{pret}` = `cursuri.pret_lunar` (fallback `round(pret_anual / 10)`)
+- `{link_whatsapp}` = `cursuri.link_whatsapp` (editat manual în profilul cursului)
 
 ---
 

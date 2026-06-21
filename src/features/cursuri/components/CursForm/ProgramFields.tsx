@@ -97,6 +97,15 @@ export function ProgramFields({
           />
         </Field>
       </div>
+
+      <Field label="Link grup WhatsApp" htmlFor="link_whatsapp">
+        <TextInput
+          id="link_whatsapp"
+          placeholder="https://chat.whatsapp.com/…"
+          value={form.link_whatsapp}
+          onChange={(e) => set('link_whatsapp', e.target.value)}
+        />
+      </Field>
     </>
   )
 }

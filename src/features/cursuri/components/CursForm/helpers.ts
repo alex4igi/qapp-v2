@@ -31,6 +31,7 @@ export type FormState = {
   sezon: string
   zile: string[]
   ora: string
+  link_whatsapp: string
   durata_cursului: string
   capacitate_maxima: string
   pret_anual: string
@@ -59,6 +60,7 @@ export function initialState(curs?: Curs | null): FormState {
     sezon: curs?.sezon ?? '',
     zile: curs?.zile ?? [],
     ora: curs?.ora ?? '',
+    link_whatsapp: curs?.link_whatsapp ?? '',
     durata_cursului: numOrEmpty(curs?.durata_cursului),
     capacitate_maxima: numOrEmpty(curs?.capacitate_maxima),
     pret_anual: numOrEmpty(curs?.pret_anual),

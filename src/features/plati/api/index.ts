@@ -35,6 +35,7 @@ export {
   listCursuriPentruInrolare,
   createInrolari,
   rezilizaInrolari,
+  scheduleConfirmareInrolare,
 } from './enrollments'
 
 export {

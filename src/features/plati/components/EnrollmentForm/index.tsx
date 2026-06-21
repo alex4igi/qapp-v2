@@ -24,6 +24,7 @@ import {
   getCursForInrolare,
   getOpenSesiuneByDate,
   listCursuriPentruInrolare,
+  scheduleConfirmareInrolare,
 } from '../../api'
 import {
   TIP_LABEL,
@@ -231,6 +232,16 @@ export function EnrollmentForm({
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       console.info(`[Înrolare] ${rows.length} rânduri create.`)
+      // SMS de confirmare doar pentru recurent (grupă/trupă), cu fereastră de
+      // undo de 5 min. Best-effort: o eroare aici nu blochează înrolarea.
+      if (
+        (tipInrolare === 'recurent-grupa' || tipInrolare === 'recurent-trupa') &&
+        rows[0]
+      ) {
+        void scheduleConfirmareInrolare(rows[0].id).catch((e) =>
+          console.error('[confirmare-inrolare]', e),
+        )
+      }
       onClose()
     },
     onError: (e: unknown) =>

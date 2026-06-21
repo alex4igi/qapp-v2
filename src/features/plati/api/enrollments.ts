@@ -402,6 +402,20 @@ export async function createInrolari(
   return data ?? []
 }
 
+// Programeaza un SMS de confirmare pentru o inrolare recurenta, cu trimitere
+// intarziata ~5 min (fereastra de undo). Drenat de edge function
+// cron-confirmari-sms. Upsert idempotent: o singura confirmare per inrolare.
+export async function scheduleConfirmareInrolare(
+  enrollmentId: string,
+): Promise<void> {
+  await supabase
+    .from('confirmari_inrolare_sms')
+    .upsert(
+      { enrollment_id: enrollmentId },
+      { onConflict: 'enrollment_id', ignoreDuplicates: true },
+    )
+}
+
 // ============================================================
 // Reziliere
 // ============================================================

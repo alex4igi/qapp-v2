@@ -115,6 +115,7 @@ export function CursForm({ open, curs, onClose }: Props) {
         sezon: form.sezon || null,
         zile: (form.zile.length ? form.zile : null) as Curs['zile'],
         ora: form.ora.trim() || null,
+        link_whatsapp: form.link_whatsapp.trim() || null,
         durata_cursului: toNum(form.durata_cursului),
         capacitate_maxima: toNum(form.capacitate_maxima),
         pret_anual: toNum(form.pret_anual),

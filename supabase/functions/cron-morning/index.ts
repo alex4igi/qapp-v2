@@ -6,7 +6,11 @@
 // NB: review-ul NU se mai trimite aici (decizie 2026-06-08) — se cere doar după
 // conversie (lead → client). Vezi scripts/sms/templates.md → De implementat #1.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { buildSms, sendSms } from '../_shared/sms.ts'
+import {
+  buildConfirmareInrolareSms,
+  buildSms,
+  sendSms,
+} from '../_shared/sms.ts'
 
 function startOfDay(date: Date) {
   const d = new Date(date)
@@ -123,8 +127,110 @@ Deno.serve(async (req) => {
   // review-ul se cere DOAR după conversie (lead mutat în client) — de implementat
   // separat (vezi scripts/sms/templates.md → De implementat #1).
 
+  // --- 2. Confirmări înrolare recurentă (a doua zi) ---
+  // Coada `confirmari_inrolare_sms` e alimentată la crearea înrolării; aici, la
+  // cronul de dimineață, trimitem rândurile scadente (send_after <= acum) dacă
+  // înrolarea e încă activă. Ștearsă în interval (greșeală) → rândul a dispărut
+  // prin ON DELETE CASCADE; reziliată/inactivă → 'anulat' fără SMS.
+  let confirmariSent = 0
+  const { data: dueConfirmari } = await supabase
+    .from('confirmari_inrolare_sms')
+    .select('id, enrollment_id')
+    .eq('status', 'programat')
+    .lte('send_after', now.toISOString())
+
+  for (const row of dueConfirmari ?? []) {
+    const { data: enr } = await supabase
+      .from('enrollments')
+      .select('id, activ, reziliat, client, cursul')
+      .eq('id', row.enrollment_id)
+      .maybeSingle()
+    if (!enr || enr.reziliat || !enr.activ || !enr.cursul || !enr.client) {
+      await supabase
+        .from('confirmari_inrolare_sms')
+        .update({ status: 'anulat' })
+        .eq('id', row.id)
+      continue
+    }
+
+    const { data: curs } = await supabase
+      .from('cursuri')
+      .select('id, numele, zile, ora, pret_lunar, pret_anual, teacher, link_whatsapp')
+      .eq('id', enr.cursul)
+      .maybeSingle()
+    const { data: client } = await supabase
+      .from('clienti')
+      .select('prenume, nume, telefon')
+      .eq('id', enr.client)
+      .maybeSingle()
+    if (!curs || !client?.telefon) {
+      await supabase
+        .from('confirmari_inrolare_sms')
+        .update({ status: 'anulat', error: 'curs sau telefon lipsa' })
+        .eq('id', row.id)
+      continue
+    }
+
+    // Instructor titular: M:N (rol='titular'), fallback pe coloana legacy.
+    let teacherId = curs.teacher
+    const { data: ct } = await supabase
+      .from('cursuri_teacheri')
+      .select('teacher_id, rol')
+      .eq('curs_id', curs.id)
+    const titular = ct?.find((r) => r.rol === 'titular') ?? ct?.[0]
+    if (titular) teacherId = titular.teacher_id
+    let instructor: string | null = null
+    if (teacherId) {
+      const { data: t } = await supabase
+        .from('teacheri')
+        .select('prenume, nume')
+        .eq('id', teacherId)
+        .maybeSingle()
+      instructor = [t?.prenume, t?.nume].filter(Boolean).join(' ') || null
+    }
+
+    const pretLunar =
+      curs.pret_lunar ??
+      (curs.pret_anual != null ? Math.round(curs.pret_anual / 10) : null)
+    const mesaj = buildConfirmareInrolareSms({
+      prenume: client.prenume || client.nume,
+      curs: curs.numele,
+      zile: curs.zile,
+      ora: curs.ora,
+      instructor,
+      pretLunar,
+      linkWhatsapp: curs.link_whatsapp,
+    })
+
+    const result = await sendSms(client.telefon, mesaj)
+    await supabase
+      .from('confirmari_inrolare_sms')
+      .update(
+        result.ok
+          ? {
+              status: 'trimis',
+              trimis_la: now.toISOString(),
+              telefon: client.telefon,
+              mesaj,
+            }
+          : {
+              status: 'esuat',
+              telefon: client.telefon,
+              mesaj,
+              error: result.error ?? 'eroare necunoscuta',
+            },
+      )
+      .eq('id', row.id)
+    if (result.ok) confirmariSent++
+  }
+
   console.log(
-    `[cron/morning] remindere: ${sent.length}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, confirmari: ${confirmariSent}, erori: ${errors.length}`,
   )
-  return Response.json({ sent, errors, rulatLa: now.toISOString() })
+  return Response.json({
+    sent,
+    confirmari: confirmariSent,
+    errors,
+    rulatLa: now.toISOString(),
+  })
 })
