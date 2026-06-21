@@ -14,7 +14,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { clientiOptions, sezonActivId } from '@/lib/lookups'
+import { clientiOptions, sezonActiv } from '@/lib/lookups'
 import type { Curs, Enums } from '@/types/db'
 import { listAvailableVouchere } from '@/features/vouchere/api'
 import { getCursOcupare } from '@/features/cursuri/api/profile'
@@ -67,12 +67,13 @@ export function EnrollmentForm({
 
   const sezonActivQ = useQuery({
     queryKey: ['lookup', 'sezon-activ'],
-    queryFn: sezonActivId,
+    queryFn: sezonActiv,
   })
 
   const cursuriQ = useQuery<Curs[]>({
-    queryKey: ['cursuri-pentru-inrolare', locatieId, sezonActivQ.data ?? null],
-    queryFn: () => listCursuriPentruInrolare(locatieId, sezonActivQ.data ?? null),
+    queryKey: ['cursuri-pentru-inrolare', locatieId, sezonActivQ.data?.id ?? null],
+    queryFn: () =>
+      listCursuriPentruInrolare(locatieId, sezonActivQ.data?.id ?? null),
     enabled: sezonActivQ.isSuccess,
   })
 
@@ -255,14 +256,23 @@ export function EnrollmentForm({
         isTrupa,
         tipPlata,
         cursSelectat,
+        sezonStart: sezonActivQ.data?.data_incepere ?? null,
       }),
-    [dataIncepere, isFacultativ, isTrupa, tipPlata, cursSelectat],
+    [dataIncepere, isFacultativ, isTrupa, tipPlata, cursSelectat, sezonActivQ.data],
   )
 
+  // Prorata (deci nevoie de preț) doar la înscriere TÂRZIE mid-lună — nu la
+  // prima lună a sezonului (septembrie), care e rată întreagă.
+  const seasonFirstMonth = sezonActivQ.data?.data_incepere
+    ? sezonActivQ.data.data_incepere.slice(0, 7) + '-01'
+    : null
+  const primaLunaESezonStart =
+    seasonFirstMonth != null && dataIncepere.slice(0, 7) + '-01' === seasonFirstMonth
   const blockantPretLipsa =
     !isFacultativ &&
     !isTrupa &&
     tipPlata === 'Per luna' &&
+    !primaLunaESezonStart &&
     dataIncepere.slice(8, 10) !== '01' &&
     Boolean(cursSelectat) &&
     cursSelectat?.pret_sedinta == null &&

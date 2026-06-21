@@ -209,6 +209,12 @@ function buildRecurentPerAn(
   sezon: SezonOption,
 ): InsertDto<'enrollments'>[] {
   const sumaBaza = params.sumaOverride ?? curs.pret_anual ?? null
+  // La start de sezon, data_incepere = startul sezonului (nu ziua aleasă → nu cade
+  // în „gaura" dintre sezoane). La înscriere târzie, păstrăm data reală.
+  const dataInc =
+    sezon.data_incepere && params.dataIncepere <= sezon.data_incepere
+      ? sezon.data_incepere
+      : params.dataIncepere
   return [
     {
       client: params.client,
@@ -216,7 +222,7 @@ function buildRecurentPerAn(
       tip_plata: 'Per an',
       suma_baza: sumaBaza,
       suma: sumaCuVoucher(sumaBaza, voucher),
-      data_incepere: params.dataIncepere,
+      data_incepere: dataInc,
       data_final: sezon.data_final,
       activ: true,
       voucher: voucher?.id ?? null,
@@ -239,8 +245,17 @@ function buildRecurentPerLuna(
   const sumaLunara =
     params.sumaOverride ??
     (curs.pret_anual != null ? Math.round(curs.pret_anual / 10) : null)
+  // Prima lună a sezonului (septembrie) = rată întreagă, cu data_incepere fixată
+  // la startul sezonului (NU ziua 1 → nu cade în „gaura" dintre sezoane). Prorata
+  // se aplică DOAR la înscriere TÂRZIE (lună ulterioară începutului de sezon),
+  // pe grupă, la mijloc de lună.
+  const seasonFirstMonth = sezon.data_incepere.slice(0, 7) + '-01'
+  const primaLunaESezonStart = months[0] === seasonFirstMonth
   const semnareNuELaZi1 = params.dataIncepere.slice(8, 10) !== '01'
-  const aplicProrata = params.tipInrolare === 'recurent-grupa' && semnareNuELaZi1
+  const aplicProrata =
+    params.tipInrolare === 'recurent-grupa' &&
+    !primaLunaESezonStart &&
+    semnareNuELaZi1
 
   // Preț per ședință pentru prorata:
   //  - prima alegere: curs.pret_sedinta (setat explicit)
@@ -270,7 +285,21 @@ function buildRecurentPerLuna(
   for (let i = 0; i < months.length; i++) {
     const m = months[i]
     const isFirst = i === 0
-    if (isFirst && aplicProrata) {
+    if (isFirst && primaLunaESezonStart) {
+      // Prima lună la START de sezon (septembrie): rată întreagă, data_incepere
+      // = data de start a sezonului. Total sezon = 10 × rată = pret_anual.
+      inserts.push({
+        client: params.client,
+        cursul: params.cursId,
+        tip_plata: 'Per luna',
+        suma_baza: sumaLunara,
+        suma: sumaCuVoucher(sumaLunara, voucher),
+        data_incepere: sezon.data_incepere,
+        data_final: endOfMonth(m),
+        activ: true,
+        voucher: voucher?.id ?? null,
+      })
+    } else if (isFirst && aplicProrata) {
       const fin = endOfMonth(m)
       const sedinte = countSessionsBetween(
         params.dataIncepere,

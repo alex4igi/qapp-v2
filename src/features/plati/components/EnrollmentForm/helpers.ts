@@ -46,6 +46,9 @@ export function derivePreviewRecurent(params: {
   isTrupa: boolean
   tipPlata: string
   cursSelectat: Curs | null
+  // Data de start a sezonului activ. Prima lună a sezonului = rată întreagă;
+  // prorata se aplică doar la înscriere TÂRZIE (lună ulterioară începutului).
+  sezonStart?: string | null
 }): PrevizualizareRecurent | null {
   if (params.isFacultativ || params.tipPlata !== 'Per luna') return null
   const d = new Date(params.dataIncepere)
@@ -60,8 +63,19 @@ export function derivePreviewRecurent(params: {
   if (months <= 0) return null
 
   let prorata: PrevizualizareRecurent['prorata'] = null
+  const seasonFirstMonth = params.sezonStart
+    ? params.sezonStart.slice(0, 7) + '-01'
+    : null
+  const primaLunaESezonStart =
+    seasonFirstMonth != null &&
+    params.dataIncepere.slice(0, 7) + '-01' === seasonFirstMonth
   const semnareNuELaZi1 = params.dataIncepere.slice(8, 10) !== '01'
-  if (!params.isTrupa && semnareNuELaZi1 && params.cursSelectat) {
+  if (
+    !params.isTrupa &&
+    !primaLunaESezonStart &&
+    semnareNuELaZi1 &&
+    params.cursSelectat
+  ) {
     const fin = endOfMonth(params.dataIncepere.slice(0, 7) + '-01')
     const sedinte = countSessionsBetween(
       params.dataIncepere,
