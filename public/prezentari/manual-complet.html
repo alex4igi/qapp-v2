@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Manual complet · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:24px}
+  html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased;line-height:1.55}
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--galben);z-index:50}
+
+  .layout{max-width:1180px;margin:0 auto;padding:54px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:44px;align-items:start}
+
+  /* CUPRINS lateral */
+  nav.toc{position:sticky;top:30px;max-height:calc(100vh - 60px);overflow:auto;border-right:1px solid var(--linie);padding-right:18px}
+  nav.toc .logo{font-weight:900;letter-spacing:4px;color:var(--accent);font-size:12px;margin-bottom:18px}
+  nav.toc .grp{color:var(--gri2);font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin:18px 0 8px}
+  nav.toc a{display:block;color:#cfcfcf;text-decoration:none;font-size:13.5px;padding:5px 10px;border-radius:8px;border-left:2px solid transparent}
+  nav.toc a:hover{background:#1c1c1c;color:#fff;border-left-color:var(--accent)}
+
+  main{min-width:0}
+  .hero{margin-bottom:40px}
+  .hero .logo{font-weight:900;letter-spacing:5px;color:var(--accent);font-size:13px;margin-bottom:18px}
+  h1{font-size:clamp(30px,4.5vw,48px);line-height:1.05;margin:0 0 14px;font-weight:800}
+  h1 span{color:var(--accent)}
+  .hero .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,19px);max-width:62ch}
+
+  section.block{scroll-margin-top:24px;background:var(--card);border:1px solid var(--linie);border-radius:18px;padding:26px 28px;margin:22px 0}
+  section.block > h2{font-size:clamp(21px,2.6vw,30px);margin:0 0 6px;font-weight:800;display:flex;align-items:center;gap:12px}
+  section.block > h2 .ic{font-size:1.05em}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:2px;font-size:11.5px;text-transform:uppercase;margin-bottom:14px}
+  .intro{color:#d6d6d6;font-size:16px;margin:0 0 14px;max-width:74ch}
+  h3{font-size:16.5px;font-weight:800;margin:22px 0 8px;color:#fff}
+
+  ul.big{margin:10px 0 0;padding:0;list-style:none;max-width:80ch}
+  ul.big li{display:flex;gap:13px;align-items:flex-start;margin:11px 0;font-size:15.5px}
+  ul.big li .b{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  ul.big li b{color:#fff}
+  ul.big li span{color:#d6d6d6}
+
+  /* pași numerotați */
+  ol.steps{counter-reset:s;list-style:none;margin:12px 0 0;padding:0;max-width:80ch}
+  ol.steps li{counter-increment:s;position:relative;padding:11px 0 11px 46px;border-bottom:1px solid #232323;font-size:15.5px;color:#dcdcdc}
+  ol.steps li:last-child{border-bottom:none}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  ol.steps li b{color:#fff}
+  .btnlbl{display:inline-block;background:#000;border:1px solid var(--accent);color:var(--accent);font-weight:700;font-size:13px;padding:1px 9px;border-radius:7px;white-space:nowrap}
+  .field{display:inline-block;background:#222;border:1px solid var(--linie);color:#fff;font-size:13px;padding:1px 8px;border-radius:6px}
+
+  .note{margin-top:18px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:13px 17px;color:#f0e6b0;font-size:14.5px;max-width:80ch}
+  .note .lbl{display:block;color:var(--accent);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .note b{color:var(--accent)}
+
+  .tag{font-size:11.5px;font-weight:800;background:var(--accent);color:#000;padding:3px 10px;border-radius:999px;letter-spacing:.4px;vertical-align:middle}
+
+  table.t{width:100%;border-collapse:collapse;margin-top:14px;font-size:14.5px}
+  table.t th,table.t td{text-align:left;padding:9px 12px;border-bottom:1px solid #262626;vertical-align:top}
+  table.t th{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+  table.t td b{color:#fff}
+  table.t .c{text-align:center}
+  .ok{color:var(--accent);font-weight:800}
+  .no{color:#555}
+
+  .pipe{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .pipe .col{flex:0 0 auto;background:#000;border:1px solid var(--linie);border-radius:9px;padding:7px 11px;font-size:13px;color:#ddd}
+  .pipe .col b{color:var(--accent)}
+  .arrow{color:var(--gri);align-self:center;font-size:13px}
+
+  footer{text-align:center;color:var(--gri);font-size:13px;margin-top:50px}
+  footer b{color:var(--gri2)}
+
+  .toplink{display:block;text-align:right;margin-top:14px;color:var(--gri);font-size:12.5px;text-decoration:none}
+  .toplink:hover{color:var(--accent)}
+
+  @media(max-width:880px){
+    .layout{grid-template-columns:1fr;gap:0}
+    nav.toc{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--linie);padding:0 0 18px;margin-bottom:28px}
+    nav.toc .cols{columns:2;gap:18px}
+  }
+</style>
+</head>
+<body>
+<span id="top"></span>
+<div class="layout">
+
+  <!-- ============ CUPRINS ============ -->
+  <nav class="toc">
+    <div class="logo">QUASAR DANCE</div>
+    <div class="cols">
+      <div class="grp">Primii pași</div>
+      <a href="#intrare">Cum intri în aplicație</a>
+      <a href="#locatie">Locația de lucru 📍</a>
+      <a href="#meniu">Cum te miști prin meniu</a>
+
+      <div class="grp">Munca de zi cu zi</div>
+      <a href="#leads">Leads (potențiali clienți)</a>
+      <a href="#clienti">Clienți și familii</a>
+      <a href="#plati">Înrolări și plăți</a>
+      <a href="#prezente">Prezențe la sală</a>
+      <a href="#sms">SMS-uri</a>
+      <a href="#recuperare">Recuperare restanțe</a>
+
+      <div class="grp">Cursuri și oameni</div>
+      <a href="#cursuri">Cursuri</a>
+      <a href="#profesori">Profesori</a>
+      <a href="#evaluari">Evaluări</a>
+
+      <div class="grp">Cum faci... (pas cu pas)</div>
+      <a href="#sezon">Cum faci un sezon nou</a>
+      <a href="#reinscrieri">Reînscrieri</a>
+      <a href="#vouchere">Cum faci un voucher</a>
+      <a href="#inventar">Cum adaugi în inventar</a>
+      <a href="#evenimente">Evenimente & campanii</a>
+
+      <div class="grp">Bani și rapoarte</div>
+      <a href="#financiar">Financiar</a>
+      <a href="#statistici">Statistici</a>
+      <a href="#scorecard">Scorecard</a>
+      <a href="#situatie">Situație zilnică</a>
+
+      <div class="grp">Administrare</div>
+      <a href="#setari">Setări</a>
+      <a href="#comunicare">Anunțuri & notificări</a>
+      <a href="#pontaj">Pontaj staff</a>
+      <a href="#extra">Audit, opt-out, organizație</a>
+
+      <div class="grp">Bun de știut</div>
+      <a href="#automat">Ce se întâmplă singur ⏰</a>
+      <a href="#roluri">Cine ce poate face</a>
+    </div>
+  </nav>
+
+  <!-- ============ CONȚINUT ============ -->
+  <main>
+    <div class="hero">
+      <div class="logo">QUASAR DANCE</div>
+      <h1>Manual complet <span>Qapp</span></h1>
+      <p class="sub">Tot ce poți face în aplicație, explicat simplu. Nu trebuie citit cap-coadă — folosește cuprinsul din stânga și sari direct la ce te interesează („cum fac un sezon?", „cum fac un voucher?").</p>
+    </div>
+
+    <!-- ====== PRIMII PAȘI ====== -->
+    <section class="block" id="intrare">
+      <div class="eyebrow">Primii pași</div>
+      <h2><span class="ic">🔑</span>Cum intri în aplicație</h2>
+      <p class="intro">Intri cu emailul și parola primite. Fiecare are contul lui — nu împărțim conturi, ca să știm cine ce a făcut.</p>
+      <ul class="big">
+        <li><span class="b">📧</span><span>Deschizi aplicația, scrii <b>emailul</b> și <b>parola</b>, apeși <span class="btnlbl">Intră</span>.</span></li>
+        <li><span class="b">🙈</span><span>Ai uitat parola? Spune-i unui admin — el ți-o poate reseta din <a href="#setari" style="color:var(--accent)">Setări</a>.</span></li>
+        <li><span class="b">🚪</span><span>La final de tură, ieși din cont (meniul cu numele tău → <b>Ieși</b>), mai ales pe un calculator comun.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="locatie">
+      <div class="eyebrow">Primii pași</div>
+      <h2><span class="ic">📍</span>Locația de lucru</h2>
+      <p class="intro">Sus, în antet, apare un selector cu <b>📍 locația</b> la care lucrezi azi (Ștefan cel Mare, Nicolina, Quasar for Kids). E important: o plată se înregistrează pe locația aleasă acolo.</p>
+      <div class="note"><span class="lbl">Atenție</span>Dacă te muți de la o sală la alta, <b>schimbă locația din 📍</b> înainte să încasezi bani. Altfel rapoartele de casă ies amestecate.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="meniu">
+      <div class="eyebrow">Primii pași</div>
+      <h2><span class="ic">🧭</span>Cum te miști prin meniu</h2>
+      <p class="intro">În stânga (sau în meniul ☰ pe telefon) ai toate paginile, grupate pe teme. Vezi <b>doar</b> ce ai voie să vezi în funcție de rolul tău — dacă o pagină nu apare, înseamnă că nu e pentru rolul tău (vezi <a href="#roluri" style="color:var(--accent)">Cine ce poate face</a>).</p>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ====== ZI DE ZI ====== -->
+    <section class="block" id="leads">
+      <div class="eyebrow">Munca de zi cu zi</div>
+      <h2><span class="ic">🎯</span>Leads — potențialii clienți</h2>
+      <p class="intro">Un „lead" e cineva interesat care încă nu s-a înscris. Pagina <b>Leads</b> e o tablă cu coloane (ca niște sertare). Muți cardul persoanei dintr-o coloană în alta, pe măsură ce înaintează spre înscriere — trăgând cu mausul (drag &amp; drop).</p>
+
+      <h3>Drumul unui lead (coloanele)</h3>
+      <div class="pipe">
+        <span class="col"><b>Nou</b></span><span class="arrow">→</span>
+        <span class="col"><b>Contactat</b></span><span class="arrow">→</span>
+        <span class="col"><b>Listă așteptare</b></span><span class="arrow">→</span>
+        <span class="col"><b>Programat</b></span><span class="arrow">→</span>
+        <span class="col"><b>A venit</b> / <b>Nu a venit</b></span><span class="arrow">→</span>
+        <span class="col"><b>Convertit</b> / <b>Pierdut</b> / <b>Nurture</b></span>
+      </div>
+
+      <h3>Ce se întâmplă când muți cardul</h3>
+      <ul class="big">
+        <li><span class="b">📅</span><span><b>→ Programat:</b> îți cere data și ora ședinței de probă. Persoanei i se trimite automat un SMS de confirmare.</span></li>
+        <li><span class="b">✅</span><span><b>→ A venit:</b> i se trimite automat un SMS prin care îl rugăm să lase un review pe Google.</span></li>
+        <li><span class="b">❌</span><span><b>→ Nu a venit:</b> i se trimite automat un SMS de revenire („ne pare rău că nu ai ajuns...").</span></li>
+        <li><span class="b">⏳</span><span><b>→ Listă așteptare:</b> SMS că îl anunțăm când se eliberează loc.</span></li>
+        <li><span class="b">🛑</span><span><b>→ Pierdut:</b> îți cere obligatoriu un <b>motiv</b> (prea scump, program nepotrivit etc.).</span></li>
+        <li><span class="b">🤝</span><span><b>→ Convertit:</b> se deschide pașii de înscriere — îți creează clientul din datele lead-ului și deschizi înrolarea.</span></li>
+      </ul>
+
+      <h3>Bun de știut</h3>
+      <ul class="big">
+        <li><span class="b">➕</span><span>Adaugi un lead manual cu butonul <span class="btnlbl">+ Lead nou</span>. Lead-urile de pe site/Facebook intră singure.</span></li>
+        <li><span class="b">🔎</span><span>Filtrezi după nume, sursă (de unde a venit), curs, grupă de vârstă, locație.</span></li>
+        <li><span class="b">❤️</span><span>Lead-urile care au nevoie urgentă de atenție urcă singure în capul coloanei (steguleț de prioritate).</span></li>
+        <li><span class="b">📊</span><span>Tabul de rapoarte îți arată câți leads s-au transformat în clienți și de unde vin cei mai mulți.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="clienti">
+      <div class="eyebrow">Munca de zi cu zi</div>
+      <h2><span class="ic">👥</span>Clienți și familii</h2>
+      <p class="intro">Aici sunt toți cursanții. Cauți după nume / telefon / email, deschizi fișa și vezi tot: înrolări, plăți, prezențe, note.</p>
+      <ul class="big">
+        <li><span class="b">🔎</span><span>Filtrezi după status: <b>Activ</b>, <b>Inactiv</b> (n-a mai venit de ceva timp), <b>EXclient</b> (plecat).</span></li>
+        <li><span class="b">👪</span><span>Pagina <b>Familii</b> leagă frați/părinți. E importantă pentru <b>reducerea de 10%</b> la al doilea abonament din familie — se aplică automat.</span></li>
+        <li><span class="b">✏️</span><span>Deschizi fișa și editezi orice câmp (nume, telefon, școală, note etc.).</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Statusurile se schimbă singure</span>Cine nu mai vine la sală devine automat <b>Inactiv</b>, apoi <b>EXclient</b> după mai mult timp. Dacă revine, redevine Activ singur. Vezi <a href="#automat" style="color:var(--accent)">Ce se întâmplă singur</a>.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="plati">
+      <div class="eyebrow">Munca de zi cu zi</div>
+      <h2><span class="ic">💳</span>Înrolări și plăți</h2>
+      <p class="intro">Pe pagina <b>Plăți</b> vezi toate înrolările și cât mai au de plată. Două butoane principale: faci o înrolare nouă sau înregistrezi o plată.</p>
+
+      <h3>Cum faci o înrolare nouă</h3>
+      <ol class="steps">
+        <li>Apeși <span class="btnlbl">+ Înrolare nouă</span>.</li>
+        <li>Alegi <b>clientul</b> (sau îl creezi pe loc) și <b>cursul</b>.</li>
+        <li>Alegi tipul: <b>Recurent</b> (abonament lunar) sau <b>Facultativ</b> (plată pe ședință / lunar la cursuri opționale).</li>
+        <li>Pui data de început. Aplicația calculează singură suma (inclusiv <b>prorata</b> dacă te înscrii la mijlocul lunii) și reducerile.</li>
+        <li>Alegi cum plătește: integral sau în rate. Apeși <span class="btnlbl">Salvează</span>.</li>
+      </ol>
+      <div class="note"><span class="lbl">Regula de aur</span>Prețul vine din <b>curs</b> — nu se scrie de mână. Singura cale de a modifica un preț la o tranzacție este un <b>voucher</b>. Pentru toate regulile (prorata, reduceri, capete de sezon), vezi ghidul separat <a href="reguli-plati.html" style="color:var(--accent)">„Cum funcționează plățile"</a>.</div>
+
+      <h3>Cum înregistrezi o plată</h3>
+      <ol class="steps">
+        <li>Pe rândul înrolării, apeși <span class="btnlbl">+ Plată</span>.</li>
+        <li>Alegi tipul: <span class="field">Abonament</span> <span class="field">Bilet</span> <span class="field">Taxă</span> <span class="field">Merch</span>.</li>
+        <li>Scrii <b>suma</b> și <b>metoda</b> (cash, card, transfer, online).</li>
+        <li>Dacă e cazul, aplici un <b>voucher</b>. Apeși <span class="btnlbl">Salvează</span> — soldul se actualizează pe loc.</li>
+      </ol>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="prezente">
+      <div class="eyebrow">Munca de zi cu zi</div>
+      <h2><span class="ic">✋</span>Prezențe la sală</h2>
+      <p class="intro">Marchezi cine a venit la o ședință. Alegi cursul și data, apoi pe lista (rosterul) grupei comuți fiecare cursant.</p>
+      <ul class="big">
+        <li><span class="b">🖼️</span><span>Pe cardul grupei: <b>click pe poză</b> comută între <b>Prezent</b> și <b>Absent</b>. Iconul 👤 te duce în profil.</span></li>
+        <li><span class="b">🩺</span><span>O prezență poate fi și <b>Motivat</b> (cu adeverință). Asta o aprobă managerul.</span></li>
+        <li><span class="b">🎯</span><span>Lead-urile programate azi apar și ele în listă cu eticheta <b>LEAD</b>. Le bifezi prezent/absent și se mută singure în coloana potrivită din Leads.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="sms">
+      <div class="eyebrow">Munca de zi cu zi</div>
+      <h2><span class="ic">💬</span>SMS-uri</h2>
+      <p class="intro">Aplicația trimite SMS-uri singură la momentele importante (confirmare programare, review, revenire, reamintiri). Pagina <b>SMS</b> îți arată ce s-a trimis, ce e în așteptare și ce a eșuat.</p>
+      <div class="note"><span class="lbl">Regulă importantă</span>Recepția și vânzările trimit <b>doar șabloane gata făcute</b>, niciodată text liber. Asta ca mesajele să fie corecte și fără greșeli. Mesajele evită diacriticele și emoji și sunt scurte (sub 160 caractere).</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="recuperare">
+      <div class="eyebrow">Munca de zi cu zi</div>
+      <h2><span class="ic">📞</span>Recuperare restanțe</h2>
+      <p class="intro">O listă de lucru cu cine are rate neplătite. Îi suni, notezi ce ai discutat (promisiune de plată, recontactare etc.) și ții evidența.</p>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ====== CURSURI & OAMENI ====== -->
+    <section class="block" id="cursuri">
+      <div class="eyebrow">Cursuri și oameni</div>
+      <h2><span class="ic">📚</span>Cursuri</h2>
+      <p class="intro">Lista cursurilor din sezonul activ și locația ta. Pentru fiecare vezi orarul, capacitatea și câți sunt înscriși. Deschizi un curs și vezi cursanții, profesorii și grupele legate.</p>
+      <ul class="big">
+        <li><span class="b">📈</span><span>Vezi <b>ocuparea</b>: câți locuri sunt prinse din capacitate.</span></li>
+        <li><span class="b">📋</span><span>Selectoarele de curs arată doar <b>sezonul activ</b>, ca să nu te încurci în cursuri vechi.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="profesori">
+      <div class="eyebrow">Cursuri și oameni</div>
+      <h2><span class="ic">💃</span>Profesori</h2>
+      <p class="intro">Lista instructorilor. Deschizi fișa și vezi cursurile lui, evaluările și calculul de salariu pe lună.</p>
+      <ul class="big">
+        <li><span class="b">🧮</span><span>Salariul se calculează pe <b>praguri</b>, în funcție de câți cursanți are la fiecare grupă. Trupele se trec manual.</span></li>
+        <li><span class="b">📍</span><span>Unii profesori predau la mai multe locații — e normal să apară pe toate.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="evaluari">
+      <div class="eyebrow">Cursuri și oameni</div>
+      <h2><span class="ic">⭐</span>Evaluări</h2>
+      <p class="intro">Două lucruri diferite: profesorii completează lunar o evaluare pentru fiecare cursant; iar managerul/ownerul evaluează lunar profesorii (un tab pe fișa instructorului).</p>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ====== CUM FACI (HOW-TO) ====== -->
+    <section class="block" id="sezon">
+      <div class="eyebrow">Cum faci... pas cu pas</div>
+      <h2><span class="ic">📅</span>Cum faci un sezon nou</h2>
+      <p class="intro">Un „sezon" e anul de dans (ex. „Toamnă 2026" sau sezonul septembrie–iunie). Doar <b>un</b> sezon e activ la un moment dat. Mergi în <b>Setări → secțiunea Sezoane</b>. Ai două variante.</p>
+
+      <h3>Varianta 1 — prin clonare (recomandat) <span class="tag">cel mai rapid</span></h3>
+      <p class="intro">Copiază structura sezonului trecut (cursuri, profesori, săli) ca să nu o faci de la zero.</p>
+      <ol class="steps">
+        <li>Apeși <span class="btnlbl">+ Sezon prin clonare</span>.</li>
+        <li>Alegi <b>sezonul sursă</b> (cel pe care vrei să-l copiezi).</li>
+        <li>Dai <b>numele</b> noului sezon și ajustezi datele de început/final.</li>
+        <li>Bifezi <b>ce</b> să copieze: cursuri, profesori, săli, vacanțe.</li>
+        <li>Verifici rezumatul și apeși <span class="btnlbl">Finalizează</span>. Sezonul și cursurile lui se creează.</li>
+      </ol>
+
+      <h3>Varianta 2 — manual</h3>
+      <ol class="steps">
+        <li>Apeși <span class="btnlbl">+ Sezon (manual)</span>.</li>
+        <li>Completezi <span class="field">Nume sezon</span>, alegi <b>Tip</b>: <span class="field">Principal</span> sau <span class="field">Extra</span>.</li>
+        <li>Pui <span class="field">Data început</span> și <span class="field">Data final</span>.</li>
+        <li>Pui scadențele speciale: <span class="field">prima rată</span> (septembrie) și <span class="field">ultima rată</span> (iunie).</li>
+        <li>Apeși <span class="btnlbl">Salvează</span>. Sezonul apare cu eticheta <b>PLANIFICAT</b>.</li>
+      </ol>
+
+      <div class="note"><span class="lbl">Ca să devină activ</span>Sezonul nou stă pe <b>PLANIFICAT</b> până apeși <span class="btnlbl">Activează</span>. Aplicația poate face și singură trecerea: arhivează sezonul vechi când îi trece data finalului și activează sezonul planificat (vezi <a href="#automat" style="color:var(--accent)">Ce se întâmplă singur</a>).</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="reinscrieri">
+      <div class="eyebrow">Cum faci... pas cu pas</div>
+      <h2><span class="ic">🔁</span>Reînscrieri</h2>
+      <p class="intro">La final de sezon, reînscrii cursanții pentru sezonul următor. Pagina <b>Reînscrieri</b> are două moduri.</p>
+
+      <h3>Simplu — activare pe curs</h3>
+      <ol class="steps">
+        <li>Alegi sezonul țintă (cel planificat).</li>
+        <li>Deschizi un curs și vezi cursanții eligibili.</li>
+        <li>Apeși <span class="btnlbl">Activează</span> pe fiecare, sau <span class="btnlbl">Activează toți</span>.</li>
+      </ol>
+
+      <h3>Campanie (cu taxă + act)</h3>
+      <p class="intro">O reînscriere validă cere două lucruri: <b>taxa de rezervare</b> plătită și <b>actul adițional</b> semnat.</p>
+      <ol class="steps">
+        <li>Apeși <span class="btnlbl">Creează campanie</span> și pui perioada + taxa.</li>
+        <li><b>Poarta 1 — Taxă:</b> înregistrezi plata taxei (se face automat ca tip „Taxă").</li>
+        <li><b>Poarta 2 — Act:</b> pui linkul actului semnat; managerul îl <b>aprobă</b> sau <b>respinge</b>.</li>
+        <li>Când ambele porți sunt verzi ✓, cursantul e <b>Reînscris</b>.</li>
+      </ol>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="vouchere">
+      <div class="eyebrow">Cum faci... pas cu pas</div>
+      <h2><span class="ic">🎟️</span>Cum faci un voucher</h2>
+      <p class="intro">Voucherul e singura cale de a modifica un preț la o tranzacție. Mergi pe pagina <b>Vouchere</b>.</p>
+      <ol class="steps">
+        <li>Apeși <span class="btnlbl">+ Voucher nou</span>.</li>
+        <li><span class="field">Cod voucher</span> — un cod unic, ex. „WELCOME2026".</li>
+        <li><span class="field">Descriere</span> — la ce folosește (opțional).</li>
+        <li><span class="field">Tip</span> — reducere în <b>RON</b> (sumă fixă) sau în <b>Procent</b> (% din preț).</li>
+        <li><span class="field">Valoare</span> — ex. 100 (RON) sau 10 (%).</li>
+        <li><span class="field">Valabil de la</span> / <span class="field">până la</span> — perioada în care merge folosit.</li>
+        <li><span class="field">Nr. utilizări (total)</span> — de câte ori poate fi folosit în total.</li>
+        <li><span class="field">Limită / client</span> — de câte ori îl poate folosi un singur client (ex. 1).</li>
+        <li>Opțional, îl <b>restricționezi</b>: doar pe un client, doar pe un curs, sau doar pe un tip de plată.</li>
+        <li>Apeși <span class="btnlbl">Salvează</span>.</li>
+      </ol>
+      <div class="note"><span class="lbl">Bun de știut</span>Un voucher pus pe o lună <b>oprește reducerea automată de 10%</b> pe acea lună (reducerile nu se cumulează). Ștergi un voucher deschizându-l și apăsând <span class="btnlbl">Șterge voucher</span>.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="inventar">
+      <div class="eyebrow">Cum faci... pas cu pas</div>
+      <h2><span class="ic">📦</span>Cum adaugi în inventar</h2>
+      <p class="intro">Inventarul ține evidența articolelor (tricouri, echipament, merch). Mergi pe pagina <b>Inventar</b>.</p>
+      <ol class="steps">
+        <li>Apeși <span class="btnlbl">+ Articol nou</span>.</li>
+        <li><span class="field">Articol</span> — numele, ex. „Tricou Quasar negru".</li>
+        <li><span class="field">Descriere</span> — detalii (opțional).</li>
+        <li><span class="field">Stoc</span> — câte bucăți ai.</li>
+        <li><span class="field">Preț</span> și <span class="field">Categorie</span> (merch, echipament etc.) și <span class="field">Locație</span>.</li>
+        <li>Dacă vrei să apară pe portalul clienților: bifezi <b>Afișează pe portalul de membri</b> și poți pune un <b>preț public</b> și o descriere publică.</li>
+        <li>Apeși <span class="btnlbl">Salvează</span>.</li>
+      </ol>
+      <p class="intro" style="margin-top:14px">Editezi sau ștergi un articol deschizându-l din listă.</p>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="evenimente">
+      <div class="eyebrow">Cum faci... pas cu pas</div>
+      <h2><span class="ic">🎉</span>Evenimente, concursuri și campanii</h2>
+      <ul class="big">
+        <li><span class="b">🎪</span><span><b>Evenimente</b> — spectacole, competiții, workshop-uri. Le adaugi și le gestionezi.</span></li>
+        <li><span class="b">🏆</span><span><b>Concursuri</b> — evidența trupelor care merg la concursuri.</span></li>
+        <li><span class="b">📣</span><span><b>Campanii</b> — campaniile de promovare (Meta Ads, offline etc.) cu buget și câte leads au adus. Util ca să vezi de unde vine valoarea.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ====== BANI & RAPOARTE ====== -->
+    <section class="block" id="financiar">
+      <div class="eyebrow">Bani și rapoarte</div>
+      <h2><span class="ic">📒</span>Financiar</h2>
+      <p class="intro">Tabele cu banii: încasări, cheltuieli, restanțe, raport pe zile, evoluție pe luni, reconcilieri cash. Recepția vede partea operațională; profitul și salariile se văd doar de la manager în sus.</p>
+      <div class="note"><span class="lbl">Diferența</span><b>Financiar</b> = tabele cu cifre. <b>Statistici</b> = aceleași date, dar ca grafice.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="statistici">
+      <div class="eyebrow">Bani și rapoarte</div>
+      <h2><span class="ic">📊</span>Statistici</h2>
+      <p class="intro">Grafice: venituri pe curs/locație/profesor, grad de ocupare, pâlnia de conversie a lead-urilor, retenție, prezențe vs. plătite, progres reînscrieri. Filtrezi pe perioadă, locație, curs.</p>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="scorecard">
+      <div class="eyebrow">Bani și rapoarte</div>
+      <h2><span class="ic">🎯</span>Scorecard (call-center)</h2>
+      <p class="intro">Performanța fiecărui operator la telefon: leads, restanțe, reactivări. Arată <b>ce a fost logat vs. ce s-a verificat</b> real, ca să fie corect. Pragurile le setează adminul/ownerul.</p>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="situatie">
+      <div class="eyebrow">Bani și rapoarte</div>
+      <h2><span class="ic">💰</span>Situație zilnică</h2>
+      <p class="intro">Raportul de casă pe zi, per locație: cât s-a încasat și reconcilierea cash-ului cu sistemul. De aceea contează să ai <b>locația corectă</b> aleasă (📍) când încasezi.</p>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ====== ADMINISTRARE ====== -->
+    <section class="block" id="setari">
+      <div class="eyebrow">Administrare</div>
+      <h2><span class="ic">⚙️</span>Setări</h2>
+      <p class="intro">Trei secțiuni:</p>
+      <ul class="big">
+        <li><span class="b">🚪</span><span><b>Săli</b> — sălile pe fiecare locație.</span></li>
+        <li><span class="b">📅</span><span><b>Sezoane</b> — creezi, editezi și clonezi sezoane (vezi <a href="#sezon" style="color:var(--accent)">Cum faci un sezon</a>).</span></li>
+        <li><span class="b">👤</span><span><b>Utilizatori</b> — conturile echipei și rolurile. Tot de aici se resetează parolele.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="comunicare">
+      <div class="eyebrow">Administrare</div>
+      <h2><span class="ic">📢</span>Anunțuri, notificări și feedback</h2>
+      <ul class="big">
+        <li><span class="b">📢</span><span><b>Anunțuri</b> — mesaj către echipă în aplicație (poți ținti pe rol și locație, vezi cine a citit).</span></li>
+        <li><span class="b">🔔</span><span><b>Notificări</b> — căsuța ta de alerte (cereri de aprobare, lucruri de făcut).</span></li>
+        <li><span class="b">💬</span><span><b>Feedback aplicație</b> — butonul 💬 prin care raportezi un bug sau ceri o îmbunătățire la aplicație.</span></li>
+        <li><span class="b">⭐</span><span><b>Feedback</b> — părerile cursanților/părinților despre cursuri și instructori.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="pontaj">
+      <div class="eyebrow">Administrare</div>
+      <h2><span class="ic">⏱️</span>Pontaj staff</h2>
+      <p class="intro">Marchezi începutul și sfârșitul turei. Folosește la calculul programului. Dacă uiți să închizi pontajul, aplicația îl închide singură peste noapte (vezi <a href="#automat" style="color:var(--accent)">Ce se întâmplă singur</a>).</p>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="extra">
+      <div class="eyebrow">Administrare</div>
+      <h2><span class="ic">🗂️</span>Audit, opt-out și organizație</h2>
+      <ul class="big">
+        <li><span class="b">📜</span><span><b>Audit</b> — jurnal: cine a modificat ce și când.</span></li>
+        <li><span class="b">🚫</span><span><b>Opt-out</b> — clienții care au cerut să NU mai primească SMS/apeluri. Îi respectăm.</span></li>
+        <li><span class="b">🏢</span><span><b>Organizație</b> — datele firmei (doar owner).</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ====== AUTOMAT ====== -->
+    <section class="block" id="automat">
+      <div class="eyebrow">Bun de știut</div>
+      <h2><span class="ic">⏰</span>Ce se întâmplă singur (și la ce oră)</h2>
+      <p class="intro">Aplicația face singură mai multe lucruri, la ore fixe, ca să nu trebuiască să le faci tu. <b>Orele sunt ora României.</b> Nu trebuie să faci nimic — e bine doar să știi că se întâmplă.</p>
+      <table class="t">
+        <tr><th>Când</th><th>Ce se întâmplă</th></tr>
+        <tr><td><b>Dimineața, ~ora 10</b></td><td>Pleacă <b>SMS-urile de reamintire</b> pentru ședințele de probă de azi (sau de mâine, dacă mâine e weekend). Tot atunci pleacă <b>SMS-ul de confirmare a înrolării</b> către cei înscriși ieri (rezumat curs, zile, oră, instructor, preț, link WhatsApp).</td></tr>
+        <tr><td><b>Marți dimineața</b></td><td>Ownerul primește un <b>rezumat săptămânal</b> cu modificările importante.</td></tr>
+        <tr><td><b>La fiecare 10 minute</b></td><td>Se eliberează <b>rezervările neplătite</b> la cursurile opționale (dacă cineva a rezervat și n-a plătit în 30 de minute, locul se eliberează la loc).</td></tr>
+        <tr><td><b>Noaptea (după închidere)</b></td><td><b>Curățenia de seară</b> la leads: cei programați la o dată trecută fără să fi venit trec pe „Nu a venit"; lead-urilor uitate li se pune steguleț de prioritate; cele rămase prea mult timp trec singure pe „Nurture". Tot noaptea se face <b>trecerea de sezon</b> (se arhivează sezonul terminat și se activează cel planificat).</td></tr>
+        <tr><td><b>Noaptea târziu</b></td><td>Se închid <b>pontajele</b> rămase deschise. Se actualizează <b>statusurile clienților</b>: cine n-a mai venit de mult devine Inactiv, apoi EXclient (cu rezilierea înrolării și revenire ca lead de reactivare); cine revine la sală redevine Activ.</td></tr>
+      </table>
+      <div class="note"><span class="lbl">Pe scurt</span>SMS-urile importante pleacă <b>dimineața pe la 10</b>. Restul (curățenii, statusuri, treceri de sezon) se întâmplă <b>noaptea</b>, ca să găsești dimineața totul pus la punct.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ====== ROLURI ====== -->
+    <section class="block" id="roluri">
+      <div class="eyebrow">Bun de știut</div>
+      <h2><span class="ic">🔐</span>Cine ce poate face</h2>
+      <p class="intro">Fiecare rol vede doar ce-i trebuie. Iată pe scurt:</p>
+      <table class="t">
+        <tr><th>Pagină</th><th class="c">Recepție</th><th class="c">Manager</th><th class="c">Admin</th><th class="c">Instructor</th></tr>
+        <tr><td>Clienți, Leads, Plăți</td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="no">—</span></td></tr>
+        <tr><td>Prezențe</td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td></tr>
+        <tr><td>Cursuri / Evaluări</td><td class="c"><span class="no">—</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓*</span></td></tr>
+        <tr><td>Sezoane, Vouchere, Inventar</td><td class="c"><span class="no">—</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="no">—</span></td></tr>
+        <tr><td>Financiar / Statistici</td><td class="c"><span class="ok">✓**</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="no">—</span></td></tr>
+        <tr><td>Anulare înrolare, motivare absență</td><td class="c"><span class="no">—</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="no">—</span></td></tr>
+        <tr><td>Salariul meu</td><td class="c"><span class="no">—</span></td><td class="c"><span class="no">—</span></td><td class="c"><span class="no">—</span></td><td class="c"><span class="ok">✓</span></td></tr>
+        <tr><td>Utilizatori &amp; roluri</td><td class="c"><span class="no">—</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="ok">✓</span></td><td class="c"><span class="no">—</span></td></tr>
+        <tr><td>Organizație (date firmă)</td><td class="c"><span class="no">—</span></td><td class="c"><span class="no">—</span></td><td class="c"><span class="no">—</span></td><td class="c"><span class="no">—</span></td></tr>
+      </table>
+      <div class="note"><span class="lbl">Legendă</span><span class="ok">✓*</span> instructorul vede doar grupele lui · <span class="ok">✓**</span> recepția vede partea operațională, nu profitul/salariile · <b>Organizația</b> e doar pentru owner.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <footer>Manual complet · beta · <b>Quasar Dance</b> · Ai găsit ceva neclar? Spune-ne și completăm.</footer>
+  </main>
+</div>
+</body>
+</html>
+</content>
+</invoke>
