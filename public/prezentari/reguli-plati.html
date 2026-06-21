@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Reguli de plată · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;overflow:hidden;-webkit-font-smoothing:antialiased}
+  .deck{height:100vh;width:100vw;position:relative}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:5vh 7vw 9vh;animation:fade .45s ease}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .deck::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--accent);z-index:5}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:3px;font-size:13px;text-transform:uppercase;margin-bottom:14px}
+  h1{font-size:clamp(30px,5vw,58px);line-height:1.05;margin:0 0 16px;font-weight:800}
+  h2{font-size:clamp(24px,3.4vw,40px);margin:0 0 8px;font-weight:800;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+  h2 .ic{font-size:.95em}
+  .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,20px);max-width:60ch}
+  .title .logo{font-weight:900;letter-spacing:6px;color:var(--accent);font-size:15px;margin-bottom:26px}
+  .title .role-chip{display:inline-block;background:var(--accent);color:#000;font-weight:800;padding:8px 18px;border-radius:999px;font-size:15px;margin-top:8px}
+  .title .meta{margin-top:34px;color:var(--gri);font-size:14px}
+  .lead{color:var(--accent);font-weight:700;font-size:clamp(14px,1.5vw,17px);margin:0 0 20px}
+  .tag{font-size:12px;font-weight:800;background:var(--accent);color:#000;padding:4px 12px;border-radius:999px;letter-spacing:.5px}
+  ul.big{margin:14px 0 0;padding:0;list-style:none;max-width:74ch}
+  ul.big li{display:flex;gap:14px;align-items:flex-start;margin:13px 0;font-size:clamp(15px,1.6vw,19px)}
+  ul.big li .b{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+  ul.big li b{color:#fff}
+  ul.big li span{color:#d6d6d6}
+  .note{margin-top:22px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:14px 18px;color:#f0e6b0;font-size:14.5px;max-width:78ch}
+  .note .lbl{display:block;color:var(--accent);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .note b{color:var(--accent)}
+  .months{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px;max-width:80ch}
+  .m{flex:1 1 70px;text-align:center;border:1px solid var(--linie);border-radius:10px;padding:10px 4px;background:var(--card)}
+  .m b{display:block;font-size:14px;color:#fff}
+  .m small{color:var(--gri2);font-size:11px}
+  .m.hi{border-color:var(--accent);background:#1c1a0e}
+  .m.hi small{color:var(--accent)}
+  .bar{position:fixed;left:0;right:0;bottom:0;height:54px;display:flex;align-items:center;gap:14px;padding:0 18px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:6}
+  .progress{flex:1;height:5px;background:#2a2a2a;border-radius:3px;overflow:hidden}
+  .progress > i{display:block;height:100%;background:var(--accent);width:0;transition:width .35s}
+  .count{color:var(--gri2);font-size:13px;min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+  .btns{display:flex;gap:8px}
+  .btns button{background:#222;border:1px solid var(--linie);color:#fff;width:38px;height:34px;border-radius:9px;font-size:16px;cursor:pointer}
+  .btns button:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+  .hint{position:fixed;top:16px;right:18px;color:var(--gri);font-size:12px;z-index:6}
+  @media(max-width:640px){ .slide{padding:7vh 7vw 11vh} .hint{display:none} }
+</style>
+</head>
+<body>
+<div class="hint">← → pentru navigare</div>
+<div class="deck" id="deck">
+
+  <section class="slide title active">
+    <div class="logo">QUASAR DANCE</div>
+    <h1>Cum funcționează <span style="color:var(--accent)">plățile</span></h1>
+    <p class="sub">Pe scurt, pe înțelesul tuturor: prețuri, reduceri, prorata, absențe motivate, anulări și capetele de sezon.</p>
+    <div><span class="role-chip">💳 Reguli de plată</span></div>
+    <div class="meta">Material de training · beta · Quasar Dance</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Prețuri & reduceri</div>
+    <h2><span class="ic">💰</span>Prețul vine din curs, nu se umblă manual</h2>
+    <ul class="big">
+      <li><span class="b">🏷️</span><span>Prețul vine din <b>curs</b> (lunar sau anual). Nu se modifică manual — voucherul e singura cale.</span></li>
+      <li><span class="b">10</span><span><b>Reducere 10% automată:</b> o familie cu <b>2 abonamente</b> (frați sau 2 cursuri) plătește cel mai scump întreg, celălalt cu <b>−10%</b>.</span></li>
+      <li><span class="b">📆</span><span>Reducerea se aplică pe <b>fiecare lună</b> neplătită.</span></li>
+      <li><span class="b">🚫</span><span>Reducerile <b>nu se cumulează</b>. Un voucher pe o lună oprește reducerea automată pe acea lună.</span></li>
+    </ul>
+    <div class="note"><span class="lbl">Exemplu</span>2 frați, fiecare 200 RON → unul 200, celălalt 180 (−10%). Total: <b>380 RON/lună</b>.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Prorata</div>
+    <h2><span class="ic">➗</span>Te înscrii la mijlocul lunii</h2>
+    <ul class="big">
+      <li><span class="b">⏱️</span><span>Se aplică <b>doar la înscriere târzie</b>, în timpul sezonului.</span></li>
+      <li><span class="b">🧮</span><span>Plătești <b>doar ședințele rămase</b> din luna aceea: <b>ședințe × preț/ședință</b>.</span></li>
+      <li><span class="b">✅</span><span>Lunile următoare se plătesc <b>întreg</b>.</span></li>
+      <li><span class="b">1️⃣</span><span>Înscriere chiar pe <b>1 ale lunii</b> → lună întreagă (fără prorata).</span></li>
+    </ul>
+    <div class="note"><span class="lbl">Exemplu</span>Te înscrii pe 15 noiembrie, mai sunt 4 ședințe × 25 RON → <b>100 RON</b> pentru noiembrie. Din decembrie: preț întreg.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Absențe motivate</div>
+    <h2><span class="ic">🩺</span>Absențe motivate <span class="tag">Manager</span></h2>
+    <ul class="big">
+      <li><span class="b">🔘</span><span>O prezență poate fi: <b>Prezent</b>, <b>Absent</b> sau <b>Motivat</b>.</span></li>
+      <li><span class="b">👤</span><span><b>Cine motivează:</b> managerul, pe baza unei <b>adeverințe</b>.</span></li>
+      <li><span class="b">🎁</span><span><b>Multe</b> absențe motivate într-o lună (peste prag) → luna poate fi <b>scutită</b> (gratuită) sau se dă <b>credit</b> pe luna următoare.</span></li>
+      <li><span class="b">💶</span><span>Dacă luna e deja plătită, banii rămân ca <b>credit</b>.</span></li>
+    </ul>
+    <div class="note"><span class="lbl">Pragul</span>Pragul = <b>2 × ședințele pe săptămână</b>. Ex: curs de 2×/săptămână → de la 4 absențe motivate.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Anulare înrolare</div>
+    <h2><span class="ic">🚪</span>Anularea înrolării <span class="tag">Manager</span></h2>
+    <ul class="big">
+      <li><span class="b">👤</span><span><b>Cine:</b> managerul (sau mai sus). Recepția nu poate.</span></li>
+      <li><span class="b">📅</span><span><b>Ce se anulează:</b> doar <b>lunile viitoare</b>. Luna curentă rămâne de plată.</span></li>
+      <li><span class="b">🏆</span><span><b>Trupele NU se pot anula</b> — contractul e pe tot sezonul.</span></li>
+      <li><span class="b">🧮</span><span>Opțional: ultima lună se recalculează la <b>ședințele făcute</b> (dacă nu e deja plătită).</span></li>
+      <li><span class="b">🔁</span><span>Opțional: clientul redevine <b>„lead"</b>, ca să-l recontactăm mai târziu.</span></li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Capetele de sezon</div>
+    <h2><span class="ic">📅</span>Septembrie și Iunie (excepții)</h2>
+    <ul class="big">
+      <li><span class="b">÷10</span><span>Un abonament = <b>10 rate lunare egale</b> (prețul anului ÷ 10).</span></li>
+      <li><span class="b">🟡</span><span><b>Septembrie</b> începe de la <b>data de start a sezonului</b> (nu de la 1). Rată întreagă, dar cu <b>scadență specială</b> (din contract).</span></li>
+      <li><span class="b">🟡</span><span><b>Iunie</b> e lună întreagă, valabil până la <b>finalul sezonului</b>, cu <b>altă scadență</b>.</span></li>
+      <li><span class="b">15</span><span>Restul lunilor: scadență pe la <b>mijlocul lunii</b>.</span></li>
+    </ul>
+    <div class="months">
+      <div class="m hi"><b>Sep</b><small>start sezon</small></div>
+      <div class="m"><b>Oct</b><small>ziua 15</small></div>
+      <div class="m"><b>Nov</b><small>ziua 15</small></div>
+      <div class="m"><b>Dec</b><small>ziua 15</small></div>
+      <div class="m"><b>Ian</b><small>ziua 15</small></div>
+      <div class="m"><b>Feb</b><small>ziua 15</small></div>
+      <div class="m"><b>Mar</b><small>ziua 15</small></div>
+      <div class="m"><b>Apr</b><small>ziua 15</small></div>
+      <div class="m"><b>Mai</b><small>ziua 15</small></div>
+      <div class="m hi"><b>Iun</b><small>final sezon</small></div>
+    </div>
+    <div class="note"><span class="lbl">Pe scurt</span>Toate lunile costă la fel. Doar <b>când începe</b> și <b>când se plătește</b> diferă la capete.</div>
+  </section>
+
+  <section class="slide title">
+    <div class="logo">QUASAR DANCE</div>
+    <h1>Asta e tot 💳</h1>
+    <p class="sub">Preț din curs, reducere automată pe familie, prorata la înscriere târzie, motivări și anulări la manager, capete de sezon cu scadență specială.</p>
+    <div class="meta">Întrebări? Le notăm și le lămurim în beta.</div>
+  </section>
+
+</div>
+
+<div class="bar">
+  <div class="btns"><button id="prev" aria-label="Înapoi">←</button><button id="next" aria-label="Înainte">→</button></div>
+  <div class="progress"><i id="pfill"></i></div>
+  <div class="count"><span id="cur">1</span> / <span id="tot">7</span></div>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0; const tot=slides.length;
+  document.getElementById('tot').textContent=tot;
+  function show(n){
+    i=Math.max(0,Math.min(tot-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('cur').textContent=i+1;
+    document.getElementById('pfill').style.width=((i+1)/tot*100)+'%';
+  }
+  document.getElementById('next').onclick=()=>show(i+1);
+  document.getElementById('prev').onclick=()=>show(i-1);
+  addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')show(i+1);
+    if(e.key==='ArrowLeft'||e.key==='PageUp')show(i-1);
+    if(e.key==='Home')show(0); if(e.key==='End')show(tot-1);
+  });
+  addEventListener('click',e=>{
+    if(e.target.closest('.bar')||e.target.closest('a'))return;
+    const x=e.clientX/innerWidth; if(x>0.62)show(i+1); else if(x<0.38)show(i-1);
+  });
+  show(0);
+</script>
+</body>
+</html>
