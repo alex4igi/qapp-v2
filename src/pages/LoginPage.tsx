@@ -35,7 +35,9 @@ export function LoginPage() {
         className="w-full max-w-sm rounded-xl border border-quasar-gray-light bg-white p-8 shadow-sm"
       >
         <div className="mb-6 flex justify-center">
-          <Logo />
+          <span className="rounded-md bg-quasar-black px-3 py-1.5">
+            <Logo />
+          </span>
         </div>
         <h1 className="mb-6 text-center text-xl font-bold text-quasar-black">
           Autentificare
