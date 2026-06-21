@@ -31,6 +31,7 @@ import {
   getOcupareTotala,
   getRetentieLuna,
   getVenitLunaCurenta,
+  getLeadFunnel,
   type Interval,
 } from './api'
 import { getReinscrieriProgress } from '@/features/reinscrieri/api'
@@ -42,6 +43,7 @@ import { MetodePlataChart } from './MetodePlataChart'
 import { CategorieChart } from './CategorieChart'
 import { ReinscrieriDonut } from './ReinscrieriDonut'
 import { IncasariSezonChart } from './IncasariSezonChart'
+import { FunnelLeadsChart } from './FunnelLeadsChart'
 
 const CATEG_INCASARI_PALETTE: Record<string, string> = {
   Abonament:  '#10b981',
@@ -69,6 +71,7 @@ export function StatisticiPage() {
   const [cursId, setCursId] = useState('')
   const [prezLocatieId, setPrezLocatieId] = useState('')
   const [prezTeacherId, setPrezTeacherId] = useState('')
+  const [funnelLocatieId, setFunnelLocatieId] = useState('')
   const [sezonTintaId, setSezonTintaId] = useState('')
 
   const interval: Interval = useMemo(() => {
@@ -153,6 +156,17 @@ export function StatisticiPage() {
         prezLocatieId || null,
         prezTeacherId || null,
       ),
+  })
+
+  const funnelLocatieLabel = useMemo(
+    () => locatiiQ.data?.find((o) => o.value === funnelLocatieId)?.label ?? null,
+    [locatiiQ.data, funnelLocatieId],
+  )
+
+  const funnelQ = useQuery({
+    queryKey: ['stat', 'funnel-leads', interval, funnelLocatieId],
+    queryFn: () =>
+      getLeadFunnel(interval, funnelLocatieId || null, funnelLocatieLabel),
   })
 
   const sezoaneTintaQ = useQuery({
@@ -517,6 +531,30 @@ export function StatisticiPage() {
               title="Prezențe achitate / neachitate / din trecut pe lună"
               rows={prezAchitareQ.data ?? []}
             />
+          )}
+        </div>
+
+        <div>
+          <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-sm font-semibold text-quasar-black">
+              Funnel leads — conversie & retenție
+            </h2>
+            <div className="w-56">
+              <Field label="Locație" htmlFor="stat-funnel-locatie">
+                <Select
+                  id="stat-funnel-locatie"
+                  placeholder="Toate locațiile"
+                  options={locatiiQ.data ?? []}
+                  value={funnelLocatieId}
+                  onChange={(e) => setFunnelLocatieId(e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+          {funnelQ.isLoading ? (
+            <Spinner />
+          ) : (
+            <FunnelLeadsChart data={funnelQ.data ?? { global: { leads: 0, contactati: 0, proba: 0, prezenti: 0, convertiti: 0, retentieEligibili: 0, retentie90z: 0 }, perSursa: [] }} />
           )}
         </div>
 

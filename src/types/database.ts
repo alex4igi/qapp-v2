@@ -6308,6 +6308,20 @@ export type Database = {
           total_incasari: number
         }[]
       }
+      get_lead_funnel: {
+        Args: { p_from: string; p_locatie?: string; p_to: string }
+        Returns: {
+          contactati: number
+          convertiti: number
+          leads_total: number
+          prezenti: number
+          proba: number
+          retentie_90z: number
+          retentie_eligibili: number
+          sursa_id: string
+          sursa_nume: string
+        }[]
+      }
       get_membri_familie: {
         Args: never
         Returns: {
