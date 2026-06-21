@@ -141,6 +141,18 @@ export async function listTeacheri({
   return { rows: data ?? [], total: count ?? 0 }
 }
 
+// Auth user-id-urile deja legate de un instructor (ca să nu le re-legăm).
+export async function getLinkedAuthUserIds(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('teacheri')
+    .select('auth_user_id')
+    .not('auth_user_id', 'is', null)
+  if (error) throw error
+  return (data ?? [])
+    .map((r) => r.auth_user_id)
+    .filter((v): v is string => Boolean(v))
+}
+
 export async function getTeacher(id: string): Promise<Teacher> {
   const { data, error } = await supabase
     .from('teacheri')

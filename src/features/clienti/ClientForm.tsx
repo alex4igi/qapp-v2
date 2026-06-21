@@ -14,9 +14,32 @@ import {
   marimeTricouOptions,
 } from '@/lib/enums'
 import { familiiOptions } from '@/lib/lookups'
+import { recordAuditLog } from '@/lib/auditLog'
 import type { Client } from '@/types/db'
 import { createClient, updateClient } from './api'
 import { createFamilie } from '@/features/familii/api'
+
+// Câmpurile de client al căror schimb merită urmă în audit (date personale).
+const AUDITED_FIELDS = [
+  'nume', 'prenume', 'email', 'telefon', 'telefonul_2', 'data_nasterii',
+  'sexul', 'status', 'marime_tricou', 'link_contract', 'familia',
+  'unitate_invatamant',
+] as const
+
+// Diferența între clientul existent și payload-ul nou, doar pe câmpurile auditate.
+function clientChanges(prev: Client, next: Record<string, unknown>) {
+  const before: Record<string, unknown> = {}
+  const after: Record<string, unknown> = {}
+  for (const f of AUDITED_FIELDS) {
+    const oldV = (prev as Record<string, unknown>)[f] ?? null
+    const newV = next[f] ?? null
+    if (oldV !== newV) {
+      before[f] = oldV
+      after[f] = newV
+    }
+  }
+  return { before, after, changed: Object.keys(after).length > 0 }
+}
 
 type Props = {
   open: boolean
@@ -112,9 +135,26 @@ export function ClientForm({ open, client, onClose }: Props) {
         familia: form.familia || null,
         unitate_invatamant: form.unitate_invatamant.trim() || null,
       }
-      return isEdit
-        ? updateClient(client!.id, payload)
-        : createClient(payload)
+      if (!isEdit) return createClient(payload)
+
+      const updated = await updateClient(client!.id, payload)
+      // Audit pe modificarea datelor clientului (front_desk inclus). Non-blocant:
+      // dacă logarea eșuează, salvarea a reușit deja.
+      const diff = clientChanges(client!, payload)
+      if (diff.changed) {
+        try {
+          await recordAuditLog({
+            action: 'client_data_changed',
+            entityType: 'client',
+            entityId: client!.id,
+            oldValue: diff.before,
+            newValue: diff.after,
+          })
+        } catch (e) {
+          console.error('audit client_data_changed eșuat:', e)
+        }
+      }
+      return updated
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['clienti'] })

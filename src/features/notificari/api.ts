@@ -8,6 +8,14 @@ export type Notification = {
   payload: Record<string, unknown> | null
   read_at: string | null
   created_at: string
+  requires_action: boolean
+  status: 'open' | 'resolved' | null
+  resolved_at: string | null
+  resolved_by: string | null
+}
+
+export function isOpenTodo(n: Notification): boolean {
+  return n.requires_action && n.status === 'open'
 }
 
 export async function listNotificari(): Promise<Notification[]> {
@@ -38,6 +46,11 @@ export async function markAllAsRead(): Promise<number> {
   const { data, error } = await supabase.rpc('notifications_mark_all_read')
   if (error) throw error
   return (data as unknown as number) ?? 0
+}
+
+export async function resolveNotificare(id: string): Promise<void> {
+  const { error } = await supabase.rpc('notifications_resolve', { p_id: id })
+  if (error) throw error
 }
 
 export async function dispatchWeeklyAuditDigest(): Promise<number> {

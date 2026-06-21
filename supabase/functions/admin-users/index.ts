@@ -1,5 +1,5 @@
 // Edge Function: management cont utilizator.
-// Acțiuni: list, create, delete, setLocatie, update_role, reset_password.
+// Acțiuni: list, create, delete, setLocatie, update_role, reset_password, link_teacher.
 //
 // Reguli RBAC:
 // - owner: poate orice (tot + manage owner/admin)
@@ -42,6 +42,11 @@ type ResetPasswordPayload = {
   userId: string
   password: string
 }
+type LinkTeacherPayload = {
+  action: 'link_teacher'
+  userId: string
+  teacherId: string
+}
 type Payload =
   | ListPayload
   | CreatePayload
@@ -49,6 +54,7 @@ type Payload =
   | SetLocatiePayload
   | UpdateRolePayload
   | ResetPasswordPayload
+  | LinkTeacherPayload
 
 type AppMeta = { role?: string; locatie_id?: string | null }
 
@@ -342,6 +348,52 @@ Deno.serve(async (req) => {
         password: body.password,
       })
       if (error) return json({ error: error.message }, 400)
+      return json({ ok: true })
+    }
+
+    if (body.action === 'link_teacher') {
+      if (!body.userId || !body.teacherId) {
+        return json({ error: 'userId și teacherId obligatorii' }, 400)
+      }
+
+      const target = await admin.auth.admin.getUserById(body.userId)
+      if (target.error) return json({ error: target.error.message }, 400)
+      const targetMeta = (target.data.user?.app_metadata ?? {}) as AppMeta
+      const targetRole = targetMeta.role ?? 'front_desk'
+      const targetLocatie = targetMeta.locatie_id ?? null
+
+      if (!canManageRole(callerRole, targetRole)) {
+        return json({ error: `nu poți modifica un cont ${targetRole}` }, 403)
+      }
+      if (callerRole === 'manager' && targetLocatie !== callerLocatie) {
+        return json({ error: 'cont la altă locație' }, 403)
+      }
+
+      // Contul trebuie să fie (sau să devină) teacher ca să aibă sens legarea.
+      if (targetRole !== 'teacher') {
+        if (!canManageRole(callerRole, 'teacher')) {
+          return json({ error: 'nu poți seta rolul teacher pe acest cont' }, 403)
+        }
+        const { error: roleErr } = await admin.auth.admin.updateUserById(
+          body.userId,
+          { app_metadata: { ...targetMeta, role: 'teacher' } },
+        )
+        if (roleErr) return json({ error: roleErr.message }, 400)
+      }
+
+      // Un cont = un singur profil de instructor: dezlegăm alte rânduri.
+      await admin
+        .from('teacheri')
+        .update({ auth_user_id: null })
+        .eq('auth_user_id', body.userId)
+        .neq('id', body.teacherId)
+
+      const { error: linkErr } = await admin
+        .from('teacheri')
+        .update({ auth_user_id: body.userId })
+        .eq('id', body.teacherId)
+      if (linkErr) return json({ error: linkErr.message }, 500)
+
       return json({ ok: true })
     }
 

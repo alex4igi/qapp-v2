@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Button, Spinner } from '@/components/ui'
@@ -6,7 +6,9 @@ import {
   listNotificari,
   markAsRead,
   markAllAsRead,
+  resolveNotificare,
   dispatchWeeklyAuditDigest,
+  isOpenTodo,
   type Notification,
 } from './api'
 
@@ -39,6 +41,10 @@ function targetFor(n: Notification): string | null {
     const aid = (n.payload as { anunt_id?: string } | null)?.anunt_id
     return aid ? `/anunturi?anunt=${aid}` : '/anunturi'
   }
+  if (n.kind === 'enrollment_move') {
+    const cid = (n.payload as { client?: string } | null)?.client
+    return cid ? `/clienti/${cid}` : null
+  }
   return null
 }
 
@@ -58,24 +64,34 @@ function formatDateOnly(iso: string | undefined): string {
 function NotificationCard({
   n,
   onClick,
+  onResolve,
+  resolving,
 }: {
   n: Notification
   onClick: () => void
+  onResolve?: () => void
+  resolving?: boolean
 }) {
   const unread = n.read_at == null
   const isAudit = n.kind === 'audit_digest_weekly'
   const audit = isAudit ? (n.payload as AuditPayload | null) : null
   const isFeedback = n.kind === 'app_feedback_new'
   const isAnunt = n.kind === 'anunt_staff'
+  const openTodo = isOpenTodo(n)
+  const resolved = n.requires_action && n.status === 'resolved'
+  const hasTarget = targetFor(n) != null
 
   return (
     <article
       onClick={onClick}
       className={[
-        'cursor-pointer rounded-lg border bg-white p-4 transition-colors',
-        unread
+        'rounded-lg border bg-white p-4 transition-colors',
+        hasTarget || unread ? 'cursor-pointer' : '',
+        openTodo
           ? 'border-quasar-yellow-dark shadow-sm hover:bg-quasar-yellow/10'
-          : 'border-quasar-gray-light hover:bg-quasar-gray-light/40',
+          : unread
+            ? 'border-quasar-yellow-dark shadow-sm hover:bg-quasar-yellow/10'
+            : 'border-quasar-gray-light hover:bg-quasar-gray-light/40',
       ].join(' ')}
     >
       <header className="mb-2 flex items-start justify-between gap-3">
@@ -96,6 +112,32 @@ function NotificationCard({
       {isAnunt && (
         <p className="text-xs font-semibold text-quasar-yellow-dark">
           Vezi anunțul →
+        </p>
+      )}
+      {openTodo && (
+        <div className="mt-1 flex items-center justify-between gap-3">
+          {hasTarget ? (
+            <span className="text-xs font-semibold text-quasar-yellow-dark">
+              Vezi fișa →
+            </span>
+          ) : (
+            <span />
+          )}
+          <Button
+            variant="secondary"
+            disabled={resolving}
+            onClick={(e) => {
+              e.stopPropagation()
+              onResolve?.()
+            }}
+          >
+            {resolving ? '…' : '✓ Marchează rezolvat'}
+          </Button>
+        </div>
+      )}
+      {resolved && (
+        <p className="mt-1 text-xs font-medium text-green-700">
+          ✓ Rezolvat {n.resolved_at ? `· ${formatDate(n.resolved_at)}` : ''}
         </p>
       )}
       {audit && audit.by_action && audit.by_action.length > 0 && (
@@ -120,18 +162,28 @@ function NotificationCard({
   )
 }
 
+type Tab = 'todo' | 'all'
+
 export function NotificariPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [tab, setTab] = useState<Tab>('todo')
+
   const notificariQ = useQuery({
     queryKey: ['notificari'],
     queryFn: listNotificari,
   })
 
+  const all = notificariQ.data ?? []
+  const todos = useMemo(() => all.filter(isOpenTodo), [all])
   const unreadCount = useMemo(
-    () => (notificariQ.data ?? []).filter((n) => n.read_at == null).length,
-    [notificariQ.data],
+    () => all.filter((n) => n.read_at == null).length,
+    [all],
   )
+
+  // Dacă nu există to-do-uri, deschidem direct pe „Toate".
+  const effectiveTab: Tab = tab === 'todo' && todos.length === 0 ? 'all' : tab
+  const visible = effectiveTab === 'todo' ? todos : all
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['notificari'] })
@@ -148,17 +200,52 @@ export function NotificariPage() {
     onSuccess: invalidate,
   })
 
+  const resolve = useMutation({
+    mutationFn: (id: string) => resolveNotificare(id),
+    onSuccess: invalidate,
+  })
+
   const triggerDigest = useMutation({
     mutationFn: () => dispatchWeeklyAuditDigest(),
     onSuccess: invalidate,
   })
+
+  const tabBtn = (t: Tab, label: string, count: number) => (
+    <button
+      onClick={() => setTab(t)}
+      className={[
+        'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+        effectiveTab === t
+          ? 'bg-quasar-black text-white'
+          : 'bg-quasar-gray-light/60 text-quasar-black hover:bg-quasar-gray-light',
+      ].join(' ')}
+    >
+      {label}
+      {count > 0 && (
+        <span
+          className={[
+            'ml-2 rounded-full px-1.5 text-xs font-bold',
+            t === 'todo'
+              ? 'bg-red-600 text-white'
+              : 'bg-quasar-gray-light text-quasar-black',
+          ].join(' ')}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  )
 
   return (
     <div>
       <PageHeader
         title="Notificări"
         subtitle={
-          unreadCount > 0 ? `${unreadCount} ne-citite` : 'Toate citite'
+          todos.length > 0
+            ? `${todos.length} de făcut`
+            : unreadCount > 0
+              ? `${unreadCount} ne-citite`
+              : 'Toate citite'
         }
         actions={
           <div className="flex gap-2">
@@ -182,6 +269,11 @@ export function NotificariPage() {
         }
       />
 
+      <div className="mb-4 flex gap-2">
+        {tabBtn('todo', 'De făcut', todos.length)}
+        {tabBtn('all', 'Toate', all.length)}
+      </div>
+
       {notificariQ.isLoading ? (
         <Spinner />
       ) : notificariQ.isError ? (
@@ -189,14 +281,22 @@ export function NotificariPage() {
           Eroare:{' '}
           {notificariQ.error instanceof Error ? notificariQ.error.message : ''}
         </p>
-      ) : (notificariQ.data ?? []).length === 0 ? (
-        <p className="text-sm text-quasar-gray">Nicio notificare încă.</p>
+      ) : visible.length === 0 ? (
+        <p className="text-sm text-quasar-gray">
+          {effectiveTab === 'todo'
+            ? 'Nimic de făcut — toate rezolvate.'
+            : 'Nicio notificare încă.'}
+        </p>
       ) : (
         <div className="space-y-3">
-          {notificariQ.data!.map((n) => (
+          {visible.map((n) => (
             <NotificationCard
               key={n.id}
               n={n}
+              resolving={resolve.isPending && resolve.variables === n.id}
+              onResolve={
+                isOpenTodo(n) ? () => resolve.mutate(n.id) : undefined
+              }
               onClick={() => {
                 if (n.read_at == null) readOne.mutate(n.id)
                 const target = targetFor(n)

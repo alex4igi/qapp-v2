@@ -11,6 +11,7 @@ import {
 import type { Teacher } from '@/types/db'
 import { TeacherForm } from './TeacherForm'
 import { TeacherAccountDialog } from './TeacherAccountDialog'
+import { LinkTeacherAccountDialog } from './LinkTeacherAccountDialog'
 
 type Props = {
   teacher: Teacher
@@ -40,6 +41,7 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
   const isAdmin = isAdminOrHigher(role)
   const [editOpen, setEditOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [linkOpen, setLinkOpen] = useState(false)
   const [resetPwdOpen, setResetPwdOpen] = useState(false)
   const [resetPwdValue, setResetPwdValue] = useState('')
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -139,17 +141,23 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
               Cont aplicație
             </h3>
             {!teacher.auth_user_id && (
-              <Button variant="secondary" onClick={() => setAccountOpen(true)}>
-                Creează cont login
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setLinkOpen(true)}>
+                  Leagă cont existent
+                </Button>
+                <Button variant="secondary" onClick={() => setAccountOpen(true)}>
+                  Creează cont login
+                </Button>
+              </div>
             )}
           </div>
 
           {!teacher.auth_user_id ? (
             <p className="text-sm text-quasar-gray">
-              Nu există încă un cont de autentificare. Creează-l ca să-l poată
-              folosi instructorul (evaluări, salariul propriu, situația
-              grupelor).
+              Nu există încă un cont de autentificare. <strong>Creează-l</strong>{' '}
+              dacă instructorul n-are cont, sau <strong>leagă</strong> un cont
+              deja existent — ca să poată folosi evaluările, salariul propriu și
+              situația grupelor.
             </p>
           ) : usersQ.isLoading ? (
             <p className="text-sm text-quasar-gray">Se încarcă datele contului…</p>
@@ -215,6 +223,13 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
           open
           teacher={teacher}
           onClose={() => setAccountOpen(false)}
+        />
+      )}
+      {linkOpen && (
+        <LinkTeacherAccountDialog
+          open
+          teacher={teacher}
+          onClose={() => setLinkOpen(false)}
         />
       )}
 

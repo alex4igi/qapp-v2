@@ -11,7 +11,7 @@ import {
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { useAuth } from '@/hooks/useAuth'
-import { isAdminOrHigher } from '@/lib/rolesMatrix'
+import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import type { Evaluare, InsertDto, UpdateDto } from '@/types/db'
 import {
   createEvaluare,
@@ -160,7 +160,7 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
   }
 
   const canDelete =
-    isEdit && (isAdminOrHigher(role) || (isTeacher && evaluare?.teacher === teacherIdQ.data))
+    isEdit && (isManagerOrHigher(role) || (isTeacher && evaluare?.teacher === teacherIdQ.data))
 
   return (
     <Modal

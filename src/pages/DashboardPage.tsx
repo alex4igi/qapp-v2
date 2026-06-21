@@ -16,6 +16,7 @@ import {
 import { CircleCourseCard } from '@/features/dashboard/CircleCourseCard'
 import { DashboardChart } from '@/features/dashboard/DashboardChart'
 import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
+import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
 
 function KpiBand({ label, value }: { label: string; value: string }) {
   return (
@@ -137,6 +138,8 @@ export function DashboardPage() {
           />
         </div>
       )}
+
+      {!teacherMode && <AgendaAziCard />}
 
       {!teacherMode && <DatorniciWorklistCard locatieId={locatieId ?? null} />}
 

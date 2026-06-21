@@ -49,7 +49,7 @@ export const ROUTE_ACCESS = {
   '/opt-out': PRIVILEGED,
   '/salariul-meu': TEACHER_ONLY,
   '/pontaj-staff': PRIVILEGED,
-  '/notificari': ADMIN_OR_OWNER,
+  '/notificari': PRIVILEGED,
   '/audit': PRIVILEGED,
   '/organizatie': OWNER_ONLY,
 } as const satisfies Record<string, readonly AppRole[]>

@@ -76,6 +76,17 @@ export async function updateUserRole(
   if (data?.error) throw new Error(data.error)
 }
 
+export async function linkTeacherAccount(
+  userId: string,
+  teacherId: string,
+): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('admin-users', {
+    body: { action: 'link_teacher', userId, teacherId },
+  })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+}
+
 export async function resetUserPassword(
   userId: string,
   password: string,
