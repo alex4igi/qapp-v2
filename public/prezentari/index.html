@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Ghiduri de training · Quasar Dance</title>
+<style>
+  :root{ --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa; --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--galben);z-index:5}
+  .wrap{max-width:1040px;margin:0 auto;padding:8vh 24px 60px}
+  header{text-align:center;margin-bottom:48px}
+  .logo{font-weight:900;letter-spacing:6px;color:var(--galben);font-size:14px;margin-bottom:22px}
+  h1{font-size:clamp(30px,5vw,52px);margin:0 0 14px;font-weight:800}
+  h1 span{color:var(--galben)}
+  .sub{color:var(--gri2);font-size:clamp(15px,1.8vw,19px);max-width:56ch;margin:0 auto;line-height:1.5}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--linie);
+    border-radius:18px;padding:26px 24px;transition:transform .15s,border-color .15s,box-shadow .15s}
+  a.card:hover{transform:translateY(-4px);border-color:var(--galben);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+  .ic{font-size:38px;display:block;margin-bottom:14px}
+  .role{font-weight:800;font-size:22px;margin-bottom:6px}
+  .role small{display:block;color:var(--galben);font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+  .desc{color:#cfcfcf;font-size:14.5px;line-height:1.5;margin:0 0 16px}
+  .go{display:inline-flex;align-items:center;gap:8px;color:var(--galben);font-weight:700;font-size:14px}
+  .go .n{background:#222;border:1px solid var(--linie);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--gri2)}
+  footer{text-align:center;color:var(--gri);font-size:13px;margin-top:46px}
+  footer b{color:var(--gri2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">QUASAR DANCE</div>
+    <h1>Ghiduri de training <span>Qapp</span></h1>
+    <p class="sub">Alege rolul tău și parcurge prezentarea. Fiecare arată exact ce poți face în aplicație. Navighezi cu săgețile ← →.</p>
+  </header>
+
+  <div class="grid">
+    <a class="card" href="front-desk.html">
+      <span class="ic">👋</span>
+      <div class="role"><small>Recepție</small>Front Desk</div>
+      <p class="desc">Clienți, plăți, prezențe, leads, SMS și recuperare restanțe — fluxul tău zilnic la casă.</p>
+      <span class="go">Deschide ghidul → <span class="n">10 slide-uri</span></span>
+    </a>
+
+    <a class="card" href="manager.html">
+      <span class="ic">🧭</span>
+      <div class="role"><small>Coordonare</small>Manager</div>
+      <p class="desc">Tot ce face recepția, plus cursuri, profesori, prețuri, financiar complet, statistici și scorecard.</p>
+      <span class="go">Deschide ghidul → <span class="n">9 slide-uri</span></span>
+    </a>
+
+    <a class="card" href="teacher.html">
+      <span class="ic">💃</span>
+      <div class="role"><small>La sală</small>Instructor</div>
+      <p class="desc">Grupele tale, prezențe, evaluări lunare și salariul tău — simplu și direct.</p>
+      <span class="go">Deschide ghidul → <span class="n">8 slide-uri</span></span>
+    </a>
+
+    <a class="card" href="admin.html">
+      <span class="ic">🛡️</span>
+      <div class="role"><small>Sistem</small>Admin</div>
+      <p class="desc">Tot ce face managerul, plus utilizatori &amp; roluri, anunțuri, triere feedback și audit complet.</p>
+      <span class="go">Deschide ghidul → <span class="n">8 slide-uri</span></span>
+    </a>
+  </div>
+
+  <footer>Material de training · beta · <b>Quasar Dance</b></footer>
+</div>
+</body>
+</html>

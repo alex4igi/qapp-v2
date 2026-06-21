@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Ghid Instructor · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;overflow:hidden;-webkit-font-smoothing:antialiased}
+  .deck{height:100vh;width:100vw;position:relative}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:5vh 7vw 9vh;animation:fade .45s ease}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .deck::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--accent);z-index:5}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:3px;font-size:13px;text-transform:uppercase;margin-bottom:14px}
+  h1{font-size:clamp(30px,5vw,58px);line-height:1.05;margin:0 0 16px;font-weight:800}
+  h2{font-size:clamp(24px,3.4vw,40px);margin:0 0 8px;font-weight:800}
+  h2 .ic{font-size:.95em;margin-right:10px}
+  .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,20px);max-width:60ch}
+  .title .logo{font-weight:900;letter-spacing:6px;color:var(--accent);font-size:15px;margin-bottom:26px}
+  .title .role-chip{display:inline-block;background:var(--accent);color:#000;font-weight:800;padding:8px 18px;border-radius:999px;font-size:15px;margin-top:8px}
+  .title .meta{margin-top:34px;color:var(--gri);font-size:14px}
+  .lead{color:var(--accent);font-weight:700;font-size:clamp(14px,1.5vw,17px);margin:0 0 20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:8px}
+  .card{background:var(--card);border:1px solid var(--linie);border-radius:16px;padding:20px 22px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+  .card .k{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;margin-bottom:8px}
+  .card .k .ic{font-size:22px}
+  .card p{margin:0;color:#cfcfcf;font-size:14.5px;line-height:1.5}
+  .card .why{margin-top:10px;color:var(--accent);font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  ul.big{margin:14px 0 0;padding:0;list-style:none;max-width:70ch}
+  ul.big li{display:flex;gap:14px;align-items:flex-start;margin:14px 0;font-size:clamp(15px,1.7vw,20px)}
+  ul.big li .b{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+  ul.big li b{color:#fff}
+  ul.big li span{color:#d6d6d6}
+  .chips .c{display:inline-block;background:#222;border:1px solid var(--linie);color:#eee;padding:6px 13px;border-radius:999px;font-size:13.5px;margin:4px 6px 4px 0}
+  .note{margin-top:22px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:14px 18px;color:#f0e6b0;font-size:14.5px;max-width:75ch}
+  .note b{color:var(--accent)}
+  .bar{position:fixed;left:0;right:0;bottom:0;height:54px;display:flex;align-items:center;gap:14px;padding:0 18px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:6}
+  .progress{flex:1;height:5px;background:#2a2a2a;border-radius:3px;overflow:hidden}
+  .progress > i{display:block;height:100%;background:var(--accent);width:0;transition:width .35s}
+  .count{color:var(--gri2);font-size:13px;min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+  .btns{display:flex;gap:8px}
+  .btns button{background:#222;border:1px solid var(--linie);color:#fff;width:38px;height:34px;border-radius:9px;font-size:16px;cursor:pointer}
+  .btns button:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+  .hint{position:fixed;top:16px;right:18px;color:var(--gri);font-size:12px;z-index:6}
+  @media(max-width:640px){ .slide{padding:7vh 7vw 11vh} .hint{display:none} }
+</style>
+</head>
+<body>
+<div class="hint">← → pentru navigare</div>
+<div class="deck" id="deck">
+
+  <section class="slide title active">
+    <div class="logo">QUASAR DANCE</div>
+    <h1>Qapp pentru <span style="color:var(--accent)">Instructor</span></h1>
+    <p class="sub">Simplu și direct: grupele tale, prezențe, evaluări și salariul tău — totul într-un singur loc.</p>
+    <div><span class="role-chip">💃 Rol: Instructor / Teacher</span></div>
+    <div class="meta">Ghid de training · beta · Quasar Dance</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Ce vezi tu în Qapp</div>
+    <h2>Doar ce ai nevoie, nimic în plus</h2>
+    <p class="sub">Aplicația îți arată exact grupele tale. Fără rapoarte financiare, fără setări — curat și pe subiect.</p>
+    <ul class="big">
+      <li><span class="b">1</span><span><b>Grupele mele</b> — cursurile pe care le predau azi</span></li>
+      <li><span class="b">2</span><span><b>Prezențe</b> — bifez cine a venit</span></li>
+      <li><span class="b">3</span><span><b>Evaluări</b> — notez progresul fiecărui cursant</span></li>
+      <li><span class="b">4</span><span><b>Salariul meu</b> — calculul lunar, transparent</span></li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Grupa mea</div>
+    <h2><span class="ic">🪩</span>Cursurile tale, gata la deschidere</h2>
+    <div class="grid">
+      <div class="card"><div class="k"><span class="ic">📅</span>Azi</div><p>Vezi grupele pe care le predai, cu rosterul complet de cursanți pentru fiecare.</p></div>
+      <div class="card"><div class="k"><span class="ic">🧒</span>Cursanți + lead-uri</div><p>În roster apar și cursanții noi (lead-uri programate azi), marcați cu badge — ca să știi cine vine prima dată.</p></div>
+      <div class="card"><div class="k"><span class="ic">👤</span>Profil cursant</div><p>Intri pe profilul unui cursant și vezi prezențele lui. Curat, doar ce te privește.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Prezențe</div>
+    <h2><span class="ic">✅</span>Bifezi prezența dintr-un click</h2>
+    <ul class="big">
+      <li><span class="b">👆</span><span>Apeși pe cursant și comuți: <b>Prezent</b>, <b>Absent</b> sau <b>Motivat</b>.</span></li>
+      <li><span class="b">⚡</span><span>Se salvează instant — fără butoane de confirmare.</span></li>
+      <li><span class="b">📊</span><span>Prezențele tale stau la baza <b>salariului</b> și a statisticilor de grup.</span></li>
+    </ul>
+    <div class="note">💡 <b>Motivat</b> se folosește când cursantul lipsește justificat. Scutirea efectivă pe lună o aprobă managerul, pe baza adeverinței.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Evaluări</div>
+    <h2><span class="ic">⭐</span>Notezi progresul, lunar</h2>
+    <p class="lead">Pentru fiecare cursant, pe 7 competențe (scala 1–5):</p>
+    <div class="chips">
+      <span class="c">Tehnică</span><span class="c">Ritm</span><span class="c">Coordonare</span>
+      <span class="c">Expresivitate</span><span class="c">Disciplină</span><span class="c">Progres</span><span class="c">Atitudine</span>
+    </div>
+    <ul class="big" style="margin-top:18px">
+      <li><span class="b">🧮</span><span>Aplicația calculează automat <b>scorul mediu</b>.</span></li>
+      <li><span class="b">🔒</span><span>Vezi și editezi <b>doar evaluările tale</b>, pe cursurile tale.</span></li>
+      <li><span class="b">📈</span><span>Managerul vede evoluția în timp — feedback structurat pentru părinți.</span></li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Salariul meu</div>
+    <h2><span class="ic">💵</span>Transparent, calculat pe prezențe</h2>
+    <div class="grid">
+      <div class="card"><div class="k"><span class="ic">🧾</span>Breakdown per curs</div><p>Vezi fiecare curs: tip (recurent/facultativ), număr de ședințe, pragul atins și suma.</p></div>
+      <div class="card"><div class="k"><span class="ic">📐</span>Pe praguri</div><p>Calculul se face pe praguri per grupă — cu cât grupa e mai plină, cu atât pragul e mai bun.</p></div>
+      <div class="card"><div class="k"><span class="ic">🔒</span>Înghețat</div><p>După plată, snapshot-ul devine imutabil. Ce vezi e exact ce s-a calculat. Read-only.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Comunicare</div>
+    <h2><span class="ic">📢</span>Anunțuri & feedback</h2>
+    <div class="grid">
+      <div class="card"><div class="k"><span class="ic">📢</span>Anunțuri</div><p>Mesajele de la conducere apar aici, filtrate pe rolul și locația ta. Marchezi „citit".</p></div>
+      <div class="card"><div class="k"><span class="ic">💬</span>Feedback aplicație</div><p>Ceva nu merge sau ai o idee? Trimite direct echipei cu butonul 💬. Suntem în beta — părerea ta ajută.</p></div>
+    </div>
+  </section>
+
+  <section class="slide title">
+    <div class="logo">QUASAR DANCE</div>
+    <h1>Tu ești pe scenă 💃</h1>
+    <p class="sub">Qapp îți ține partea administrativă scurtă, ca să te concentrezi pe ce contează: cursanții și dansul.</p>
+    <div class="meta">Întrebări? Le notăm și le rezolvăm în beta.</div>
+  </section>
+
+</div>
+
+<div class="bar">
+  <div class="btns"><button id="prev" aria-label="Înapoi">←</button><button id="next" aria-label="Înainte">→</button></div>
+  <div class="progress"><i id="pfill"></i></div>
+  <div class="count"><span id="cur">1</span> / <span id="tot">8</span></div>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0; const tot=slides.length;
+  document.getElementById('tot').textContent=tot;
+  function show(n){
+    i=Math.max(0,Math.min(tot-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('cur').textContent=i+1;
+    document.getElementById('pfill').style.width=((i+1)/tot*100)+'%';
+  }
+  document.getElementById('next').onclick=()=>show(i+1);
+  document.getElementById('prev').onclick=()=>show(i-1);
+  addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')show(i+1);
+    if(e.key==='ArrowLeft'||e.key==='PageUp')show(i-1);
+    if(e.key==='Home')show(0); if(e.key==='End')show(tot-1);
+  });
+  addEventListener('click',e=>{
+    if(e.target.closest('.bar')||e.target.closest('a'))return;
+    const x=e.clientX/innerWidth; if(x>0.62)show(i+1); else if(x<0.38)show(i-1);
+  });
+  show(0);
+</script>
+</body>
+</html>
