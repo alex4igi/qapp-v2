@@ -10,6 +10,7 @@ type Props = {
   onAskRezilia: (id: string) => void
   onAdjustPrice?: (enrollmentId: string) => void
   onMoveCurs?: (enrollmentId: string) => void
+  onMotiveaza?: (enrollmentId: string) => void
 }
 
 export function InrolariSezonTab({
@@ -20,6 +21,7 @@ export function InrolariSezonTab({
   onAskRezilia,
   onAdjustPrice,
   onMoveCurs,
+  onMotiveaza,
 }: Props) {
   if (loading) return <Spinner />
   if (rows.length === 0) {
@@ -94,6 +96,15 @@ export function InrolariSezonTab({
                         title="Mută înrolarea la alt curs (păstrează plata)"
                       >
                         📦 Mută
+                      </Button>
+                    )}
+                    {onMotiveaza && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => onMotiveaza(r.id_enrollment)}
+                        title="Motivează absențele lunii (adeverință medicală → eventual scutire)"
+                      >
+                        🩺 Motivează
                       </Button>
                     )}
                   </li>

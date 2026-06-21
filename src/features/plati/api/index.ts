@@ -42,8 +42,14 @@ export {
   moveEnrollmentToCurs,
   getReziliereRecalcPreview,
   recalcUltimaLunaReziliere,
+  getMotivareAbsentaContext,
+  aprobaMotivareAbsenta,
 } from './enrollment-admin'
-export type { ReziliereRecalcPreview } from './enrollment-admin'
+export type {
+  ReziliereRecalcPreview,
+  MotivareAbsentaContext,
+  MotivareAbsentaResult,
+} from './enrollment-admin'
 
 export type {
   OpenSesiuneOcupare,

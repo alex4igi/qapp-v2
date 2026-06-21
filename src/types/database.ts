@@ -1990,12 +1990,14 @@ export type Database = {
       feedback: {
         Row: {
           autor: string | null
+          context_achizitie: string | null
           created: string
           cursul: string | null
           detalii: string | null
           detalii_rezolvare: string | null
           id: string
           nume: string | null
+          rating: number | null
           reprezentant: string | null
           rezolvat: boolean
           tip: Database["public"]["Enums"]["tip_feedback"] | null
@@ -2003,12 +2005,14 @@ export type Database = {
         }
         Insert: {
           autor?: string | null
+          context_achizitie?: string | null
           created?: string
           cursul?: string | null
           detalii?: string | null
           detalii_rezolvare?: string | null
           id?: string
           nume?: string | null
+          rating?: number | null
           reprezentant?: string | null
           rezolvat?: boolean
           tip?: Database["public"]["Enums"]["tip_feedback"] | null
@@ -2016,12 +2020,14 @@ export type Database = {
         }
         Update: {
           autor?: string | null
+          context_achizitie?: string | null
           created?: string
           cursul?: string | null
           detalii?: string | null
           detalii_rezolvare?: string | null
           id?: string
           nume?: string | null
+          rating?: number | null
           reprezentant?: string | null
           rezolvat?: boolean
           tip?: Database["public"]["Enums"]["tip_feedback"] | null
@@ -2772,6 +2778,126 @@ export type Database = {
         }
         Relationships: []
       }
+      motivari_absenta: {
+        Row: {
+          absente: number
+          aprobat_de: string | null
+          client: string
+          created: string
+          document: string | null
+          enrollment: string
+          id: string
+          luna: string
+          observatii: string | null
+          prag: number
+          scutit: boolean
+        }
+        Insert: {
+          absente?: number
+          aprobat_de?: string | null
+          client: string
+          created?: string
+          document?: string | null
+          enrollment: string
+          id?: string
+          luna: string
+          observatii?: string | null
+          prag?: number
+          scutit?: boolean
+        }
+        Update: {
+          absente?: number
+          aprobat_de?: string | null
+          client?: string
+          created?: string
+          document?: string | null
+          enrollment?: string
+          id?: string
+          luna?: string
+          observatii?: string | null
+          prag?: number
+          scutit?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motivari_absenta_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documente_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_inrolare"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_enrollment"]
+          },
+        ]
+      }
       netopia_orders: {
         Row: {
           amount: number
@@ -2893,6 +3019,10 @@ export type Database = {
           payload: Json | null
           read_at: string | null
           recipient_user_id: string
+          requires_action: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
           title: string
         }
         Insert: {
@@ -2903,6 +3033,10 @@ export type Database = {
           payload?: Json | null
           read_at?: string | null
           recipient_user_id: string
+          requires_action?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
           title: string
         }
         Update: {
@@ -2913,6 +3047,10 @@ export type Database = {
           payload?: Json | null
           read_at?: string | null
           recipient_user_id?: string
+          requires_action?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
           title?: string
         }
         Relationships: []
@@ -5856,6 +5994,14 @@ export type Database = {
         }
         Returns: string
       }
+      aproba_motivare_absenta: {
+        Args: {
+          p_document?: string
+          p_enrollment: string
+          p_observatii?: string
+        }
+        Returns: Json
+      }
       archive_expired_sezoane: { Args: never; Returns: number }
       audit_digest_dispatch_weekly: { Args: never; Returns: number }
       audit_log_record: {
@@ -5988,7 +6134,18 @@ export type Database = {
       current_client: { Args: never; Returns: string }
       current_familie: { Args: never; Returns: string }
       current_teacher_id: { Args: never; Returns: string }
+      evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
       expire_open_holds: { Args: never; Returns: number }
+      get_anunturi_client: {
+        Args: never
+        Returns: {
+          continut: string
+          created: string
+          id: string
+          read_at: string
+          titlu: string
+        }[]
+      }
       get_campanie_progress: {
         Args: { p_campanie_id: string }
         Returns: {
@@ -6071,6 +6228,27 @@ export type Database = {
           observatii: string
           tip: Database["public"]["Enums"]["tip_document"]
           titlu: string
+        }[]
+      }
+      get_evaluari_client: {
+        Args: { p_client: string }
+        Returns: {
+          curs_nume: string
+          data: string
+          feedback_general: string
+          id: string
+          nivel_grupa: string
+          skill_coordonare: number
+          skill_coregrafie: number
+          skill_expresivitate: number
+          skill_freeze: number
+          skill_improvizatie: number
+          skill_izolari: number
+          skill_pasi_baza: number
+          skill_prezentare: number
+          skill_ritm: number
+          skill_sincronizare: number
+          teacher_nume: string
         }[]
       }
       get_evenimente_client: {
@@ -6227,6 +6405,19 @@ export type Database = {
           prezenti: number
         }[]
       }
+      get_reduceri_familie: {
+        Args: never
+        Returns: {
+          client_id: string
+          client_nume: string
+          cod_voucher: string
+          curs_nume: string
+          reducere: number
+          suma: number
+          suma_baza: number
+          tip_plata: Database["public"]["Enums"]["tip_plata"]
+        }[]
+      }
       get_reinscrieri_conversie: {
         Args: { p_sezon_tinta: string }
         Returns: {
@@ -6275,6 +6466,19 @@ export type Database = {
           ultim_apel_rezultat: string
           ultima_prezenta: string
           zile_depasire: number
+        }[]
+      }
+      get_rezervari_client: {
+        Args: { p_client: string }
+        Returns: {
+          curs_nume: string
+          data: string
+          instructor_nume: string
+          locatie: string
+          rezervare_id: string
+          sesiune_id: string
+          status: Database["public"]["Enums"]["status_rezervare"]
+          suma: number
         }[]
       }
       get_rezultate_concursuri: {
@@ -6464,12 +6668,14 @@ export type Database = {
         }[]
       }
       mark_anunt_read: { Args: { p_anunt_id: string }; Returns: undefined }
+      mark_anunturi_citite: { Args: never; Returns: undefined }
       mark_opt_out: {
         Args: { p_entity: string; p_id: string; p_motiv?: string }
         Returns: undefined
       }
       my_teacher_id: { Args: never; Returns: string }
       notifications_mark_all_read: { Args: never; Returns: number }
+      notifications_resolve: { Args: { p_id: string }; Returns: undefined }
       notifications_unread_count: { Args: never; Returns: number }
       notify_enrollment_move: {
         Args: {
@@ -6601,6 +6807,15 @@ export type Database = {
           p_document_link: string
         }
         Returns: string
+      }
+      submit_rating_client: {
+        Args: {
+          p_client: string
+          p_context: string
+          p_detalii?: string
+          p_rating: number
+        }
+        Returns: undefined
       }
       teacher_can_access_curs: { Args: { p_curs: string }; Returns: boolean }
       update_profil_client: {

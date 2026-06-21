@@ -184,6 +184,113 @@ export async function recalcUltimaLunaReziliere(params: {
   return preview
 }
 
+// ── Motivare absență cu adeverință medicală ──────────────────────────────────
+// Context pentru modalul de motivare: luna înrolării, absențele lunii, pragul de
+// scutire (2 × ședințe/săpt) și documentele Medicale disponibile pentru cursant.
+export type MotivareAbsentaContext = {
+  enrollmentId: string
+  clientId: string
+  clientNume: string | null
+  cursNume: string | null
+  luna: string // YYYY-MM-01
+  tipPlata: string | null
+  sedintePerSapt: number
+  absente: number
+  prag: number
+  eligibilScutire: boolean
+  documenteMedicale: { id: string; titlu: string | null; link: string; created: string }[]
+}
+
+export async function getMotivareAbsentaContext(
+  enrollmentId: string,
+): Promise<MotivareAbsentaContext> {
+  const { data: enr, error: eErr } = await supabase
+    .from('enrollments')
+    .select('id, data_incepere, tip_plata, client, cursul(numele, zile)')
+    .eq('id', enrollmentId)
+    .single()
+  if (eErr) throw eErr
+  const row = enr as unknown as {
+    id: string
+    data_incepere: string | null
+    tip_plata: string | null
+    client: string | null
+    cursul: { numele: string | null; zile: string[] | null } | null
+  }
+  if (!row.data_incepere) throw new Error('Înrolarea nu are lună (data_incepere).')
+
+  const luna = `${row.data_incepere.slice(0, 7)}-01`
+  const lunaEnd = endOfMonth(luna)
+  const sedintePerSapt = row.cursul?.zile?.length ?? 0
+  const prag = 2 * sedintePerSapt
+
+  const { count, error: pErr } = await supabase
+    .from('prezente')
+    .select('id', { count: 'exact', head: true })
+    .eq('enrollment', enrollmentId)
+    .eq('status', 'Absent')
+    .gte('data', luna)
+    .lte('data', lunaEnd)
+  if (pErr) throw pErr
+  const absente = count ?? 0
+
+  let clientNume: string | null = null
+  let documenteMedicale: MotivareAbsentaContext['documenteMedicale'] = []
+  if (row.client) {
+    const { data: cl } = await supabase
+      .from('clienti')
+      .select('nume, prenume')
+      .eq('id', row.client)
+      .single()
+    if (cl) clientNume = `${cl.nume ?? ''} ${cl.prenume ?? ''}`.trim()
+
+    const { data: docs } = await supabase
+      .from('documente_client')
+      .select('id, titlu, link, created')
+      .eq('client', row.client)
+      .eq('tip', 'Medical')
+      .order('created', { ascending: false })
+    documenteMedicale = (docs ?? []) as MotivareAbsentaContext['documenteMedicale']
+  }
+
+  return {
+    enrollmentId,
+    clientId: row.client ?? '',
+    clientNume,
+    cursNume: row.cursul?.numele ?? null,
+    luna,
+    tipPlata: row.tip_plata,
+    sedintePerSapt,
+    absente,
+    prag,
+    eligibilScutire: row.tip_plata === 'Per luna' && sedintePerSapt > 0 && absente > prag,
+    documenteMedicale,
+  }
+}
+
+export type MotivareAbsentaResult = {
+  motivate: number
+  absente: number
+  prag: number
+  scutit: boolean
+  credit: 'niciun' | 'luna_urmatoare' | 'sold_favoare'
+  luna: string
+}
+
+export async function aprobaMotivareAbsenta(params: {
+  enrollmentId: string
+  document?: string | null
+  observatii?: string | null
+}): Promise<MotivareAbsentaResult> {
+  const { data, error } = await supabase.rpc('aproba_motivare_absenta', {
+    p_enrollment: params.enrollmentId,
+    p_document: params.document ?? undefined,
+    p_observatii: params.observatii?.trim() || undefined,
+  })
+  if (error) throw error
+  return data as MotivareAbsentaResult
+}
+
 // Mută o înrolare la alt curs (păstrează plata curentă, fără prorata).
 // Auditată cu motiv.
 export async function moveEnrollmentToCurs(params: {

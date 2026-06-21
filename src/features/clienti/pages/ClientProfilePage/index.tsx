@@ -12,6 +12,7 @@ import { reintegrateClientAsLead } from '@/features/leads/api'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
 import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
+import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { waLink } from '@/lib/phone'
@@ -50,6 +51,7 @@ export function ClientProfilePage() {
   const [sezonId, setSezonId] = useState<string>('')
   const [adjustEnrollmentId, setAdjustEnrollmentId] = useState<string | null>(null)
   const [moveEnrollmentId, setMoveEnrollmentId] = useState<string | null>(null)
+  const [motivareEnrollmentId, setMotivareEnrollmentId] = useState<string | null>(null)
 
   const clientQuery = useQuery({
     queryKey: ['client', id],
@@ -303,6 +305,10 @@ export function ClientProfilePage() {
               // Mutarea între grupe e permisă și front_desk-ului; managerul
               // primește o notificare informativă (vezi notify_enrollment_move).
               onMoveCurs={(eId) => setMoveEnrollmentId(eId)}
+              // Motivarea absențelor + eventuala scutire de lună e doar manager+.
+              onMotiveaza={
+                canManagerActions ? (eId) => setMotivareEnrollmentId(eId) : undefined
+              }
             />
           )}
 
@@ -352,6 +358,14 @@ export function ClientProfilePage() {
           open
           enrollmentId={moveEnrollmentId}
           onClose={() => setMoveEnrollmentId(null)}
+        />
+      )}
+
+      {motivareEnrollmentId && (
+        <MotivareAbsentaModal
+          open
+          enrollmentId={motivareEnrollmentId}
+          onClose={() => setMotivareEnrollmentId(null)}
         />
       )}
 
