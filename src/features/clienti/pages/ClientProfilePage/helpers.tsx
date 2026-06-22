@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const RO_MONTHS = [
   'ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
   'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie',
@@ -25,11 +27,30 @@ export function getInitials(nume: string | null, prenume: string | null): string
   return (a + b).toUpperCase() || '?'
 }
 
-export function DetailRow({ label, value }: { label: string; value: string }) {
+export function DetailRow({
+  label,
+  value,
+  to,
+}: {
+  label: string
+  value: string
+  to?: string
+}) {
   return (
     <div>
       <dt className="text-xs font-medium text-quasar-gray">{label}</dt>
-      <dd className="text-sm break-words text-quasar-black">{value || '—'}</dd>
+      <dd className="text-sm break-words text-quasar-black">
+        {to && value ? (
+          <Link
+            to={to}
+            className="underline decoration-quasar-yellow decoration-2 underline-offset-2 hover:text-quasar-gray"
+          >
+            {value}
+          </Link>
+        ) : (
+          value || '—'
+        )}
+      </dd>
     </div>
   )
 }

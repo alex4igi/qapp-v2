@@ -258,6 +258,7 @@ export function ClientProfilePage() {
           prenume={client.prenume}
           varsta={varsta}
           familia={familiaLabel}
+          familiaId={familiaQuery.data?.id ?? null}
           sezoaneOptions={(sezoaneQuery.data ?? []).map((s) => ({
             value: s.id,
             label: s.numele_sezonului,

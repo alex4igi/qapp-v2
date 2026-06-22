@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Button, Select } from '@/components/ui'
 import { DetailRow } from './helpers'
 
@@ -7,6 +8,7 @@ type Props = {
   prenume: string | null
   varsta: number | null
   familia: string
+  familiaId: string | null
   sezoaneOptions: { value: string; label: string }[]
   sezonValue: string
   onSezonChange: (id: string) => void
@@ -20,6 +22,7 @@ export function ClientSidebar({
   prenume,
   varsta,
   familia,
+  familiaId,
   sezoaneOptions,
   sezonValue,
   onSezonChange,
@@ -38,7 +41,11 @@ export function ClientSidebar({
       </h2>
       <dl className="mt-4 space-y-3">
         <DetailRow label="Vârsta" value={varsta != null ? String(varsta) : ''} />
-        <DetailRow label="Familia" value={familia} />
+        <DetailRow
+          label="Familia"
+          value={familia}
+          to={familiaId ? `/familii/${familiaId}` : undefined}
+        />
         <div>
           <dt className="mb-1 text-xs font-medium text-quasar-gray">
             În sezonul
@@ -57,8 +64,13 @@ export function ClientSidebar({
           ) : (
             <ul className="space-y-1 text-sm">
               {cursuri.map((c) => (
-                <li key={c.id} className="text-quasar-black">
-                  {c.nume}
+                <li key={c.id}>
+                  <Link
+                    to={`/cursuri/${c.id}`}
+                    className="text-quasar-black hover:text-quasar-gray hover:underline"
+                  >
+                    {c.nume}
+                  </Link>
                 </li>
               ))}
             </ul>
