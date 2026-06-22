@@ -77,12 +77,18 @@ export function NotificariSmsPage() {
   })
 
   const columns: Column<SituatieSms>[] = [
-    { header: 'Telefon', cell: (s) => s.telefon ?? '—', className: 'w-32' },
+    {
+      header: 'Telefon',
+      cell: (s) => s.telefon ?? '—',
+      className: 'w-32',
+      sortValue: (s) => s.telefon,
+    },
     {
       header: 'Mesaj',
       cell: (s) => (
         <span className="line-clamp-2 text-quasar-gray">{s.mesaj ?? '—'}</span>
       ),
+      sortValue: (s) => s.mesaj?.toLowerCase(),
     },
     {
       header: 'Status',
@@ -96,16 +102,19 @@ export function NotificariSmsPage() {
         </span>
       ),
       className: 'w-36',
+      sortValue: (s) => s.status?.toLowerCase(),
     },
     {
       header: 'Planificat',
       cell: (s) => s.data_planificata ?? '—',
       className: 'w-28',
+      sortValue: (s) => s.data_planificata,
     },
     {
       header: 'Trimis',
       cell: (s) => s.data_trimitere ?? '—',
       className: 'w-28',
+      sortValue: (s) => s.data_trimitere,
     },
     {
       header: '',

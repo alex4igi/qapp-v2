@@ -21,18 +21,21 @@ const columns: Column<Voucher>[] = [
   {
     header: 'Cod',
     cell: (v) => <span className="font-medium">{v.cod_voucher}</span>,
+    sortValue: (v) => v.cod_voucher?.toLowerCase(),
   },
-  { header: 'Tip', cell: (v) => v.tip ?? '—', className: 'w-24' },
+  { header: 'Tip', cell: (v) => v.tip ?? '—', className: 'w-24', sortValue: (v) => v.tip?.toLowerCase() },
   {
     header: 'Valoare',
     cell: (v) => (v.valoare != null ? String(v.valoare) : '—'),
     className: 'w-24',
+    sortValue: (v) => v.valoare ?? 0,
   },
-  { header: 'Valabilitate', cell: valabilitate },
+  { header: 'Valabilitate', cell: valabilitate, sortValue: (v) => v.data_inceperii },
   {
     header: 'Utilizări',
     cell: (v) => (v.numar_utilizari != null ? String(v.numar_utilizari) : '—'),
     className: 'w-24',
+    sortValue: (v) => v.numar_utilizari ?? 0,
   },
 ]
 

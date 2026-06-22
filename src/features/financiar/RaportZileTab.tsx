@@ -35,7 +35,12 @@ function todayIso(): string {
 }
 
 const baseColumns: Column<RaportZiRow>[] = [
-  { header: 'Data', cell: (r) => r.data, className: 'w-32' },
+  {
+    header: 'Data',
+    cell: (r) => r.data,
+    className: 'w-32',
+    sortValue: (r) => r.data,
+  },
   {
     header: 'Încasări',
     cell: (r) => (
@@ -44,26 +49,31 @@ const baseColumns: Column<RaportZiRow>[] = [
       </span>
     ),
     className: 'w-32 text-right',
+    sortValue: (r) => r.total ?? 0,
   },
   {
     header: 'Cash',
     cell: (r) => (r.cash > 0 ? formatRON(r.cash) : '—'),
     className: 'w-32 text-right',
+    sortValue: (r) => r.cash ?? 0,
   },
   {
     header: 'Card',
     cell: (r) => (r.card > 0 ? formatRON(r.card) : '—'),
     className: 'w-32 text-right',
+    sortValue: (r) => r.card ?? 0,
   },
   {
     header: 'Transfer',
     cell: (r) => (r.transfer > 0 ? formatRON(r.transfer) : '—'),
     className: 'w-32 text-right',
+    sortValue: (r) => r.transfer ?? 0,
   },
   {
     header: 'Revolut',
     cell: (r) => (r.revolut > 0 ? formatRON(r.revolut) : '—'),
     className: 'w-32 text-right',
+    sortValue: (r) => r.revolut ?? 0,
   },
 ]
 
@@ -78,6 +88,7 @@ const cheltuieliColumns: Column<RaportZiRow>[] = [
         '—'
       ),
     className: 'w-32 text-right',
+    sortValue: (r) => r.cheltuieli ?? 0,
   },
   {
     header: 'Net',
@@ -89,6 +100,7 @@ const cheltuieliColumns: Column<RaportZiRow>[] = [
       </span>
     ),
     className: 'w-32 text-right',
+    sortValue: (r) => r.net ?? 0,
   },
 ]
 

@@ -33,6 +33,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         </div>
       ),
       className: 'min-w-44',
+      sortValue: (r) => (usersById.get(r.user_id) ?? 'Utilizator').toLowerCase(),
     },
     {
       header: 'Contacte (verif. / total)',
@@ -46,6 +47,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         </span>
       ),
       className: 'w-44',
+      sortValue: (r) => r.contacte_verificate ?? 0,
     },
     {
       header: 'Viteză',
@@ -53,6 +55,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         <ScorecardBadge clasa={r.viteza_clasa} value={ore(r.viteza_med_ore)} />
       ),
       className: 'w-28',
+      sortValue: (r) => r.viteza_med_ore ?? 0,
     },
     {
       header: 'Persistență',
@@ -63,6 +66,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         />
       ),
       className: 'w-28',
+      sortValue: (r) => r.persistenta_med ?? 0,
     },
     {
       header: 'Igienă CRM',
@@ -70,6 +74,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         <ScorecardBadge clasa={r.igiena_clasa} value={pct(r.igiena_crm_pct)} />
       ),
       className: 'w-28',
+      sortValue: (r) => r.igiena_crm_pct ?? 0,
     },
     {
       header: 'Follow-up',
@@ -79,6 +84,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         </span>
       ),
       className: 'w-24',
+      sortValue: (r) => r.followup_onorat_pct ?? 0,
     },
     {
       header: 'Conversie',
@@ -89,6 +95,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         />
       ),
       className: 'w-28',
+      sortValue: (r) => r.conversie_pct ?? 0,
     },
     {
       header: 'Show-rate',
@@ -96,6 +103,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         <ScorecardBadge clasa={r.show_rate_clasa} value={pct(r.show_rate_pct)} />
       ),
       className: 'w-28',
+      sortValue: (r) => r.show_rate_pct ?? 0,
     },
     {
       header: 'Scor',
@@ -108,6 +116,7 @@ export function ScorecardTable({ rows, usersById }: Props) {
         </span>
       ),
       className: 'w-28',
+      sortValue: (r) => r.scor_pct ?? 0,
     },
   ]
 

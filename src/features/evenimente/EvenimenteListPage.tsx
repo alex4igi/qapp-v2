@@ -25,10 +25,25 @@ const columns: Column<Eveniment>[] = [
   {
     header: 'Eveniment',
     cell: (e) => <span className="font-medium">{e.nume_eveniment}</span>,
+    sortValue: (e) => e.nume_eveniment?.toLowerCase(),
   },
-  { header: 'Data', cell: (e) => e.data ?? '—', className: 'w-32' },
-  { header: 'Locație', cell: (e) => e.locatia ?? '—' },
-  { header: 'Status', cell: (e) => e.status ?? '—', className: 'w-28' },
+  {
+    header: 'Data',
+    cell: (e) => e.data ?? '—',
+    className: 'w-32',
+    sortValue: (e) => e.data,
+  },
+  {
+    header: 'Locație',
+    cell: (e) => e.locatia ?? '—',
+    sortValue: (e) => e.locatia?.toLowerCase(),
+  },
+  {
+    header: 'Status',
+    cell: (e) => e.status ?? '—',
+    className: 'w-28',
+    sortValue: (e) => e.status?.toLowerCase(),
+  },
   {
     header: 'Portal',
     cell: (e) =>

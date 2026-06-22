@@ -104,21 +104,25 @@ const columns: Column<Cheltuiala>[] = [
   {
     header: 'Nume',
     cell: (c) => <span className="font-medium">{c.nume}</span>,
+    sortValue: (c) => c.nume?.toLowerCase(),
   },
   {
     header: 'Categorie',
     cell: (c) => c.categorie ?? '—',
     className: 'w-36',
+    sortValue: (c) => c.categorie?.toLowerCase(),
   },
   {
     header: 'Data',
     cell: (c) => c.data ?? '—',
     className: 'w-32',
+    sortValue: (c) => c.data,
   },
   {
     header: 'Valoare',
     cell: (c) => formatRON(c.valoare),
     className: 'w-28 text-right',
+    sortValue: (c) => c.valoare ?? 0,
   },
   {
     header: 'Achitată',
@@ -129,11 +133,13 @@ const columns: Column<Cheltuiala>[] = [
         <span className="font-medium text-red-600">Nu</span>
       ),
     className: 'w-24',
+    sortValue: (c) => (c.achitat ? 1 : 0),
   },
   {
     header: 'Descriere',
     cell: (c) => c.descriere ?? '—',
     className: 'text-xs text-quasar-gray',
+    sortValue: (c) => c.descriere?.toLowerCase(),
   },
 ]
 

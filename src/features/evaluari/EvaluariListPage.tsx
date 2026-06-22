@@ -23,12 +23,17 @@ import {
 } from './api'
 import { skills } from './skills'
 
-function avgScore(e: EvaluareWithRefs): string {
+function avgScoreNum(e: EvaluareWithRefs): number | null {
   const vals = skills
     .map((s) => e[s.key] as number | null)
     .filter((v): v is number => v != null)
-  if (vals.length === 0) return '—'
-  const avg = vals.reduce((a, b) => a + b, 0) / vals.length
+  if (vals.length === 0) return null
+  return vals.reduce((a, b) => a + b, 0) / vals.length
+}
+
+function avgScore(e: EvaluareWithRefs): string {
+  const avg = avgScoreNum(e)
+  if (avg == null) return '—'
   return `${avg.toFixed(1)} / 5`
 }
 
@@ -105,8 +110,17 @@ export function EvaluariListPage() {
             .join(' ') || '—'}
         </span>
       ),
+      sortValue: (e) =>
+        [e.client_row?.nume, e.client_row?.prenume]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase(),
     },
-    { header: 'Curs', cell: (e) => e.curs_row?.numele ?? '—' },
+    {
+      header: 'Curs',
+      cell: (e) => e.curs_row?.numele ?? '—',
+      sortValue: (e) => e.curs_row?.numele?.toLowerCase(),
+    },
     {
       header: 'Profesor',
       cell: (e) =>
@@ -114,11 +128,17 @@ export function EvaluariListPage() {
           .filter(Boolean)
           .join(' ') || '—',
       className: 'w-40',
+      sortValue: (e) =>
+        [e.teacher_row?.nume, e.teacher_row?.prenume]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase(),
     },
     {
       header: 'Data',
       cell: (e) => e.data_evaluarii,
       className: 'w-28',
+      sortValue: (e) => e.data_evaluarii,
     },
     {
       header: 'Scor mediu',
@@ -126,6 +146,7 @@ export function EvaluariListPage() {
         <span className="font-medium text-quasar-black">{avgScore(e)}</span>
       ),
       className: 'w-28',
+      sortValue: (e) => avgScoreNum(e),
     },
   ]
 

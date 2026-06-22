@@ -21,9 +21,19 @@ const columns: Column<Locatie>[] = [
   {
     header: 'Nume',
     cell: (l) => <span className="font-medium">{l.nume}</span>,
+    sortValue: (l) => l.nume?.toLowerCase(),
   },
-  { header: 'Adresă', cell: (l) => l.adresa ?? '—' },
-  { header: 'Telefon', cell: (l) => l.telefon ?? '—', className: 'w-32' },
+  {
+    header: 'Adresă',
+    cell: (l) => l.adresa ?? '—',
+    sortValue: (l) => l.adresa?.toLowerCase(),
+  },
+  {
+    header: 'Telefon',
+    cell: (l) => l.telefon ?? '—',
+    className: 'w-32',
+    sortValue: (l) => l.telefon,
+  },
   {
     header: 'Hartă',
     cell: (l) =>

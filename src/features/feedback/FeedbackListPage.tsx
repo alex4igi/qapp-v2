@@ -18,13 +18,20 @@ const columns: Column<Feedback>[] = [
     cell: (f) => (
       <span className="font-medium">{f.nume || '(fără titlu)'}</span>
     ),
+    sortValue: (f) => f.nume?.toLowerCase(),
   },
-  { header: 'Tip', cell: (f) => f.tip ?? '—', className: 'w-28' },
+  {
+    header: 'Tip',
+    cell: (f) => f.tip ?? '—',
+    className: 'w-28',
+    sortValue: (f) => f.tip?.toLowerCase(),
+  },
   {
     header: 'Detalii',
     cell: (f) => (
       <span className="line-clamp-1 text-quasar-gray">{f.detalii ?? '—'}</span>
     ),
+    sortValue: (f) => f.detalii?.toLowerCase(),
   },
   {
     header: 'Rezolvat',
@@ -35,6 +42,7 @@ const columns: Column<Feedback>[] = [
         <span className="text-quasar-gray">Nu</span>
       ),
     className: 'w-24',
+    sortValue: (f) => (f.rezolvat ? 1 : 0),
   },
 ]
 

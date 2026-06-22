@@ -54,26 +54,35 @@ function difTone(d: number): string {
 }
 
 const columns: Column<Row>[] = [
-  { header: 'Data', cell: (r) => r.data, className: 'w-28' },
+  {
+    header: 'Data',
+    cell: (r) => r.data,
+    className: 'w-28',
+    sortValue: (r) => r.data,
+  },
   {
     header: 'Locație',
     cell: (r) => r.locatii?.nume ?? '—',
     className: 'w-44',
+    sortValue: (r) => r.locatii?.nume?.toLowerCase(),
   },
   {
     header: 'Sistem (Cash)',
     cell: (r) => formatRON(Number(r.total_sistem ?? 0)),
     className: 'w-32 text-right',
+    sortValue: (r) => Number(r.total_sistem ?? 0),
   },
   {
     header: 'Fond ieri',
     cell: (r) => formatRON(Number(r.fond_inceput ?? 0)),
     className: 'w-28 text-right',
+    sortValue: (r) => Number(r.fond_inceput ?? 0),
   },
   {
     header: 'Numărat',
     cell: (r) => formatRON(Number(r.total_numarat ?? 0)),
     className: 'w-28 text-right',
+    sortValue: (r) => Number(r.total_numarat ?? 0),
   },
   {
     header: 'Dif.',
@@ -88,21 +97,27 @@ const columns: Column<Row>[] = [
       )
     },
     className: 'w-32 text-right',
+    sortValue: (r) =>
+      Number(r.total_numarat ?? 0) -
+      (Number(r.fond_inceput ?? 0) + Number(r.total_sistem ?? 0)),
   },
   {
     header: 'De depus',
     cell: (r) => formatRON(Number(r.de_depus ?? 0)),
     className: 'w-28 text-right',
+    sortValue: (r) => Number(r.de_depus ?? 0),
   },
   {
     header: 'Fond mâine',
     cell: (r) => formatRON(Number(r.fond_ramas ?? 0)),
     className: 'w-28 text-right',
+    sortValue: (r) => Number(r.fond_ramas ?? 0),
   },
   {
     header: 'Notițe',
     cell: (r) => r.notite ?? '—',
     className: 'text-xs text-quasar-gray',
+    sortValue: (r) => r.notite?.toLowerCase(),
   },
 ]
 

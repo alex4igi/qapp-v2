@@ -31,16 +31,19 @@ const columns: Column<AppFeedback>[] = [
     header: 'Tip',
     cell: (f) => <span className="whitespace-nowrap">{TIP_LABEL[f.tip]}</span>,
     className: 'w-28',
+    sortValue: (f) => TIP_LABEL[f.tip]?.toLowerCase(),
   },
   {
     header: 'Titlu',
     cell: (f) => <span className="font-medium">{f.titlu}</span>,
+    sortValue: (f) => f.titlu?.toLowerCase(),
   },
   {
     header: 'Autor',
     cell: (f) => (
       <span className="text-quasar-gray">{f.autor_email ?? '—'}</span>
     ),
+    sortValue: (f) => f.autor_email?.toLowerCase(),
   },
   {
     header: 'Pagina',
@@ -48,6 +51,7 @@ const columns: Column<AppFeedback>[] = [
       <span className="text-quasar-gray">{f.pagina ?? '—'}</span>
     ),
     className: 'w-40',
+    sortValue: (f) => f.pagina?.toLowerCase(),
   },
   {
     header: 'Status',
@@ -59,6 +63,7 @@ const columns: Column<AppFeedback>[] = [
       </span>
     ),
     className: 'w-28',
+    sortValue: (f) => STATUS_LABEL[f.status]?.toLowerCase(),
   },
   {
     header: 'Data',
@@ -68,6 +73,7 @@ const columns: Column<AppFeedback>[] = [
       </span>
     ),
     className: 'w-28',
+    sortValue: (f) => f.created,
   },
 ]
 

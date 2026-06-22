@@ -17,6 +17,7 @@ const columns: Column<Familie>[] = [
   {
     header: 'Familie',
     cell: (f) => <span className="font-medium">{f.nume_familie}</span>,
+    sortValue: (f) => f.nume_familie?.toLowerCase(),
   },
   {
     header: 'Reprezentant',
@@ -24,9 +25,14 @@ const columns: Column<Familie>[] = [
       [f.nume_reprezentant, f.prenume_reprezentant]
         .filter(Boolean)
         .join(' ') || '—',
+    sortValue: (f) =>
+      [f.nume_reprezentant, f.prenume_reprezentant]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase(),
   },
-  { header: 'Telefon', cell: (f) => f.telefon ?? '—' },
-  { header: 'Email', cell: (f) => f.email ?? '—' },
+  { header: 'Telefon', cell: (f) => f.telefon ?? '—', sortValue: (f) => f.telefon?.toLowerCase() },
+  { header: 'Email', cell: (f) => f.email ?? '—', sortValue: (f) => f.email?.toLowerCase() },
 ]
 
 export function FamiliiListPage() {

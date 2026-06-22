@@ -185,13 +185,28 @@ function CampanieBoard({
   const procent = p?.procent ?? 0
 
   const columns: Column<CampanieCursRow>[] = [
-    { header: 'Curs', cell: (r) => <span className="font-medium">{r.curs_nume}</span> },
-    { header: 'Grupă', cell: (r) => r.varsta ?? '—', className: 'w-28' },
-    { header: 'Eligibili', cell: (r) => r.total_eligibili, className: 'w-20 text-right' },
+    {
+      header: 'Curs',
+      cell: (r) => <span className="font-medium">{r.curs_nume}</span>,
+      sortValue: (r) => r.curs_nume?.toLowerCase(),
+    },
+    {
+      header: 'Grupă',
+      cell: (r) => r.varsta ?? '—',
+      className: 'w-28',
+      sortValue: (r) => r.varsta?.toLowerCase(),
+    },
+    {
+      header: 'Eligibili',
+      cell: (r) => r.total_eligibili,
+      className: 'w-20 text-right',
+      sortValue: (r) => r.total_eligibili ?? 0,
+    },
     {
       header: 'Taxă',
       cell: (r) => <span className="text-quasar-gray">{r.taxa_done}</span>,
       className: 'w-16 text-right',
+      sortValue: (r) => r.taxa_done ?? 0,
     },
     {
       header: 'Act',
@@ -206,13 +221,20 @@ function CampanieBoard({
         </span>
       ),
       className: 'w-32 text-right',
+      sortValue: (r) => r.act_done ?? 0,
     },
     {
       header: 'Reînscriși',
       cell: (r) => <span className="font-semibold text-quasar-black">{r.ambele}</span>,
       className: 'w-24 text-right',
+      sortValue: (r) => r.ambele ?? 0,
     },
-    { header: 'Rămași', cell: (r) => r.ramasi, className: 'w-20 text-right' },
+    {
+      header: 'Rămași',
+      cell: (r) => r.ramasi,
+      className: 'w-20 text-right',
+      sortValue: (r) => r.ramasi ?? 0,
+    },
     {
       header: 'Ocupare toamnă',
       cell: (r) => (
@@ -236,6 +258,7 @@ function CampanieBoard({
         </div>
       ),
       className: 'w-40',
+      sortValue: (r) => r.procent_ocupare ?? 0,
     },
   ]
 
@@ -653,15 +676,35 @@ function LegacyBoard({
   }
 
   const columns: Column<ReinscriereProgresRow>[] = [
-    { header: 'Curs', cell: (r) => <span className="font-medium">{r.curs_nume}</span> },
-    { header: 'Grupă', cell: (r) => r.varsta ?? '—', className: 'w-32' },
-    { header: 'Eligibili', cell: (r) => r.total_eligibili, className: 'w-24 text-right' },
+    {
+      header: 'Curs',
+      cell: (r) => <span className="font-medium">{r.curs_nume}</span>,
+      sortValue: (r) => r.curs_nume?.toLowerCase(),
+    },
+    {
+      header: 'Grupă',
+      cell: (r) => r.varsta ?? '—',
+      className: 'w-32',
+      sortValue: (r) => r.varsta?.toLowerCase(),
+    },
+    {
+      header: 'Eligibili',
+      cell: (r) => r.total_eligibili,
+      className: 'w-24 text-right',
+      sortValue: (r) => r.total_eligibili ?? 0,
+    },
     {
       header: 'Activați',
       cell: (r) => <span className="font-semibold text-quasar-black">{r.activati}</span>,
       className: 'w-24 text-right',
+      sortValue: (r) => r.activati ?? 0,
     },
-    { header: 'Rămași', cell: (r) => r.ramasi, className: 'w-24 text-right' },
+    {
+      header: 'Rămași',
+      cell: (r) => r.ramasi,
+      className: 'w-24 text-right',
+      sortValue: (r) => r.ramasi ?? 0,
+    },
     {
       header: 'Progres',
       cell: (r) => (
@@ -676,6 +719,7 @@ function LegacyBoard({
         </div>
       ),
       className: 'w-48',
+      sortValue: (r) => r.procent ?? 0,
     },
   ]
 

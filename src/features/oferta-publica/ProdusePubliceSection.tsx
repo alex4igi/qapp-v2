@@ -14,6 +14,7 @@ export function ProdusePubliceSection() {
       header: 'Ordine',
       cell: (p) => p.ordine,
       className: 'w-16 text-quasar-gray',
+      sortValue: (p) => p.ordine ?? 0,
     },
     {
       header: 'Produs',
@@ -25,8 +26,9 @@ export function ProdusePubliceSection() {
           ) : null}
         </span>
       ),
+      sortValue: (p) => p.nume?.toLowerCase(),
     },
-    { header: 'Preț', cell: (p) => p.pret },
+    { header: 'Preț', cell: (p) => p.pret, sortValue: (p) => p.pret?.toLowerCase() },
   ]
 
   return (

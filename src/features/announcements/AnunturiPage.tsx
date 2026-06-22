@@ -84,12 +84,17 @@ export function AnunturiPage() {
         ) : null,
       className: 'w-6',
     },
-    { header: 'Titlu', cell: (r) => <span className="font-medium">{r.anunt.titlu}</span> },
+    {
+      header: 'Titlu',
+      cell: (r) => <span className="font-medium">{r.anunt.titlu}</span>,
+      sortValue: (r) => r.anunt.titlu?.toLowerCase(),
+    },
     {
       header: 'De la',
       cell: (r) => (
         <span className="text-quasar-gray">{r.anunt.expeditor_email ?? '—'}</span>
       ),
+      sortValue: (r) => r.anunt.expeditor_email?.toLowerCase(),
     },
     {
       header: 'Data',
@@ -99,11 +104,16 @@ export function AnunturiPage() {
         </span>
       ),
       className: 'w-28',
+      sortValue: (r) => r.anunt.created,
     },
   ]
 
   const trimiseCols: Column<AnuntTrimis>[] = [
-    { header: 'Titlu', cell: (r) => <span className="font-medium">{r.anunt.titlu}</span> },
+    {
+      header: 'Titlu',
+      cell: (r) => <span className="font-medium">{r.anunt.titlu}</span>,
+      sortValue: (r) => r.anunt.titlu?.toLowerCase(),
+    },
     {
       header: 'Citit',
       cell: (r) => (
@@ -112,6 +122,7 @@ export function AnunturiPage() {
         </span>
       ),
       className: 'w-24',
+      sortValue: (r) => r.citite ?? 0,
     },
     {
       header: 'Data',
@@ -121,6 +132,7 @@ export function AnunturiPage() {
         </span>
       ),
       className: 'w-28',
+      sortValue: (r) => r.anunt.created,
     },
   ]
 

@@ -11,7 +11,12 @@ export function BiletePubliceSection() {
   const bileteQuery = useQuery({ queryKey: ['bilete_publice'], queryFn: listBiletePublice })
 
   const columns: Column<BiletPublic>[] = [
-    { header: 'Data', cell: (b) => b.data ?? '—', className: 'w-32 text-quasar-gray' },
+    {
+      header: 'Data',
+      cell: (b) => b.data ?? '—',
+      className: 'w-32 text-quasar-gray',
+      sortValue: (b) => b.data,
+    },
     {
       header: 'Eveniment',
       cell: (b) => (
@@ -22,12 +27,18 @@ export function BiletePubliceSection() {
           ) : null}
         </span>
       ),
+      sortValue: (b) => b.nume?.toLowerCase(),
     },
-    { header: 'Locație', cell: (b) => b.locatie ?? '—' },
+    {
+      header: 'Locație',
+      cell: (b) => b.locatie ?? '—',
+      sortValue: (b) => b.locatie?.toLowerCase(),
+    },
     {
       header: 'Preț bilet',
       cell: (b) => (b.pret_bilet != null ? `${b.pret_bilet} lei` : '—'),
       className: 'w-28',
+      sortValue: (b) => b.pret_bilet ?? 0,
     },
   ]
 

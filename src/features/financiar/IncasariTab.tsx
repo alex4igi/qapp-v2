@@ -23,27 +23,45 @@ function buildColumns(
   onEdit: ((id: string) => void) | null,
 ): Column<IncasareRow>[] {
   const base: Column<IncasareRow>[] = [
-    { header: 'Data', cell: (i) => i.data ?? '—', className: 'w-28' },
+    {
+      header: 'Data',
+      cell: (i) => i.data ?? '—',
+      className: 'w-28',
+      sortValue: (i) => i.data,
+    },
     {
       header: 'Client',
       cell: (i) => <span className="font-medium">{i.client_nume ?? '—'}</span>,
+      sortValue: (i) => i.client_nume?.toLowerCase(),
     },
     {
       header: 'Categorie',
       cell: (i) => i.categorie ?? '—',
       className: 'w-28',
+      sortValue: (i) => i.categorie?.toLowerCase(),
     },
-    { header: 'Detalii', cell: (i) => i.detalii ?? '—' },
+    {
+      header: 'Detalii',
+      cell: (i) => i.detalii ?? '—',
+      sortValue: (i) => i.detalii?.toLowerCase(),
+    },
     {
       header: 'Locație',
       cell: (i) => i.locatie_nume ?? '—',
       className: 'w-36',
+      sortValue: (i) => i.locatie_nume?.toLowerCase(),
     },
-    { header: 'Metodă', cell: (i) => i.metoda ?? '—', className: 'w-24' },
+    {
+      header: 'Metodă',
+      cell: (i) => i.metoda ?? '—',
+      className: 'w-24',
+      sortValue: (i) => i.metoda?.toLowerCase(),
+    },
     {
       header: 'Sumă',
       cell: (i) => formatRON(i.suma),
       className: 'w-28 text-right',
+      sortValue: (i) => i.suma ?? 0,
     },
   ]
   if (onEdit) {

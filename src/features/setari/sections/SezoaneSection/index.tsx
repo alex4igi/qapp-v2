@@ -110,9 +110,18 @@ export function SezoaneSection() {
           </span>
         </span>
       ),
+      sortValue: (s) => s.numele_sezonului?.toLowerCase(),
     },
-    { header: 'Început', cell: (s) => s.data_incepere ?? '—' },
-    { header: 'Final', cell: (s) => s.data_final ?? '—' },
+    {
+      header: 'Început',
+      cell: (s) => s.data_incepere ?? '—',
+      sortValue: (s) => s.data_incepere,
+    },
+    {
+      header: 'Final',
+      cell: (s) => s.data_final ?? '—',
+      sortValue: (s) => s.data_final,
+    },
     {
       header: '',
       cell: (s) => {

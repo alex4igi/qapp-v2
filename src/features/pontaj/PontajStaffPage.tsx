@@ -80,6 +80,7 @@ export function PontajStaffPage() {
       header: 'Data',
       cell: (r) => formatDate(r.start_at),
       className: 'w-28',
+      sortValue: (r) => r.start_at,
     },
     {
       header: 'Utilizator',
@@ -96,21 +97,26 @@ export function PontajStaffPage() {
           </div>
         )
       },
+      sortValue: (r) =>
+        (userById.get(r.user_id)?.email ?? r.user_id).toLowerCase(),
     },
     {
       header: 'Locație',
       cell: (r) => r.locatie_nume ?? '—',
       className: 'w-40',
+      sortValue: (r) => r.locatie_nume?.toLowerCase(),
     },
     {
       header: 'Start',
       cell: (r) => formatTime(r.start_at),
       className: 'w-20',
+      sortValue: (r) => r.start_at,
     },
     {
       header: 'Sfârșit',
       cell: (r) => formatTime(r.end_at),
       className: 'w-20',
+      sortValue: (r) => r.end_at,
     },
     {
       header: 'Durată',
@@ -120,6 +126,10 @@ export function PontajStaffPage() {
         </span>
       ),
       className: 'w-28',
+      sortValue: (r) =>
+        r.end_at
+          ? new Date(r.end_at).getTime() - new Date(r.start_at).getTime()
+          : null,
     },
     {
       header: 'Tip',
@@ -129,6 +139,8 @@ export function PontajStaffPage() {
         </span>
       ),
       className: 'w-32',
+      sortValue: (r) =>
+        (SOURCE_LABEL[r.source ?? ''] ?? r.source ?? '').toLowerCase(),
     },
   ]
 

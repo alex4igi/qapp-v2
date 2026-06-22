@@ -32,17 +32,24 @@ const columns: Column<IncasareRow>[] = [
     cell: (r) => (
       <span className="font-medium">{r.client_nume ?? '—'}</span>
     ),
+    sortValue: (r) => r.client_nume?.toLowerCase(),
   },
   {
     header: 'Categorie',
     cell: (r) => r.categorie ?? '—',
     className: 'w-28',
+    sortValue: (r) => r.categorie?.toLowerCase(),
   },
-  { header: 'Detalii', cell: (r) => r.detalii ?? '—' },
+  {
+    header: 'Detalii',
+    cell: (r) => r.detalii ?? '—',
+    sortValue: (r) => r.detalii?.toLowerCase(),
+  },
   {
     header: 'Locație',
     cell: (r) => r.locatie_nume ?? '—',
     className: 'w-40',
+    sortValue: (r) => r.locatie_nume?.toLowerCase(),
   },
   {
     header: 'Sumă',
@@ -50,12 +57,19 @@ const columns: Column<IncasareRow>[] = [
       <span className="font-semibold">{formatRON(r.suma)}</span>
     ),
     className: 'w-28 text-right',
+    sortValue: (r) => r.suma ?? 0,
   },
-  { header: 'Metodă', cell: (r) => r.metoda ?? '—', className: 'w-24' },
+  {
+    header: 'Metodă',
+    cell: (r) => r.metoda ?? '—',
+    className: 'w-24',
+    sortValue: (r) => r.metoda?.toLowerCase(),
+  },
   {
     header: 'Observații',
     cell: (r) => r.observatii ?? '—',
     className: 'text-xs text-quasar-gray',
+    sortValue: (r) => r.observatii?.toLowerCase(),
   },
 ]
 

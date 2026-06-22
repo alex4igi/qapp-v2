@@ -29,18 +29,29 @@ const columns: Column<VListaCursuri>[] = [
   {
     header: 'Curs',
     cell: (c) => <span className="font-medium">{c.numele_cursului}</span>,
+    sortValue: (c) => c.numele_cursului?.toLowerCase(),
   },
   {
     header: 'Teacher',
     cell: (c) => [c.nume, c.prenume].filter(Boolean).join(' ') || '—',
+    sortValue: (c) => [c.nume, c.prenume].filter(Boolean).join(' ').toLowerCase(),
   },
-  { header: 'Locație', cell: (c) => c.locatie ?? '—' },
-  { header: 'Sală', cell: (c) => c.sala ?? '—' },
+  {
+    header: 'Locație',
+    cell: (c) => c.locatie ?? '—',
+    sortValue: (c) => c.locatie,
+  },
+  { header: 'Sală', cell: (c) => c.sala ?? '—', sortValue: (c) => c.sala },
   {
     header: 'Zile',
     cell: (c) => (c.zile?.length ? c.zile.join(', ') : '—'),
+    sortValue: (c) => c.zile?.join(', '),
   },
-  { header: 'Nivel', cell: (c) => c.nivelul ?? '—' },
+  {
+    header: 'Nivel',
+    cell: (c) => c.nivelul ?? '—',
+    sortValue: (c) => c.nivelul,
+  },
   {
     header: 'Înscriși',
     cell: (c) =>
@@ -48,6 +59,7 @@ const columns: Column<VListaCursuri>[] = [
         ? `${c.inscrisi}/${c.capacitate_maxima}`
         : c.inscrisi,
     className: 'w-24',
+    sortValue: (c) => c.inscrisi ?? 0,
   },
 ]
 

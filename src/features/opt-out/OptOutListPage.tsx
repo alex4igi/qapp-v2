@@ -111,6 +111,7 @@ export function OptOutListPage() {
         </span>
       ),
       className: 'w-24',
+      sortValue: (r) => entityLabel(r.entity)?.toLowerCase(),
     },
     {
       header: 'Nume',
@@ -127,21 +128,25 @@ export function OptOutListPage() {
           <span>{r.nume_complet}</span>
         )
       },
+      sortValue: (r) => r.nume_complet?.toLowerCase(),
     },
     {
       header: 'Email',
       cell: (r) => r.email ?? '—',
+      sortValue: (r) => r.email?.toLowerCase(),
     },
     {
       header: 'Telefon',
       cell: (r) => r.telefon ?? '—',
       className: 'w-32',
+      sortValue: (r) => r.telefon,
     },
     {
       header: 'Motiv',
       cell: (r) => (
         <span className="text-xs text-quasar-gray">{r.motiv ?? '—'}</span>
       ),
+      sortValue: (r) => r.motiv?.toLowerCase(),
     },
     {
       header: 'Data',
@@ -151,6 +156,7 @@ export function OptOutListPage() {
         </span>
       ),
       className: 'w-32',
+      sortValue: (r) => r.opt_out_la,
     },
     {
       header: '',

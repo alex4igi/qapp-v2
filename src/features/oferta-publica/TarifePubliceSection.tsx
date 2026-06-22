@@ -57,6 +57,7 @@ export function TarifePubliceSection() {
       header: 'Ordine',
       cell: (t) => t.ordine,
       className: 'w-16 text-quasar-gray',
+      sortValue: (t) => t.ordine ?? 0,
     },
     {
       header: 'Program',
@@ -68,13 +69,20 @@ export function TarifePubliceSection() {
           ) : null}
         </span>
       ),
+      sortValue: (t) => t.program?.toLowerCase(),
     },
-    { header: 'Preț', cell: (t) => t.pret },
-    { header: 'Taxă rezervare', cell: (t) => t.taxa_rezervare ?? '—', className: 'w-32' },
+    { header: 'Preț', cell: (t) => t.pret, sortValue: (t) => t.pret?.toLowerCase() },
+    {
+      header: 'Taxă rezervare',
+      cell: (t) => t.taxa_rezervare ?? '—',
+      className: 'w-32',
+      sortValue: (t) => t.taxa_rezervare?.toLowerCase(),
+    },
     {
       header: 'Activ',
       cell: (t) => (t.activ ? '✓' : '—'),
       className: 'w-16 text-center',
+      sortValue: (t) => (t.activ ? 1 : 0),
     },
   ]
 

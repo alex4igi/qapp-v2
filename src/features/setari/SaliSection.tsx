@@ -61,15 +61,19 @@ export function SaliSection() {
     {
       header: 'Sală',
       cell: (s) => <span className="font-medium">{s.nume}</span>,
+      sortValue: (s) => s.nume?.toLowerCase(),
     },
     {
       header: 'Locație',
       cell: (s) => (s.locatie ? (locatiiById.get(s.locatie) ?? '—') : '—'),
+      sortValue: (s) =>
+        s.locatie ? locatiiById.get(s.locatie)?.toLowerCase() : undefined,
     },
     {
       header: 'Capacitate',
       cell: (s) => s.capacitate ?? '—',
       className: 'w-28',
+      sortValue: (s) => s.capacitate ?? 0,
     },
   ]
 

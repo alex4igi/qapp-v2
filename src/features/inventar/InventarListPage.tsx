@@ -16,14 +16,16 @@ const columns: Column<Inventar>[] = [
   {
     header: 'Articol',
     cell: (a) => <span className="font-medium">{a.articol}</span>,
+    sortValue: (a) => a.articol?.toLowerCase(),
   },
-  { header: 'Categorie', cell: (a) => a.categorie ?? '—', className: 'w-32' },
+  { header: 'Categorie', cell: (a) => a.categorie ?? '—', className: 'w-32', sortValue: (a) => a.categorie?.toLowerCase() },
   {
     header: 'Stoc',
     cell: (a) => (a.stoc != null ? String(a.stoc) : '—'),
     className: 'w-20',
+    sortValue: (a) => a.stoc ?? 0,
   },
-  { header: 'Preț', cell: (a) => a.pret ?? '—', className: 'w-24' },
+  { header: 'Preț', cell: (a) => a.pret ?? '—', className: 'w-24', sortValue: (a) => a.pret?.toLowerCase() },
   {
     header: 'Portal',
     cell: (a) =>

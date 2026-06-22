@@ -15,19 +15,23 @@ const columns: Column<VTeacherCursStats>[] = [
   {
     header: 'Curs',
     cell: (r) => <span className="font-medium">{r.curs_nume}</span>,
+    sortValue: (r) => r.curs_nume?.toLowerCase(),
   },
   {
     header: 'Clienți activi',
     cell: (r) => r.clienti_activi ?? 0,
     className: 'w-32',
+    sortValue: (r) => r.clienti_activi ?? 0,
   },
   {
     header: 'Clienți înscriși',
     cell: (r) => r.clienti_inscrisi ?? 0,
     className: 'w-32',
+    sortValue: (r) => r.clienti_inscrisi ?? 0,
   },
   {
     header: 'Balanța',
+    sortValue: (r) => Number(r.balanta ?? 0),
     cell: (r) => (
       <span
         className={

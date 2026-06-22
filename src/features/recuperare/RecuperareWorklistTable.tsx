@@ -35,8 +35,14 @@ export function RecuperareWorklistTable({ rows, onLog }: Props) {
         </Link>
       ),
       className: 'min-w-44',
+      sortValue: (r) => `${r.nume} ${r.prenume ?? ''}`.trim().toLowerCase(),
     },
-    { header: 'Telefon', cell: (r) => r.telefon ?? '—', className: 'w-32' },
+    {
+      header: 'Telefon',
+      cell: (r) => r.telefon ?? '—',
+      className: 'w-32',
+      sortValue: (r) => r.telefon,
+    },
     {
       header: 'Rest',
       cell: (r) => (
@@ -45,6 +51,7 @@ export function RecuperareWorklistTable({ rows, onLog }: Props) {
         </span>
       ),
       className: 'w-28 text-right',
+      sortValue: (r) => r.rest_total,
     },
     {
       header: 'Rate',
@@ -52,9 +59,11 @@ export function RecuperareWorklistTable({ rows, onLog }: Props) {
         <span className="font-medium">{r.nr_rate_neachitate}</span>
       ),
       className: 'w-16 text-right',
+      sortValue: (r) => r.nr_rate_neachitate,
     },
     {
       header: 'Întârziere',
+      sortValue: (r) => r.zile_depasire,
       cell: (r) =>
         r.zile_depasire == null ? (
           '—'
@@ -79,9 +88,11 @@ export function RecuperareWorklistTable({ rows, onLog }: Props) {
         <span className="text-quasar-gray">{fmtDate(r.ultima_prezenta)}</span>
       ),
       className: 'w-32',
+      sortValue: (r) => r.ultima_prezenta,
     },
     {
       header: 'Ultim apel',
+      sortValue: (r) => r.ultim_apel_at,
       cell: (r) =>
         r.ultim_apel_at ? (
           <span className="text-xs text-quasar-gray">

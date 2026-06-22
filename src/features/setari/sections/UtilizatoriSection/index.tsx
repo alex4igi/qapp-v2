@@ -114,11 +114,13 @@ export function UtilizatoriSection() {
     {
       header: 'Email',
       cell: (u) => <span className="font-medium">{u.email ?? '—'}</span>,
+      sortValue: (u) => u.email?.toLowerCase(),
     },
     {
       header: 'Rol',
       cell: (u) => ROLE_LABEL[u.role] ?? u.role,
       className: 'w-32',
+      sortValue: (u) => (ROLE_LABEL[u.role] ?? u.role)?.toLowerCase(),
     },
     {
       header: 'Locație',
@@ -144,16 +146,20 @@ export function UtilizatoriSection() {
         )
       },
       className: 'w-44',
+      sortValue: (u) =>
+        u.locatie_id ? locatieLabelById.get(u.locatie_id)?.toLowerCase() : undefined,
     },
     {
       header: 'Creat',
       cell: (u) => formatDate(u.created_at),
       className: 'w-40',
+      sortValue: (u) => u.created_at,
     },
     {
       header: 'Ultima logare',
       cell: (u) => formatDate(u.last_sign_in_at),
       className: 'w-40',
+      sortValue: (u) => u.last_sign_in_at,
     },
     {
       header: '',

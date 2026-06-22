@@ -30,13 +30,15 @@ const columns: Column<Client>[] = [
         {c.nume} {c.prenume ?? ''}
       </span>
     ),
+    sortValue: (c) => `${c.nume ?? ''} ${c.prenume ?? ''}`.trim().toLowerCase(),
   },
-  { header: 'Telefon', cell: (c) => c.telefon ?? '—' },
-  { header: 'Email', cell: (c) => c.email ?? '—' },
+  { header: 'Telefon', cell: (c) => c.telefon ?? '—', sortValue: (c) => c.telefon?.toLowerCase() },
+  { header: 'Email', cell: (c) => c.email ?? '—', sortValue: (c) => c.email?.toLowerCase() },
   {
     header: 'Status',
     cell: (c) => c.status ?? '—',
     className: 'w-28',
+    sortValue: (c) => c.status?.toLowerCase(),
   },
 ]
 

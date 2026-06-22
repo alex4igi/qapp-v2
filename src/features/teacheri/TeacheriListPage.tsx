@@ -25,10 +25,11 @@ const columns: Column<Teacher>[] = [
         {t.nume} {t.prenume ?? ''}
       </span>
     ),
+    sortValue: (t) => `${t.nume ?? ''} ${t.prenume ?? ''}`.trim().toLowerCase(),
   },
-  { header: 'Telefon', cell: (t) => t.telefon ?? '—' },
-  { header: 'Email', cell: (t) => t.email ?? '—' },
-  { header: 'Nivel', cell: (t) => t.nivelul ?? '—', className: 'w-28' },
+  { header: 'Telefon', cell: (t) => t.telefon ?? '—', sortValue: (t) => t.telefon?.toLowerCase() },
+  { header: 'Email', cell: (t) => t.email ?? '—', sortValue: (t) => t.email?.toLowerCase() },
+  { header: 'Nivel', cell: (t) => t.nivelul ?? '—', className: 'w-28', sortValue: (t) => t.nivelul?.toLowerCase() },
 ]
 
 export function TeacheriListPage() {

@@ -16,17 +16,20 @@ const columns: Column<Concurs>[] = [
   {
     header: 'Concurs',
     cell: (c) => <span className="font-medium">{c.numele_concursului}</span>,
+    sortValue: (c) => c.numele_concursului?.toLowerCase(),
   },
   {
     header: 'Data',
     cell: (c) => c.data_evenimentului ?? '—',
     className: 'w-32',
+    sortValue: (c) => c.data_evenimentului,
   },
   {
     header: 'Locuri I / II / III',
     cell: (c) =>
       `${c.locul_i ?? 0} / ${c.locul_ii ?? 0} / ${c.locul_iii ?? 0}`,
     className: 'w-40',
+    sortValue: (c) => (c.locul_i ?? 0) + (c.locul_ii ?? 0) + (c.locul_iii ?? 0),
   },
 ]
 

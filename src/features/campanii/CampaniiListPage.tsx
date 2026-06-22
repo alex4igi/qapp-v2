@@ -43,16 +43,19 @@ const columns: Column<CampanieWithLeadCount>[] = [
   {
     header: 'Nume',
     cell: (c) => <span className="font-medium">{c.nume}</span>,
+    sortValue: (c) => c.nume?.toLowerCase(),
   },
   {
     header: 'Canal',
     cell: (c) => c.canal_comunicare ?? '—',
     className: 'w-24',
+    sortValue: (c) => c.canal_comunicare?.toLowerCase(),
   },
   {
     header: 'Sub-canal',
     cell: (c) => c.canale_online ?? '—',
     className: 'w-32',
+    sortValue: (c) => c.canale_online?.toLowerCase(),
   },
   {
     header: 'Buget',
@@ -61,21 +64,29 @@ const columns: Column<CampanieWithLeadCount>[] = [
       return b != null ? formatRON(b) : (c.bani ?? '—')
     },
     className: 'w-28 text-right',
+    sortValue: (c) => parseBani(c.bani) ?? 0,
   },
   {
     header: 'Rezultate vizate',
     cell: (c) => (c.rezultate != null ? String(c.rezultate) : '—'),
     className: 'w-32 text-right',
+    sortValue: (c) => c.rezultate ?? 0,
   },
   {
     header: 'Lead-uri',
     cell: (c) => <span className="font-medium">{c.nr_leads}</span>,
     className: 'w-24 text-right',
+    sortValue: (c) => c.nr_leads ?? 0,
   },
   {
     header: 'CAC (cost/lead)',
     cell: (c) => <span className="font-medium">{cacLabel(c)}</span>,
     className: 'w-32 text-right',
+    sortValue: (c) => {
+      const buget = parseBani(c.bani)
+      if (buget == null || c.nr_leads <= 0) return null
+      return Math.round(buget / c.nr_leads)
+    },
   },
 ]
 

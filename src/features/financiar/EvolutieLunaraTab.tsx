@@ -50,16 +50,23 @@ function TotaleSubTab() {
   if (isLoading) return <Spinner />
 
   const columns: Column<StatLunara>[] = [
-    { header: 'Luna', cell: (r) => r.id ?? '—', className: 'w-24' },
+    {
+      header: 'Luna',
+      cell: (r) => r.id ?? '—',
+      className: 'w-24',
+      sortValue: (r) => r.id,
+    },
     {
       header: 'De încasat',
       cell: (r) => formatRON(r.total),
       className: 'w-32 text-right',
+      sortValue: (r) => r.total ?? 0,
     },
     {
       header: 'Încasat',
       cell: (r) => formatRON(r.incasat),
       className: 'w-32 text-right',
+      sortValue: (r) => r.incasat ?? 0,
     },
     {
       header: 'Rest',
@@ -72,6 +79,7 @@ function TotaleSubTab() {
         )
       },
       className: 'w-32 text-right',
+      sortValue: (r) => (r.total ?? 0) - (r.incasat ?? 0),
     },
     {
       header: 'Volum',
@@ -122,22 +130,30 @@ function TeacherSubTab() {
   if (isLoading) return <Spinner />
 
   const columns: Column<RestantaTeacher>[] = [
-    { header: 'Luna', cell: (r) => r.luna ?? '—', className: 'w-24' },
+    {
+      header: 'Luna',
+      cell: (r) => r.luna ?? '—',
+      className: 'w-24',
+      sortValue: (r) => r.luna,
+    },
     {
       header: 'Teacher',
       cell: (r) => (
         <span className="font-medium">{r.nume_teacher ?? '—'}</span>
       ),
+      sortValue: (r) => r.nume_teacher?.toLowerCase(),
     },
     {
       header: 'De încasat',
       cell: (r) => formatRON(r.total_de_incasat),
       className: 'w-32 text-right',
+      sortValue: (r) => r.total_de_incasat ?? 0,
     },
     {
       header: 'Încasat',
       cell: (r) => formatRON(r.total_incasat),
       className: 'w-32 text-right',
+      sortValue: (r) => r.total_incasat ?? 0,
     },
   ]
 
@@ -187,22 +203,30 @@ function LocatieSubTab() {
   if (isLoading) return <Spinner />
 
   const columns: Column<RestantaLocatie>[] = [
-    { header: 'Luna', cell: (r) => r.luna ?? '—', className: 'w-24' },
+    {
+      header: 'Luna',
+      cell: (r) => r.luna ?? '—',
+      className: 'w-24',
+      sortValue: (r) => r.luna,
+    },
     {
       header: 'Locație',
       cell: (r) => (
         <span className="font-medium">{r.nume_locatie ?? '—'}</span>
       ),
+      sortValue: (r) => r.nume_locatie?.toLowerCase(),
     },
     {
       header: 'De încasat',
       cell: (r) => formatRON(r.total_de_incasat),
       className: 'w-32 text-right',
+      sortValue: (r) => r.total_de_incasat ?? 0,
     },
     {
       header: 'Încasat',
       cell: (r) => formatRON(r.total_incasat),
       className: 'w-32 text-right',
+      sortValue: (r) => r.total_incasat ?? 0,
     },
   ]
 

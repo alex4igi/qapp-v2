@@ -33,27 +33,37 @@ const columns: Column<RestantaRow>[] = [
           {r.nume_client} {r.prenume_client ?? ''}
         </span>
       ),
+    sortValue: (r) =>
+      `${r.nume_client ?? ''} ${r.prenume_client ?? ''}`.trim().toLowerCase(),
   },
-  { header: 'Curs', cell: (r) => r.nume_curs ?? '—' },
+  {
+    header: 'Curs',
+    cell: (r) => r.nume_curs ?? '—',
+    sortValue: (r) => r.nume_curs?.toLowerCase(),
+  },
   {
     header: 'Locație',
     cell: (r) => r.nume_locatie ?? '—',
     className: 'w-36',
+    sortValue: (r) => r.nume_locatie?.toLowerCase(),
   },
   {
     header: 'Început',
     cell: (r) => r.data_incepere ?? '—',
     className: 'w-28',
+    sortValue: (r) => r.data_incepere,
   },
   {
     header: 'Total',
     cell: (r) => formatRON(r.total_de_plata),
     className: 'w-28 text-right',
+    sortValue: (r) => r.total_de_plata ?? 0,
   },
   {
     header: 'Plătit',
     cell: (r) => formatRON(r.platit),
     className: 'w-28 text-right',
+    sortValue: (r) => r.platit ?? 0,
   },
   {
     header: 'Rest',
@@ -74,6 +84,7 @@ const columns: Column<RestantaRow>[] = [
         <span className="font-semibold text-red-600">{formatRON(r.rest)}</span>
       ),
     className: 'w-44 text-right',
+    sortValue: (r) => r.rest ?? 0,
   },
 ]
 

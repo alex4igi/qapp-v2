@@ -43,6 +43,8 @@ export function PlatiListPage() {
   const columns: Column<VPlatiInrolari>[] = [
     {
       header: 'Client',
+      sortValue: (r) =>
+        `${r.nume_client ?? ''} ${r.prenume_client ?? ''}`.trim().toLowerCase(),
       cell: (r) =>
         r.id_cursant ? (
           <Link
@@ -57,22 +59,33 @@ export function PlatiListPage() {
           </span>
         ),
     },
-    { header: 'Curs', cell: (r) => r.nume_curs ?? '—' },
+    {
+      header: 'Curs',
+      cell: (r) => r.nume_curs ?? '—',
+      sortValue: (r) => r.nume_curs,
+    },
     {
       header: 'Început',
       cell: (r) => r.data_incepere ?? '—',
       className: 'w-28',
+      sortValue: (r) => r.data_incepere,
     },
-    { header: 'Tip plată', cell: (r) => r.tip_plata ?? '—' },
+    {
+      header: 'Tip plată',
+      cell: (r) => r.tip_plata ?? '—',
+      sortValue: (r) => r.tip_plata,
+    },
     {
       header: 'Total',
       cell: (r) => `${r.total_de_plata ?? 0} RON`,
       className: 'w-24',
+      sortValue: (r) => r.total_de_plata ?? 0,
     },
     {
       header: 'Plătit',
       cell: (r) => `${r.platit ?? 0} RON`,
       className: 'w-24',
+      sortValue: (r) => r.platit ?? 0,
     },
     {
       header: 'Rest',
@@ -85,6 +98,7 @@ export function PlatiListPage() {
         )
       },
       className: 'w-24',
+      sortValue: (r) => (r.total_de_plata ?? 0) - (r.platit ?? 0),
     },
     {
       header: '',

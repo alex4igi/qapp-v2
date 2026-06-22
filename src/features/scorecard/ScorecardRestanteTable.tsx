@@ -32,6 +32,7 @@ export function ScorecardRestanteTable({ rows, usersById }: Props) {
         </div>
       ),
       className: 'min-w-44',
+      sortValue: (r) => (usersById.get(r.user_id) ?? 'Utilizator').toLowerCase(),
     },
     {
       header: 'Contacte',
@@ -44,11 +45,13 @@ export function ScorecardRestanteTable({ rows, usersById }: Props) {
         </span>
       ),
       className: 'w-28',
+      sortValue: (r) => r.contacte_recuperare ?? 0,
     },
     {
       header: 'Clienți',
       cell: (r) => <span>{r.clienti_contactati}</span>,
       className: 'w-20 text-right',
+      sortValue: (r) => r.clienti_contactati ?? 0,
     },
     {
       header: 'Recuperat (verif. ≤7z)',
@@ -58,6 +61,7 @@ export function ScorecardRestanteTable({ rows, usersById }: Props) {
         </span>
       ),
       className: 'w-36 text-right',
+      sortValue: (r) => r.suma_recuperata ?? 0,
     },
     {
       header: 'Rest rămas',
@@ -65,6 +69,7 @@ export function ScorecardRestanteTable({ rows, usersById }: Props) {
         <span className="text-red-600">{formatRON(r.rest_ramas)}</span>
       ),
       className: 'w-32 text-right',
+      sortValue: (r) => r.rest_ramas ?? 0,
     },
     {
       header: 'Rată recuperare',
@@ -75,6 +80,7 @@ export function ScorecardRestanteTable({ rows, usersById }: Props) {
         />
       ),
       className: 'w-32',
+      sortValue: (r) => r.rata_recuperare_pct ?? 0,
     },
     {
       header: 'Igienă',
@@ -82,6 +88,7 @@ export function ScorecardRestanteTable({ rows, usersById }: Props) {
         <ScorecardBadge clasa={r.igiena_clasa} value={pct(r.igiena_pct)} />
       ),
       className: 'w-24',
+      sortValue: (r) => r.igiena_pct ?? 0,
     },
     {
       header: 'Scor',
@@ -92,6 +99,7 @@ export function ScorecardRestanteTable({ rows, usersById }: Props) {
         />
       ),
       className: 'w-28',
+      sortValue: (r) => r.scor_pct ?? 0,
     },
   ]
 

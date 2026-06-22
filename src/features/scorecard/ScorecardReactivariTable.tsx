@@ -31,6 +31,7 @@ export function ScorecardReactivariTable({ rows, usersById }: Props) {
         </div>
       ),
       className: 'min-w-44',
+      sortValue: (r) => (usersById.get(r.user_id) ?? 'Utilizator').toLowerCase(),
     },
     {
       header: 'Contacte',
@@ -43,11 +44,13 @@ export function ScorecardReactivariTable({ rows, usersById }: Props) {
         </span>
       ),
       className: 'w-28',
+      sortValue: (r) => r.contacte_reactivare ?? 0,
     },
     {
       header: 'Clienți',
       cell: (r) => <span>{r.clienti_contactati}</span>,
       className: 'w-20 text-right',
+      sortValue: (r) => r.clienti_contactati ?? 0,
     },
     {
       header: 'Reactivați (verif.)',
@@ -55,6 +58,7 @@ export function ScorecardReactivariTable({ rows, usersById }: Props) {
         <span className="font-semibold text-green-700">{r.reactivati}</span>
       ),
       className: 'w-32 text-right',
+      sortValue: (r) => r.reactivati ?? 0,
     },
     {
       header: 'Rată reactivare',
@@ -65,6 +69,7 @@ export function ScorecardReactivariTable({ rows, usersById }: Props) {
         />
       ),
       className: 'w-32',
+      sortValue: (r) => r.rata_reactivare_pct ?? 0,
     },
     {
       header: 'Igienă',
@@ -72,6 +77,7 @@ export function ScorecardReactivariTable({ rows, usersById }: Props) {
         <ScorecardBadge clasa={r.igiena_clasa} value={pct(r.igiena_pct)} />
       ),
       className: 'w-24',
+      sortValue: (r) => r.igiena_pct ?? 0,
     },
     {
       header: 'Scor',
@@ -82,6 +88,7 @@ export function ScorecardReactivariTable({ rows, usersById }: Props) {
         />
       ),
       className: 'w-28',
+      sortValue: (r) => r.scor_pct ?? 0,
     },
   ]
 
