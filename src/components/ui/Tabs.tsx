@@ -11,7 +11,7 @@ type Props = {
 
 export function Tabs({ tabs, active, onChange }: Props) {
   return (
-    <div className="mb-4 flex gap-1 border-b border-quasar-gray-light">
+    <div className="mb-4 flex gap-1 border-b border-gray-200">
       {tabs.map((tab) => (
         <button
           key={tab.id}

@@ -63,10 +63,10 @@ export function DataTable<T>({
   }, [rows, columns, sortIdx, sortDir])
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-quasar-gray-light bg-white">
+    <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-quasar-gray-light bg-quasar-gray-light/60 text-left">
+          <tr className="border-b border-gray-200 bg-gray-50 text-left">
             {columns.map((col, idx) => {
               const sortable = !!col.sortValue
               const active = sortIdx === idx
@@ -123,8 +123,8 @@ export function DataTable<T>({
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 className={cn(
-                  'border-b border-quasar-gray-light last:border-0',
-                  onRowClick && 'cursor-pointer hover:bg-quasar-gray-light/50',
+                  'border-b border-gray-100 last:border-0',
+                  onRowClick && 'cursor-pointer hover:bg-gray-50',
                 )}
               >
                 {columns.map((col, idx) => (

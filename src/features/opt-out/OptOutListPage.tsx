@@ -239,7 +239,7 @@ export function OptOutListPage() {
           Eroare la încărcare: {error instanceof Error ? error.message : ''}
         </p>
       ) : filtered.length === 0 ? (
-        <div className="rounded-lg border border-quasar-gray-light bg-white p-8 text-center text-sm text-quasar-gray">
+        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-quasar-gray shadow-sm">
           {data?.length === 0
             ? 'Nimeni nu a fost marcat cu opt-out. 🎉'
             : 'Niciun rezultat pentru filtrele aplicate.'}
@@ -252,7 +252,7 @@ export function OptOutListPage() {
         />
       )}
 
-      <div className="mt-6 rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+      <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-900">
         <strong>Notă GDPR:</strong> opt-out blochează doar mesajele de tip
         marketing/newsletter (planificate pentru 2027). Mesajele tranzacționale
         (reminder plată, confirmare programare, retenție) continuă să fie

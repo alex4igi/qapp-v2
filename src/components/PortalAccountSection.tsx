@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button } from '@/components/ui'
+import { Button, TextInput } from '@/components/ui'
 import {
   createPortalAccount,
   resetPortalPassword,
@@ -52,7 +52,7 @@ export function PortalAccountSection({
   }
 
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-5">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <h2 className="mb-3 text-sm font-bold text-quasar-black">Cont portal membru</h2>
 
       {!authUserId ? (
@@ -61,19 +61,17 @@ export function PortalAccountSection({
             Nu există încă un cont de portal. Creează unul pentru ca {kind === 'familie' ? 'familia' : 'clientul'} să acceseze plăți, prezențe și profil.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <input
+            <TextInput
               type="email"
               placeholder="Email de login"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-quasar-gray-light px-3 py-2 text-sm"
             />
-            <input
+            <TextInput
               type="text"
               placeholder="Parolă (min. 8)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-quasar-gray-light px-3 py-2 text-sm"
             />
             <Button
               disabled={busy || !email || password.length < 8}
@@ -102,12 +100,11 @@ export function PortalAccountSection({
               </Button>
             ) : (
               <div className="flex flex-col gap-2 sm:flex-row">
-                <input
+                <TextInput
                   type="text"
                   placeholder="Parolă nouă (min. 8)"
                   value={resetPwd}
                   onChange={(e) => setResetPwd(e.target.value)}
-                  className="rounded-md border border-quasar-gray-light px-3 py-2 text-sm"
                 />
                 <Button
                   disabled={busy || resetPwd.length < 8}
