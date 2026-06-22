@@ -18,10 +18,10 @@ export function Tabs({ tabs, active, onChange }: Props) {
           type="button"
           onClick={() => onChange(tab.id)}
           className={[
-            '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
+            '-mb-px border-b-2 px-4 py-2 text-sm transition-colors',
             tab.id === active
-              ? 'border-quasar-yellow text-quasar-black'
-              : 'border-transparent text-quasar-gray hover:text-quasar-black',
+              ? 'border-quasar-yellow font-semibold text-quasar-black'
+              : 'border-transparent font-medium text-quasar-gray hover:text-quasar-black',
           ].join(' ')}
         >
           {tab.label}

@@ -39,8 +39,8 @@ export function DatorniciWorklistCard({
   const top = rows.slice(0, TOP)
 
   return (
-    <div className="mb-6 rounded-lg border border-red-200 bg-white">
-      <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-2.5">
+    <div className="mb-6 overflow-hidden rounded-2xl border border-red-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-3">
         <h2 className="text-sm font-semibold text-red-800">
           📞 Datornici de sunat ({rows.length})
         </h2>

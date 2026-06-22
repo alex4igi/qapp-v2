@@ -32,7 +32,7 @@ export function CircleCourseCard({
   return (
     <Link
       to={to}
-      className="flex flex-col items-center gap-2 rounded-lg p-3 transition-colors hover:bg-quasar-gray-light/40"
+      className="flex flex-col items-center gap-2 rounded-xl p-3 transition-colors hover:bg-quasar-gray-light/40"
     >
       <div
         className="flex h-28 w-28 items-center justify-center rounded-full text-3xl font-bold text-quasar-black"

@@ -18,11 +18,31 @@ import { DashboardChart } from '@/features/dashboard/DashboardChart'
 import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
 import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
 
-function KpiBand({ label, value }: { label: string; value: string }) {
+function KpiCard({
+  icon,
+  label,
+  value,
+  highlight,
+}: {
+  icon: string
+  label: string
+  value: string
+  highlight?: boolean
+}) {
   return (
-    <div className="rounded-md bg-violet-700 px-4 py-3 text-center text-white shadow-sm">
-      <div className="text-sm font-medium tracking-wide">
-        {label}: <span className="font-bold">{value}</span>
+    <div
+      className={`rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md ${
+        highlight ? 'border-quasar-yellow ring-1 ring-quasar-yellow' : 'border-gray-200'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-xl">
+          {icon}
+        </div>
+        <span className="text-sm font-medium text-quasar-gray">{label}</span>
+      </div>
+      <div className="mt-3 font-display text-3xl font-bold text-quasar-black">
+        {value}
       </div>
     </div>
   )
@@ -123,16 +143,20 @@ export function DashboardPage() {
       />
 
       {!teacherMode && (
-        <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-          <KpiBand
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <KpiCard
+            icon="💰"
             label="Încasări azi"
             value={kpisQ.data ? formatRON(kpisQ.data.incasariAzi) : '—'}
+            highlight
           />
-          <KpiBand
+          <KpiCard
+            icon="⚠️"
             label="Total restanțe"
             value={kpisQ.data ? formatRON(kpisQ.data.restanteTotale) : '—'}
           />
-          <KpiBand
+          <KpiCard
+            icon="📅"
             label="Programări azi"
             value={kpisQ.data ? String(kpisQ.data.programariAzi) : '—'}
           />
@@ -148,7 +172,7 @@ export function DashboardPage() {
       ) : coursesQ.isError ? (
         <p className="text-sm text-red-600">Eroare la încărcarea cursurilor.</p>
       ) : (coursesQ.data ?? []).length === 0 ? (
-        <p className="rounded-lg border border-quasar-gray-light bg-white p-6 text-center text-sm text-quasar-gray">
+        <p className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-quasar-gray shadow-sm">
           {teacherMode
             ? 'Nicio grupă a ta programată azi.'
             : `Niciun curs programat în ziua selectată${salaId ? ' pentru această sală' : ''}.`}

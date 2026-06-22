@@ -71,7 +71,7 @@ export function LeadCard({
       style={style}
       {...attributes}
       suppressHydrationWarning
-      className={`group cursor-grab rounded-lg border border-quasar-gray-light bg-white p-2.5 transition-colors hover:border-quasar-yellow active:cursor-grabbing ${
+      className={`group cursor-grab rounded-xl border border-gray-200 bg-white p-2.5 shadow-sm transition-all hover:border-quasar-yellow hover:shadow-md active:cursor-grabbing ${
         isDragging ? 'shadow-xl' : ''
       }`}
     >

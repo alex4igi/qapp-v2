@@ -113,7 +113,7 @@ export function Combobox({
           }
         }}
         className={cn(
-          'w-full rounded-md border border-quasar-gray-light bg-white px-3 py-2 pr-9 text-sm text-quasar-black outline-none transition-colors focus:border-quasar-yellow disabled:bg-quasar-gray-light',
+          'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-9 text-sm text-quasar-black outline-none transition-colors focus:border-quasar-yellow focus:ring-2 focus:ring-quasar-yellow/40 disabled:bg-quasar-gray-light',
         )}
       />
 
@@ -134,7 +134,7 @@ export function Combobox({
       )}
 
       {open && (
-        <div className="absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-y-auto rounded-md border border-quasar-gray-light bg-white shadow-lg">
+        <div className="absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-sm text-quasar-gray">
               Niciun rezultat.

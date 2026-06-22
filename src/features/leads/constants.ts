@@ -6,19 +6,22 @@ export type PipelineColumn = {
   text: string
   bg: string
   border: string
+  // Stilul Quasar OS: header de coloană solid colorat cu text alb (vezi KanbanColumn).
+  // `bg`/`text`/`border` rămân variantele pale, folosite de StatusBadge.
+  header: string
 }
 
 // Pipeline-ul de 9 coloane (adaptat la tema deschisă a qapp v2).
 export const PIPELINE_COLUMNS: PipelineColumn[] = [
-  { status: 'nou',          label: 'Nou',          text: 'text-zinc-600',    bg: 'bg-zinc-100',    border: 'border-zinc-300' },
-  { status: 'contactat',    label: 'Contactat',    text: 'text-blue-700',    bg: 'bg-blue-50',     border: 'border-blue-200' },
-  { status: 'waiting_list', label: 'Waiting List', text: 'text-purple-700',  bg: 'bg-purple-50',   border: 'border-purple-200' },
-  { status: 'programat',    label: 'Programat',    text: 'text-amber-700',   bg: 'bg-amber-50',    border: 'border-amber-200' },
-  { status: 'a_venit',      label: 'A venit',      text: 'text-emerald-700', bg: 'bg-emerald-50',  border: 'border-emerald-200' },
-  { status: 'nu_a_venit',   label: 'Nu a venit',   text: 'text-red-700',     bg: 'bg-red-50',      border: 'border-red-200' },
-  { status: 'convertit',    label: 'Convertit',    text: 'text-green-700',   bg: 'bg-green-50',    border: 'border-green-300' },
-  { status: 'pierdut',      label: 'Pierdut',      text: 'text-zinc-500',    bg: 'bg-zinc-50',     border: 'border-zinc-200' },
-  { status: 'nurture',      label: 'Nurture',      text: 'text-pink-700',    bg: 'bg-pink-50',     border: 'border-pink-200' },
+  { status: 'nou',          label: 'Nou',          text: 'text-zinc-600',    bg: 'bg-zinc-100',    border: 'border-zinc-300',    header: 'bg-slate-500' },
+  { status: 'contactat',    label: 'Contactat',    text: 'text-blue-700',    bg: 'bg-blue-50',     border: 'border-blue-200',    header: 'bg-blue-500' },
+  { status: 'waiting_list', label: 'Waiting List', text: 'text-purple-700',  bg: 'bg-purple-50',   border: 'border-purple-200',  header: 'bg-purple-500' },
+  { status: 'programat',    label: 'Programat',    text: 'text-amber-700',   bg: 'bg-amber-50',    border: 'border-amber-200',   header: 'bg-amber-500' },
+  { status: 'a_venit',      label: 'A venit',      text: 'text-emerald-700', bg: 'bg-emerald-50',  border: 'border-emerald-200', header: 'bg-emerald-500' },
+  { status: 'nu_a_venit',   label: 'Nu a venit',   text: 'text-red-700',     bg: 'bg-red-50',      border: 'border-red-200',     header: 'bg-rose-500' },
+  { status: 'convertit',    label: 'Convertit',    text: 'text-green-700',   bg: 'bg-green-50',    border: 'border-green-300',   header: 'bg-green-600' },
+  { status: 'pierdut',      label: 'Pierdut',      text: 'text-zinc-500',    bg: 'bg-zinc-50',     border: 'border-zinc-200',    header: 'bg-zinc-500' },
+  { status: 'nurture',      label: 'Nurture',      text: 'text-pink-700',    bg: 'bg-pink-50',     border: 'border-pink-200',    header: 'bg-pink-500' },
 ]
 
 export const STATUS_CONFIG = Object.fromEntries(

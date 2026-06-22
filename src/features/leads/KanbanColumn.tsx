@@ -91,15 +91,13 @@ export function KanbanColumn({
   return (
     <div className="flex w-64 shrink-0 flex-col">
       <div
-        className={`flex items-center justify-between rounded-t-lg border border-b-0 px-3 py-2 ${column.bg} ${column.border}`}
+        className={`flex items-center justify-between rounded-t-xl px-3 py-2.5 ${column.header}`}
       >
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-semibold ${column.text}`}>
+          <span className="text-sm font-semibold text-white">
             {column.label}
           </span>
-          <span
-            className={`rounded-full bg-white/70 px-1.5 py-0.5 font-mono text-xs ${column.text}`}
-          >
+          <span className="rounded-full bg-white/25 px-1.5 py-0.5 text-xs font-medium text-white">
             {leads.length}
           </span>
         </div>
@@ -110,7 +108,7 @@ export function KanbanColumn({
               onClick={() =>
                 exportLeadsCsv(leads, campaniiById, 'nurture-leads.csv')
               }
-              className={`rounded p-1 transition-colors hover:bg-white/60 ${column.text}`}
+              className="rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
               title="Exportă CSV (lead-urile filtrate)"
             >
               <svg
@@ -131,7 +129,7 @@ export function KanbanColumn({
           <button
             type="button"
             onClick={() => onAddLead(column.status)}
-            className={`rounded p-1 transition-colors hover:bg-white/60 ${column.text}`}
+            className="rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
             title={`Adaugă lead în ${column.label}`}
           >
             <svg
@@ -153,8 +151,10 @@ export function KanbanColumn({
 
       <div
         ref={setNodeRef}
-        className={`min-h-[120px] space-y-2 rounded-b-lg border p-2 transition-colors ${column.border} ${
-          isOver ? 'border-dashed bg-quasar-yellow/10' : 'bg-quasar-gray-light/40'
+        className={`min-h-[120px] space-y-2 rounded-b-xl border border-t-0 border-gray-200 p-2 transition-colors ${
+          isOver
+            ? 'border-dashed border-quasar-yellow bg-quasar-yellow/10'
+            : 'bg-gray-50'
         }`}
       >
         <SortableContext

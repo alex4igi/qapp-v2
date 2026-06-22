@@ -25,7 +25,7 @@ export function AgendaAziCard() {
   const total = items.reduce((a, b) => a + b.n, 0)
 
   return (
-    <div className="mb-6 rounded-lg border border-quasar-gray-light bg-white p-4">
+    <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-bold text-quasar-black">
           ⚡ De lucrat azi (lead-uri){total > 0 ? ` — ${total}` : ''}
