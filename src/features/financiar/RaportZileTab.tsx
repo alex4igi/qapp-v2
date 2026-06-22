@@ -75,6 +75,12 @@ const baseColumns: Column<RaportZiRow>[] = [
     className: 'w-32 text-right',
     sortValue: (r) => r.revolut ?? 0,
   },
+  {
+    header: 'Online',
+    cell: (r) => (r.online > 0 ? formatRON(r.online) : '—'),
+    className: 'w-32 text-right',
+    sortValue: (r) => r.online ?? 0,
+  },
 ]
 
 // Cheltuielile nu au atribuire pe dimensiune → doar în „Toate locațiile".
@@ -167,7 +173,15 @@ export function RaportZileTab() {
 
   const onExport = () => {
     const rows = data?.rows ?? []
-    const headers = ['Data', 'Încasări', 'Cash', 'Card', 'Transfer', 'Revolut']
+    const headers = [
+      'Data',
+      'Încasări',
+      'Cash',
+      'Card',
+      'Transfer',
+      'Revolut',
+      'Online',
+    ]
     const body: (string | number)[][] = rows.map((r) => [
       r.data,
       r.total,
@@ -175,6 +189,7 @@ export function RaportZileTab() {
       r.card,
       r.transfer,
       r.revolut,
+      r.online,
     ])
     const totalRow: (string | number)[] = [
       'TOTAL',
@@ -183,6 +198,7 @@ export function RaportZileTab() {
       summary?.card ?? 0,
       summary?.transfer ?? 0,
       summary?.revolut ?? 0,
+      summary?.online ?? 0,
     ]
     if (showCheltuieli) {
       headers.push('Cheltuieli', 'Net')
@@ -262,7 +278,8 @@ export function RaportZileTab() {
               · Cash {formatRON(summary.cash)} · Card{' '}
               {formatRON(summary.card)} · Transfer{' '}
               {formatRON(summary.transfer)} · Revolut{' '}
-              {formatRON(summary.revolut)}
+              {formatRON(summary.revolut)} · Online{' '}
+              {formatRON(summary.online)}
             </span>
           )}
           {showCheltuieli && (

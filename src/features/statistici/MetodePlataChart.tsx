@@ -14,6 +14,7 @@ const COLORS: Record<string, string> = {
   Card:       '#3b82f6',
   Transfer:   '#10b981',
   Revolut:    '#a855f7',
+  Online:     '#06b6d4',
   Necunoscut: '#9ca3af',
 }
 

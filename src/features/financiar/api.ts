@@ -53,6 +53,7 @@ export type RaportZiRow = {
   card: number
   transfer: number
   revolut: number
+  online: number
   cheltuieli: number
   net: number
 }
@@ -96,6 +97,7 @@ export async function getRaportZile(params: {
     card: 0,
     transfer: 0,
     revolut: 0,
+    online: 0,
     cheltuieli: 0,
     net: 0,
   })
@@ -150,12 +152,13 @@ export async function getRaportZile(params: {
 
 function metodaKey(
   m: Enums<'metoda_plata'> | null,
-): 'cash' | 'card' | 'transfer' | 'revolut' | null {
+): 'cash' | 'card' | 'transfer' | 'revolut' | 'online' | null {
   switch (m) {
     case 'Cash':     return 'cash'
     case 'Card':     return 'card'
     case 'Transfer': return 'transfer'
     case 'Revolut':  return 'revolut'
+    case 'Online':   return 'online'
     default:         return null
   }
 }

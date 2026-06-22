@@ -7079,7 +7079,7 @@ export type Database = {
         | "L"
         | "XL"
         | "XXL"
-      metoda_plata: "Cash" | "Card" | "Transfer" | "Revolut"
+      metoda_plata: "Cash" | "Card" | "Transfer" | "Revolut" | "Online"
       nivel_curs: "Incepator" | "Intermediar" | "Avansat" | "Trupa"
       nivel_teacher: "Junior" | "Senior" | "Expert"
       prezenta_lead: "programat" | "prezent" | "absent"
@@ -7330,7 +7330,7 @@ export const Constants = {
         "XL",
         "XXL",
       ],
-      metoda_plata: ["Cash", "Card", "Transfer", "Revolut"],
+      metoda_plata: ["Cash", "Card", "Transfer", "Revolut", "Online"],
       nivel_curs: ["Incepator", "Intermediar", "Avansat", "Trupa"],
       nivel_teacher: ["Junior", "Senior", "Expert"],
       prezenta_lead: ["programat", "prezent", "absent"],
