@@ -90,6 +90,17 @@ export function Header() {
           </label>
         </div>
 
+        <a
+          href="/prezentari/index.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-9 w-9 items-center justify-center rounded-md border border-quasar-gray-light bg-white text-base hover:bg-quasar-gray-light"
+          title="Ghiduri & manual de utilizare"
+          aria-label="Ghiduri & manual"
+        >
+          📚
+        </a>
+
         {showNotificari && (
           <Link
             to="/notificari"
