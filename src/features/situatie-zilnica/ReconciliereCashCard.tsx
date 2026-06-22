@@ -111,16 +111,16 @@ export function ReconciliereCashCard({
       setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
   })
 
-  const diferentaTone =
+  const diferentaPill =
     diferenta === 0
-      ? 'text-green-700'
+      ? 'bg-green-100 text-green-700'
       : diferenta > 0
-        ? 'text-amber-600'
-        : 'text-red-600'
+        ? 'bg-amber-100 text-amber-700'
+        : 'bg-red-100 text-red-700'
 
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-quasar-black">
           Reconciliere cash —{' '}
           <span className="font-normal text-quasar-gray">
@@ -128,7 +128,9 @@ export function ReconciliereCashCard({
           </span>
         </h2>
         {saved && (
-          <span className="text-xs text-green-700">✓ Salvat</span>
+          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+            ✓ Salvat
+          </span>
         )}
       </div>
 
@@ -137,48 +139,50 @@ export function ReconciliereCashCard({
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-quasar-gray">
             Bancnote/monede în casă
           </h3>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-quasar-gray-light text-left text-xs text-quasar-gray">
-                <th className="py-1 font-medium">Valoare</th>
-                <th className="py-1 font-medium">Bucăți</th>
-                <th className="py-1 text-right font-medium">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {DENOMINATII.map((v) => {
-                const n = Number(denominatii[String(v)] ?? 0)
-                return (
-                  <tr key={v} className="border-b border-quasar-gray-light/60">
-                    <td className="py-1.5 font-medium">{v} RON</td>
-                    <td className="py-1.5 w-24">
-                      <input
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={n}
-                        onChange={(e) => setDenom(v, e.target.value)}
-                        className="w-full rounded border border-quasar-gray-light px-2 py-1 text-right"
-                      />
-                    </td>
-                    <td className="py-1.5 text-right">
-                      {n > 0 ? formatRON(v * n) : '—'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={2} className="pt-2 text-right text-sm font-medium">
-                  Total numărat:
-                </td>
-                <td className="pt-2 text-right text-base font-bold text-quasar-black">
-                  {formatRON(totalNumarat)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+          <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs text-quasar-gray">
+                  <th className="px-3 py-2 font-medium">Valoare</th>
+                  <th className="px-3 py-2 font-medium">Bucăți</th>
+                  <th className="px-3 py-2 text-right font-medium">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DENOMINATII.map((v) => {
+                  const n = Number(denominatii[String(v)] ?? 0)
+                  return (
+                    <tr key={v} className="border-b border-gray-200 last:border-0">
+                      <td className="px-3 py-1.5 font-medium">{v} RON</td>
+                      <td className="px-3 py-1.5 w-24">
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={n}
+                          onChange={(e) => setDenom(v, e.target.value)}
+                          className="w-full rounded-lg border border-gray-200 px-2 py-1 text-right"
+                        />
+                      </td>
+                      <td className="px-3 py-1.5 text-right">
+                        {n > 0 ? formatRON(v * n) : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gray-50">
+                  <td colSpan={2} className="px-3 py-2 text-right text-sm font-medium">
+                    Total numărat:
+                  </td>
+                  <td className="px-3 py-2 text-right text-base font-bold text-quasar-black">
+                    {formatRON(totalNumarat)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -186,7 +190,7 @@ export function ReconciliereCashCard({
             Verificare & decizii
           </h3>
 
-          <div className="rounded-md border border-quasar-gray-light bg-quasar-gray-light/30 p-3 text-sm">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm shadow-sm">
             <div className="flex justify-between py-0.5">
               <span>Cash în sistem (azi)</span>
               <span className="font-medium">{formatRON(cashSistem)}</span>
@@ -195,7 +199,7 @@ export function ReconciliereCashCard({
               <span>+ Fond de la ieri</span>
               <span className="font-medium">{formatRON(fondInceputNum)}</span>
             </div>
-            <div className="flex justify-between border-t border-quasar-gray-light pt-1.5">
+            <div className="flex justify-between border-t border-gray-200 pt-1.5">
               <span>= Ar trebui în casă</span>
               <span className="font-semibold">
                 {formatRON(cashSistem + fondInceputNum)}
@@ -205,18 +209,18 @@ export function ReconciliereCashCard({
               <span>Numărat efectiv</span>
               <span className="font-medium">{formatRON(totalNumarat)}</span>
             </div>
-            <div
-              className={`mt-1 flex justify-between border-t border-quasar-gray-light pt-1.5 ${diferentaTone}`}
-            >
+            <div className="mt-1 flex items-center justify-between border-t border-gray-200 pt-1.5">
               <span className="font-medium">Diferență</span>
-              <span className="font-bold">
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${diferentaPill}`}
+              >
                 {diferenta > 0 ? '+' : ''}
                 {formatRON(diferenta)}
                 {diferenta === 0
-                  ? '  ✓'
+                  ? ' ✓'
                   : diferenta > 0
-                    ? '  (surplus)'
-                    : '  (lipsă)'}
+                    ? ' (surplus)'
+                    : ' (lipsă)'}
               </span>
             </div>
           </div>
@@ -248,9 +252,11 @@ export function ReconciliereCashCard({
             </Field>
           </div>
 
-          <div className="rounded-md bg-quasar-yellow/40 px-3 py-2 text-sm">
-            <span>Fond rămas pentru mâine: </span>
-            <span className="font-bold text-quasar-black">
+          <div className="flex items-center justify-between rounded-xl bg-quasar-yellow px-4 py-3 text-sm shadow-sm">
+            <span className="font-medium text-quasar-black">
+              Fond rămas pentru mâine
+            </span>
+            <span className="font-display text-lg font-bold text-quasar-black">
               {formatRON(fondRamas)}
             </span>
           </div>

@@ -35,7 +35,7 @@ export function OverviewDonut({
   const total = slices[0].value + slices[1].value
 
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold text-quasar-black">{title}</h3>
       {total === 0 ? (
         <p className="py-8 text-center text-sm text-quasar-gray">
@@ -45,7 +45,7 @@ export function OverviewDonut({
         <>
           <div className="relative h-64">
             <div className="pointer-events-none absolute inset-0 -mt-6 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold text-quasar-black">
+              <span className="font-display text-3xl font-bold text-quasar-black">
                 {percent}%
               </span>
               {centerSub && (

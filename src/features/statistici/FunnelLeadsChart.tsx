@@ -72,7 +72,7 @@ export function FunnelLeadsChart({
   ]
 
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-quasar-black">
           Funnel leads
@@ -124,7 +124,7 @@ export function FunnelLeadsChart({
           </div>
 
           {/* Rezumat trepte cu rata de trecere */}
-          <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-quasar-gray-light pt-3 text-xs sm:grid-cols-3">
+          <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-gray-200 pt-3 text-xs sm:grid-cols-3">
             {stages.map((s) => (
               <li key={s.label} className="flex justify-between gap-2">
                 <span className="text-quasar-gray">{s.label}</span>
@@ -149,7 +149,7 @@ export function FunnelLeadsChart({
 
           {/* Defalcare pe sursă */}
           {data.perSursa.length > 1 && (
-            <div className="mt-4 overflow-x-auto border-t border-quasar-gray-light pt-3">
+            <div className="mt-4 overflow-x-auto border-t border-gray-200 pt-3">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-left text-quasar-gray">
@@ -165,7 +165,7 @@ export function FunnelLeadsChart({
                   {data.perSursa.map((r) => (
                     <tr
                       key={r.sursaId ?? r.sursaNume}
-                      className="border-t border-quasar-gray-light/60"
+                      className="border-t border-gray-200/60"
                     >
                       <td className="py-1 pr-3 text-quasar-black">{r.sursaNume}</td>
                       <td className="py-1 px-2 text-right">{r.leads}</td>

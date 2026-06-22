@@ -11,8 +11,8 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-5">
-      <h2 className="mb-3 text-sm font-bold text-quasar-black">{title}</h2>
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 className="mb-3 font-display text-sm font-bold text-quasar-black">{title}</h2>
       <dl className="grid grid-cols-2 gap-4 md:grid-cols-3">{children}</dl>
     </div>
   )

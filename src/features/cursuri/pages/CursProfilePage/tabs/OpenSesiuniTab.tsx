@@ -56,7 +56,7 @@ function AdaugaSesiuneForm({ cursId, capacitateImplicita }: { cursId: string; ca
   }
 
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-4">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Field label="Data sesiunii" required>
           <TextInput type="date" min={todayIso()} value={data} onChange={(e) => setData(e.target.value)} />
@@ -111,7 +111,7 @@ function RezervariList({ sesiuneId, canManage }: { sesiuneId: string; canManage:
     return <p className="px-3 py-2 text-xs text-quasar-gray">Nicio rezervare.</p>
   }
   return (
-    <ul className="divide-y divide-quasar-gray-light">
+    <ul className="divide-y divide-gray-200">
       {rows.map((r) => (
         <li key={r.id} className="flex items-center justify-between px-3 py-2 text-sm">
           <span className="text-quasar-black">
@@ -155,7 +155,7 @@ export function OpenSesiuniTab({ cursId, canManage, capacitateImplicita }: Props
       {sesiuniQ.isLoading ? (
         <Spinner />
       ) : rows.length === 0 ? (
-        <p className="rounded-lg border border-quasar-gray-light bg-white p-6 text-center text-sm text-quasar-gray">
+        <p className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-quasar-gray shadow-sm">
           Nicio sesiune OPEN viitoare. {canManage ? 'Adaugă una cu butonul de mai sus' : 'Se creează din „Plată nouă → Open class"'}.
         </p>
       ) : (
@@ -166,7 +166,7 @@ export function OpenSesiuniTab({ cursId, canManage, capacitateImplicita }: Props
             return (
               <div
                 key={s.id}
-                className="overflow-hidden rounded-lg border border-quasar-gray-light bg-white"
+                className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
               >
                 <button
                   type="button"
@@ -192,7 +192,7 @@ export function OpenSesiuniTab({ cursId, canManage, capacitateImplicita }: Props
                   </span>
                 </button>
                 {isOpen && (
-                  <div className="border-t border-quasar-gray-light">
+                  <div className="border-t border-gray-200">
                     <RezervariList sesiuneId={s.id} canManage={canManage} />
                   </div>
                 )}

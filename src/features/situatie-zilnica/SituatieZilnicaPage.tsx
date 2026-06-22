@@ -73,6 +73,38 @@ const columns: Column<IncasareRow>[] = [
   },
 ]
 
+function SumarCard({
+  icon,
+  label,
+  value,
+  highlight,
+}: {
+  icon: string
+  label: string
+  value: string
+  highlight?: boolean
+}) {
+  return (
+    <div
+      className={`rounded-2xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md ${
+        highlight
+          ? 'border-quasar-yellow ring-1 ring-quasar-yellow'
+          : 'border-gray-200'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-lg">
+          {icon}
+        </div>
+        <span className="text-sm font-medium text-quasar-gray">{label}</span>
+      </div>
+      <div className="mt-3 font-display text-2xl font-bold text-quasar-black">
+        {value}
+      </div>
+    </div>
+  )
+}
+
 function SumarStrip({
   total, cash, card, transfer, revolut,
 }: {
@@ -83,20 +115,12 @@ function SumarStrip({
   revolut: number
 }) {
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-3 shadow-sm">
-      <div className="flex flex-wrap items-baseline gap-4 text-sm">
-        <span>
-          Total ziua:{' '}
-          <span className="text-base font-bold text-quasar-black">
-            {formatRON(total)}
-          </span>
-        </span>
-        <span className="text-quasar-gray">|</span>
-        <span>Cash: <span className="font-semibold">{formatRON(cash)}</span></span>
-        <span>Card: <span className="font-semibold">{formatRON(card)}</span></span>
-        <span>Transfer: <span className="font-semibold">{formatRON(transfer)}</span></span>
-        <span>Revolut: <span className="font-semibold">{formatRON(revolut)}</span></span>
-      </div>
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <SumarCard icon="💵" label="Total ziua" value={formatRON(total)} highlight />
+      <SumarCard icon="💶" label="Cash" value={formatRON(cash)} />
+      <SumarCard icon="💳" label="Card" value={formatRON(card)} />
+      <SumarCard icon="🔁" label="Transfer" value={formatRON(transfer)} />
+      <SumarCard icon="🟣" label="Revolut" value={formatRON(revolut)} />
     </div>
   )
 }
@@ -158,8 +182,8 @@ export function SituatieZilnicaPage() {
       <div className="flex flex-col gap-4">
         <SumarStrip {...sumar} />
 
-        <div className="rounded-lg border border-quasar-gray-light bg-white p-3 shadow-sm">
-          <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-quasar-black">
             Încasări — {ziua}
             {locatieNume ? ` · ${locatieNume}` : ''}
           </h2>
@@ -183,7 +207,7 @@ export function SituatieZilnicaPage() {
             cashSistem={sumar.cash}
           />
         ) : (
-          <div className="rounded-lg border border-dashed border-quasar-gray-light bg-quasar-gray-light/30 p-6 text-center text-sm text-quasar-gray">
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-quasar-gray">
             Selectează o locație pentru a face reconcilierea cash zilnică.
           </div>
         )}

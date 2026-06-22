@@ -473,7 +473,7 @@ export function StatisticiPage() {
           )}
         </div>
 
-        <div className="mt-8 border-t border-quasar-gray-light pt-6">
+        <div className="mt-8 border-t border-gray-200 pt-6">
           <div className="mb-4 flex items-end justify-between gap-3">
             <h2 className="text-base font-bold text-quasar-black">
               Reînscrieri & Sezoane

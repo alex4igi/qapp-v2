@@ -22,16 +22,16 @@ export function ClientiActiviTab({
   if (loading) return <div className="mt-4"><Spinner /></div>
   if (rows.length === 0) {
     return (
-      <p className="mt-4 rounded-lg border border-quasar-gray-light bg-white p-6 text-center text-sm text-quasar-gray">
+      <p className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-quasar-gray shadow-sm">
         Niciun client activ la acest curs în luna curentă.
       </p>
     )
   }
   const showReinscriere = pretLunarPromo != null
   return (
-    <div className="mt-4 overflow-hidden rounded-lg border border-quasar-gray-light bg-white">
+    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <table className="w-full text-sm">
-        <thead className="bg-quasar-gray-light/50 text-left text-xs uppercase text-quasar-gray">
+        <thead className="bg-gray-50 text-left text-xs uppercase text-quasar-gray">
           <tr>
             <th className="w-10 px-3 py-2 text-right">#</th>
             <th className="px-3 py-2">Nume</th>
@@ -44,7 +44,7 @@ export function ClientiActiviTab({
             )}
           </tr>
         </thead>
-        <tbody className="divide-y divide-quasar-gray-light">
+        <tbody className="divide-y divide-gray-200">
           {rows.map((r, i) => (
             <tr
               key={r.clientId}
@@ -64,7 +64,7 @@ export function ClientiActiviTab({
               {showReinscriere && (
                 <td className="px-3 py-2 text-right">
                   {r.reinscriereActivata ? (
-                    <span className="text-xs font-medium text-emerald-700">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                       ✓ Activat
                     </span>
                   ) : !r.areInrolariViitoare ? (
@@ -77,7 +77,7 @@ export function ClientiActiviTab({
                         onActivateReinscriere(r.clientId)
                       }}
                       disabled={activatingClientId === r.clientId}
-                      className="rounded-md bg-purple-600 px-3 py-1 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-60"
+                      className="rounded-full bg-purple-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-60"
                     >
                       {activatingClientId === r.clientId ? '…' : 'Activează!'}
                     </button>

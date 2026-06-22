@@ -12,22 +12,22 @@ export function AbsentiTab({ loading, rows, onRowClick }: Props) {
   if (loading) return <div className="mt-4"><Spinner /></div>
   if (rows.length === 0) {
     return (
-      <p className="mt-4 rounded-lg border border-quasar-gray-light bg-white p-6 text-center text-sm text-quasar-gray">
+      <p className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-quasar-gray shadow-sm">
         Toți clienții activi au prezență în ultimele 21 de zile.
       </p>
     )
   }
   return (
-    <div className="mt-4 overflow-hidden rounded-lg border border-quasar-gray-light bg-white">
+    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <table className="w-full text-sm">
-        <thead className="bg-quasar-gray-light/50 text-left text-xs uppercase text-quasar-gray">
+        <thead className="bg-gray-50 text-left text-xs uppercase text-quasar-gray">
           <tr>
             <th className="w-10 px-3 py-2 text-right">#</th>
             <th className="px-3 py-2">Nume</th>
             <th className="px-3 py-2">Ultima prezență</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-quasar-gray-light">
+        <tbody className="divide-y divide-gray-200">
           {rows.map((r, i) => (
             <tr
               key={r.clientId}

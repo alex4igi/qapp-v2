@@ -28,7 +28,7 @@ export function PrezenteAchitareChart({
   )
 
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold text-quasar-black">{title}</h3>
       {!hasData ? (
         <p className="py-8 text-center text-sm text-quasar-gray">

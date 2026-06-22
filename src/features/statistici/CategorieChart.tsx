@@ -25,7 +25,7 @@ export function CategorieChart({
   emptyMessage = 'Nicio dată în intervalul ales.',
 }: Props) {
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold text-quasar-black">{title}</h3>
       {rows.length === 0 ? (
         <p className="py-8 text-center text-sm text-quasar-gray">

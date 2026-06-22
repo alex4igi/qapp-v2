@@ -28,16 +28,18 @@ export function CursSidebar({ initials, numele, ocupare }: Props) {
           : 'text-emerald-600'
 
   return (
-    <aside className="rounded-lg border border-quasar-gray-light bg-white p-4">
+    <aside className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="mb-3 flex justify-center">
-        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow text-3xl font-bold text-quasar-black">
+        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-quasar-black">
           {initials}
         </div>
       </div>
-      <h2 className="text-center text-lg font-bold text-quasar-black">{numele}</h2>
-      <div className="mt-4 text-center">
+      <h2 className="text-center font-display text-lg font-bold text-quasar-black">
+        {numele}
+      </h2>
+      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center shadow-sm">
         <p className="text-xs font-medium text-quasar-gray">Ocupare</p>
-        <p className={`mt-1 text-xl font-bold ${color}`}>
+        <p className={`mt-1 font-display text-2xl font-bold ${color}`}>
           {activi} / {cap ?? '—'}
         </p>
         {libere != null && (

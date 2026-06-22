@@ -29,7 +29,7 @@ export function ReinscrieriDonut({
   ]
 
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold text-quasar-black">
         Reînscriși din potențial
       </h3>
@@ -40,7 +40,7 @@ export function ReinscrieriDonut({
       ) : (
         <div className="relative h-72">
           <div className="pointer-events-none absolute inset-0 -mt-6 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold text-quasar-black">
+            <span className="font-display text-3xl font-bold text-quasar-black">
               {procent}%
             </span>
             <span className="text-xs text-quasar-gray">
