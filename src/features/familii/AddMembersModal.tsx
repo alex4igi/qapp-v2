@@ -127,7 +127,7 @@ export function AddMembersModal({ open, familieId, familieNume, onClose }: Props
         ) : candidates.length === 0 ? (
           <p className="text-sm text-quasar-gray">Niciun client găsit.</p>
         ) : (
-          <ul className="max-h-80 divide-y divide-quasar-gray-light overflow-y-auto rounded-md border border-quasar-gray-light">
+          <ul className="max-h-80 divide-y divide-gray-200 overflow-y-auto rounded-xl border border-gray-200">
             {candidates.map((c) => (
               <li key={c.id} className="px-3 py-2">
                 <Checkbox
@@ -140,7 +140,7 @@ export function AddMembersModal({ open, familieId, familieNume, onClose }: Props
                         {c.nume} {c.prenume ?? ''}
                       </span>
                       {c.familia_nume && (
-                        <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
+                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
                           deja în {c.familia_nume}
                         </span>
                       )}

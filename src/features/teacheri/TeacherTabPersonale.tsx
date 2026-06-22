@@ -91,7 +91,7 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-quasar-gray-light bg-white p-5">
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-bold text-quasar-black">Bio</h3>
           {canEdit && (
@@ -109,7 +109,7 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
         </dl>
       </section>
 
-      <section className="rounded-lg border border-quasar-gray-light bg-white p-5">
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <h3 className="mb-3 text-sm font-bold text-quasar-black">Contact</h3>
         <dl className="grid grid-cols-2 gap-4">
           <Row label="Email" value={teacher.email ?? ''} />
@@ -117,7 +117,7 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
         </dl>
       </section>
 
-      <section className="rounded-lg border border-quasar-gray-light bg-white p-5">
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <h3 className="mb-3 text-sm font-bold text-quasar-black">Altele</h3>
         <dl className="space-y-3">
           <Row label="Link contract" value={teacher.link_contract ?? ''} />
@@ -135,7 +135,7 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
       </section>
 
       {isAdmin && (
-        <section className="rounded-lg border border-quasar-gray-light bg-white p-5">
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-bold text-quasar-black">
               Cont aplicație

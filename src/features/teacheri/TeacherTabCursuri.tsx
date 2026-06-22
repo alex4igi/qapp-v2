@@ -67,18 +67,20 @@ export function TeacherTabCursuri({ teacherId }: { teacherId: string }) {
   return (
     <div>
       {!sezonQuery.data && (
-        <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 shadow-sm">
           Niciun sezon nu e marcat ca activ în Setări — afișez toate cursurile
           teacher-ului.
         </div>
       )}
-      <DataTable
-        columns={columns}
-        rows={cursuriQuery.data ?? []}
-        rowKey={(r) => r.curs_id ?? ''}
-        onRowClick={(r) => r.curs_id && navigate(`/cursuri/${r.curs_id}`)}
-        emptyMessage="Niciun curs asociat în sezonul activ."
-      />
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <DataTable
+          columns={columns}
+          rows={cursuriQuery.data ?? []}
+          rowKey={(r) => r.curs_id ?? ''}
+          onRowClick={(r) => r.curs_id && navigate(`/cursuri/${r.curs_id}`)}
+          emptyMessage="Niciun curs asociat în sezonul activ."
+        />
+      </div>
     </div>
   )
 }

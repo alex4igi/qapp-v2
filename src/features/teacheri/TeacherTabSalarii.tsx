@@ -40,7 +40,7 @@ function unitLabel(g: SalariuGrupa) {
 function GrupaRow({ g }: { g: SalariuGrupa }) {
   if (g.manual) {
     return (
-      <tr className="border-t border-quasar-gray-light text-sm">
+      <tr className="border-t border-gray-200 text-sm">
         <td className="py-2 pr-3 font-medium">{g.curs_nume}</td>
         <td className="py-2 pr-3 text-quasar-gray">trupă</td>
         <td className="py-2 pr-3 text-quasar-gray" colSpan={3}>
@@ -50,7 +50,7 @@ function GrupaRow({ g }: { g: SalariuGrupa }) {
     )
   }
   return (
-    <tr className="border-t border-quasar-gray-light text-sm">
+    <tr className="border-t border-gray-200 text-sm">
       <td className="py-2 pr-3 font-medium">{g.curs_nume}</td>
       <td className="py-2 pr-3 text-quasar-gray">
         {g.sedinte_per_sapt
@@ -124,23 +124,23 @@ function LunaAccordion({
       : ((item.data.breakdown ?? []) as unknown as SalariuGrupa[])
 
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-quasar-gray-light/40"
+        className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left hover:bg-gray-50"
       >
         <div className="flex items-center gap-3">
-          <span className={open ? 'rotate-90' : ''}>▶</span>
+          <span className={`text-quasar-gray transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
           <span className="font-medium">
             {LUNI_RO[item.luna - 1]} {item.anul}
           </span>
           {item.kind === 'preview' ? (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
               preview · neconfirmat
             </span>
           ) : (
-            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-900">
+            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
               ✓ plătit{' '}
               {item.data.data_plata
                 ? `· ${item.data.data_plata}`
@@ -148,10 +148,10 @@ function LunaAccordion({
             </span>
           )}
         </div>
-        <span className="text-base font-bold">{formatLei(total)}</span>
+        <span className="font-display text-base font-bold text-quasar-black">{formatLei(total)}</span>
       </button>
       {open && (
-        <div className="border-t border-quasar-gray-light px-4 py-3">
+        <div className="border-t border-gray-200 px-4 py-3">
           <BreakdownTable grupe={grupe} />
           {item.kind === 'preview' && isAdmin && (
             <div className="mt-3 flex justify-end">
@@ -290,12 +290,12 @@ export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
   return (
     <div className="space-y-4">
       {/* Mini-summary „Cursanți Înrolați" — luna curentă */}
-      <div className="rounded-lg border border-quasar-gray-light bg-white p-4">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-sm font-bold text-quasar-black">
             Cursanți numărați · {LUNI_RO[currentMonth - 1]} {currentYear}
           </h3>
-          <span className="text-sm font-bold">
+          <span className="font-display text-base font-bold text-quasar-black">
             Total: {formatLei(totalLunaCurenta)}
           </span>
         </div>

@@ -15,7 +15,7 @@ export function PrezenteSezonTab({ loading, rows }: Props) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-quasar-gray-light bg-white">
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <table className="w-full text-sm">
         <thead className="bg-quasar-gray-light/50 text-left text-xs uppercase text-quasar-gray">
           <tr>
@@ -24,7 +24,7 @@ export function PrezenteSezonTab({ loading, rows }: Props) {
             <th className="px-4 py-2">Status</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-quasar-gray-light">
+        <tbody className="divide-y divide-gray-100">
           {rows.map((p) => (
             <tr key={p.id}>
               <td className="px-4 py-2">{p.cursul?.numele ?? '—'}</td>

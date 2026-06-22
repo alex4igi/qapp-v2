@@ -93,13 +93,22 @@ export function TeacherProfilePage() {
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Avatar lateral */}
         <aside className="md:w-56">
-          <div className="flex h-44 w-44 items-center justify-center rounded-full bg-quasar-yellow text-5xl font-bold text-quasar-black">
-            {initials(teacher.nume, teacher.prenume)}
-          </div>
-          <div className="mt-3">
-            <p className="text-lg font-bold text-quasar-black">{fullName}</p>
+          <div className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm">
+            <div className="flex h-28 w-28 items-center justify-center rounded-full bg-quasar-yellow text-4xl font-bold text-quasar-black">
+              {initials(teacher.nume, teacher.prenume)}
+            </div>
+            <p className="mt-4 font-display text-lg font-bold text-quasar-black">
+              {fullName}
+            </p>
             {teacher.nivelul && (
-              <p className="text-sm text-quasar-gray">{teacher.nivelul}</p>
+              <span className="mt-1.5 rounded-full bg-quasar-yellow/40 px-2 py-0.5 text-xs font-medium text-quasar-black">
+                {teacher.nivelul}
+              </span>
+            )}
+            {teacher.email && (
+              <p className="mt-3 break-all text-xs text-quasar-gray">
+                {teacher.email}
+              </p>
             )}
           </div>
         </aside>

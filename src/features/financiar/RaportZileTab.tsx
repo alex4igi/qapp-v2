@@ -100,7 +100,7 @@ const cheltuieliColumns: Column<RaportZiRow>[] = [
     header: 'Net',
     cell: (r) => (
       <span
-        className={`font-semibold ${r.net < 0 ? 'text-red-600' : 'text-green-700'}`}
+        className={`font-semibold ${r.net < 0 ? 'text-red-600' : 'text-emerald-700'}`}
       >
         {formatRON(r.net)}
       </span>
@@ -211,7 +211,7 @@ export function RaportZileTab() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="w-40">
           <Field label="De la" htmlFor="rz-from">
             <TextInput
@@ -270,33 +270,40 @@ export function RaportZileTab() {
       </div>
 
       {summary && (
-        <p className="mb-3 text-sm">
-          <strong>Încasări: {formatRON(summary.total)}</strong>
-          {summary.total > 0 && (
-            <span className="text-quasar-gray">
-              {' '}
-              · Cash {formatRON(summary.cash)} · Card{' '}
-              {formatRON(summary.card)} · Transfer{' '}
-              {formatRON(summary.transfer)} · Revolut{' '}
-              {formatRON(summary.revolut)} · Online{' '}
-              {formatRON(summary.online)}
-            </span>
-          )}
-          {showCheltuieli && (
-            <span>
-              {' · '}
-              <span className="text-red-600">
-                Cheltuieli {formatRON(summary.cheltuieli)}
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-lg">
+            💰
+          </div>
+          <p className="text-sm">
+            <strong className="text-quasar-black">
+              Încasări: {formatRON(summary.total)}
+            </strong>
+            {summary.total > 0 && (
+              <span className="text-quasar-gray">
+                {' '}
+                · Cash {formatRON(summary.cash)} · Card{' '}
+                {formatRON(summary.card)} · Transfer{' '}
+                {formatRON(summary.transfer)} · Revolut{' '}
+                {formatRON(summary.revolut)} · Online{' '}
+                {formatRON(summary.online)}
               </span>
-              {' · '}
-              <strong
-                className={summary.net < 0 ? 'text-red-600' : 'text-green-700'}
-              >
-                Net {formatRON(summary.net)}
-              </strong>
-            </span>
-          )}
-        </p>
+            )}
+            {showCheltuieli && (
+              <span>
+                {' · '}
+                <span className="text-red-600">
+                  Cheltuieli {formatRON(summary.cheltuieli)}
+                </span>
+                {' · '}
+                <strong
+                  className={summary.net < 0 ? 'text-red-600' : 'text-emerald-700'}
+                >
+                  Net {formatRON(summary.net)}
+                </strong>
+              </span>
+            )}
+          </p>
+        </div>
       )}
 
       {isLoading ? (

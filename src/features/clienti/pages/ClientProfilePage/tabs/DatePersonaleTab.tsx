@@ -68,7 +68,7 @@ export function DatePersonaleTab({ client, familia, teacherMode = false }: Props
           invalidateKey={['client', client.id]}
         />
       ) : (
-        <div className="rounded-lg border border-quasar-gray-light bg-white p-5 text-sm text-quasar-gray">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 text-sm text-quasar-gray shadow-sm">
           Contul de portal se gestionează la nivel de <strong>familie</strong>.
         </div>
       )}

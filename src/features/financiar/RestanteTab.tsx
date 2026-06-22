@@ -71,7 +71,7 @@ const columns: Column<RestantaRow>[] = [
       r.prescris ? (
         <span className="inline-flex items-center justify-end gap-1.5">
           <span
-            className="rounded bg-quasar-gray/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-quasar-gray"
+            className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
             title="Datorie prescrisă (sezon încheiat de peste 2 ani) — exclusă din totalul de recuperat"
           >
             prescris
@@ -190,7 +190,7 @@ export function RestanteTab() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="w-56">
           <Field label="Caută client sau curs" htmlFor="rs-search">
             <TextInput
@@ -241,28 +241,35 @@ export function RestanteTab() {
       </div>
 
       {data && (
-        <p className="mb-3 text-sm">
-          {cursLabel ? (
-            <>
-              Pe cursul <strong>{cursLabel}</strong>:{' '}
-            </>
-          ) : (
-            'Total: '
-          )}
-          <strong>{data.total}</strong> înrolări cu restanță · de recuperat{' '}
-          <span className="font-semibold text-red-600">
-            {formatRON(data.sumRest)}
-          </span>
-          {data.countPrescris > 0 && (
-            <>
-              {' · '}
-              <span className="text-quasar-gray">
-                {data.countPrescris} prescrise (
-                {formatRON(data.sumPrescris)}) excluse din total
-              </span>
-            </>
-          )}
-        </p>
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-lg">
+            ⚠️
+          </div>
+          <p className="text-sm text-quasar-gray">
+            {cursLabel ? (
+              <>
+                Pe cursul{' '}
+                <strong className="text-quasar-black">{cursLabel}</strong>:{' '}
+              </>
+            ) : (
+              'Total: '
+            )}
+            <strong className="text-quasar-black">{data.total}</strong> înrolări
+            cu restanță · de recuperat{' '}
+            <span className="font-semibold text-red-600">
+              {formatRON(data.sumRest)}
+            </span>
+            {data.countPrescris > 0 && (
+              <>
+                {' · '}
+                <span className="text-quasar-gray">
+                  {data.countPrescris} prescrise (
+                  {formatRON(data.sumPrescris)}) excluse din total
+                </span>
+              </>
+            )}
+          </p>
+        </div>
       )}
 
       {isLoading ? (
@@ -280,7 +287,7 @@ export function RestanteTab() {
             emptyMessage="Nicio restanță."
           />
 
-          <div className="mt-4 flex items-center justify-end gap-2 text-sm text-quasar-gray">
+          <div className="mt-4 flex items-center justify-end gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-quasar-gray shadow-sm">
             <span>
               Pagina {page + 1} / {totalPages}
             </span>

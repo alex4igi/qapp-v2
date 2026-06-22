@@ -193,14 +193,16 @@ export function FamilieProfilePage() {
             onChange={(t) => setTab(t as TabId)}
           />
 
-          {tab === 'inrolari' && (
-            <InrolariTab
-              loading={inrolariQuery.isLoading}
-              rows={inrolariQuery.data ?? []}
-            />
-          )}
+          <div className="mt-4">
+            {tab === 'inrolari' && (
+              <InrolariTab
+                loading={inrolariQuery.isLoading}
+                rows={inrolariQuery.data ?? []}
+              />
+            )}
 
-          {tab === 'date' && <DatePersonaleTab familie={familie} />}
+            {tab === 'date' && <DatePersonaleTab familie={familie} />}
+          </div>
         </div>
       </div>
 
@@ -248,13 +250,13 @@ function Sidebar({
   members, onNavigateMember, onAddMembers,
 }: SidebarProps) {
   return (
-    <aside className="rounded-lg border border-quasar-gray-light bg-white p-4">
+    <aside className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="mb-3 flex justify-center">
-        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow text-3xl font-bold text-quasar-black">
+        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-quasar-black shadow-sm">
           {initials}
         </div>
       </div>
-      <h2 className="text-center text-lg font-bold text-quasar-black">
+      <h2 className="text-center font-display text-lg font-bold text-quasar-black">
         Familia {numeFamilie}
       </h2>
 
@@ -274,9 +276,14 @@ function Sidebar({
                   <button
                     type="button"
                     onClick={() => onNavigateMember(r.id)}
-                    className="text-left text-quasar-black hover:underline"
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-quasar-yellow/10"
                   >
-                    {r.nume} {r.prenume ?? ''}
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow text-xs font-bold text-quasar-black">
+                      {getFamilieInitials(`${r.nume} ${r.prenume ?? ''}`)}
+                    </span>
+                    <span className="truncate text-quasar-black">
+                      {r.nume} {r.prenume ?? ''}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -284,10 +291,29 @@ function Sidebar({
           )}
         </div>
 
-        <DetailRow
-          label="Balanța"
-          value={`${balanta.rest} / ${balanta.total} RON`}
-        />
+        <div className="rounded-xl border border-gray-200 bg-white p-3 text-center shadow-sm">
+          <dt className="text-xs font-medium text-quasar-gray">
+            Balanța Familiei
+          </dt>
+          <dd className="mt-1 space-y-0.5">
+            <p className="text-sm">
+              <span className="text-quasar-gray">Rest: </span>
+              <span
+                className={`font-display font-bold ${
+                  balanta.rest > 0 ? 'text-red-600' : 'text-green-600'
+                }`}
+              >
+                {balanta.rest} RON
+              </span>
+            </p>
+            <p className="text-sm">
+              <span className="text-quasar-gray">Total: </span>
+              <span className="font-display font-bold text-quasar-black">
+                {balanta.total} RON
+              </span>
+            </p>
+          </dd>
+        </div>
 
         <div>
           <dt className="mb-1 text-xs font-medium text-quasar-gray">
@@ -317,14 +343,19 @@ function Sidebar({
                     <button
                       type="button"
                       onClick={() => onNavigateMember(m.id)}
-                      className="text-left text-quasar-black hover:underline"
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-quasar-yellow/10"
                     >
-                      {m.nume} {m.prenume ?? ''}
-                      {v != null && (
-                        <span className="ml-1 text-xs text-quasar-gray">
-                          ({v} ani{isAdult ? ', reprezentant' : ''})
-                        </span>
-                      )}
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow text-xs font-bold text-quasar-black">
+                        {getFamilieInitials(`${m.nume} ${m.prenume ?? ''}`)}
+                      </span>
+                      <span className="min-w-0 truncate text-quasar-black">
+                        {m.nume} {m.prenume ?? ''}
+                        {v != null && (
+                          <span className="ml-1 text-xs text-quasar-gray">
+                            ({v} ani{isAdult ? ', reprezentant' : ''})
+                          </span>
+                        )}
+                      </span>
                     </button>
                   </li>
                 )
@@ -360,37 +391,37 @@ function InrolariTab({
     )
   }
   return (
-    <div className="overflow-x-auto rounded-lg border border-quasar-gray-light bg-white">
+    <div className="overflow-hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
       <table className="w-full min-w-[700px] text-sm">
-        <thead className="bg-quasar-gray-light/50 text-left text-xs uppercase text-quasar-gray">
+        <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-quasar-gray">
           <tr>
-            <th className="whitespace-nowrap px-4 py-2">Nume membru</th>
-            <th className="whitespace-nowrap px-4 py-2">Nume curs</th>
-            <th className="whitespace-nowrap px-4 py-2">Data începerii</th>
-            <th className="whitespace-nowrap px-4 py-2">Tipul înrolării</th>
-            <th className="whitespace-nowrap px-4 py-2 text-right">Status plată</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">Nume membru</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">Nume curs</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">Data începerii</th>
+            <th className="whitespace-nowrap px-4 py-3 font-medium">Tipul înrolării</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right font-medium">Status plată</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-quasar-gray-light">
+        <tbody className="divide-y divide-gray-200">
           {rows.map((r) => {
             const rest = r.rest ?? 0
             const total = r.total_de_plata ?? 0
             const achitat = rest <= 0
             return (
-              <tr key={r.id_enrollment}>
-                <td className="px-4 py-2">
+              <tr key={r.id_enrollment} className="transition-colors hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium text-quasar-black">
                   {r.nume_client} {r.prenume_client ?? ''}
                 </td>
-                <td className="px-4 py-2">{r.nume_curs}</td>
-                <td className="px-4 py-2">{r.data_incepere}</td>
-                <td className="px-4 py-2">{r.tip_plata ?? '—'}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-3 text-quasar-gray">{r.nume_curs}</td>
+                <td className="px-4 py-3 text-quasar-gray">{r.data_incepere}</td>
+                <td className="px-4 py-3 text-quasar-gray">{r.tip_plata ?? '—'}</td>
+                <td className="px-4 py-3 text-right">
                   {achitat ? (
-                    <span className="text-emerald-700">
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                       ✓ Achitat ({total} RON)
                     </span>
                   ) : (
-                    <span className="rounded-md bg-red-100 px-2 py-1 text-red-700">
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                       {rest} RON rest
                     </span>
                   )}
@@ -477,7 +508,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-lg border border-quasar-gray-light bg-white p-5">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <h2 className="mb-3 text-sm font-bold text-quasar-black">{title}</h2>
       <dl className="grid grid-cols-2 gap-4 md:grid-cols-3">{children}</dl>
     </div>

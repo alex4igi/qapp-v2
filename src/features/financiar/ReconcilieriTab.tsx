@@ -48,7 +48,7 @@ function todayIso(): string {
 }
 
 function difTone(d: number): string {
-  if (d === 0) return 'text-green-700'
+  if (d === 0) return 'text-emerald-700'
   if (d > 0) return 'text-amber-600'
   return 'text-red-600'
 }
@@ -204,7 +204,7 @@ export function ReconcilieriTab() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="w-40">
           <Field label="De la" htmlFor="rc-from">
             <TextInput
@@ -248,19 +248,27 @@ export function ReconcilieriTab() {
       </div>
 
       {data && (
-        <p className="mb-3 text-sm">
-          <strong>{sumar.n}</strong> reconcilieri · total depus{' '}
-          <span className="font-semibold">{formatRON(sumar.depus)}</span>
-          {sumar.difTotal !== 0 && (
-            <>
-              {' '}· diferență cumulată{' '}
-              <span className={`font-semibold ${difTone(sumar.difTotal)}`}>
-                {sumar.difTotal > 0 ? '+' : ''}
-                {formatRON(sumar.difTotal)}
-              </span>
-            </>
-          )}
-        </p>
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-lg">
+            🧾
+          </div>
+          <p className="text-sm text-quasar-gray">
+            <strong className="text-quasar-black">{sumar.n}</strong> reconcilieri
+            · total depus{' '}
+            <span className="font-semibold text-quasar-black">
+              {formatRON(sumar.depus)}
+            </span>
+            {sumar.difTotal !== 0 && (
+              <>
+                {' '}· diferență cumulată{' '}
+                <span className={`font-semibold ${difTone(sumar.difTotal)}`}>
+                  {sumar.difTotal > 0 ? '+' : ''}
+                  {formatRON(sumar.difTotal)}
+                </span>
+              </>
+            )}
+          </p>
+        </div>
       )}
 
       {isLoading ? (

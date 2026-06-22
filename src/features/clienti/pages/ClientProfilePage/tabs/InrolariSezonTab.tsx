@@ -43,17 +43,17 @@ export function InrolariSezonTab({
         return (
           <div
             key={c.id}
-            className="rounded-lg border border-quasar-gray-light bg-white"
+            className="rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
           >
-            <div className="flex items-center justify-between border-b border-quasar-gray-light px-4 py-2">
-              <h3 className="text-sm font-bold text-quasar-black">{c.nume}</h3>
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <h3 className="font-display text-sm font-bold text-quasar-black">{c.nume}</h3>
               {reziliereCount > 0 && (
                 <Button variant="ghost" onClick={() => onAskRezilia(c.id)}>
                   Reziliază
                 </Button>
               )}
             </div>
-            <ul className="divide-y divide-quasar-gray-light">
+            <ul className="divide-y divide-gray-100">
               {list.map((r) => {
                 const rest = r.rest ?? 0
                 const total = r.total_de_plata ?? 0
@@ -71,12 +71,12 @@ export function InrolariSezonTab({
                     </span>
                     <span className="flex-1 text-right">
                       {achitat ? (
-                        <span className="text-emerald-700">
-                          ✓ Achitat ({total} RON)
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                          Achitat ({total} RON)
                         </span>
                       ) : (
-                        <span className="rounded-md bg-red-100 px-2 py-1 text-red-700">
-                          {rest} RON rest
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                          Restanță {rest} RON
                         </span>
                       )}
                     </span>

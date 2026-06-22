@@ -27,7 +27,7 @@ const subTabs = [
 function Bar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0
   return (
-    <div className="h-2 w-full rounded-full bg-quasar-gray-light">
+    <div className="h-2 w-full rounded-full bg-gray-200">
       <div
         className="h-2 rounded-full bg-quasar-yellow"
         style={{ width: `${pct}%` }}

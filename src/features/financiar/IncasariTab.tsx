@@ -19,6 +19,21 @@ import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { listIncasari, exportIncasari, PAGE_SIZE, type IncasareRow } from './api'
 import { IncasareEditModal } from './IncasareEditModal'
 
+function metodaTone(metoda: string): string {
+  switch (metoda) {
+    case 'Cash':
+      return 'bg-emerald-100 text-emerald-700'
+    case 'Card':
+      return 'bg-blue-100 text-blue-700'
+    case 'Transfer':
+      return 'bg-amber-100 text-amber-700'
+    case 'Revolut':
+      return 'bg-violet-100 text-violet-700'
+    default:
+      return 'bg-gray-100 text-gray-600'
+  }
+}
+
 function buildColumns(
   onEdit: ((id: string) => void) | null,
 ): Column<IncasareRow>[] {
@@ -53,7 +68,16 @@ function buildColumns(
     },
     {
       header: 'Metodă',
-      cell: (i) => i.metoda ?? '—',
+      cell: (i) =>
+        i.metoda ? (
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${metodaTone(i.metoda)}`}
+          >
+            {i.metoda}
+          </span>
+        ) : (
+          '—'
+        ),
       className: 'w-24',
       sortValue: (i) => i.metoda?.toLowerCase(),
     },
@@ -178,7 +202,7 @@ export function IncasariTab() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="w-56">
           <Field label="Caută în observații" htmlFor="inc-search">
             <TextInput
@@ -277,7 +301,7 @@ export function IncasariTab() {
             />
           )}
 
-          <div className="mt-4 flex items-center justify-between text-sm text-quasar-gray">
+          <div className="mt-4 flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-quasar-gray shadow-sm">
             <span>
               {data?.total ?? 0} încasări · total pagină:{' '}
               <span className="font-semibold text-quasar-black">

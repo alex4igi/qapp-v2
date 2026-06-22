@@ -43,7 +43,7 @@ function RatingRow({
   onChange: (v: number) => void
 }) {
   return (
-    <div className="rounded-md border border-quasar-gray-light bg-white px-4 py-3">
+    <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
       <p className="mb-2 text-sm font-medium text-quasar-black">{label}</p>
       <div className="flex items-center gap-3 text-xs text-quasar-gray">
         <span className="w-16 shrink-0 text-right">Slab</span>
@@ -58,7 +58,7 @@ function RatingRow({
                 'h-8 w-8 rounded-full border text-sm font-medium transition-colors',
                 value === n
                   ? 'border-quasar-black bg-quasar-yellow text-quasar-black'
-                  : 'border-quasar-gray-light bg-white text-quasar-gray hover:border-quasar-black',
+                  : 'border-gray-200 bg-white text-quasar-gray hover:border-quasar-black',
               ].join(' ')}
             >
               {n}
@@ -238,7 +238,7 @@ function EvaluareTeacherForm({
           </Field>
         </div>
 
-        <div className="rounded-md bg-quasar-gray-light/40 p-3">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
           <p className="mb-1 text-sm font-semibold text-quasar-black">Criterii</p>
           <p className="mb-3 text-xs text-quasar-gray">
             Notează 1 = slab, 5 = excelent. Lasă gol ce nu se aplică.
@@ -308,13 +308,13 @@ export function TeacherTabEvaluari({ teacherId }: { teacherId: string }) {
       ) : q.isError ? (
         <p className="text-sm text-red-600">Eroare la încărcarea evaluărilor.</p>
       ) : (q.data ?? []).length === 0 ? (
-        <p className="rounded-md border border-quasar-gray-light bg-white px-4 py-6 text-center text-sm text-quasar-gray">
+        <p className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-quasar-gray shadow-sm">
           Nicio evaluare încă. Apasă „+ Evaluare nouă".
         </p>
       ) : (
-        <div className="overflow-hidden rounded-md border border-quasar-gray-light">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-quasar-gray-light/40 text-left text-quasar-gray">
+            <thead className="bg-gray-50 text-left text-quasar-gray">
               <tr>
                 <th className="px-4 py-2 font-medium">Perioadă</th>
                 <th className="px-4 py-2 font-medium">Scor mediu</th>
@@ -327,7 +327,7 @@ export function TeacherTabEvaluari({ teacherId }: { teacherId: string }) {
                 return (
                   <tr
                     key={e.id}
-                    className="cursor-pointer border-t border-quasar-gray-light hover:bg-quasar-gray-light/20"
+                    className="cursor-pointer border-t border-gray-200 hover:bg-gray-50"
                     onClick={() => openEdit(e)}
                   >
                     <td className="px-4 py-2 font-medium text-quasar-black">

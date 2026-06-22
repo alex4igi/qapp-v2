@@ -30,13 +30,13 @@ export function ClientSidebar({
   onEnroll,
 }: Props) {
   return (
-    <aside className="rounded-lg border border-quasar-gray-light bg-white p-4">
+    <aside className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="mb-3 flex justify-center">
-        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow text-3xl font-bold text-quasar-black">
+        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-quasar-black">
           {initials}
         </div>
       </div>
-      <h2 className="text-center text-lg font-bold text-quasar-black">
+      <h2 className="text-center font-display text-lg font-bold text-quasar-black">
         {nume} {prenume ?? ''}
       </h2>
       <dl className="mt-4 space-y-3">

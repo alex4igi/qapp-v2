@@ -128,9 +128,13 @@ const columns: Column<Cheltuiala>[] = [
     header: 'Achitată',
     cell: (c) =>
       c.achitat ? (
-        <span className="font-medium text-green-700">Da</span>
+        <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+          Da
+        </span>
       ) : (
-        <span className="font-medium text-red-600">Nu</span>
+        <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+          Nu
+        </span>
       ),
     className: 'w-24',
     sortValue: (c) => (c.achitat ? 1 : 0),
@@ -201,7 +205,7 @@ export function CheltuieliTab() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="w-56">
           <Field label="Caută nume/descriere" htmlFor="ch-search">
             <TextInput
@@ -282,18 +286,26 @@ export function CheltuieliTab() {
       </div>
 
       {data && (
-        <p className="mb-3 text-sm">
-          <strong>{data.total}</strong> cheltuieli · total{' '}
-          <span className="font-semibold">{formatRON(data.sumTotal)}</span>
-          {' · '}achitat{' '}
-          <span className="font-semibold text-green-700">
-            {formatRON(data.sumAchitat)}
-          </span>
-          {' · '}neachitat{' '}
-          <span className="font-semibold text-red-600">
-            {formatRON(data.sumNeachitat)}
-          </span>
-        </p>
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-lg">
+            💸
+          </div>
+          <p className="text-sm text-quasar-gray">
+            <strong className="text-quasar-black">{data.total}</strong> cheltuieli
+            · total{' '}
+            <span className="font-semibold text-quasar-black">
+              {formatRON(data.sumTotal)}
+            </span>
+            {' · '}achitat{' '}
+            <span className="font-semibold text-emerald-700">
+              {formatRON(data.sumAchitat)}
+            </span>
+            {' · '}neachitat{' '}
+            <span className="font-semibold text-red-600">
+              {formatRON(data.sumNeachitat)}
+            </span>
+          </p>
+        </div>
       )}
 
       {isLoading ? (
@@ -312,7 +324,7 @@ export function CheltuieliTab() {
             emptyMessage="Nicio cheltuială."
           />
 
-          <div className="mt-4 flex items-center justify-end gap-2 text-sm text-quasar-gray">
+          <div className="mt-4 flex items-center justify-end gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-quasar-gray shadow-sm">
             <span>
               Pagina {page + 1} / {totalPages}
             </span>
