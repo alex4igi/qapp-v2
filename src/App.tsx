@@ -101,12 +101,18 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/']} />}>
             <Route element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
-              <Route path="overview" element={<AnsambluPage />} />
               <Route path="cursuri" element={<CursuriListPage />} />
               <Route path="cursuri/:id" element={<CursProfilePage />} />
               <Route path="prezente" element={<PrezentePage />} />
               <Route path="grupa/:cursId" element={<GrupaDashboardPage />} />
               <Route path="clienti/:id" element={<ClientProfilePage />} />
+            </Route>
+          </Route>
+
+          {/* Overview: staff fără teacher (teacher-ul nu are conținut aici). */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/overview']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="overview" element={<AnsambluPage />} />
             </Route>
           </Route>
 

@@ -17,7 +17,7 @@ export const TEACHER_ONLY: AppRole[] = ['teacher']
 // pentru accesul la rută.
 export const ROUTE_ACCESS = {
   '/': WITH_TEACHER,
-  '/overview': WITH_TEACHER,
+  '/overview': ALL_STAFF,
   '/clienti': ALL_STAFF,
   '/familii': ALL_STAFF,
   '/cursuri': WITH_TEACHER,

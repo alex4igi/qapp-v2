@@ -10,7 +10,8 @@ import {
 } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { useAuth } from '@/hooks/useAuth'
-import { isPrivileged } from '@/lib/rolesMatrix'
+import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { isPrivileged, isAdminOrHigher } from '@/lib/rolesMatrix'
 import { locatiiOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
@@ -27,16 +28,22 @@ import {
   lunaCuOffset,
   listSezoaneTinta,
   getIncasariPerSezon,
-  getRataPrezentaLuna,
-  getOcupareTotala,
-  getRetentieLuna,
-  getVenitLunaCurenta,
   getLeadFunnel,
   type Interval,
 } from './api'
+import {
+  getTrendPrezente,
+  getGradOcupare,
+  getCrestereNeta,
+  getConversieLeads,
+  getProfitabilitateTeacher,
+} from '@/features/ansamblu/api'
+import { TrendPrezenteSection } from '@/features/ansamblu/TrendPrezenteSection'
+import { TotalClientiChart } from '@/features/ansamblu/TotalClientiChart'
+import { OcupareList } from '@/features/ansamblu/OcupareList'
+import { TeacherMarjaTable } from '@/features/ansamblu/TeacherMarjaTable'
 import { getReinscrieriProgress } from '@/features/reinscrieri/api'
 import { KpiCard } from './KpiCard'
-import { OverviewDonut } from './OverviewDonut'
 import { BalantaChart } from './BalantaChart'
 import { PrezenteAchitareChart } from './PrezenteAchitareChart'
 import { MetodePlataChart } from './MetodePlataChart'
@@ -65,6 +72,8 @@ export function StatisticiPage() {
   // Cheltuieli + profit sunt doar pentru manager+. Front_desk vede încasări,
   // restanțe, conversie, prezențe, ocupare — „satisfacția muncii", fără profit.
   const privileged = isPrivileged(role)
+  const { locatieId: scopLocatie, locatieNume: scopLocatieNume } =
+    useWorkingLocatie()
   const [fromLuna, setFromLuna] = useState(lunaCuOffset(-11))
   const [toLuna, setToLuna] = useState(lunaCurenta())
   const [locatieId, setLocatieId] = useState('')
@@ -82,35 +91,34 @@ export function StatisticiPage() {
       : { fromLuna: f, toLuna: t }
   }, [fromLuna, toLuna])
 
-  const lunaLabel = useMemo(() => {
-    const [y, m] = lunaCurenta().split('-').map(Number)
-    return new Intl.DateTimeFormat('ro-RO', {
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date(y, m - 1, 1))
-  }, [])
-
   const kpisQ = useQuery({
     queryKey: ['stat', 'kpis', interval],
     queryFn: () => getKpis(interval),
   })
 
-  // Overview „luna curentă" — independent de selectorul de interval
-  const rataPrezentaQ = useQuery({
-    queryKey: ['stat', 'rata-prezenta'],
-    queryFn: getRataPrezentaLuna,
+  // Operațional (mutat din Overview) — luna curentă, scope pe locația de lucru.
+  const trendQ = useQuery({
+    queryKey: ['stat', 'trend', scopLocatie],
+    queryFn: () => getTrendPrezente(scopLocatie),
   })
-  const ocupareTotalaQ = useQuery({
-    queryKey: ['stat', 'ocupare-totala'],
-    queryFn: getOcupareTotala,
+  const ocupareQ = useQuery({
+    queryKey: ['stat', 'ocupare', scopLocatie],
+    queryFn: () => getGradOcupare(scopLocatie),
   })
-  const retentieQ = useQuery({
-    queryKey: ['stat', 'retentie'],
-    queryFn: getRetentieLuna,
+  const crestereQ = useQuery({
+    queryKey: ['stat', 'crestere-neta', scopLocatie],
+    queryFn: () => getCrestereNeta(scopLocatie, 12),
+    enabled: privileged,
   })
-  const venitLunaQ = useQuery({
-    queryKey: ['stat', 'venit-luna'],
-    queryFn: getVenitLunaCurenta,
+  const conversieQ = useQuery({
+    queryKey: ['stat', 'conversie-leads'],
+    queryFn: () => getConversieLeads(12),
+    enabled: privileged,
+  })
+  const profitQ = useQuery({
+    queryKey: ['stat', 'profit-teacher'],
+    queryFn: () => getProfitabilitateTeacher(12),
+    enabled: isAdminOrHigher(role),
   })
 
   const balLocQ = useQuery({
@@ -252,142 +260,6 @@ export function StatisticiPage() {
           </div>
         }
       />
-
-      <div className="mb-8">
-        <h2 className="mb-3 text-base font-bold text-quasar-black">
-          Privire de ansamblu — {lunaLabel}
-        </h2>
-
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <KpiCard
-            label="Venit luna curentă"
-            value={venitLunaQ.data != null ? formatRON(venitLunaQ.data) : '—'}
-            tone="positive"
-            hint="încasări în luna în curs"
-          />
-          <KpiCard
-            label="Rată prezență"
-            value={
-              rataPrezentaQ.data ? `${rataPrezentaQ.data.global.rata}%` : '—'
-            }
-            hint="prezenți / roster (recurent)"
-          />
-          <KpiCard
-            label="Ocupare grupe"
-            value={
-              ocupareTotalaQ.data ? `${ocupareTotalaQ.data.procent}%` : '—'
-            }
-            hint="total ocupat / capacitate"
-          />
-          <KpiCard
-            label="Retenție"
-            value={retentieQ.data ? `${retentieQ.data.rata}%` : '—'}
-            tone="positive"
-            hint="membri păstrați vs luna trecută"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div>
-            {rataPrezentaQ.isLoading ? (
-              <Spinner />
-            ) : (
-              <OverviewDonut
-                title="Rată prezență"
-                percent={rataPrezentaQ.data?.global.rata ?? 0}
-                centerSub={
-                  rataPrezentaQ.data
-                    ? `${rataPrezentaQ.data.global.prezenti} din ${rataPrezentaQ.data.global.posibile}`
-                    : undefined
-                }
-                slices={[
-                  {
-                    name: 'Prezenți',
-                    value: rataPrezentaQ.data?.global.prezenti ?? 0,
-                  },
-                  {
-                    name: 'Lipsă',
-                    value: Math.max(
-                      0,
-                      (rataPrezentaQ.data?.global.posibile ?? 0) -
-                        (rataPrezentaQ.data?.global.prezenti ?? 0),
-                    ),
-                  },
-                ]}
-                emptyMessage="Nicio prezență marcată luna aceasta."
-              >
-                {rataPrezentaQ.data &&
-                  rataPrezentaQ.data.perLocatie.length > 0 && (
-                    <ul className="mt-3 space-y-1 border-t border-quasar-gray-light pt-3 text-sm">
-                      {rataPrezentaQ.data.perLocatie.map((l) => (
-                        <li
-                          key={l.nume}
-                          className="flex justify-between gap-2"
-                        >
-                          <span className="text-quasar-gray">{l.nume}</span>
-                          <span className="font-medium text-quasar-black">
-                            {l.rata}%{' '}
-                            <span className="text-xs font-normal text-quasar-gray">
-                              ({l.prezenti}/{l.posibile})
-                            </span>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-              </OverviewDonut>
-            )}
-          </div>
-
-          <div>
-            {ocupareTotalaQ.isLoading ? (
-              <Spinner />
-            ) : (
-              <OverviewDonut
-                title="Grad de ocupare grupe"
-                percent={ocupareTotalaQ.data?.procent ?? 0}
-                centerSub={
-                  ocupareTotalaQ.data
-                    ? `${ocupareTotalaQ.data.activi} din ${ocupareTotalaQ.data.capacitate}`
-                    : undefined
-                }
-                slices={[
-                  { name: 'Ocupat', value: ocupareTotalaQ.data?.activi ?? 0 },
-                  {
-                    name: 'Liber',
-                    value: Math.max(
-                      0,
-                      (ocupareTotalaQ.data?.capacitate ?? 0) -
-                        (ocupareTotalaQ.data?.activi ?? 0),
-                    ),
-                  },
-                ]}
-              />
-            )}
-          </div>
-
-          <div>
-            {retentieQ.isLoading ? (
-              <Spinner />
-            ) : (
-              <OverviewDonut
-                title="Retenție membri"
-                percent={retentieQ.data?.rata ?? 0}
-                centerSub={
-                  retentieQ.data
-                    ? `${retentieQ.data.retinuti} din ${retentieQ.data.bazaPrev}`
-                    : undefined
-                }
-                slices={[
-                  { name: 'Reținuți', value: retentieQ.data?.retinuti ?? 0 },
-                  { name: 'Pierduți', value: retentieQ.data?.pierduti ?? 0 },
-                ]}
-                emptyMessage="Fără bază de comparație luna trecută."
-              />
-            )}
-          </div>
-        </div>
-      </div>
 
       <h2 className="mb-3 text-base font-bold text-quasar-black">
         Financiar — interval ales
@@ -659,6 +531,98 @@ export function StatisticiPage() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="mt-8 flex flex-col gap-8 border-t border-quasar-gray-light pt-6">
+        <h2 className="text-base font-bold text-quasar-black">
+          Operațional — {scopLocatieNume ?? 'toate locațiile'}
+        </h2>
+
+        {trendQ.isLoading ? (
+          <Spinner />
+        ) : (
+          <TrendPrezenteSection rows={trendQ.data ?? []} />
+        )}
+
+        <section>
+          <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+            Grad de ocupare cursuri
+          </h2>
+          <p className="mb-3 text-xs text-quasar-gray">
+            Înscriși activi luna asta / capacitate.{' '}
+            <span className="text-green-700">verde</span> bine ocupat ·{' '}
+            <span className="text-amber-600">galben</span> loc disponibil ·{' '}
+            <span className="text-red-600">roșu</span> peste capacitate.
+          </p>
+          {ocupareQ.isLoading ? (
+            <Spinner />
+          ) : (
+            <OcupareList rows={ocupareQ.data ?? []} />
+          )}
+        </section>
+
+        {privileged && (
+          <section>
+            <div className="mb-2 flex items-end justify-between gap-3">
+              <h2 className="text-sm font-semibold text-quasar-black">
+                Total clienți (ultimele 12 luni)
+              </h2>
+              <span className="text-xs text-quasar-gray">
+                {scopLocatieNume ?? 'toate locațiile'}
+              </span>
+            </div>
+            {crestereQ.isLoading ? (
+              <Spinner />
+            ) : (
+              <TotalClientiChart rows={crestereQ.data ?? []} />
+            )}
+          </section>
+        )}
+
+        {privileged && (
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+              Conversie lead → client (ultimele 12 luni)
+            </h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiCard
+                label="Lead-uri intrate"
+                value={conversieQ.data?.total_leads ?? '—'}
+              />
+              <KpiCard
+                label="Convertiți"
+                value={conversieQ.data?.convertiti ?? '—'}
+                tone="positive"
+              />
+              <KpiCard
+                label="Rată conversie"
+                value={conversieQ.data ? `${conversieQ.data.procent}%` : '—'}
+                tone="positive"
+              />
+              <KpiCard
+                label="Zile medii până la conversie"
+                value={conversieQ.data?.zile_medii ?? '—'}
+              />
+            </div>
+          </section>
+        )}
+
+        {isAdminOrHigher(role) && (
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+              Profitabilitate instructori (ultimele 12 luni)
+            </h2>
+            <p className="mb-3 text-xs text-quasar-gray">
+              Încasări atribuite cursurilor instructorului minus salariu. Vizibil
+              doar pentru owner și admin.
+            </p>
+            {profitQ.isLoading ? (
+              <Spinner />
+            ) : (
+              <TeacherMarjaTable rows={profitQ.data ?? []} />
+            )}
+          </section>
+        )}
       </div>
     </div>
   )
