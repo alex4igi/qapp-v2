@@ -42,6 +42,7 @@ import { PontajStaffPage } from '@/features/pontaj/PontajStaffPage'
 import { GrupaDashboardPage } from '@/features/dashboard/GrupaDashboardPage'
 import { SituatieZilnicaPage } from '@/features/situatie-zilnica/SituatieZilnicaPage'
 import { OptOutListPage } from '@/features/opt-out/OptOutListPage'
+import { QbotKbPage } from '@/features/qbot-kb/QbotKbPage'
 import { ROUTE_ACCESS } from '@/lib/rolesMatrix'
 
 function App() {
@@ -155,6 +156,12 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/oferta-publica']} />}>
             <Route element={<AppLayout />}>
               <Route path="oferta-publica" element={<OfertaPublicaPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/qbot-kb']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="qbot-kb" element={<QbotKbPage />} />
             </Route>
           </Route>
 

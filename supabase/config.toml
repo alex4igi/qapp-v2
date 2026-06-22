@@ -399,6 +399,10 @@ verify_jwt = true
 [functions.admin-users]
 verify_jwt = true
 
+# Q-bot — asistent conversațional (CRM staff + portal membri). Apelat cu JWT-ul utilizatorului.
+[functions.chatbot]
+verify_jwt = true
+
 # Apelate de pg_cron — fără JWT; au verificare proprie opțională prin CRON_SECRET.
 [functions.cron-morning]
 verify_jwt = false

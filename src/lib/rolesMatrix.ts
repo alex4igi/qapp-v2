@@ -46,6 +46,7 @@ export const ROUTE_ACCESS = {
   '/reinscrieri': PRIVILEGED,
   '/oferta-publica': PRIVILEGED,
   '/setari': PRIVILEGED,
+  '/qbot-kb': PRIVILEGED,
   '/opt-out': PRIVILEGED,
   '/salariul-meu': TEACHER_ONLY,
   '/pontaj-staff': PRIVILEGED,

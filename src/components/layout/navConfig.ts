@@ -51,6 +51,7 @@ export const navSections: NavSection[] = [
       { label: 'Campanii',    path: '/campanii' },
       { label: 'Reînscrieri',    path: '/reinscrieri' },
       { label: 'Ofertă publică', path: '/oferta-publica' },
+      { label: 'Q-bot (cunoștințe)', path: '/qbot-kb' },
       { label: 'Setări',         path: '/setari' },
     ],
   },

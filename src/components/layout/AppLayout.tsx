@@ -4,6 +4,7 @@ import { WorkingLocatieProvider } from '@/hooks/useWorkingLocatie'
 import { Header } from './Header'
 import { QuickActions } from './QuickActions'
 import { WorkingDayBanner } from './WorkingDayBanner'
+import { QbotWidget } from '@/features/chatbot/QbotWidget'
 
 export function AppLayout() {
   return (
@@ -20,6 +21,7 @@ export function AppLayout() {
               <Outlet />
             </main>
           </div>
+          <QbotWidget />
         </div>
       </WorkingLocatieProvider>
     </WorkingDateProvider>
