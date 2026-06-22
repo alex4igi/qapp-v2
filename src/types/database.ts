@@ -39,81 +39,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      qbot_kb: {
-        Row: {
-          activ: boolean
-          audienta: string
-          categorie: string
-          continut: string
-          id: string
-          pagina: string | null
-          rol_necesar: string | null
-          titlu: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          activ?: boolean
-          audienta: string
-          categorie: string
-          continut: string
-          id?: string
-          pagina?: string | null
-          rol_necesar?: string | null
-          titlu: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          activ?: boolean
-          audienta?: string
-          categorie?: string
-          continut?: string
-          id?: string
-          pagina?: string | null
-          rol_necesar?: string | null
-          titlu?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
-      chat_logs: {
-        Row: {
-          answer: string | null
-          audienta: string
-          created_at: string
-          id: string
-          locatie_id: string | null
-          question: string
-          role: string
-          tools_used: string[] | null
-          user_id: string
-        }
-        Insert: {
-          answer?: string | null
-          audienta: string
-          created_at?: string
-          id?: string
-          locatie_id?: string | null
-          question: string
-          role: string
-          tools_used?: string[] | null
-          user_id: string
-        }
-        Update: {
-          answer?: string | null
-          audienta?: string
-          created_at?: string
-          id?: string
-          locatie_id?: string | null
-          question?: string
-          role?: string
-          tools_used?: string[] | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       anunturi: {
         Row: {
           audienta: Json | null
@@ -475,6 +400,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chat_logs: {
+        Row: {
+          answer: string | null
+          audienta: string
+          created_at: string
+          id: string
+          locatie_id: string | null
+          question: string
+          role: string
+          tools_used: string[] | null
+          user_id: string
+        }
+        Insert: {
+          answer?: string | null
+          audienta: string
+          created_at?: string
+          id?: string
+          locatie_id?: string | null
+          question: string
+          role: string
+          tools_used?: string[] | null
+          user_id: string
+        }
+        Update: {
+          answer?: string | null
+          audienta?: string
+          created_at?: string
+          id?: string
+          locatie_id?: string | null
+          question?: string
+          role?: string
+          tools_used?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
       }
       cheltuieli: {
         Row: {
@@ -3824,6 +3785,45 @@ export type Database = {
           },
         ]
       }
+      qbot_kb: {
+        Row: {
+          activ: boolean
+          audienta: string
+          categorie: string
+          continut: string
+          id: string
+          pagina: string | null
+          rol_necesar: string | null
+          titlu: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activ?: boolean
+          audienta: string
+          categorie: string
+          continut: string
+          id?: string
+          pagina?: string | null
+          rol_necesar?: string | null
+          titlu: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activ?: boolean
+          audienta?: string
+          categorie?: string
+          continut?: string
+          id?: string
+          pagina?: string | null
+          rol_necesar?: string | null
+          titlu?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       reconcilieri_cash: {
         Row: {
           created: string
@@ -5634,6 +5634,7 @@ export type Database = {
           platit: number | null
           politica_discount: number | null
           prenume_client: string | null
+          prescris: boolean | null
           rest: number | null
           suma_baza: number | null
           tip_plata: Database["public"]["Enums"]["tip_plata"] | null
@@ -6603,7 +6604,7 @@ export type Database = {
         }[]
       }
       get_restante_worklist: {
-        Args: { p_locatie?: string }
+        Args: { p_locatie?: string; p_sezon?: string }
         Returns: {
           client_id: string
           nr_rate_neachitate: number

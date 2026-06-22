@@ -19,12 +19,15 @@ export type WorklistRow = {
 }
 
 // Worklist de recuperare: clienți Activ cu ≥2 rate neachitate, sortați după
-// zile de întârziere. p_locatie = uuid (locatii.id) sau null = toate.
+// zile de întârziere. p_locatie/p_sezon = uuid sau null = toate (sezonul e
+// aliniat cu get_sms_recipients — UI presetează sezonul activ).
 export async function getRestanteWorklist(
   locatieId: string | null,
+  sezonId: string | null = null,
 ): Promise<WorklistRow[]> {
   const { data, error } = await supabase.rpc('get_restante_worklist', {
     ...(locatieId ? { p_locatie: locatieId } : {}),
+    ...(sezonId ? { p_sezon: sezonId } : {}),
   })
   if (error) throw error
   return (data ?? []) as unknown as WorklistRow[]

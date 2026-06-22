@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PageHeader, Field, Select, Spinner } from '@/components/ui'
 import { formatRON } from '@/lib/format'
-import { locatiiOptions } from '@/lib/lookups'
+import { locatiiOptions, sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { getRestanteWorklist, type WorklistRow } from './api'
 import { RecuperareWorklistTable } from './RecuperareWorklistTable'
@@ -11,15 +11,35 @@ import { LogRecuperareModal, type RecuperareTarget } from './LogRecuperareModal'
 export function RecuperarePage() {
   const { locatieId: globalLocatieId } = useWorkingLocatie()
   const [locatieId, setLocatieId] = useState(globalLocatieId ?? '')
+  const [sezonId, setSezonId] = useState('')
   const [target, setTarget] = useState<RecuperareTarget | null>(null)
 
   const locatiiQ = useQuery({
     queryKey: ['lookup', 'locatii'],
     queryFn: locatiiOptions,
   })
+  const sezoaneQ = useQuery({
+    queryKey: ['lookup', 'sezoane'],
+    queryFn: sezoaneOptions,
+  })
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
+  // Presetează sezonul activ (o singură dată) — aliniat cu compozitorul SMS:
+  // nu chemăm/sunăm oameni din sezoane vechi. Operatorul poate trece pe „Toate".
+  const [sezonInit, setSezonInit] = useState(false)
+  useEffect(() => {
+    if (!sezonInit && sezonActivQ.data) {
+      setSezonId(sezonActivQ.data)
+      setSezonInit(true)
+    }
+  }, [sezonInit, sezonActivQ.data])
+
   const worklistQ = useQuery({
-    queryKey: ['restante-worklist', locatieId],
-    queryFn: () => getRestanteWorklist(locatieId || null),
+    queryKey: ['restante-worklist', locatieId, sezonId],
+    queryFn: () => getRestanteWorklist(locatieId || null, sezonId || null),
     placeholderData: keepPreviousData,
   })
 
@@ -52,6 +72,17 @@ export function RecuperarePage() {
               options={locatiiQ.data ?? []}
               value={locatieId}
               onChange={(e) => setLocatieId(e.target.value)}
+            />
+          </Field>
+        </div>
+        <div className="w-56">
+          <Field label="Sezon" htmlFor="rec-sez">
+            <Select
+              id="rec-sez"
+              placeholder="Toate"
+              options={sezoaneQ.data ?? []}
+              value={sezonId}
+              onChange={(e) => setSezonId(e.target.value)}
             />
           </Field>
         </div>

@@ -28,7 +28,7 @@ async function wipe() {
 // ---------- mapări enum v1 -> v2 ----------
 const LEAD_STATUS = { 'Convertit': 'convertit', 'Programat': 'programat', 'De revenit': 'contactat', 'Nu doreste': 'pierdut' }
 const LEAD_SUBSTATUS = { 'De revenit': 'de_revenit' }
-const LEAD_INTERES = { 'Dans': 'Street Dance', 'Gimnastica': 'Gimnastică', 'K-Pop': 'K-pop', 'Contemporan': 'Altceva' }
+const LEAD_INTERES = { 'Dans': 'Street Dance', 'Gimnastica': 'Acrobatică', 'K-Pop': 'K-pop', 'Contemporan': 'Nu știu încă' }
 
 async function main() {
   console.log(SAMPLE ? '=== MIGRARE: mod SAMPLE (subset) ===' : '=== MIGRARE: import COMPLET ===')

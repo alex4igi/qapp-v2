@@ -57,10 +57,23 @@ const columns: Column<RestantaRow>[] = [
   },
   {
     header: 'Rest',
-    cell: (r) => (
-      <span className="font-semibold text-red-600">{formatRON(r.rest)}</span>
-    ),
-    className: 'w-28 text-right',
+    cell: (r) =>
+      r.prescris ? (
+        <span className="inline-flex items-center justify-end gap-1.5">
+          <span
+            className="rounded bg-quasar-gray/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-quasar-gray"
+            title="Datorie prescrisă (sezon încheiat de peste 2 ani) — exclusă din totalul de recuperat"
+          >
+            prescris
+          </span>
+          <span className="font-semibold text-quasar-gray line-through">
+            {formatRON(r.rest)}
+          </span>
+        </span>
+      ) : (
+        <span className="font-semibold text-red-600">{formatRON(r.rest)}</span>
+      ),
+    className: 'w-44 text-right',
   },
 ]
 
@@ -125,21 +138,36 @@ export function RestanteTab() {
         Number(r.total_de_plata ?? 0),
         Number(r.platit ?? 0),
         Number(r.rest ?? 0),
+        r.prescris ? 'Da' : '—',
       ])
-      const sum = (pick: (r: RestantaRow) => number) =>
-        rows.reduce((a, r) => a + pick(r), 0)
+      const sum = (
+        pick: (r: RestantaRow) => number,
+        filter: (r: RestantaRow) => boolean = () => true,
+      ) => rows.filter(filter).reduce((a, r) => a + pick(r), 0)
+      const active = (r: RestantaRow) => !r.prescris
       body.push([
-        'TOTAL',
+        'TOTAL DE RECUPERAT',
         '',
         '',
         '',
-        sum((r) => Number(r.total_de_plata ?? 0)),
-        sum((r) => Number(r.platit ?? 0)),
-        sum((r) => Number(r.rest ?? 0)),
+        sum((r) => Number(r.total_de_plata ?? 0), active),
+        sum((r) => Number(r.platit ?? 0), active),
+        sum((r) => Number(r.rest ?? 0), active),
+        '',
+      ])
+      body.push([
+        'TOTAL PRESCRIS',
+        '',
+        '',
+        '',
+        '',
+        '',
+        sum((r) => Number(r.rest ?? 0), (r) => !!r.prescris),
+        '',
       ])
       downloadCsv(
         `restante-${locatieId ? 'loc' : 'toate-loc'}_${cursId ? 'curs' : 'toate-curs'}.csv`,
-        ['Client', 'Curs', 'Locație', 'Început', 'Total (RON)', 'Plătit (RON)', 'Rest (RON)'],
+        ['Client', 'Curs', 'Locație', 'Început', 'Total (RON)', 'Plătit (RON)', 'Rest (RON)', 'Prescris'],
         body,
       )
     } finally {
@@ -210,10 +238,19 @@ export function RestanteTab() {
           ) : (
             'Total: '
           )}
-          <strong>{data.total}</strong> înrolări cu restanță · sumă totală{' '}
+          <strong>{data.total}</strong> înrolări cu restanță · de recuperat{' '}
           <span className="font-semibold text-red-600">
             {formatRON(data.sumRest)}
           </span>
+          {data.countPrescris > 0 && (
+            <>
+              {' · '}
+              <span className="text-quasar-gray">
+                {data.countPrescris} prescrise (
+                {formatRON(data.sumPrescris)}) excluse din total
+              </span>
+            </>
+          )}
         </p>
       )}
 

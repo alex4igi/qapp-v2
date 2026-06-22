@@ -439,7 +439,9 @@ export type RestanteListParams = {
 export type RestanteListResult = {
   rows: RestantaRow[]
   total: number
-  sumRest: number
+  sumRest: number // doar restanțele active (neprescrise) — totalul de recuperat
+  sumPrescris: number // restanțe prescrise (> 2 ani), excluse din totalul de recuperat
+  countPrescris: number
 }
 
 export async function listRestante({
@@ -466,18 +468,26 @@ export async function listRestante({
   const { data, error } = await paginated
   if (error) throw error
 
-  // Pentru count + sumă: fetch toate rest-urile (selectăm doar rest) ca să
-  // putem agrega corect; e ok cât timp lista nu explodează (>10k).
+  // Pentru count + sumă: fetch toate rest-urile (rest + prescris) ca să putem
+  // agrega corect; e ok cât timp lista nu explodează (>10k).
   const allQ = buildBase()
-  const { data: allRows, error: allErr } = await allQ.select('rest')
+  const { data: allRows, error: allErr } = await allQ.select('rest, prescris')
   if (allErr) throw allErr
-  const sumRest = (allRows ?? []).reduce(
-    (acc, r) => acc + Number(r.rest ?? 0),
-    0,
-  )
+  let sumRest = 0
+  let sumPrescris = 0
+  let countPrescris = 0
+  for (const r of allRows ?? []) {
+    const val = Number(r.rest ?? 0)
+    if (r.prescris) {
+      sumPrescris += val
+      countPrescris += 1
+    } else {
+      sumRest += val
+    }
+  }
   const total = allRows?.length ?? 0
 
-  return { rows: data ?? [], total, sumRest }
+  return { rows: data ?? [], total, sumRest, sumPrescris, countPrescris }
 }
 
 // Export: toate restanțele filtrate (fără paginare) pentru CSV cu total real.

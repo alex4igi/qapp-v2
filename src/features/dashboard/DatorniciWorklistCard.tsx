@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { formatRON } from '@/lib/format'
+import { sezonActivId } from '@/lib/lookups'
 import { getRestanteWorklist, type WorklistRow } from '@/features/recuperare/api'
 import {
   LogRecuperareModal,
@@ -11,7 +12,8 @@ import {
 const TOP = 8
 
 // Card „de sunat azi" pe dashboard — apare DOAR când există datornici activi cu
-// 2+ rate neachitate (worklist), filtrat pe locația de lucru. Front-desk (și
+// 2+ rate neachitate (worklist), filtrat pe locația de lucru și sezonul activ
+// (aliniat cu compozitorul SMS — nu sunăm pentru sezoane vechi). Front-desk (și
 // restul staff-ului) acționează direct din locul unde aterizează.
 export function DatorniciWorklistCard({
   locatieId,
@@ -20,9 +22,15 @@ export function DatorniciWorklistCard({
 }) {
   const [target, setTarget] = useState<RecuperareTarget | null>(null)
 
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
   const worklistQ = useQuery({
-    queryKey: ['restante-worklist', locatieId ?? 'all'],
-    queryFn: () => getRestanteWorklist(locatieId),
+    queryKey: ['restante-worklist', locatieId ?? 'all', sezonActivQ.data ?? 'all'],
+    queryFn: () => getRestanteWorklist(locatieId, sezonActivQ.data ?? null),
+    enabled: sezonActivQ.isSuccess,
   })
 
   const rows = worklistQ.data ?? []
