@@ -6,6 +6,7 @@ import {
   TextInput,
   TextArea,
   Select,
+  Combobox,
   Button,
 } from '@/components/ui'
 import { tipVoucherOptions, tipPlataOptions } from '@/lib/enums'
@@ -290,12 +291,12 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Client (opțional)" htmlFor="client">
-            <Select
+            <Combobox
               id="client"
-              placeholder="— oricare —"
+              placeholder="— caută client (oricare) —"
               options={clienti.data ?? []}
               value={form.client}
-              onChange={(e) => set('client')(e.target.value)}
+              onChange={set('client')}
             />
           </Field>
           <Field label="Curs (opțional)" htmlFor="curs">

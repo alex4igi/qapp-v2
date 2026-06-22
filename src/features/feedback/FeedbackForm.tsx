@@ -6,6 +6,7 @@ import {
   TextInput,
   TextArea,
   Select,
+  Combobox,
   Checkbox,
   Button,
 } from '@/components/ui'
@@ -190,21 +191,21 @@ export function FeedbackForm({ open, feedback, onClose }: Props) {
 
         <div className="grid grid-cols-3 gap-3">
           <Field label="Autor (client)" htmlFor="autor">
-            <Select
+            <Combobox
               id="autor"
-              placeholder="—"
+              placeholder="— caută client —"
               options={clienti.data ?? []}
               value={form.autor}
-              onChange={(e) => set('autor', e.target.value)}
+              onChange={(val) => set('autor', val)}
             />
           </Field>
           <Field label="Familie" htmlFor="reprezentant">
-            <Select
+            <Combobox
               id="reprezentant"
-              placeholder="—"
+              placeholder="— caută familie —"
               options={familii.data ?? []}
               value={form.reprezentant}
-              onChange={(e) => set('reprezentant', e.target.value)}
+              onChange={(val) => set('reprezentant', val)}
             />
           </Field>
           <Field label="Curs" htmlFor="cursul">

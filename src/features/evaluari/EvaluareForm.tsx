@@ -6,6 +6,7 @@ import {
   TextInput,
   TextArea,
   Select,
+  Combobox,
   Button,
 } from '@/components/ui'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
@@ -256,12 +257,12 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
             />
           </Field>
           <Field label="Cursant" htmlFor="client" required>
-            <Select
+            <Combobox
               id="client"
-              placeholder={form.cursul ? '—' : 'Alege cursul mai întâi'}
+              placeholder={form.cursul ? '— caută cursant —' : 'Alege cursul mai întâi'}
               options={clientiQ.data ?? []}
               value={form.client}
-              onChange={(e) => set('client', e.target.value)}
+              onChange={(val) => set('client', val)}
               disabled={!form.cursul}
             />
           </Field>

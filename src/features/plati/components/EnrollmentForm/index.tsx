@@ -319,12 +319,12 @@ export function EnrollmentForm({
           className="space-y-3"
         >
           <Field label="Client" required htmlFor="client">
-            <Select
+            <Combobox
               id="client"
-              placeholder="— alege client —"
+              placeholder="— caută client după nume sau telefon —"
               options={clientiQ.data ?? []}
               value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
+              onChange={setClientId}
               disabled={Boolean(defaultClientId)}
             />
           </Field>
