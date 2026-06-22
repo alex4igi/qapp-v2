@@ -39,6 +39,16 @@ export function ClientSidebar({
       <h2 className="text-center font-display text-lg font-bold text-quasar-black">
         {nume} {prenume ?? ''}
       </h2>
+      {familiaId && (
+        <div className="mt-1 text-center">
+          <Link
+            to={`/familii/${familiaId}`}
+            className="text-sm font-medium text-quasar-black underline decoration-quasar-yellow decoration-2 underline-offset-2 hover:text-quasar-gray"
+          >
+            {familia || 'Vezi familia'} →
+          </Link>
+        </div>
+      )}
       <dl className="mt-4 space-y-3">
         <DetailRow label="Vârsta" value={varsta != null ? String(varsta) : ''} />
         <DetailRow
