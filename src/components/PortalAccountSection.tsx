@@ -4,6 +4,7 @@ import { Button, TextInput } from '@/components/ui'
 import {
   createPortalAccount,
   resetPortalPassword,
+  suggestPortalPassword,
   unlinkPortalAccount,
 } from '@/lib/portalAccount'
 
@@ -14,6 +15,7 @@ type Props = {
   id: string
   authUserId: string | null
   defaultEmail?: string | null
+  nameHint?: string | null // numele familiei/clientului → parolă sugerată
   invalidateKey: unknown[]
 }
 
@@ -22,12 +24,14 @@ export function PortalAccountSection({
   id,
   authUserId,
   defaultEmail,
+  nameHint,
   invalidateKey,
 }: Props) {
   const qc = useQueryClient()
   const [email, setEmail] = useState(defaultEmail ?? '')
-  const [password, setPassword] = useState('')
-  const [resetPwd, setResetPwd] = useState('')
+  const [password, setPassword] = useState(() => suggestPortalPassword(nameHint))
+  const [resetPwd, setResetPwd] = useState(() => suggestPortalPassword(nameHint))
+  const [sendEmail, setSendEmail] = useState(true)
   const [showReset, setShowReset] = useState(false)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -36,13 +40,12 @@ export function PortalAccountSection({
   const target = kind === 'familie' ? { familieId: id } : { clientId: id }
   const refresh = () => qc.invalidateQueries({ queryKey: invalidateKey })
 
-  async function run(fn: () => Promise<void>, ok: string) {
+  async function run(fn: () => Promise<void>) {
     setBusy(true)
     setMsg(null)
     setErr(null)
     try {
       await fn()
-      setMsg(ok)
       refresh()
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
@@ -67,24 +70,54 @@ export function PortalAccountSection({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <TextInput
-              type="text"
-              placeholder="Parolă (min. 8)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="flex gap-1">
+              <TextInput
+                type="text"
+                placeholder="Parolă (min. 8)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                title="Generează altă parolă"
+                className="rounded-lg border border-gray-200 px-2 text-sm hover:bg-gray-50"
+                onClick={() => setPassword(suggestPortalPassword(nameHint))}
+              >
+                🔄
+              </button>
+            </div>
             <Button
               disabled={busy || !email || password.length < 8}
               onClick={() =>
                 run(async () => {
-                  await createPortalAccount({ ...target, email, password })
-                  setPassword('')
-                }, 'Cont creat.')
+                  const r = await createPortalAccount({
+                    ...target,
+                    email,
+                    password,
+                    notify: sendEmail ? 'email' : undefined,
+                  })
+                  setMsg(
+                    sendEmail && r.emailed
+                      ? `Cont creat. Datele au fost trimise pe ${email}.`
+                      : sendEmail
+                        ? `Cont creat. ⚠️ Emailul NU a plecat (Resend neconfigurat?) — comunică manual parola: ${password}`
+                        : `Cont creat. Parolă: ${password} (comunic-o membrului).`,
+                  )
+                  setPassword(suggestPortalPassword(nameHint))
+                })
               }
             >
               Creează cont
             </Button>
           </div>
+          <label className="flex items-center gap-2 text-xs text-quasar-gray">
+            <input
+              type="checkbox"
+              checked={sendEmail}
+              onChange={(e) => setSendEmail(e.target.checked)}
+            />
+            Trimite datele de acces pe email
+          </label>
         </div>
       ) : (
         <div className="space-y-2">
@@ -99,28 +132,57 @@ export function PortalAccountSection({
                 Resetează parola
               </Button>
             ) : (
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <TextInput
-                  type="text"
-                  placeholder="Parolă nouă (min. 8)"
-                  value={resetPwd}
-                  onChange={(e) => setResetPwd(e.target.value)}
-                />
-                <Button
-                  disabled={busy || resetPwd.length < 8}
-                  onClick={() =>
-                    run(async () => {
-                      await resetPortalPassword(authUserId, resetPwd)
-                      setResetPwd('')
-                      setShowReset(false)
-                    }, 'Parolă resetată.')
-                  }
-                >
-                  Salvează parola
-                </Button>
-                <Button variant="ghost" onClick={() => setShowReset(false)}>
-                  Anulează
-                </Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-1">
+                  <TextInput
+                    type="text"
+                    placeholder="Parolă nouă (min. 8)"
+                    value={resetPwd}
+                    onChange={(e) => setResetPwd(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    title="Generează altă parolă"
+                    className="rounded-lg border border-gray-200 px-2 text-sm hover:bg-gray-50"
+                    onClick={() => setResetPwd(suggestPortalPassword(nameHint))}
+                  >
+                    🔄
+                  </button>
+                  <Button
+                    disabled={busy || resetPwd.length < 8}
+                    onClick={() =>
+                      run(async () => {
+                        const r = await resetPortalPassword(
+                          authUserId,
+                          resetPwd,
+                          sendEmail ? 'email' : undefined,
+                        )
+                        setMsg(
+                          sendEmail && r.emailed
+                            ? 'Parolă resetată și trimisă pe email.'
+                            : sendEmail
+                              ? `Parolă resetată. ⚠️ Emailul NU a plecat — comunică manual: ${resetPwd}`
+                              : `Parolă resetată: ${resetPwd} (comunic-o membrului).`,
+                        )
+                        setResetPwd(suggestPortalPassword(nameHint))
+                        setShowReset(false)
+                      })
+                    }
+                  >
+                    Salvează parola
+                  </Button>
+                  <Button variant="ghost" onClick={() => setShowReset(false)}>
+                    Anulează
+                  </Button>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-quasar-gray">
+                  <input
+                    type="checkbox"
+                    checked={sendEmail}
+                    onChange={(e) => setSendEmail(e.target.checked)}
+                  />
+                  Trimite parola nouă pe email
+                </label>
               </div>
             )}
             <Button
@@ -128,7 +190,10 @@ export function PortalAccountSection({
               disabled={busy}
               onClick={() => {
                 if (!window.confirm('Ștergi contul de portal? Accesul va fi revocat.')) return
-                run(() => unlinkPortalAccount(target), 'Cont șters.')
+                run(async () => {
+                  await unlinkPortalAccount(target)
+                  setMsg('Cont șters.')
+                })
               }}
             >
               Șterge cont

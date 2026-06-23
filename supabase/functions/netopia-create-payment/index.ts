@@ -5,6 +5,7 @@
 //
 // Confirmarea efectivă (scrierea în `incasari`) se face DOAR din `netopia-webhook`.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import * as jose from 'npm:jose@5'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,11 +48,19 @@ Deno.serve(async (req) => {
     const url = Deno.env.get('SUPABASE_URL')!
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
-    // Verifică identitatea + rolul `parinte`.
-    const { data: userRes, error: userErr } = await admin.auth.getUser(token)
-    if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
-    if ((userRes.user.app_metadata?.role as string) !== 'parinte') {
-      return json({ error: 'forbidden' }, 403)
+    // Verifică identitatea: tokenul portalului e semnat HS256 cu PORTAL_JWT_SECRET
+    // (director de login separat — vezi portal-auth). Validăm semnătura + rolul `parinte`.
+    let portalAccountId: string
+    try {
+      const { payload } = await jose.jwtVerify(token, new TextEncoder().encode(Deno.env.get('PORTAL_JWT_SECRET')!), {
+        issuer: 'qapp-portal',
+        audience: 'authenticated',
+      })
+      const role = (payload.app_metadata as { role?: string } | undefined)?.role
+      if (role !== 'parinte' || !payload.sub) return json({ error: 'forbidden' }, 403)
+      portalAccountId = String(payload.sub)
+    } catch {
+      return json({ error: 'invalid token' }, 401)
     }
 
     const { clientId, kind = 'abonament', sesiuneId, panaLa, voucherCod } = (await req.json()) as Body
@@ -141,7 +150,7 @@ Deno.serve(async (req) => {
     const { error: insErr } = await admin.from('netopia_orders').insert({
       order_ref: orderRef,
       client_id: clientId,
-      auth_user_id: userRes.user.id,
+      auth_user_id: portalAccountId,
       amount,
       fifo_plan: plan,
       status: 'pending',

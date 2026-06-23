@@ -49,21 +49,14 @@ async function cleanup() {
         await svc.from('enrollments').delete().in('id', eids)
       }
       await svc.from('prezente').delete().in('client', ids)
-      // conturi auth ale clienților individuali (adult)
-      for (const k of kids ?? []) if (k.auth_user_id) await svc.auth.admin.deleteUser(k.auth_user_id)
       await svc.from('clienti').delete().in('id', ids)
     }
-    const { data: fams } = await svc.from('familii').select('id, auth_user_id').like('nume_familie', tag)
-    for (const f of fams ?? []) {
-      if (f.auth_user_id) await svc.auth.admin.deleteUser(f.auth_user_id)
-      await svc.from('familii').delete().eq('id', f.id)
-    }
+    await svc.from('familii').delete().like('nume_familie', tag)
   }
   // sesiuni OPEN de test (marcate prin observatii)
   await svc.from('open_sesiuni').delete().like('observatii', 'ZZTEST%')
-  // conturi auth orfane cu emailurile noastre
-  const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 })
-  for (const u of list.users) if (EMAILS.includes(u.email)) await svc.auth.admin.deleteUser(u.id)
+  // conturi de portal de test (director separat portal_accounts)
+  await svc.from('portal_accounts').delete().in('email', EMAILS)
 }
 
 function isoDay(d) {
@@ -104,13 +97,13 @@ async function seed() {
   await svc.from('enrollments')
     .insert({ client: ana.id, cursul: curs2.id, tip_plata: 'Per luna', suma_baza: 150, suma: 150, data_incepere: diPrev, activ: true, reziliat: false })
 
-  const { data: u } = await svc.auth.admin.createUser({ email: EMAIL, password: PWD, email_confirm: true, app_metadata: { role: 'parinte' } })
-  await svc.from('familii').update({ auth_user_id: u.user.id }).eq('id', fam.id)
+  const { data: famPid } = await svc.rpc('portal_upsert_credentials', { p_email: EMAIL, p_password: PWD })
+  await svc.from('familii').update({ auth_user_id: famPid }).eq('id', fam.id)
 
   // ===== Adult individual FĂRĂ familie =====
-  const { data: adultUser } = await svc.auth.admin.createUser({ email: EMAIL_ADULT, password: PWD, email_confirm: true, app_metadata: { role: 'parinte' } })
+  const { data: adultPid } = await svc.rpc('portal_upsert_credentials', { p_email: EMAIL_ADULT, p_password: PWD })
   const { data: adult } = await svc.from('clienti')
-    .insert({ nume: 'ZZTEST Adult', prenume: 'Solo', data_nasterii: '1995-07-15', auth_user_id: adultUser.user.id, email: EMAIL_ADULT })
+    .insert({ nume: 'ZZTEST Adult', prenume: 'Solo', data_nasterii: '1995-07-15', auth_user_id: adultPid, email: EMAIL_ADULT })
     .select('id').single()
   const { data: enrAdult } = await svc.from('enrollments')
     .insert({ client: adult.id, cursul: curs.id, tip_plata: 'Per luna', suma_baza: 170, suma: 170, data_incepere: di, activ: true, reziliat: false })
