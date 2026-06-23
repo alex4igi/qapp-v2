@@ -45,7 +45,7 @@ export function Header() {
 
       <div className="flex items-center gap-3 text-sm">
         {/* Context de lucru: locație + dată, grupate într-un singur pill compact */}
-        <div className="flex items-center rounded-md border border-quasar-gray-light bg-white">
+        <div className="flex items-center rounded-lg border border-gray-300 bg-white shadow-sm">
           {locatieLocked ? (
             <span
               className="flex items-center gap-1.5 px-2 py-1 text-quasar-black/70"
@@ -77,7 +77,7 @@ export function Header() {
             </label>
           )}
 
-          <span className="h-5 w-px bg-quasar-gray-light" aria-hidden />
+          <span className="h-5 w-px bg-gray-200" aria-hidden />
 
           <label className="flex items-center gap-1.5 px-2 py-1" title="Ziua de lucru">
             <span aria-hidden>📅</span>
@@ -94,7 +94,7 @@ export function Header() {
           href="/prezentari/index.html"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex h-9 w-9 items-center justify-center rounded-md border border-quasar-gray-light bg-white text-base hover:bg-quasar-gray-light"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-base shadow-sm transition-colors hover:bg-gray-100"
           title="Ghiduri & manual de utilizare"
           aria-label="Ghiduri & manual"
         >
@@ -104,7 +104,7 @@ export function Header() {
         {showNotificari && (
           <Link
             to="/notificari"
-            className="relative flex h-9 w-9 items-center justify-center rounded-md border border-quasar-gray-light bg-white text-base hover:bg-quasar-gray-light"
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 bg-white text-base shadow-sm transition-colors hover:bg-gray-100"
             title={
               unreadCount > 0 ? `${unreadCount} notificări ne-citite` : 'Notificări'
             }

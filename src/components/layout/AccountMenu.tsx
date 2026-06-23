@@ -11,7 +11,7 @@ function initials(email: string | undefined): string {
 }
 
 const itemClass =
-  'flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-quasar-black transition-colors hover:bg-quasar-gray-light'
+  'flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-quasar-black transition-colors hover:bg-gray-100'
 
 export function AccountMenu() {
   const { user, role, signOut, endShift } = useAuth()
@@ -57,9 +57,9 @@ export function AccountMenu() {
         {open && (
           <div
             role="menu"
-            className="absolute right-0 top-full z-40 mt-1.5 w-64 overflow-hidden rounded-md border border-quasar-gray-light bg-white shadow-lg"
+            className="absolute right-0 top-full z-40 mt-1.5 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
           >
-            <div className="border-b border-quasar-gray-light px-4 py-3">
+            <div className="border-b border-gray-200 px-4 py-3">
               <div className="truncate text-sm font-medium text-quasar-black" title={user?.email}>
                 {user?.email}
               </div>
@@ -97,7 +97,7 @@ export function AccountMenu() {
               )}
             </div>
 
-            <div className="border-t border-quasar-gray-light py-1">
+            <div className="border-t border-gray-200 py-1">
               {showEndShift && (
                 <button
                   type="button"
