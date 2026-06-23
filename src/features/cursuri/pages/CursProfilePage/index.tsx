@@ -11,8 +11,9 @@ import {
   locatiiOptions,
 } from '@/lib/lookups'
 import { ArchiveConfirmModal } from '@/features/shared/ArchiveConfirmModal'
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal'
 import { useAuth } from '@/hooks/useAuth'
-import { isManagerOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import { isAdminOrHigher, isManagerOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { CursForm } from '../../CursForm'
 import {
   getCurs,
@@ -23,6 +24,7 @@ import {
   getCursFaraPrezenteRecente,
   activateReinscriere,
   toggleCursArchived,
+  deleteCurs,
 } from '../../api'
 import { CursSidebar } from './CursSidebar'
 import { getCursInitials, labelOf } from './helpers'
@@ -43,8 +45,10 @@ export function CursProfilePage() {
   const [editOpen, setEditOpen] = useState(false)
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const { role } = useAuth()
   const canArchive = isManagerOrHigher(role)
+  const canDelete = isAdminOrHigher(role)
 
   const activeazaReinscriereMut = useMutation({
     mutationFn: (clientId: string) => activateReinscriere(clientId, id!),
@@ -186,6 +190,15 @@ export function CursProfilePage() {
                 {curs.suspendat ? '↩ Dezarhivează' : '📦 Arhivează'}
               </Button>
             )}
+            {canDelete && (
+              <Button
+                variant="danger"
+                onClick={() => setDeleteOpen(true)}
+                title="Șterge definitiv cursul"
+              >
+                🗑 Șterge
+              </Button>
+            )}
           </>
         }
       />
@@ -303,6 +316,21 @@ export function CursProfilePage() {
             await queryClient.invalidateQueries({ queryKey: ['cursuri'] })
           }}
           onClose={() => setArchiveOpen(false)}
+        />
+      )}
+
+      {deleteOpen && (
+        <DeleteConfirmModal
+          open
+          title="Șterge definitiv curs"
+          entityLabel={curs.numele}
+          noun="cursul"
+          onConfirm={async () => {
+            await deleteCurs(curs.id)
+            await queryClient.invalidateQueries({ queryKey: ['cursuri'] })
+            navigate('/cursuri')
+          }}
+          onClose={() => setDeleteOpen(false)}
         />
       )}
     </div>

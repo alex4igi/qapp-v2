@@ -6272,6 +6272,8 @@ export type Database = {
       current_client: { Args: never; Returns: string }
       current_familie: { Args: never; Returns: string }
       current_teacher_id: { Args: never; Returns: string }
+      delete_curs_safe: { Args: { p_id: string }; Returns: undefined }
+      delete_teacher_safe: { Args: { p_id: string }; Returns: undefined }
       evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
       expire_open_holds: { Args: never; Returns: number }
       get_anunturi_client: {

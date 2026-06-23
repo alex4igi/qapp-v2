@@ -36,6 +36,14 @@ export async function updateCurs(
   return data
 }
 
+// Ștergere definitivă (admin). RPC-ul blochează dacă cursul are dependențe
+// (înrolări, evaluări, reînscrieri, sesiuni OPEN, clone) și scrie în audit_log.
+// Pentru cursuri create din greșeală (fără dependențe) se șterge curat.
+export async function deleteCurs(id: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_curs_safe', { p_id: id })
+  if (error) throw error
+}
+
 // Arhivare/dezarhivare curs (`suspendat = true/false`). Disponibil manager+.
 // Audit log cu motiv obligatoriu la arhivare; la dezarhivare motivul e opțional.
 export async function toggleCursArchived(params: {

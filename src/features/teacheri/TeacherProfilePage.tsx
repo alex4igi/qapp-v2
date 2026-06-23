@@ -4,12 +4,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Button, Spinner, Tabs } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher, isManagerOrHigher } from '@/lib/rolesMatrix'
-import { getTeacher, toggleTeacherArchived } from './api'
+import { getTeacher, toggleTeacherArchived, deleteTeacher } from './api'
 import { TeacherTabCursuri } from './TeacherTabCursuri'
 import { TeacherTabSalarii } from './TeacherTabSalarii'
 import { TeacherTabPersonale } from './TeacherTabPersonale'
 import { TeacherTabEvaluari } from './TeacherTabEvaluari'
 import { ArchiveConfirmModal } from '@/features/shared/ArchiveConfirmModal'
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal'
 
 function initials(nume: string, prenume: string | null) {
   const n = nume?.[0] ?? ''
@@ -26,6 +27,7 @@ export function TeacherProfilePage() {
     'cursuri',
   )
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const teacherQuery = useQuery({
     queryKey: ['teacher', id],
@@ -57,6 +59,7 @@ export function TeacherProfilePage() {
   const canSeeSalarii = isAdminOrHigher(role) || role === 'teacher'
   const canEditPersonale = isManagerOrHigher(role)
   const canArchive = isManagerOrHigher(role)
+  const canDelete = isAdminOrHigher(role)
   // Evaluările profesorului sunt private pentru management (owner/admin/manager).
   const canSeeEvaluari = isManagerOrHigher(role)
 
@@ -84,6 +87,15 @@ export function TeacherProfilePage() {
                 title={teacher.arhivat ? 'Dezarhivează instructorul' : 'Arhivează instructorul'}
               >
                 {teacher.arhivat ? '↩ Dezarhivează' : '📦 Arhivează'}
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                variant="danger"
+                onClick={() => setDeleteOpen(true)}
+                title="Șterge definitiv instructorul"
+              >
+                🗑 Șterge
               </Button>
             )}
           </>
@@ -146,6 +158,21 @@ export function TeacherProfilePage() {
             await queryClient.invalidateQueries({ queryKey: ['teacheri'] })
           }}
           onClose={() => setArchiveOpen(false)}
+        />
+      )}
+
+      {deleteOpen && (
+        <DeleteConfirmModal
+          open
+          title="Șterge definitiv instructor"
+          entityLabel={fullName}
+          noun="instructorul"
+          onConfirm={async () => {
+            await deleteTeacher(teacher.id)
+            await queryClient.invalidateQueries({ queryKey: ['teacheri'] })
+            navigate('/teacheri')
+          }}
+          onClose={() => setDeleteOpen(false)}
         />
       )}
     </div>
