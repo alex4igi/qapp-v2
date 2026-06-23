@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { canAccessRoute, isFrontDesk, ROLE_LABEL } from '@/lib/rolesMatrix'
-import { AppFeedbackModal } from '@/features/feedback-app/AppFeedbackModal'
-import { ComposeAnuntModal } from '@/features/announcements/ComposeAnuntModal'
 
 function initials(email: string | undefined): string {
   const local = (email ?? '').split('@')[0] ?? ''
@@ -15,13 +14,18 @@ const itemClass =
 
 export function AccountMenu() {
   const { user, role, signOut, endShift } = useAuth()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [feedbackOpen, setFeedbackOpen] = useState(false)
-  const [anuntOpen, setAnuntOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
+  const showFeedback = canAccessRoute(role, '/feedback-app')
   const showAnunturi = canAccessRoute(role, '/anunturi')
   const showEndShift = isFrontDesk(role)
+
+  const go = (path: string) => {
+    setOpen(false)
+    navigate(path)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -69,30 +73,26 @@ export function AccountMenu() {
             </div>
 
             <div className="py-1">
-              <button
-                type="button"
-                role="menuitem"
-                className={itemClass}
-                onClick={() => {
-                  setOpen(false)
-                  setFeedbackOpen(true)
-                }}
-              >
-                <span aria-hidden>💬</span>
-                <span>Trimite feedback</span>
-              </button>
+              {showFeedback && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={itemClass}
+                  onClick={() => go('/feedback-app')}
+                >
+                  <span aria-hidden>💬</span>
+                  <span>Feedback aplicație</span>
+                </button>
+              )}
               {showAnunturi && (
                 <button
                   type="button"
                   role="menuitem"
                   className={itemClass}
-                  onClick={() => {
-                    setOpen(false)
-                    setAnuntOpen(true)
-                  }}
+                  onClick={() => go('/anunturi')}
                 >
                   <span aria-hidden>📢</span>
-                  <span>Anunț nou</span>
+                  <span>Anunțuri</span>
                 </button>
               )}
             </div>
@@ -123,9 +123,6 @@ export function AccountMenu() {
           </div>
         )}
       </div>
-
-      {feedbackOpen && <AppFeedbackModal open onClose={() => setFeedbackOpen(false)} />}
-      {anuntOpen && <ComposeAnuntModal open onClose={() => setAnuntOpen(false)} />}
     </>
   )
 }
