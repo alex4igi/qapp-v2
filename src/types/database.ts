@@ -6445,6 +6445,14 @@ export type Database = {
           total_incasari: number
         }[]
       }
+      get_kpis_financiar: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          cheltuieli: number
+          incasari: number
+          restante: number
+        }[]
+      }
       get_lead_funnel: {
         Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
@@ -6466,6 +6474,27 @@ export type Database = {
           data_nasterii: string
           nume: string
           prenume: string
+        }[]
+      }
+      get_mix_categorii_cheltuieli: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          categorie: string
+          total: number
+        }[]
+      }
+      get_mix_categorii_incasari: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          categorie: string
+          total: number
+        }[]
+      }
+      get_mix_metode: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          metoda: string
+          total: number
         }[]
       }
       get_participari_client: {
@@ -6617,6 +6646,14 @@ export type Database = {
           ultim_apel_rezultat: string
           ultima_prezenta: string
           zile_depasire: number
+        }[]
+      }
+      get_retentie_membri: {
+        Args: never
+        Returns: {
+          baza_prev: number
+          pierduti: number
+          retinuti: number
         }[]
       }
       get_rezervari_client: {

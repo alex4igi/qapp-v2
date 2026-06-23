@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
-import { getGradOcupare, getCrestereNeta } from '@/features/ansamblu/api'
+import { getGradOcupare } from '@/features/ansamblu/api'
 
 export type Kpis = {
   incasari: number
@@ -87,38 +87,23 @@ function intervalToDateRange(i: Interval): { from: string; to: string } {
 export async function getKpis(i: Interval): Promise<Kpis> {
   const { from, to } = intervalToDateRange(i)
 
-  const [incRes, chelRes, restRes] = await Promise.all([
-    supabase.from('incasari').select('suma').gte('data', from).lte('data', to),
-    supabase
-      .from('cheltuieli')
-      .select('valoare')
-      .gte('data', from)
-      .lte('data', to),
-    supabase.from('plati_inrolari').select('rest').gt('rest', 0),
-  ])
+  // Agregare server-side (SUM în SQL) — altfel PostgREST plafonează la 1000 rânduri
+  // și KPI-urile sunt subevaluate. Restanțele sunt pe interval + neprescrise.
+  const { data, error } = await supabase.rpc('get_kpis_financiar', {
+    p_from: from,
+    p_to: to,
+  })
+  if (error) throw error
 
-  if (incRes.error) throw incRes.error
-  if (chelRes.error) throw chelRes.error
-  if (restRes.error) throw restRes.error
-
-  const incasari = (incRes.data ?? []).reduce(
-    (acc, r) => acc + Number(r.suma ?? 0),
-    0,
-  )
-  const cheltuieli = (chelRes.data ?? []).reduce(
-    (acc, r) => acc + Number(r.valoare ?? 0),
-    0,
-  )
-  const restanteTotal = (restRes.data ?? []).reduce(
-    (acc, r) => acc + Number(r.rest ?? 0),
-    0,
-  )
+  const row = (data ?? [])[0]
+  const incasari = Number(row?.incasari ?? 0)
+  const cheltuieli = Number(row?.cheltuieli ?? 0)
 
   return {
     incasari,
     cheltuieli,
     profit: incasari - cheltuieli,
-    restanteTotal,
+    restanteTotal: Number(row?.restante ?? 0),
   }
 }
 
@@ -191,43 +176,27 @@ export async function getMixCategoriiIncasari(
   i: Interval,
 ): Promise<CategoriePunct[]> {
   const { from, to } = intervalToDateRange(i)
-  const { data, error } = await supabase
-    .from('incasari')
-    .select('suma, categorie')
-    .gte('data', from)
-    .lte('data', to)
+  const { data, error } = await supabase.rpc('get_mix_categorii_incasari', {
+    p_from: from,
+    p_to: to,
+  })
   if (error) throw error
-
-  const map = new Map<string, number>()
-  for (const r of data ?? []) {
-    const key = r.categorie ?? 'Necunoscut'
-    map.set(key, (map.get(key) ?? 0) + Number(r.suma ?? 0))
-  }
-  return Array.from(map.entries())
-    .map(([categorie, total]) => ({ categorie, total }))
-    .filter((r) => r.total > 0)
-    .sort((a, b) => b.total - a.total)
+  return ((data ?? []) as Array<{ categorie: string; total: number }>).map(
+    (r) => ({ categorie: r.categorie, total: Number(r.total ?? 0) }),
+  )
 }
 
 export async function getMixCategoriiCheltuieli(
   i: Interval,
 ): Promise<CategoriePunct[]> {
   const { from, to } = intervalToDateRange(i)
-  const { data, error } = await supabase
-    .from('cheltuieli')
-    .select('valoare, categorie')
-    .gte('data', from)
-    .lte('data', to)
+  const { data, error } = await supabase.rpc('get_mix_categorii_cheltuieli', {
+    p_from: from,
+    p_to: to,
+  })
   if (error) throw error
-
-  const map = new Map<string, number>()
-  for (const r of data ?? []) {
-    const key = r.categorie ?? 'Necunoscut'
-    map.set(key, (map.get(key) ?? 0) + Number(r.valoare ?? 0))
-  }
-  return Array.from(map.entries())
-    .map(([categorie, total]) => ({ categorie, total }))
-    .filter((r) => r.total > 0)
+  return ((data ?? []) as Array<{ categorie: string; total: number }>)
+    .map((r) => ({ categorie: r.categorie, total: Number(r.total ?? 0) }))
     .sort((a, b) => b.total - a.total)
 }
 
@@ -382,18 +351,17 @@ export type RetentieLuna = {
   rata: number
 }
 
-// Retenție membri (înrolare): din cei activi luna trecută, câți au rămas luna asta.
-// rata = (activi_prev − pierduti_curent) / activi_prev.
+// Retenție membri pe PREZENȚĂ: din cei prezenți acum două luni, câți au mai fost
+// prezenți luna trecută (ambele luni încheiate). Înrolarea nu poate măsura churn
+// aici — recurentele „Per luna" au data_final NULL, deci acoperă orice lună la
+// nesfârșit (rata ar fi ~100% mereu). Vezi RPC get_retentie_membri.
 export async function getRetentieLuna(): Promise<RetentieLuna> {
-  const rows = await getCrestereNeta(null, 2)
-  if (rows.length < 2) {
-    return { retinuti: 0, pierduti: 0, bazaPrev: 0, rata: 0 }
-  }
-  const prev = rows[rows.length - 2]
-  const curent = rows[rows.length - 1]
-  const bazaPrev = Number(prev.activi ?? 0)
-  const pierduti = Number(curent.pierduti ?? 0)
-  const retinuti = Math.max(0, bazaPrev - pierduti)
+  const { data, error } = await supabase.rpc('get_retentie_membri')
+  if (error) throw error
+  const row = (data ?? [])[0]
+  const bazaPrev = Number(row?.baza_prev ?? 0)
+  const retinuti = Number(row?.retinuti ?? 0)
+  const pierduti = Number(row?.pierduti ?? 0)
   return { retinuti, pierduti, bazaPrev, rata: rata(retinuti, bazaPrev) }
 }
 
@@ -472,37 +440,27 @@ export async function getLeadFunnel(
   return { global, perSursa }
 }
 
-// Venit (încasări) pe luna curentă.
+// Venit (încasări) pe luna curentă. Aceeași definiție canonică ca în getKpis
+// (sumă pe data plății, server-side), ca să fie consistent cu /statistici.
 export async function getVenitLunaCurenta(): Promise<number> {
   const { from, to } = lunaToBounds(lunaCurenta())
-  const { data, error } = await supabase
-    .from('incasari')
-    .select('suma')
-    .gte('data', from)
-    .lte('data', to)
+  const { data, error } = await supabase.rpc('get_kpis_financiar', {
+    p_from: from,
+    p_to: to,
+  })
   if (error) throw error
-  return (data ?? []).reduce((acc, r) => acc + Number(r.suma ?? 0), 0)
+  return Number((data ?? [])[0]?.incasari ?? 0)
 }
 
 export async function getMixMetode(i: Interval): Promise<MetodaPunct[]> {
   const { from, to } = intervalToDateRange(i)
-  const { data, error } = await supabase
-    .from('incasari')
-    .select('metoda, suma')
-    .gte('data', from)
-    .lte('data', to)
+  const { data, error } = await supabase.rpc('get_mix_metode', {
+    p_from: from,
+    p_to: to,
+  })
   if (error) throw error
-
-  const map = new Map<string, number>()
-  for (const r of data ?? []) {
-    const key = r.metoda ?? 'Necunoscut'
-    map.set(key, (map.get(key) ?? 0) + Number(r.suma ?? 0))
-  }
-  return Array.from(map.entries())
-    .map(([metoda, total]) => ({
-      metoda: metoda as MetodaPunct['metoda'],
-      total,
-    }))
-    .filter((r) => r.total > 0)
-    .sort((a, b) => b.total - a.total)
+  return ((data ?? []) as Array<{ metoda: string; total: number }>).map((r) => ({
+    metoda: r.metoda as MetodaPunct['metoda'],
+    total: Number(r.total ?? 0),
+  }))
 }

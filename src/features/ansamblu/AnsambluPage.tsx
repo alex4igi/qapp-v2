@@ -189,7 +189,7 @@ export function AnsambluPage() {
                 <Spinner />
               ) : (
                 <OverviewDonut
-                  title="Retenție membri"
+                  title="Retenție membri (luna trecută)"
                   percent={retentieQ.data?.rata ?? 0}
                   centerSub={
                     retentieQ.data

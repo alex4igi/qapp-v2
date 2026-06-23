@@ -279,7 +279,7 @@ export function StatisticiPage() {
             hint="făcute în interval"
           />
         )}
-        {privileged && (
+        {isAdminOrHigher(role) && (
           <KpiCard
             label="Profit"
             value={kpisQ.data ? formatRON(kpisQ.data.profit) : '—'}
@@ -293,7 +293,7 @@ export function StatisticiPage() {
           label="Restanțe"
           value={kpisQ.data ? formatRON(kpisQ.data.restanteTotal) : '—'}
           tone="warning"
-          hint="total de recuperat (toate)"
+          hint="de recuperat (înrolări din interval, fără prescrise)"
         />
       </div>
 
