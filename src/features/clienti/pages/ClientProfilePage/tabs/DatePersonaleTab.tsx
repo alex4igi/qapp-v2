@@ -65,6 +65,7 @@ export function DatePersonaleTab({ client, familia, teacherMode = false }: Props
           id={client.id}
           authUserId={client.auth_user_id ?? null}
           defaultEmail={client.email}
+          nameHint={client.nume}
           invalidateKey={['client', client.id]}
         />
       ) : (

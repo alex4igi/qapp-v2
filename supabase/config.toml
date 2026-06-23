@@ -416,6 +416,11 @@ verify_jwt = false
 [functions.intake-meta-lead]
 verify_jwt = false
 
+# Portal membri — login propriu (director separat de auth.users). Endpoint public:
+# primește email+parolă (nu JWT), verifică în portal_accounts și emite tokenul portalului.
+[functions.portal-auth]
+verify_jwt = false
+
 # Portal membri — plată online. create-payment cere JWT-ul părintelui; webhook-ul IPN
 # e public (verificat prin Verification-token / cheia publică Netopia, nu prin JWT-ul nostru).
 [functions.netopia-create-payment]

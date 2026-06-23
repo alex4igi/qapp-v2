@@ -494,6 +494,7 @@ function DatePersonaleTab({ familie }: { familie: Familie }) {
         id={familie.id}
         authUserId={familie.auth_user_id ?? null}
         defaultEmail={familie.email}
+        nameHint={familie.nume_familie}
         invalidateKey={['familie', familie.id]}
       />
     </div>

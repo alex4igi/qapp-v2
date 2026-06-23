@@ -10,6 +10,7 @@ import {
 } from '@/components/ui'
 import type { Familie } from '@/types/db'
 import { createFamilie, updateFamilie } from './api'
+import { createPortalAccount, suggestPortalPassword } from '@/lib/portalAccount'
 
 type Props = {
   open: boolean
@@ -50,12 +51,19 @@ export function FamilieForm({ open, familie, onClose }: Props) {
   const isEdit = Boolean(familie)
   const [form, setForm] = useState<FormState>(() => initialState(familie))
   const [error, setError] = useState<string | null>(null)
+  const [createPortal, setCreatePortal] = useState(false)
+  const [portalPwd, setPortalPwd] = useState('')
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
+  const togglePortal = (on: boolean) => {
+    setCreatePortal(on)
+    if (on && !portalPwd) setPortalPwd(suggestPortalPassword(form.nume_familie))
+  }
+
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<{ warning?: string }> => {
       const payload = {
         nume_familie: form.nume_familie.trim(),
         nume_reprezentant: form.nume_reprezentant.trim() || null,
@@ -68,17 +76,38 @@ export function FamilieForm({ open, familie, onClose }: Props) {
         observatii: form.observatii.trim() || null,
         doreste_sa_apara_in_poze: form.doreste_sa_apara_in_poze,
       }
-      return isEdit
-        ? updateFamilie(familie!.id, payload)
-        : createFamilie(payload)
+      if (isEdit) {
+        await updateFamilie(familie!.id, payload)
+        return {}
+      }
+      const saved = await createFamilie(payload)
+      // Cont de portal opțional, după ce familia există (nu blochează salvarea).
+      if (createPortal) {
+        if (!payload.email) return { warning: 'Familie salvată. Cont portal NEcreat: lipsește emailul.' }
+        try {
+          const r = await createPortalAccount({
+            familieId: saved.id,
+            email: payload.email,
+            password: portalPwd,
+            notify: 'email',
+          })
+          return r.emailed
+            ? {}
+            : { warning: `Cont portal creat, dar emailul nu a plecat — parolă: ${portalPwd}` }
+        } catch (e) {
+          return { warning: `Familie salvată, dar contul de portal a eșuat: ${e instanceof Error ? e.message : ''}` }
+        }
+      }
+      return {}
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       void queryClient.invalidateQueries({ queryKey: ['familii'] })
       if (isEdit) {
         void queryClient.invalidateQueries({
           queryKey: ['familie', familie!.id],
         })
       }
+      if (res?.warning) window.alert(res.warning)
       onClose()
     },
     onError: (e: unknown) => {
@@ -201,6 +230,42 @@ export function FamilieForm({ open, familie, onClose }: Props) {
             set('doreste_sa_apara_in_poze', e.target.checked)
           }
         />
+
+        {!isEdit && (
+          <div className="rounded-lg border border-gray-200 p-3">
+            <Checkbox
+              id="create_portal"
+              label="Creează cont de portal pentru familie"
+              checked={createPortal}
+              onChange={(e) => togglePortal(e.target.checked)}
+            />
+            {createPortal && (
+              <div className="mt-2 space-y-2">
+                <Field label="Parolă sugerată (editabilă)" htmlFor="portal_pwd">
+                  <div className="flex gap-1">
+                    <TextInput
+                      id="portal_pwd"
+                      value={portalPwd}
+                      onChange={(e) => setPortalPwd(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      title="Generează altă parolă"
+                      className="rounded-lg border border-gray-200 px-2 text-sm hover:bg-gray-50"
+                      onClick={() => setPortalPwd(suggestPortalPassword(form.nume_familie))}
+                    >
+                      🔄
+                    </button>
+                  </div>
+                </Field>
+                <p className="text-xs text-quasar-gray">
+                  Datele de acces se trimit pe email-ul familiei
+                  {form.email.trim() ? ` (${form.email.trim()})` : ' — completează emailul mai sus'}.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
