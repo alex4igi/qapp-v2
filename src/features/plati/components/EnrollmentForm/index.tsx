@@ -66,8 +66,12 @@ export function EnrollmentForm({
     queryFn: clientiOptions,
   })
 
+  // Cheie distinctă de `['lookup','sezon-activ']`: aceea e populată de `sezonActivId`
+  // (string), pe când aici folosim `sezonActiv` (obiect cu .id + date). Aceeași cheie
+  // = coliziune de cache → uneori `data` era string, `.id` ieșea undefined și lista de
+  // cursuri apărea NEfiltrată pe sezon (bug intermitent refresh-to-refresh).
   const sezonActivQ = useQuery({
-    queryKey: ['lookup', 'sezon-activ'],
+    queryKey: ['lookup', 'sezon-activ-full'],
     queryFn: sezonActiv,
   })
 
