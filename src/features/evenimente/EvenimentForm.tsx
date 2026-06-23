@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Select,
   Checkbox,
@@ -29,7 +30,6 @@ type FormState = {
   organizator: string
   capacitate: string
   pret_bilet: string
-  cost_organizare: string
   status: string
   notite: string
   public: boolean
@@ -45,8 +45,6 @@ function initialState(e?: Eveniment | null): FormState {
     organizator: e?.organizator ?? '',
     capacitate: e?.capacitate != null ? String(e.capacitate) : '',
     pret_bilet: e?.pret_bilet != null ? String(e.pret_bilet) : '',
-    cost_organizare:
-      e?.cost_organizare != null ? String(e.cost_organizare) : '',
     status: e?.status ?? '',
     notite: e?.notite ?? '',
     public: e?.public ?? false,
@@ -64,7 +62,7 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
 
   const teacheri = useQuery({
     queryKey: ['lookup', 'teacheri'],
-    queryFn: teacheriOptions,
+    queryFn: () => teacheriOptions(),
   })
 
   const set = (key: keyof FormState) => (value: string | boolean) =>
@@ -84,7 +82,6 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
         organizator: form.organizator || null,
         capacitate: toNum(form.capacitate),
         pret_bilet: toNum(form.pret_bilet),
-        cost_organizare: toNum(form.cost_organizare),
         status: (form.status || null) as Eveniment['status'],
         notite: form.notite.trim() || null,
         public: form.public,
@@ -203,9 +200,8 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Data" htmlFor="data">
-            <TextInput
+            <DateInput
               id="data"
-              type="date"
               value={form.data}
               onChange={(e) => set('data')(e.target.value)}
             />
@@ -240,7 +236,7 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
           </Field>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Field label="Capacitate" htmlFor="capacitate">
             <TextInput
               id="capacitate"
@@ -257,15 +253,6 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
               min={0}
               value={form.pret_bilet}
               onChange={(e) => set('pret_bilet')(e.target.value)}
-            />
-          </Field>
-          <Field label="Cost organizare" htmlFor="cost_organizare">
-            <TextInput
-              id="cost_organizare"
-              type="number"
-              min={0}
-              value={form.cost_organizare}
-              onChange={(e) => set('cost_organizare')(e.target.value)}
             />
           </Field>
         </div>
