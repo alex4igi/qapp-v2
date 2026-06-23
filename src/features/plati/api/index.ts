@@ -19,6 +19,7 @@ export type { WorkshopGuestResult } from './incasari'
 export {
   getEnrollmentIncasari,
   createIncasare,
+  createIncasari,
   registerPlataFifo,
   resolveWorkshopGuest,
 } from './incasari'

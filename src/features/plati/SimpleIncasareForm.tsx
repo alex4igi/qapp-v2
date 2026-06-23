@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Select,
   Combobox,
@@ -10,18 +11,22 @@ import {
   Button,
 } from '@/components/ui'
 import { clientiOptions } from '@/lib/lookups'
-import { metodaPlataOptions } from '@/lib/enums'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { formatRON } from '@/lib/format'
 import { listAvailableVouchere } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
-import type { Enums, Incasare, InsertDto, Voucher } from '@/types/db'
+import type { Incasare, InsertDto, Voucher } from '@/types/db'
 import {
-  createIncasare,
+  createIncasari,
   listBiletSurse,
   listInventarOptiuni,
   resolveWorkshopGuest,
 } from './api'
+import {
+  MetodaPlataField,
+  resolveTenders,
+  type MetodaSel,
+} from './modals/PlataNouaModal/MetodaPlataField'
 
 export type SimpleTip = 'Bilet' | 'Merch' | 'Taxa'
 
@@ -70,7 +75,9 @@ export function SimpleIncasareForm({
   const [bucati, setBucati] = useState('1')
   const [suma, setSuma] = useState(defaultSuma ?? '')
   const [data, setData] = useState(todayIso())
-  const [metoda, setMetoda] = useState<Enums<'metoda_plata'>>('Cash')
+  const [metoda, setMetoda] = useState<MetodaSel>('Cash')
+  const [cash, setCash] = useState('')
+  const [card, setCard] = useState('')
   const [observatii, setObservatii] = useState(defaultObservatii ?? '')
   const [voucherId, setVoucherId] = useState('')
   const [guestMode, setGuestMode] = useState(false)
@@ -179,25 +186,39 @@ export function SimpleIncasareForm({
         }
       }
 
-      const payload: InsertDto<'incasari'> = {
+      const finalSuma = applyVoucher(sumaInput, voucherSelectat).sumaFinala
+      const tenders = resolveTenders({ metoda, total: finalSuma, cash, card })
+
+      const base: InsertDto<'incasari'> = {
         client: clientField,
         lead: leadField,
         locatie: locatieId,
-        suma: applyVoucher(sumaInput, voucherSelectat).sumaFinala,
         data: data || null,
-        metoda,
         observatii: observatii.trim() || null,
         categorie: selectedBilet?.categorie ?? tip,
         voucher: voucherId || null,
       }
-      if (tip === 'Bilet') {
-        payload.bilet = sursaId
-      } else if (tip === 'Merch') {
-        payload.articol_inventar = sursaId
-        const buc = Number(bucati)
-        payload.bucati = isFinite(buc) && buc > 0 ? Math.round(buc) : 1
-      }
-      return createIncasare(payload)
+      // La plată mixtă rezultă mai multe rânduri; articolul/biletul/bucățile
+      // se atașează DOAR primului rând (evită dublarea atribuirii).
+      const payloads: InsertDto<'incasari'>[] = tenders.map((t, idx) => {
+        const p: InsertDto<'incasari'> = {
+          ...base,
+          suma: t.suma,
+          metoda: t.metoda,
+        }
+        if (idx === 0) {
+          if (tip === 'Bilet') {
+            p.bilet = sursaId
+          } else if (tip === 'Merch') {
+            p.articol_inventar = sursaId
+            const buc = Number(bucati)
+            p.bucati = isFinite(buc) && buc > 0 ? Math.round(buc) : 1
+          }
+        }
+        return p
+      })
+      const created = await createIncasari(payloads)
+      return created[0]
     },
     onSuccess: (incasare) => {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
@@ -334,8 +355,7 @@ export function SimpleIncasareForm({
           />
         </Field>
         <Field label="Data">
-          <TextInput
-            type="date"
+          <DateInput
             value={data}
             onChange={(e) => setData(e.target.value)}
           />
@@ -343,15 +363,15 @@ export function SimpleIncasareForm({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Metoda de plată">
-          <Select
-            options={metodaPlataOptions}
-            value={metoda}
-            onChange={(e) =>
-              setMetoda(e.target.value as Enums<'metoda_plata'>)
-            }
-          />
-        </Field>
+        <MetodaPlataField
+          metoda={metoda}
+          onMetoda={setMetoda}
+          total={preview.sumaFinala}
+          cash={cash}
+          card={card}
+          onCash={setCash}
+          onCard={setCard}
+        />
         <Field label="Voucher (opțional)">
           <Select
             placeholder="Fără voucher"

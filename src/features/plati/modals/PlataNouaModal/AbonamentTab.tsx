@@ -10,15 +10,15 @@ import {
 } from '@/components/ui'
 import { clientiOptions } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { metodaPlataOptions } from '@/lib/enums'
 import { formatRON } from '@/lib/format'
-import type { VPlatiInrolari, Enums } from '@/types/db'
+import type { VPlatiInrolari } from '@/types/db'
 import {
   getInrolariClientSezon,
   listSezoane,
   registerPlataFifo,
 } from '../../api'
 import { fmtDate, todayIso } from './helpers'
+import { MetodaPlataField, resolveTenders, type MetodaSel } from './MetodaPlataField'
 
 type Props = {
   onClose: () => void
@@ -37,7 +37,9 @@ export function AbonamentTab({ onClose, onAddInrolare, defaultClientId }: Props)
   const { locatieId, locatieNume } = useWorkingLocatie()
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const [partial, setPartial] = useState('')
-  const [metoda, setMetoda] = useState<Enums<'metoda_plata'>>('Cash')
+  const [metoda, setMetoda] = useState<MetodaSel>('Cash')
+  const [cash, setCash] = useState('')
+  const [card, setCard] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const clientiQ = useQuery({
@@ -155,6 +157,8 @@ export function AbonamentTab({ onClose, onAddInrolare, defaultClientId }: Props)
     setChecked(new Set())
     setPartial('')
     setMetoda('Cash')
+    setCash('')
+    setCard('')
     setError(null)
   }
 
@@ -181,11 +185,14 @@ export function AbonamentTab({ onClose, onAddInrolare, defaultClientId }: Props)
         if (partialNum > total)
           throw new Error('Suma parțială depășește totalul.')
       }
+      const pool = partialNum != null ? partialNum : total
+      const tenders = resolveTenders({ metoda, total: pool, cash, card })
       return registerPlataFifo({
         enrollmentIds: checkedRowsOrdered.map((r) => String(r.id_enrollment)),
         remaining: checkedRowsOrdered.map((r) => Number(r.rest ?? 0)),
         partialAmount: partialNum,
-        metoda,
+        metoda: tenders[0].metoda,
+        tenders,
         data: todayIso(),
         locatieId,
       })
@@ -334,13 +341,15 @@ export function AbonamentTab({ onClose, onAddInrolare, defaultClientId }: Props)
             disabled={total <= 0}
           />
         </Field>
-        <Field label="Metoda de plată">
-          <Select
-            options={metodaPlataOptions}
-            value={metoda}
-            onChange={(e) => setMetoda(e.target.value as Enums<'metoda_plata'>)}
-          />
-        </Field>
+        <MetodaPlataField
+          metoda={metoda}
+          onMetoda={setMetoda}
+          total={partial.trim() ? Number(partial) || 0 : total}
+          cash={cash}
+          card={card}
+          onCash={setCash}
+          onCard={setCard}
+        />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

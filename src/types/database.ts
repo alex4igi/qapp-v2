@@ -6995,9 +6995,11 @@ export type Database = {
           p_instructor?: string
           p_locatie: string
           p_metoda: Database["public"]["Enums"]["metoda_plata"]
+          p_metoda2?: Database["public"]["Enums"]["metoda_plata"]
           p_permite_overbook?: boolean
           p_sesiune?: string
           p_suma: number
+          p_suma2?: number
         }
         Returns: string
       }

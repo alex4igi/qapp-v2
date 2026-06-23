@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Field, TextInput, Select, Combobox, Button, Spinner } from '@/components/ui'
+import { Field, TextInput, DateInput, Select, Combobox, Button, Spinner } from '@/components/ui'
 import { clientiOptions, sezonActivId } from '@/lib/lookups'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
-import { metodaPlataOptions } from '@/lib/enums'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { VacantaWarning } from '@/features/shared/VacantaWarning'
 import { formatRON } from '@/lib/format'
-import type { Curs, Enums } from '@/types/db'
+import type { Curs } from '@/types/db'
+import { MetodaPlataField, resolveTenders, type MetodaSel } from './MetodaPlataField'
 import {
   listCursuriFacultative,
   getOpenSesiuneByDate,
@@ -31,7 +31,9 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
   const [instructorId, setInstructorId] = useState('')
   const [suma, setSuma] = useState('')
   const [sumaTouched, setSumaTouched] = useState(false)
-  const [metoda, setMetoda] = useState<Enums<'metoda_plata'>>('Cash')
+  const [metoda, setMetoda] = useState<MetodaSel>('Cash')
+  const [cash, setCash] = useState('')
+  const [card, setCard] = useState('')
   const [overbook, setOverbook] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -86,10 +88,14 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
       if (!locatieId) {
         throw new Error('Setează locația de lucru din bara de sus (📍 lângă dată).')
       }
+      const tenders = resolveTenders({ metoda, total: sumaNum, cash, card })
+      const [t0, t1] = tenders
       return rezervaLocOpen({
         clientId,
-        suma: sumaNum,
-        metoda,
+        suma: t0.suma,
+        metoda: t0.metoda,
+        metoda2: t1?.metoda ?? null,
+        suma2: t1?.suma ?? null,
         locatieId,
         sesiuneId: ocupare?.sesiune?.id ?? null,
         cursId,
@@ -135,8 +141,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
           />
         </Field>
         <Field label="Data sesiunii" required>
-          <TextInput
-            type="date"
+          <DateInput
             min={todayIso()}
             value={data}
             onChange={(e) => setData(e.target.value)}
@@ -218,13 +223,15 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
             }}
           />
         </Field>
-        <Field label="Metoda de plată">
-          <Select
-            options={metodaPlataOptions}
-            value={metoda}
-            onChange={(e) => setMetoda(e.target.value as Enums<'metoda_plata'>)}
-          />
-        </Field>
+        <MetodaPlataField
+          metoda={metoda}
+          onMetoda={setMetoda}
+          total={Number(suma) || 0}
+          cash={cash}
+          card={card}
+          onCash={setCash}
+          onCard={setCard}
+        />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

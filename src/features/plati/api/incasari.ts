@@ -74,17 +74,38 @@ export async function createIncasare(
   return data
 }
 
+// Inserează una sau mai multe încasări într-o singură cerere (ex: plată mixtă
+// Cash + Card → un rând per metodă, cu aceleași date de context).
+export async function createIncasari(
+  dtos: InsertDto<'incasari'>[],
+): Promise<Incasare[]> {
+  const { data, error } = await supabase
+    .from('incasari')
+    .insert(dtos)
+    .select('*')
+  if (error) throw error
+  return data ?? []
+}
+
+export type Tender = { metoda: Enums<'metoda_plata'>; suma: number }
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
 // Creează una sau mai multe încasări pentru un set de înrolări selectate,
-// distribuind suma FIFO peste rândurile vechi → noi.
+// distribuind suma FIFO peste rândurile vechi → noi. Dacă `tenders` e dat
+// (plată mixtă Cash + Card), fiecare porție FIFO se taie suplimentar pe metode
+// în ordinea tenders → un rând per (înrolare × metodă).
 export async function registerPlataFifo(params: {
   enrollmentIds: string[] // în ordine vechi → nou
   remaining: number[] // rest per enrollment, în aceeași ordine
   partialAmount: number | null // dacă null, plătim restul fiecăruia integral
   metoda: Enums<'metoda_plata'>
+  tenders?: Tender[] | null // dacă dat, înlocuiește `metoda`; sum(tenders) = pool
   data: string // YYYY-MM-DD
   locatieId: string // locația de unde se face plata
 }): Promise<Incasare[]> {
-  const inserts: InsertDto<'incasari'>[] = []
+  // 1) distribuie pool-ul FIFO în porții (fără metodă încă)
+  const portions: { inregistrare: string; suma: number }[] = []
   let pool =
     params.partialAmount != null
       ? params.partialAmount
@@ -95,18 +116,56 @@ export async function registerPlataFifo(params: {
     if (owe <= 0) continue
     const pay = Math.min(owe, pool)
     if (pay <= 0) break
-    inserts.push({
-      inregistrare: params.enrollmentIds[i],
-      data: params.data,
-      suma: pay,
-      metoda: params.metoda,
-      categorie: 'Abonament',
-      locatie: params.locatieId,
-    })
+    portions.push({ inregistrare: params.enrollmentIds[i], suma: round2(pay) })
     pool -= pay
     if (pool <= 0) break
   }
-  if (inserts.length === 0) return []
+  if (portions.length === 0) return []
+
+  // 2) secvența de metode: tenders explicite SAU o singură metodă pe tot pool-ul
+  const tenders: Tender[] =
+    params.tenders && params.tenders.length > 0
+      ? params.tenders
+      : [
+          {
+            metoda: params.metoda,
+            suma: portions.reduce((a, p) => a + p.suma, 0),
+          },
+        ]
+
+  // 3) taie fiecare porție pe metode, consumând tenders în ordine
+  const mk = (inregistrare: string, suma: number, metoda: Enums<'metoda_plata'>): InsertDto<'incasari'> => ({
+    inregistrare,
+    data: params.data,
+    suma: round2(suma),
+    metoda,
+    categorie: 'Abonament',
+    locatie: params.locatieId,
+  })
+
+  const inserts: InsertDto<'incasari'>[] = []
+  let ti = 0
+  let tRem = tenders[0].suma
+  for (const p of portions) {
+    let need = p.suma
+    while (need > 0.004) {
+      if (tRem <= 0.004) {
+        if (ti < tenders.length - 1) {
+          ti++
+          tRem = tenders[ti].suma
+          continue
+        }
+        // tenders subfinanțate (rounding) — restul pe ultima metodă
+        inserts.push(mk(p.inregistrare, need, tenders[ti].metoda))
+        need = 0
+        break
+      }
+      const take = Math.min(need, tRem)
+      inserts.push(mk(p.inregistrare, take, tenders[ti].metoda))
+      need = round2(need - take)
+      tRem = round2(tRem - take)
+    }
+  }
 
   const { data, error } = await supabase
     .from('incasari')
