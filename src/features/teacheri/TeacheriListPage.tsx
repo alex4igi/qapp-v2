@@ -188,7 +188,13 @@ export function TeacheriListPage() {
         </>
       )}
 
-      {formOpen && <TeacherForm open onClose={() => setFormOpen(false)} />}
+      {formOpen && (
+        <TeacherForm
+          open
+          onClose={() => setFormOpen(false)}
+          onCreated={(t) => navigate(`/teacheri/${t.id}`)}
+        />
+      )}
     </div>
   )
 }

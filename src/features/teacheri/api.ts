@@ -90,6 +90,37 @@ async function teacherIdsForFilters(
   return Array.from(ids)
 }
 
+// Teacherii care nu predau NICIUN curs (în niciun sezon/locație) — ex. unul abia creat,
+// neasignat încă. Îi includem în listă chiar când e activ un filtru de sezon/locație,
+// altfel un teacher nou ar fi invizibil până i se asignează un curs.
+async function teacherIdsFaraCursuri(): Promise<string[]> {
+  const cuCursuri = new Set<string>()
+  {
+    const { data, error } = await supabase
+      .from('cursuri')
+      .select('teacher')
+      .not('teacher', 'is', null)
+    if (error) throw error
+    for (const r of (data ?? []) as Array<{ teacher: string | null }>) {
+      if (r.teacher) cuCursuri.add(r.teacher)
+    }
+  }
+  {
+    const { data, error } = await supabase
+      .from('cursuri_teacheri')
+      .select('teacher_id')
+    if (error) throw error
+    for (const r of (data ?? []) as Array<{ teacher_id: string }>) {
+      cuCursuri.add(r.teacher_id)
+    }
+  }
+  const { data, error } = await supabase.from('teacheri').select('id')
+  if (error) throw error
+  return (data ?? [])
+    .map((r) => r.id)
+    .filter((id) => !cuCursuri.has(id))
+}
+
 // Opțiuni pentru selectoarele de teacher, restrânse la cei care predau cursuri
 // în sezonul/locația dată (aceeași logică cu lista — vezi teacherIdsForFilters).
 // Pentru cazul „fără filtru" folosește teacheriOptions() din lib/lookups.
@@ -127,7 +158,11 @@ export async function listTeacheri({
     .range(from, to)
 
   if (locatieId || sezonId) {
-    const ids = await teacherIdsForFilters(locatieId, sezonId)
+    const [filtrati, faraCursuri] = await Promise.all([
+      teacherIdsForFilters(locatieId, sezonId),
+      teacherIdsFaraCursuri(),
+    ])
+    const ids = Array.from(new Set([...filtrati, ...faraCursuri]))
     if (ids.length === 0) {
       return { rows: [], total: 0 }
     }

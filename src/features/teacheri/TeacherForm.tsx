@@ -16,6 +16,7 @@ type Props = {
   open: boolean
   teacher?: Teacher | null
   onClose: () => void
+  onCreated?: (teacher: Teacher) => void
 }
 
 type FormState = {
@@ -44,7 +45,7 @@ function initialState(teacher?: Teacher | null): FormState {
   }
 }
 
-export function TeacherForm({ open, teacher, onClose }: Props) {
+export function TeacherForm({ open, teacher, onClose, onCreated }: Props) {
   const queryClient = useQueryClient()
   const isEdit = Boolean(teacher)
   const [form, setForm] = useState<FormState>(() => initialState(teacher))
@@ -70,12 +71,14 @@ export function TeacherForm({ open, teacher, onClose }: Props) {
         ? updateTeacher(teacher!.id, payload)
         : createTeacher(payload)
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: ['teacheri'] })
       if (isEdit) {
         void queryClient.invalidateQueries({
           queryKey: ['teacher', teacher!.id],
         })
+      } else {
+        onCreated?.(saved)
       }
       onClose()
     },
