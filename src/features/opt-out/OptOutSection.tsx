@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, TextInput } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
-import { isAdminOrHigher } from '@/lib/rolesMatrix'
+import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import { markOptOut, clearOptOut, type OptOutEntity } from './api'
 
 type Props = {
@@ -32,7 +32,7 @@ export function OptOutSection({
   invalidateKey,
 }: Props) {
   const { role } = useAuth()
-  const canEdit = isAdminOrHigher(role)
+  const canEdit = isFrontDeskOrHigher(role)
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [motivInput, setMotivInput] = useState('')

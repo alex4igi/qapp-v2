@@ -88,6 +88,11 @@ export function isFrontDesk(role: AppRole): boolean {
   return role === 'front_desk'
 }
 
+// front_desk și mai sus (tot staff-ul non-teacher)
+export function isFrontDeskOrHigher(role: AppRole): boolean {
+  return role === 'front_desk' || isManagerOrHigher(role)
+}
+
 export function isTeacher(role: AppRole): boolean {
   return role === 'teacher'
 }
