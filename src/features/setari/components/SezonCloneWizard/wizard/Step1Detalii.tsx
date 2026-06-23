@@ -1,4 +1,4 @@
-import { Field, Select, Spinner, TextInput, type SelectOption } from '@/components/ui'
+import { DateInput, Field, Select, Spinner, TextInput, type SelectOption } from '@/components/ui'
 import type { Tip } from '../helpers'
 
 type Props = {
@@ -84,15 +84,13 @@ export function Step1Detalii({
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Data început" required>
-          <TextInput
-            type="date"
+          <DateInput
             value={dataIncepere}
             onChange={(e) => setDataIncepere(e.target.value)}
           />
         </Field>
         <Field label="Data final" required>
-          <TextInput
-            type="date"
+          <DateInput
             value={dataFinal}
             onChange={(e) => setDataFinal(e.target.value)}
           />
@@ -100,15 +98,13 @@ export function Step1Detalii({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Scadență prima rată">
-          <TextInput
-            type="date"
+          <DateInput
             value={scadentaPrimaRata}
             onChange={(e) => setScadentaPrimaRata(e.target.value)}
           />
         </Field>
         <Field label="Scadență ultima rată">
-          <TextInput
-            type="date"
+          <DateInput
             value={scadentaUltimaRata}
             onChange={(e) => setScadentaUltimaRata(e.target.value)}
           />

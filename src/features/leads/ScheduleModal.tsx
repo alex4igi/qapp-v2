@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Modal, Field, TextInput, Select, Button } from '@/components/ui'
+import { Modal, Field, TextInput, DateInput, Select, Button } from '@/components/ui'
 import { VacantaWarning } from '@/features/shared/VacantaWarning'
 import { locatiiOptions, sezonActivId } from '@/lib/lookups'
 import type { Lead, GrupaLead } from '@/types/db'
@@ -172,9 +172,8 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
             />
           </Field>
           <Field label="Data nașterii" required htmlFor="sch-nastere">
-            <TextInput
+            <DateInput
               id="sch-nastere"
-              type="date"
               value={dataNasterii}
               onChange={(e) => setDataNasterii(e.target.value)}
             />

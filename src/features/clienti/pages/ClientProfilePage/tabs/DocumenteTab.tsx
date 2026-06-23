@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Field, TextInput, TextArea, Select, Button, Spinner } from '@/components/ui'
+import { Field, TextInput, DateInput, TextArea, Select, Button, Spinner } from '@/components/ui'
 import { tipDocumentOptions } from '@/lib/enums'
 import type { Client, Enums, InsertDto } from '@/types/db'
 import {
@@ -196,9 +196,8 @@ export function DocumenteTab({ client }: Props) {
           />
         </Field>
         <Field label="Expiră la (opțional)" htmlFor="doc-exp">
-          <TextInput
+          <DateInput
             id="doc-exp"
-            type="date"
             value={expirare}
             onChange={(e) => setExpirare(e.target.value)}
           />

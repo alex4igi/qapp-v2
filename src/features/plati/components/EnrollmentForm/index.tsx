@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Modal,
   Field,
-  TextInput,
+  DateInput,
   Select,
   Combobox,
   Checkbox,
@@ -369,9 +369,8 @@ export function EnrollmentForm({
               required
               htmlFor="data"
             >
-              <TextInput
+              <DateInput
                 id="data"
-                type="date"
                 value={dataIncepere}
                 onChange={(e) => setDataIncepere(e.target.value)}
               />

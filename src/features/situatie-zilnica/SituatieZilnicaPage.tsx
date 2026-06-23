@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   PageHeader,
   Field,
-  TextInput,
+  DateInput,
   Select,
   Spinner,
   DataTable,
@@ -156,9 +156,8 @@ export function SituatieZilnicaPage() {
           <div className="flex items-end gap-3">
             <div className="w-44">
               <Field label="Ziua" htmlFor="sz-data">
-                <TextInput
+                <DateInput
                   id="sz-data"
-                  type="date"
                   value={ziua}
                   onChange={(e) => setZiua(e.target.value || todayIso())}
                 />

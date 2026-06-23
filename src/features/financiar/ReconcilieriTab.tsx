@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Button,
   Field,
-  TextInput,
+  DateInput,
   Select,
   DataTable,
   Spinner,
@@ -207,9 +207,8 @@ export function ReconcilieriTab() {
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="w-40">
           <Field label="De la" htmlFor="rc-from">
-            <TextInput
+            <DateInput
               id="rc-from"
-              type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
             />
@@ -217,9 +216,8 @@ export function ReconcilieriTab() {
         </div>
         <div className="w-40">
           <Field label="Până la" htmlFor="rc-to">
-            <TextInput
+            <DateInput
               id="rc-to"
-              type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />

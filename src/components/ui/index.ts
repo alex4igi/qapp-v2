@@ -1,6 +1,7 @@
 export { Button } from './Button'
 export { Field } from './Field'
 export { TextInput } from './TextInput'
+export { DateInput } from './DateInput'
 export { TextArea } from './TextArea'
 export { Checkbox } from './Checkbox'
 export { CheckboxGroup } from './CheckboxGroup'

@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Select,
   Button,
@@ -118,9 +119,8 @@ export function IncasareForm({ open, enrollment, onClose }: Props) {
             />
           </Field>
           <Field label="Data" htmlFor="inc-data">
-            <TextInput
+            <DateInput
               id="inc-data"
-              type="date"
               value={data}
               onChange={(e) => setData(e.target.value)}
             />

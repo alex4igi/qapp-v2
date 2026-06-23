@@ -5,6 +5,7 @@ import { canAccessRoute } from '@/lib/rolesMatrix'
 import { getUnreadCount } from '@/features/notificari/api'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { DateInput } from '@/components/ui'
 import { Logo } from './Logo'
 import { TopNav } from './TopNav'
 import { AccountMenu } from './AccountMenu'
@@ -79,15 +80,13 @@ export function Header() {
 
           <span className="h-5 w-px bg-gray-200" aria-hidden />
 
-          <label className="flex items-center gap-1.5 px-2 py-1" title="Ziua de lucru">
-            <span aria-hidden>📅</span>
-            <input
-              type="date"
+          <div title="Ziua de lucru">
+            <DateInput
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="bg-transparent text-sm text-quasar-black outline-none"
+              wrapperClassName="w-36"
             />
-          </label>
+          </div>
         </div>
 
         <a

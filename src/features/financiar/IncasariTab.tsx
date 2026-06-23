@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   Button,
   TextInput,
+  DateInput,
   Field,
   Select,
   DataTable,
@@ -215,9 +216,8 @@ export function IncasariTab() {
         </div>
         <div className="w-40">
           <Field label="De la" htmlFor="inc-from">
-            <TextInput
+            <DateInput
               id="inc-from"
-              type="date"
               value={from}
               onChange={(e) => {
                 setFrom(e.target.value)
@@ -228,9 +228,8 @@ export function IncasariTab() {
         </div>
         <div className="w-40">
           <Field label="Până la" htmlFor="inc-to">
-            <TextInput
+            <DateInput
               id="inc-to"
-              type="date"
               value={to}
               onChange={(e) => {
                 setTo(e.target.value)

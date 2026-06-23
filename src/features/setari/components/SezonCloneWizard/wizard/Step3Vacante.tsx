@@ -1,4 +1,4 @@
-import { Button, TextInput } from '@/components/ui'
+import { Button, DateInput, TextInput } from '@/components/ui'
 import { newVacantaRow, type VacantaRow } from '../helpers'
 
 type Props = {
@@ -33,8 +33,7 @@ export function Step3Vacante({ vacante, setVacante }: Props) {
                   setVacante(next)
                 }}
               />
-              <TextInput
-                type="date"
+              <DateInput
                 value={v.data_incepere}
                 onChange={(e) => {
                   const next = [...vacante]
@@ -42,8 +41,7 @@ export function Step3Vacante({ vacante, setVacante }: Props) {
                   setVacante(next)
                 }}
               />
-              <TextInput
-                type="date"
+              <DateInput
                 value={v.data_final}
                 onChange={(e) => {
                   const next = [...vacante]

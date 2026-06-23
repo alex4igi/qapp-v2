@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Checkbox,
   Select,
@@ -177,9 +178,8 @@ export function CheltuialaForm({ open, cheltuiala, onClose }: Props) {
             />
           </Field>
           <Field label="Data cheltuielii" htmlFor="data">
-            <TextInput
+            <DateInput
               id="data"
-              type="date"
               value={form.data}
               onChange={(e) => set('data', e.target.value)}
             />

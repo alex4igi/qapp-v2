@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Spinner, Button, Field, TextInput, Select } from '@/components/ui'
+import { Spinner, Button, Field, TextInput, DateInput, Select } from '@/components/ui'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import {
   listOpenSesiuni,
@@ -59,7 +59,7 @@ function AdaugaSesiuneForm({ cursId, capacitateImplicita }: { cursId: string; ca
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Field label="Data sesiunii" required>
-          <TextInput type="date" min={todayIso()} value={data} onChange={(e) => setData(e.target.value)} />
+          <DateInput min={todayIso()} value={data} onChange={(e) => setData(e.target.value)} />
         </Field>
         <Field label="Instructor (opțional)">
           <Select

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
+  DateInput,
   Field,
   Modal,
   Select,
@@ -226,15 +227,13 @@ export function CampanieWizard({ onClose, onCreated, defaultSezonId }: Props) {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <Field label="Data început" required>
-              <TextInput
-                type="date"
+              <DateInput
                 value={dataIncepere}
                 onChange={(e) => setDataIncepere(e.target.value)}
               />
             </Field>
             <Field label="Data limită" required>
-              <TextInput
-                type="date"
+              <DateInput
                 value={dataFinal}
                 onChange={(e) => setDataFinal(e.target.value)}
               />

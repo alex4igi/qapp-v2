@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Field, Spinner, TextInput } from '@/components/ui'
+import { Button, DateInput, Field, Spinner, TextInput } from '@/components/ui'
 import type { Vacanta } from '@/types/db'
 import {
   createVacanta,
@@ -136,15 +136,13 @@ export function VacanteTab({ sezonId }: Props) {
             />
           </Field>
           <Field label="Început">
-            <TextInput
-              type="date"
+            <DateInput
               value={dataInc}
               onChange={(e) => setDataInc(e.target.value)}
             />
           </Field>
           <Field label="Final">
-            <TextInput
-              type="date"
+            <DateInput
               value={dataFin}
               onChange={(e) => setDataFin(e.target.value)}
             />

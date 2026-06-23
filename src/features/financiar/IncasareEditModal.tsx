@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
+  DateInput,
   Field,
   Modal,
   Select,
@@ -185,9 +186,8 @@ export function IncasareEditModal({ incasareId, open, onClose }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Data" htmlFor="inc-data">
-              <TextInput
+              <DateInput
                 id="inc-data"
-                type="date"
                 value={data}
                 onChange={(e) => setData(e.target.value)}
               />

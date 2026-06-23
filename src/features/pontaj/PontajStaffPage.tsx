@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   PageHeader,
   Field,
-  TextInput,
+  DateInput,
   Spinner,
   DataTable,
   Button,
@@ -158,9 +158,8 @@ export function PontajStaffPage() {
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="w-44">
           <Field label="De la" htmlFor="pontaj-from">
-            <TextInput
+            <DateInput
               id="pontaj-from"
-              type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
             />
@@ -168,9 +167,8 @@ export function PontajStaffPage() {
         </div>
         <div className="w-44">
           <Field label="Până la" htmlFor="pontaj-to">
-            <TextInput
+            <DateInput
               id="pontaj-to"
-              type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />

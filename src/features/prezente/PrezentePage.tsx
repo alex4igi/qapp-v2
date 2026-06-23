@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PageHeader, Field, Select, TextInput, Spinner } from '@/components/ui'
+import { PageHeader, Field, Select, DateInput, Spinner } from '@/components/ui'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import type { StatusPrezenta } from '@/types/db'
 import {
@@ -118,9 +118,8 @@ export function PrezentePage() {
         </div>
         <div className="w-44">
           <Field label="Data ședinței" htmlFor="data">
-            <TextInput
+            <DateInput
               id="data"
-              type="date"
               value={data}
               onChange={(e) => setData(e.target.value)}
             />

@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Select,
   Combobox,
@@ -252,17 +253,15 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
 
         <div className="grid grid-cols-3 gap-3">
           <Field label="Valabil de la" htmlFor="data_inceperii">
-            <TextInput
+            <DateInput
               id="data_inceperii"
-              type="date"
               value={form.data_inceperii}
               onChange={(e) => set('data_inceperii')(e.target.value)}
             />
           </Field>
           <Field label="Valabil până la" htmlFor="data_expirarii">
-            <TextInput
+            <DateInput
               id="data_expirarii"
-              type="date"
               value={form.data_expirarii}
               onChange={(e) => set('data_expirarii')(e.target.value)}
             />

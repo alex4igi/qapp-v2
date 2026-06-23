@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Button, Field, Modal, TextInput } from '@/components/ui'
+import { Button, DateInput, Field, Modal, TextInput } from '@/components/ui'
 import type { Sezon } from '@/types/db'
 import type { FormState } from './helpers'
 import { VacanteTab } from './VacanteTab'
@@ -128,17 +128,15 @@ export function SezonEditModal({
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Data început" htmlFor="sez-inc">
-              <TextInput
+              <DateInput
                 id="sez-inc"
-                type="date"
                 value={form.data_incepere}
                 onChange={(e) => set('data_incepere')(e.target.value)}
               />
             </Field>
             <Field label="Data final" htmlFor="sez-fin">
-              <TextInput
+              <DateInput
                 id="sez-fin"
-                type="date"
                 value={form.data_final}
                 onChange={(e) => set('data_final')(e.target.value)}
               />
@@ -146,17 +144,15 @@ export function SezonEditModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Scadență prima rată" htmlFor="sez-scad-prima">
-              <TextInput
+              <DateInput
                 id="sez-scad-prima"
-                type="date"
                 value={form.scadenta_prima_rata}
                 onChange={(e) => set('scadenta_prima_rata')(e.target.value)}
               />
             </Field>
             <Field label="Scadență ultima rată" htmlFor="sez-scad-ultima">
-              <TextInput
+              <DateInput
                 id="sez-scad-ultima"
-                type="date"
                 value={form.scadenta_ultima_rata}
                 onChange={(e) => set('scadenta_ultima_rata')(e.target.value)}
               />

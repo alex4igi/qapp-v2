@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Button,
 } from '@/components/ui'
@@ -147,9 +148,8 @@ export function ConcursForm({ open, concurs, onClose }: Props) {
         </Field>
 
         <Field label="Data evenimentului" htmlFor="data_evenimentului">
-          <TextInput
+          <DateInput
             id="data_evenimentului"
-            type="date"
             value={form.data_evenimentului}
             onChange={(e) => set('data_evenimentului')(e.target.value)}
           />

@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Select,
   Button,
@@ -155,9 +156,8 @@ export function TeacherForm({ open, teacher, onClose, onCreated }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Data nașterii" htmlFor="data_nasterii">
-            <TextInput
+            <DateInput
               id="data_nasterii"
-              type="date"
               value={form.data_nasterii}
               onChange={(e) => set('data_nasterii')(e.target.value)}
             />

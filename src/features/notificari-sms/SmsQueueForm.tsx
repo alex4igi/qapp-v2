@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Select,
   Button,
@@ -99,9 +100,8 @@ export function SmsQueueForm({ open, onClose }: Props) {
             />
           </Field>
           <Field label="Data planificată" htmlFor="sms-data">
-            <TextInput
+            <DateInput
               id="sms-data"
-              type="date"
               value={dataPlanificata}
               onChange={(e) => setDataPlanificata(e.target.value)}
             />

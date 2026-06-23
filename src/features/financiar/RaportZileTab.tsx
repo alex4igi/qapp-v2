@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
-  TextInput,
+  DateInput,
   Field,
   Select,
   Spinner,
@@ -230,9 +230,8 @@ export function RaportZileTab({ privileged }: { privileged: boolean }) {
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="w-40">
           <Field label="De la" htmlFor="rz-from">
-            <TextInput
+            <DateInput
               id="rz-from"
-              type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
             />
@@ -240,9 +239,8 @@ export function RaportZileTab({ privileged }: { privileged: boolean }) {
         </div>
         <div className="w-40">
           <Field label="Până la" htmlFor="rz-to">
-            <TextInput
+            <DateInput
               id="rz-to"
-              type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />

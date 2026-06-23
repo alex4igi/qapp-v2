@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   TextArea,
   Select,
   Combobox,
@@ -233,9 +234,8 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
             )}
           </Field>
           <Field label="Data evaluării" htmlFor="data" required>
-            <TextInput
+            <DateInput
               id="data"
-              type="date"
               value={form.data_evaluarii}
               onChange={(e) => set('data_evaluarii', e.target.value)}
             />

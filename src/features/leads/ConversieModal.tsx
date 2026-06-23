@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   TextInput,
+  DateInput,
   Select,
   Checkbox,
   Button,
@@ -184,9 +185,8 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Data nașterii" htmlFor="conv-nastere">
-                <TextInput
+                <DateInput
                   id="conv-nastere"
-                  type="date"
                   value={dataNasterii}
                   onChange={(e) => setDataNasterii(e.target.value)}
                 />
