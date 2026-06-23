@@ -45,6 +45,8 @@ export function IncasareForm({ open, enrollment, onClose }: Props) {
         suma: suma.trim() ? Number(suma) : null,
         data: data || null,
         metoda: (metoda || null) as Incasare['metoda'],
+        // plată legată de înrolare → mereu Abonament (altfel rămâne NULL)
+        categorie: 'Abonament' as Incasare['categorie'],
         observatii: observatii.trim() || null,
       }
       return createIncasare(payload)
