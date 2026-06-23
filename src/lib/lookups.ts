@@ -2,16 +2,44 @@
 import { supabase } from '@/lib/supabase'
 import type { SelectOption } from '@/components/ui'
 
-export async function teacheriOptions(): Promise<SelectOption[]> {
+// Cu `sezonId`, întoarce doar teacherii asignați pe cursurile sezonului (titular
+// via cursuri.teacher sau co-instructor via cursuri_teacheri M:N). Fără el, toți.
+export async function teacheriOptions(
+  sezonId?: string | null,
+): Promise<SelectOption[]> {
+  let allowed: Set<string> | null = null
+  if (sezonId) {
+    const { data: cursuri, error: cErr } = await supabase
+      .from('cursuri')
+      .select('id, teacher')
+      .eq('sezon', sezonId)
+    if (cErr) throw cErr
+    allowed = new Set<string>()
+    const cursIds: string[] = []
+    for (const c of cursuri ?? []) {
+      cursIds.push(c.id)
+      if (c.teacher) allowed.add(c.teacher)
+    }
+    if (cursIds.length) {
+      const { data: m2n, error: mErr } = await supabase
+        .from('cursuri_teacheri')
+        .select('teacher_id')
+        .in('curs_id', cursIds)
+      if (mErr) throw mErr
+      for (const r of m2n ?? []) if (r.teacher_id) allowed.add(r.teacher_id)
+    }
+  }
   const { data, error } = await supabase
     .from('teacheri')
     .select('id, nume, prenume')
     .order('nume', { ascending: true })
   if (error) throw error
-  return (data ?? []).map((t) => ({
-    value: t.id,
-    label: `${t.nume} ${t.prenume ?? ''}`.trim(),
-  }))
+  return (data ?? [])
+    .filter((t) => !allowed || allowed.has(t.id))
+    .map((t) => ({
+      value: t.id,
+      label: `${t.nume} ${t.prenume ?? ''}`.trim(),
+    }))
 }
 
 export async function saliOptions(

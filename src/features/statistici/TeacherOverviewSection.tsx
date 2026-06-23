@@ -27,7 +27,7 @@ const COLORS = [
 export function TeacherOverviewSection() {
   const teacheriQ = useQuery({
     queryKey: ['lookup', 'teacheri', 'all'],
-    queryFn: teacheriOptions,
+    queryFn: () => teacheriOptions(),
   })
   const [teacherId, setTeacherId] = useState('')
 

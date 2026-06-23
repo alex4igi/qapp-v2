@@ -126,7 +126,7 @@ export function CursProfilePage() {
 
   const teacheri = useQuery({
     queryKey: ['lookup', 'teacheri'],
-    queryFn: teacheriOptions,
+    queryFn: () => teacheriOptions(),
     enabled: tab === 'detalii',
   })
   const sali = useQuery({

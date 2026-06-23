@@ -29,7 +29,7 @@ export function CreateUserModal({ open, roleOptions, locatii, onClose, onSuccess
 
   const teacheriQ = useQuery({
     queryKey: ['lookup', 'teacheri'],
-    queryFn: teacheriOptions,
+    queryFn: () => teacheriOptions(),
     enabled: role === 'teacher',
   })
 

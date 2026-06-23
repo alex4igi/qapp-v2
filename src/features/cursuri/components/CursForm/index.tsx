@@ -6,6 +6,7 @@ import {
   saliWithLocatie,
   locatiiOptions,
   sezoaneOptions,
+  sezonActivId,
 } from '@/lib/lookups'
 import type { Curs } from '@/types/db'
 import {
@@ -36,9 +37,17 @@ export function CursForm({ open, curs, onClose }: Props) {
   const [form, setForm] = useState<FormState>(() => initialState(curs))
   const [error, setError] = useState<string | null>(null)
 
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
+  // Teacherii se filtrează pe sezonul cursului (la curs nou: sezonul activ).
+  const sezonFiltru = form.sezon || sezonActivQ.data || null
   const teacheri = useQuery({
-    queryKey: ['lookup', 'teacheri'],
-    queryFn: teacheriOptions,
+    queryKey: ['lookup', 'teacheri', sezonFiltru],
+    queryFn: () => teacheriOptions(sezonFiltru),
+    enabled: Boolean(form.sezon) || sezonActivQ.isSuccess,
   })
   const sali = useQuery({
     queryKey: ['lookup', 'sali-with-locatie'],
@@ -205,6 +214,7 @@ export function CursForm({ open, curs, onClose }: Props) {
   }
 
   const lookupsLoading =
+    (!form.sezon && sezonActivQ.isLoading) ||
     teacheri.isLoading ||
     sali.isLoading ||
     locatii.isLoading ||
