@@ -48,8 +48,14 @@ export async function markAllAsRead(): Promise<number> {
   return (data as unknown as number) ?? 0
 }
 
-export async function resolveNotificare(id: string): Promise<void> {
-  const { error } = await supabase.rpc('notifications_resolve', { p_id: id })
+export async function resolveNotificare(
+  id: string,
+  raspuns?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('notifications_resolve', {
+    p_id: id,
+    p_raspuns: raspuns?.trim() || undefined,
+  })
   if (error) throw error
 }
 

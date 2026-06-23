@@ -6879,7 +6879,10 @@ export type Database = {
       }
       my_teacher_id: { Args: never; Returns: string }
       notifications_mark_all_read: { Args: never; Returns: number }
-      notifications_resolve: { Args: { p_id: string }; Returns: undefined }
+      notifications_resolve: {
+        Args: { p_id: string; p_raspuns?: string }
+        Returns: undefined
+      }
       notifications_unread_count: { Args: never; Returns: number }
       notify_enrollment_move: {
         Args: {

@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PageHeader, Button, Spinner } from '@/components/ui'
+import { PageHeader, Button, Spinner, TextArea } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import { isPrivileged } from '@/lib/rolesMatrix'
 import {
   listNotificari,
   markAsRead,
@@ -41,7 +43,7 @@ function targetFor(n: Notification): string | null {
     const aid = (n.payload as { anunt_id?: string } | null)?.anunt_id
     return aid ? `/anunturi?anunt=${aid}` : '/anunturi'
   }
-  if (n.kind === 'enrollment_move') {
+  if (n.kind === 'enrollment_move' || n.kind === 'request_resolved') {
     const cid = (n.payload as { client?: string } | null)?.client
     return cid ? `/clienti/${cid}` : null
   }
@@ -69,14 +71,17 @@ function NotificationCard({
 }: {
   n: Notification
   onClick: () => void
-  onResolve?: () => void
+  onResolve?: (raspuns: string) => void
   resolving?: boolean
 }) {
+  const [showResolve, setShowResolve] = useState(false)
+  const [raspuns, setRaspuns] = useState('')
   const unread = n.read_at == null
   const isAudit = n.kind === 'audit_digest_weekly'
   const audit = isAudit ? (n.payload as AuditPayload | null) : null
   const isFeedback = n.kind === 'app_feedback_new'
   const isAnunt = n.kind === 'anunt_staff'
+  const isResponse = n.kind === 'request_resolved'
   const openTodo = isOpenTodo(n)
   const resolved = n.requires_action && n.status === 'resolved'
   const hasTarget = targetFor(n) != null
@@ -114,25 +119,65 @@ function NotificationCard({
           Vezi anunțul →
         </p>
       )}
+      {isResponse && (
+        <p className="text-xs font-semibold text-green-700">
+          Răspuns de la manager{hasTarget ? ' · vezi fișa →' : ''}
+        </p>
+      )}
       {openTodo && (
-        <div className="mt-1 flex items-center justify-between gap-3">
-          {hasTarget ? (
-            <span className="text-xs font-semibold text-quasar-yellow-dark">
-              Vezi fișa →
-            </span>
+        <div className="mt-1">
+          {!showResolve ? (
+            <div className="flex items-center justify-between gap-3">
+              {hasTarget ? (
+                <span className="text-xs font-semibold text-quasar-yellow-dark">
+                  Vezi fișa →
+                </span>
+              ) : (
+                <span />
+              )}
+              <Button
+                variant="secondary"
+                disabled={resolving}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowResolve(true)
+                }}
+              >
+                ✓ Marchează rezolvat
+              </Button>
+            </div>
           ) : (
-            <span />
+            <div
+              className="space-y-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <TextArea
+                rows={2}
+                value={raspuns}
+                onChange={(e) => setRaspuns(e.target.value)}
+                placeholder="Notă opțională pentru inițiator (ex: confirmat, revino la grupa veche)…"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  disabled={resolving}
+                  onClick={() => {
+                    setShowResolve(false)
+                    setRaspuns('')
+                  }}
+                >
+                  Anulează
+                </Button>
+                <Button
+                  disabled={resolving}
+                  onClick={() => onResolve?.(raspuns)}
+                >
+                  {resolving ? '…' : 'Trimite & rezolvă'}
+                </Button>
+              </div>
+            </div>
           )}
-          <Button
-            variant="secondary"
-            disabled={resolving}
-            onClick={(e) => {
-              e.stopPropagation()
-              onResolve?.()
-            }}
-          >
-            {resolving ? '…' : '✓ Marchează rezolvat'}
-          </Button>
         </div>
       )}
       {resolved && (
@@ -167,6 +212,8 @@ type Tab = 'todo' | 'all'
 export function NotificariPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { role } = useAuth()
+  const canDigest = isPrivileged(role)
   const [tab, setTab] = useState<Tab>('todo')
 
   const notificariQ = useQuery({
@@ -201,7 +248,8 @@ export function NotificariPage() {
   })
 
   const resolve = useMutation({
-    mutationFn: (id: string) => resolveNotificare(id),
+    mutationFn: (v: { id: string; raspuns: string }) =>
+      resolveNotificare(v.id, v.raspuns),
     onSuccess: invalidate,
   })
 
@@ -249,14 +297,16 @@ export function NotificariPage() {
         }
         actions={
           <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => triggerDigest.mutate()}
-              disabled={triggerDigest.isPending}
-              title="Forțează generarea digest-ului săptămânal (debug)"
-            >
-              {triggerDigest.isPending ? '…' : '↻ Generează digest acum'}
-            </Button>
+            {canDigest && (
+              <Button
+                variant="secondary"
+                onClick={() => triggerDigest.mutate()}
+                disabled={triggerDigest.isPending}
+                title="Forțează generarea digest-ului săptămânal (debug)"
+              >
+                {triggerDigest.isPending ? '…' : '↻ Generează digest acum'}
+              </Button>
+            )}
             {unreadCount > 0 && (
               <Button
                 onClick={() => readAll.mutate()}
@@ -293,9 +343,11 @@ export function NotificariPage() {
             <NotificationCard
               key={n.id}
               n={n}
-              resolving={resolve.isPending && resolve.variables === n.id}
+              resolving={resolve.isPending && resolve.variables?.id === n.id}
               onResolve={
-                isOpenTodo(n) ? () => resolve.mutate(n.id) : undefined
+                isOpenTodo(n)
+                  ? (raspuns: string) => resolve.mutate({ id: n.id, raspuns })
+                  : undefined
               }
               onClick={() => {
                 if (n.read_at == null) readOne.mutate(n.id)
