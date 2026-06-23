@@ -5,6 +5,7 @@ import {
   Field,
   TextInput,
   DateInput,
+  DateTimeInput,
   TextArea,
   Select,
   Button,
@@ -396,9 +397,8 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
             />
           </Field>
           <Field label="Data programare" htmlFor="data_programare">
-            <TextInput
+            <DateTimeInput
               id="data_programare"
-              type="datetime-local"
               value={form.data_programare}
               onChange={(e) => set('data_programare', e.target.value)}
             />

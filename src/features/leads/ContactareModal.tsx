@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Modal, Field, TextInput, TextArea, Button } from '@/components/ui'
+import { Modal, Field, DateTimeInput, TextArea, Button } from '@/components/ui'
 import type { Lead } from '@/types/db'
 import { SUB_STATUS_OPTIONS, prependObservatie } from './constants'
 import { updateLead, type LeadForm } from './api'
@@ -127,9 +127,8 @@ export function ContactareModal({ open, lead, onClose }: Props) {
         </Field>
 
         <Field label={dateLabel} required htmlFor="contactare-data">
-          <TextInput
+          <DateTimeInput
             id="contactare-data"
-            type="datetime-local"
             value={dataCallback}
             onChange={(e) => setDataCallback(e.target.value)}
           />

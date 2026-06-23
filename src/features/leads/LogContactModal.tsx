@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Modal, Field, TextArea, TextInput, Button } from '@/components/ui'
+import { Modal, Field, TextArea, DateTimeInput, Button } from '@/components/ui'
 import type { Lead } from '@/types/db'
 import {
   logContact,
@@ -122,9 +122,8 @@ export function LogContactModal({ open, lead, onClose }: Props) {
 
         {rezultat === 'follow_up' && (
           <Field label="Revenire la (callback)" htmlFor="lc-callback">
-            <TextInput
+            <DateTimeInput
               id="lc-callback"
-              type="datetime-local"
               value={dataCallback}
               onChange={(e) => setDataCallback(e.target.value)}
             />
