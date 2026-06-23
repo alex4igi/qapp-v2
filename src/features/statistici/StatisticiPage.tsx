@@ -81,6 +81,7 @@ export function StatisticiPage() {
   const [cursId, setCursId] = useState('')
   const [prezLocatieId, setPrezLocatieId] = useState('')
   const [prezTeacherId, setPrezTeacherId] = useState('')
+  const [prezCursId, setPrezCursId] = useState('')
   const [funnelLocatieId, setFunnelLocatieId] = useState('')
   const [sezonTintaId, setSezonTintaId] = useState('')
 
@@ -158,12 +159,13 @@ export function StatisticiPage() {
   const cursuriQ = useCursuriOptions({ locatieId: null })
 
   const prezAchitareQ = useQuery({
-    queryKey: ['stat', 'prezente-achitare', interval, prezLocatieId, prezTeacherId],
+    queryKey: ['stat', 'prezente-achitare', interval, prezLocatieId, prezTeacherId, prezCursId],
     queryFn: () =>
       getStatisticaPrezenteAchitare(
         interval,
         prezLocatieId || null,
         prezTeacherId || null,
+        prezCursId || null,
       ),
   })
 
@@ -392,6 +394,17 @@ export function StatisticiPage() {
                     options={teacheriQ.data ?? []}
                     value={prezTeacherId}
                     onChange={(e) => setPrezTeacherId(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <div className="w-56">
+                <Field label="Grupă" htmlFor="stat-prez-curs">
+                  <Select
+                    id="stat-prez-curs"
+                    placeholder="Toate grupele"
+                    options={cursuriQ.data ?? []}
+                    value={prezCursId}
+                    onChange={(e) => setPrezCursId(e.target.value)}
                   />
                 </Field>
               </div>

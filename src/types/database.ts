@@ -634,6 +634,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "clienti_auth_user_id_fkey"
+            columns: ["auth_user_id"]
+            isOneToOne: false
+            referencedRelation: "portal_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_clienti_familia"
             columns: ["familia"]
             isOneToOne: false
@@ -2085,7 +2092,15 @@ export type Database = {
           telefon_2?: string | null
           updated?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "familii_auth_user_id_fkey"
+            columns: ["auth_user_id"]
+            isOneToOne: false
+            referencedRelation: "portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feedback: {
         Row: {
@@ -3481,6 +3496,109 @@ export type Database = {
           valoare?: string | null
         }
         Relationships: []
+      }
+      portal_accounts: {
+        Row: {
+          created_at: string
+          email: string
+          failed_attempts: number
+          id: string
+          last_login_at: string | null
+          locked_until: string | null
+          password_hash: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          failed_attempts?: number
+          id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
+          password_hash: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          failed_attempts?: number
+          id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
+          password_hash?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      portal_reset_tokens: {
+        Row: {
+          account_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_reset_tokens_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_sessions: {
+        Row: {
+          account_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_sessions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prezente: {
         Row: {
@@ -6795,6 +6913,7 @@ export type Database = {
       }
       get_statistica_prezente_achitare: {
         Args: {
+          p_curs?: string
           p_from: string
           p_locatie?: string
           p_teacher?: string
@@ -6960,6 +7079,25 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      portal_create_account: {
+        Args: { p_email: string; p_password: string }
+        Returns: string
+      }
+      portal_login: {
+        Args: { p_email: string; p_password: string }
+        Returns: {
+          email: string
+          id: string
+        }[]
+      }
+      portal_set_password: {
+        Args: { p_id: string; p_password: string }
+        Returns: undefined
+      }
+      portal_upsert_credentials: {
+        Args: { p_email: string; p_password: string }
+        Returns: string
       }
       preview_anunt_client: { Args: { p_curs_id?: string }; Returns: number }
       preview_anunt_staff: {

@@ -263,6 +263,7 @@ export async function getStatisticaPrezenteAchitare(
   i: Interval,
   locatieId: string | null,
   teacherId: string | null,
+  cursId: string | null,
 ): Promise<PrezentaAchitareRow[]> {
   const { from, to } = intervalToDateRange(i)
   const { data, error } = await supabase.rpc('get_statistica_prezente_achitare', {
@@ -270,6 +271,7 @@ export async function getStatisticaPrezenteAchitare(
     p_to: to,
     ...(locatieId ? { p_locatie: locatieId } : {}),
     ...(teacherId ? { p_teacher: teacherId } : {}),
+    ...(cursId ? { p_curs: cursId } : {}),
   })
   if (error) throw error
   return ((data ?? []) as PrezentaAchitareRow[]).map((r) => ({
