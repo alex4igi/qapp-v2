@@ -18,6 +18,8 @@ import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import {
   getRaportZile,
   RAPORT_DIMENSIUNI,
+  CATEGORII_RAPORT,
+  RAPORT_CATEGORIE_LABEL,
   type RaportDimensiune,
   type RaportZiRow,
 } from './api'
@@ -83,6 +85,16 @@ const baseColumns: Column<RaportZiRow>[] = [
   },
 ]
 
+// Defalcare pe categorii (Abonament/Bilet/Merch/Taxă/Workshop/Audiție) —
+// „tab-urile" din modalul Plată nouă. Sumele vin din map-ul r.categorii.
+const categoriiColumns: Column<RaportZiRow>[] = CATEGORII_RAPORT.map((cat) => ({
+  header: RAPORT_CATEGORIE_LABEL[cat] ?? cat,
+  cell: (r: RaportZiRow) =>
+    (r.categorii[cat] ?? 0) > 0 ? formatRON(r.categorii[cat]) : '—',
+  className: 'w-28 text-right',
+  sortValue: (r: RaportZiRow) => r.categorii[cat] ?? 0,
+}))
+
 // Cheltuielile nu au atribuire pe dimensiune → doar în „Toate locațiile".
 const cheltuieliColumns: Column<RaportZiRow>[] = [
   {
@@ -110,7 +122,7 @@ const cheltuieliColumns: Column<RaportZiRow>[] = [
   },
 ]
 
-export function RaportZileTab() {
+export function RaportZileTab({ privileged }: { privileged: boolean }) {
   const { locatieId: globalLocatieId } = useWorkingLocatie()
   const [from, setFrom] = useState(startOfMonthIso())
   const [to, setTo] = useState(todayIso())
@@ -160,16 +172,17 @@ export function RaportZileTab() {
     }[dimensiune]
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['raport-zile', { from, to, dimensiune, entityId }],
-    queryFn: () => getRaportZile({ from, to, dimensiune, entityId }),
+    queryKey: ['raport-zile', { from, to, dimensiune, entityId, privileged }],
+    queryFn: () =>
+      getRaportZile({ from, to, dimensiune, entityId, includeCheltuieli: privileged }),
     placeholderData: keepPreviousData,
   })
 
   const summary = data?.summary
-  const showCheltuieli = dimensiune === 'all'
+  const showCheltuieli = privileged && dimensiune === 'all'
   const columns = showCheltuieli
-    ? [...baseColumns, ...cheltuieliColumns]
-    : baseColumns
+    ? [...baseColumns, ...categoriiColumns, ...cheltuieliColumns]
+    : [...baseColumns, ...categoriiColumns]
 
   const onExport = () => {
     const rows = data?.rows ?? []
@@ -181,6 +194,7 @@ export function RaportZileTab() {
       'Transfer',
       'Revolut',
       'Online',
+      ...CATEGORII_RAPORT.map((c) => RAPORT_CATEGORIE_LABEL[c] ?? c),
     ]
     const body: (string | number)[][] = rows.map((r) => [
       r.data,
@@ -190,6 +204,7 @@ export function RaportZileTab() {
       r.transfer,
       r.revolut,
       r.online,
+      ...CATEGORII_RAPORT.map((c) => r.categorii[c] ?? 0),
     ])
     const totalRow: (string | number)[] = [
       'TOTAL',
@@ -199,6 +214,7 @@ export function RaportZileTab() {
       summary?.transfer ?? 0,
       summary?.revolut ?? 0,
       summary?.online ?? 0,
+      ...CATEGORII_RAPORT.map((c) => summary?.categorii[c] ?? 0),
     ]
     if (showCheltuieli) {
       headers.push('Cheltuieli', 'Net')
@@ -300,6 +316,16 @@ export function RaportZileTab() {
                 >
                   Net {formatRON(summary.net)}
                 </strong>
+              </span>
+            )}
+            {summary.total > 0 && (
+              <span className="mt-1 block text-quasar-gray">
+                {CATEGORII_RAPORT.filter((c) => (summary.categorii[c] ?? 0) > 0)
+                  .map(
+                    (c) =>
+                      `${RAPORT_CATEGORIE_LABEL[c] ?? c} ${formatRON(summary.categorii[c])}`,
+                  )
+                  .join(' · ')}
               </span>
             )}
           </p>

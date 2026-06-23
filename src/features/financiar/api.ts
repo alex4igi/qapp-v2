@@ -46,6 +46,27 @@ export const RAPORT_DIMENSIUNI: { value: RaportDimensiune; label: string }[] = [
   { value: 'teacher', label: 'Per profesor' },
 ]
 
+// Categoriile pe care defalcăm raportul pe zile (enum categorie_incasare).
+// Etichetele cu diacritice se aplică la afișare (vezi RAPORT_CATEGORIE_LABEL).
+export const CATEGORII_RAPORT = [
+  'Abonament',
+  'Bilet',
+  'Merch',
+  'Taxa',
+  'Workshop',
+  'Auditie',
+] as const
+
+export const RAPORT_CATEGORIE_LABEL: Record<string, string> = {
+  Abonament: 'Abonament',
+  Bilet: 'Bilet',
+  Merch: 'Merch',
+  Taxa: 'Taxă',
+  Workshop: 'Workshop',
+  Auditie: 'Audiție',
+  Necunoscut: 'Necunoscut',
+}
+
 export type RaportZiRow = {
   data: string
   total: number
@@ -54,6 +75,8 @@ export type RaportZiRow = {
   transfer: number
   revolut: number
   online: number
+  // Sumă pe categorie (cheia = valoarea enum categorie_incasare, ex. 'Abonament').
+  categorii: Record<string, number>
   cheltuieli: number
   net: number
 }
@@ -68,10 +91,12 @@ export async function getRaportZile(params: {
   to: string
   dimensiune: RaportDimensiune
   entityId: string
+  // Front_desk nu vede niciodată cheltuieli/net; manager+ doar pe „Toate locațiile".
+  includeCheltuieli: boolean
 }): Promise<RaportZileResult> {
   let q = supabase
     .from('raport_incasari')
-    .select('data, metoda, suma')
+    .select('data, metoda, suma, categorie')
     .not('data', 'is', null)
 
   if (params.from) q = q.gte('data', params.from)
@@ -98,6 +123,7 @@ export async function getRaportZile(params: {
     transfer: 0,
     revolut: 0,
     online: 0,
+    categorii: {},
     cheltuieli: 0,
     net: 0,
   })
@@ -115,13 +141,16 @@ export async function getRaportZile(params: {
       row[key] += s
       summary[key] += s
     }
+    const cat = r.categorie ?? 'Necunoscut'
+    row.categorii[cat] = (row.categorii[cat] ?? 0) + s
+    summary.categorii[cat] = (summary.categorii[cat] ?? 0) + s
     byDate.set(r.data, row)
   }
 
   // Cheltuielile nu au atribuire pe locație/sală/curs/profesor, deci le afișăm
   // doar în raportul „Toate locațiile" (altfel netul ar amesteca venit filtrat
   // cu cheltuieli pe tot clubul).
-  if (params.dimensiune === 'all') {
+  if (params.includeCheltuieli && params.dimensiune === 'all') {
     let cq = supabase
       .from('cheltuieli')
       .select('data, valoare')

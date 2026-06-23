@@ -25,17 +25,18 @@ export function FinanciarPage() {
         { id: 'reconcilieri', label: 'Reconcilieri cash' },
       ]
     : [
+        { id: 'raport',       label: 'Raport pe zile' },
         { id: 'incasari',     label: 'Încasări' },
         { id: 'restante',     label: 'Restanțe' },
         { id: 'reconcilieri', label: 'Reconcilieri cash' },
       ]
-  const [active, setActive] = useState(privileged ? 'raport' : 'incasari')
+  const [active, setActive] = useState('raport')
 
   return (
     <div>
       <PageHeader title="Financiar" />
       <Tabs tabs={tabs} active={active} onChange={setActive} />
-      {active === 'raport' && privileged && <RaportZileTab />}
+      {active === 'raport' && <RaportZileTab privileged={privileged} />}
       {active === 'incasari' && <IncasariTab />}
       {active === 'cheltuieli' && privileged && <CheltuieliTab />}
       {active === 'restante' && <RestanteTab />}

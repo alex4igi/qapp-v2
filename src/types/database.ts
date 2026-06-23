@@ -5771,6 +5771,7 @@ export type Database = {
       }
       raport_incasari: {
         Row: {
+          categorie: Database["public"]["Enums"]["categorie_incasare"] | null
           data: string | null
           data_incepere: string | null
           data_platii: string | null
