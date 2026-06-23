@@ -143,14 +143,6 @@ export async function cursuriOptionsForCurrentTeacher(): Promise<SelectOption[]>
 }
 
 export async function clientiOptions(): Promise<SelectOption[]> {
-  const { data, error } = await supabase
-    .from('clienti')
-    .select(
-      'id, nume, prenume, telefon, data_nasterii, familia_rel:familii!fk_clienti_familia(nume_familie)',
-    )
-    .order('nume', { ascending: true })
-    .order('prenume', { ascending: true })
-  if (error) throw error
   type Row = {
     id: string
     nume: string
@@ -159,7 +151,24 @@ export async function clientiOptions(): Promise<SelectOption[]> {
     data_nasterii: string | null
     familia_rel: { nume_familie: string | null } | null
   }
-  return (data as unknown as Row[]).map((c) => {
+  // PostgREST taie tăcut la 1000 rânduri; cu 6000+ clienți paginăm ca să-i aducem pe toți.
+  const PAGE = 1000
+  const rows: Row[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('clienti')
+      .select(
+        'id, nume, prenume, telefon, data_nasterii, familia_rel:familii!fk_clienti_familia(nume_familie)',
+      )
+      .order('nume', { ascending: true })
+      .order('prenume', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) throw error
+    const page = (data as unknown as Row[]) ?? []
+    rows.push(...page)
+    if (page.length < PAGE) break
+  }
+  return rows.map((c) => {
     const parts: string[] = []
     if (c.telefon) parts.push(c.telefon)
     const age = calcAge(c.data_nasterii)
