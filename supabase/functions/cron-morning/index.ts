@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
 
     const { data: curs } = await supabase
       .from('cursuri')
-      .select('id, numele, zile, ora, pret_lunar, pret_anual, teacher, link_whatsapp')
+      .select('id, numele, zile, ora, ore_pe_zi, pret_lunar, pret_anual, teacher, link_whatsapp')
       .eq('id', enr.cursul)
       .maybeSingle()
     const { data: client } = await supabase
@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
       curs: curs.numele,
       zile: curs.zile,
       ora: curs.ora,
+      orePeZi: curs.ore_pe_zi as Record<string, string> | null,
       instructor,
       pretLunar,
       linkWhatsapp: curs.link_whatsapp,

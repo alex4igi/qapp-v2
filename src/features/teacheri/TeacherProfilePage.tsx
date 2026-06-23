@@ -167,8 +167,8 @@ export function TeacherProfilePage() {
           title="Șterge definitiv instructor"
           entityLabel={fullName}
           noun="instructorul"
-          onConfirm={async () => {
-            await deleteTeacher(teacher.id)
+          onConfirm={async (force) => {
+            await deleteTeacher(teacher.id, force)
             await queryClient.invalidateQueries({ queryKey: ['teacheri'] })
             navigate('/teacheri')
           }}

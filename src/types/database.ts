@@ -778,6 +778,7 @@ export type Database = {
           old_sub_id: number | null
           one_time: boolean
           ora: string | null
+          ore_pe_zi: Json | null
           participari_eveniment: boolean
           pret_anual: number | null
           pret_lunar: number | null
@@ -807,6 +808,7 @@ export type Database = {
           old_sub_id?: number | null
           one_time?: boolean
           ora?: string | null
+          ore_pe_zi?: Json | null
           participari_eveniment?: boolean
           pret_anual?: number | null
           pret_lunar?: number | null
@@ -836,6 +838,7 @@ export type Database = {
           old_sub_id?: number | null
           one_time?: boolean
           ora?: string | null
+          ore_pe_zi?: Json | null
           participari_eveniment?: boolean
           pret_anual?: number | null
           pret_lunar?: number | null
@@ -6272,8 +6275,14 @@ export type Database = {
       current_client: { Args: never; Returns: string }
       current_familie: { Args: never; Returns: string }
       current_teacher_id: { Args: never; Returns: string }
-      delete_curs_safe: { Args: { p_id: string }; Returns: undefined }
-      delete_teacher_safe: { Args: { p_id: string }; Returns: undefined }
+      delete_curs_safe: {
+        Args: { p_force?: boolean; p_id: string }
+        Returns: undefined
+      }
+      delete_teacher_safe: {
+        Args: { p_force?: boolean; p_id: string }
+        Returns: undefined
+      }
       evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
       expire_open_holds: { Args: never; Returns: number }
       get_anunturi_client: {

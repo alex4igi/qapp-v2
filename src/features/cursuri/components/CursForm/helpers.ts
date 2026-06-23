@@ -31,6 +31,8 @@ export type FormState = {
   sezon: string
   zile: string[]
   ora: string
+  orarDiferit: boolean
+  orePeZi: Record<string, string>
   link_whatsapp: string
   durata_cursului: string
   capacitate_maxima: string
@@ -60,6 +62,15 @@ export function initialState(curs?: Curs | null): FormState {
     sezon: curs?.sezon ?? '',
     zile: curs?.zile ?? [],
     ora: curs?.ora ?? '',
+    orarDiferit: !!(
+      curs?.ore_pe_zi &&
+      typeof curs.ore_pe_zi === 'object' &&
+      !Array.isArray(curs.ore_pe_zi)
+    ),
+    orePeZi:
+      curs?.ore_pe_zi && typeof curs.ore_pe_zi === 'object' && !Array.isArray(curs.ore_pe_zi)
+        ? (curs.ore_pe_zi as Record<string, string>)
+        : {},
     link_whatsapp: curs?.link_whatsapp ?? '',
     durata_cursului: numOrEmpty(curs?.durata_cursului),
     capacitate_maxima: numOrEmpty(curs?.capacitate_maxima),

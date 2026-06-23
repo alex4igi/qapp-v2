@@ -191,8 +191,10 @@ export async function getLinkedAuthUserIds(): Promise<string[]> {
 // Ștergere definitivă (admin). RPC-ul blochează dacă teacherul are dependențe
 // (cursuri, salarii, evaluări, cont) și scrie în audit_log. Pentru teacheri creați
 // din greșeală (fără dependențe) se șterge curat; altfel mesaj clar → arhivează.
-export async function deleteTeacher(id: string): Promise<void> {
-  const { error } = await supabase.rpc('delete_teacher_safe', { p_id: id })
+// force=true sare peste gardă: șterge chiar dacă există dependențe (FK-urile le
+// orfanizează). Adminul își asumă consecințele din UI.
+export async function deleteTeacher(id: string, force = false): Promise<void> {
+  const { error } = await supabase.rpc('delete_teacher_safe', { p_id: id, p_force: force })
   if (error) throw error
 }
 

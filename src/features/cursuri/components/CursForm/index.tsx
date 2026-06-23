@@ -104,6 +104,19 @@ export function CursForm({ open, curs, onClose }: Props) {
     mutationFn: async () => {
       const isTrupa = form.tip === 'recurent-trupa'
       const nivelFinal = isTrupa ? 'Trupa' : form.nivelul || null
+      // Orar diferit pe zile: păstrează doar zilele selectate cu oră completată.
+      // `ora` rămâne populat (cu prima zi) ca fallback pentru căile vechi.
+      const orePeZi = form.orarDiferit
+        ? Object.fromEntries(
+            form.zile
+              .filter((z) => form.orePeZi[z]?.trim())
+              .map((z) => [z, form.orePeZi[z].trim()]),
+          )
+        : null
+      const orePeZiFinal = orePeZi && Object.keys(orePeZi).length ? orePeZi : null
+      const oraFinal = orePeZiFinal
+        ? Object.values(orePeZiFinal)[0]
+        : form.ora.trim() || null
       const payload = {
         numele: form.numele.trim(),
         stil: form.stil.trim() || null,
@@ -114,7 +127,8 @@ export function CursForm({ open, curs, onClose }: Props) {
         sala: form.sala || null,
         sezon: form.sezon || null,
         zile: (form.zile.length ? form.zile : null) as Curs['zile'],
-        ora: form.ora.trim() || null,
+        ora: oraFinal,
+        ore_pe_zi: orePeZiFinal as Curs['ore_pe_zi'],
         link_whatsapp: form.link_whatsapp.trim() || null,
         durata_cursului: toNum(form.durata_cursului),
         capacitate_maxima: toNum(form.capacitate_maxima),

@@ -39,8 +39,10 @@ export async function updateCurs(
 // Ștergere definitivă (admin). RPC-ul blochează dacă cursul are dependențe
 // (înrolări, evaluări, reînscrieri, sesiuni OPEN, clone) și scrie în audit_log.
 // Pentru cursuri create din greșeală (fără dependențe) se șterge curat.
-export async function deleteCurs(id: string): Promise<void> {
-  const { error } = await supabase.rpc('delete_curs_safe', { p_id: id })
+// force=true sare peste gardă: șterge chiar dacă există dependențe (FK ON DELETE
+// SET NULL/CASCADE le orfanizează). Adminul își asumă consecințele din UI.
+export async function deleteCurs(id: string, force = false): Promise<void> {
+  const { error } = await supabase.rpc('delete_curs_safe', { p_id: id, p_force: force })
   if (error) throw error
 }
 

@@ -128,6 +128,9 @@ export type ConfirmareInrolareParams = {
   curs: string
   zile?: string[] | null
   ora?: string | null
+  // Orar diferit pe zile (excepție): map zi -> ora "HH:MM". Când e prezent,
+  // mesajul listeaza ora per zi in loc de "in zilele de … la ora …".
+  orePeZi?: Record<string, string> | null
   instructor?: string | null
   pretLunar?: number | null
   linkWhatsapp?: string | null
@@ -137,8 +140,28 @@ export function buildConfirmareInrolareSms(p: ConfirmareInrolareParams): string 
   const nume = p.prenume?.trim() || 'bun venit'
   const detalii: string[] = []
   const zile = (p.zile ?? []).filter(Boolean)
-  if (zile.length) detalii.push(`in zilele de ${zile.join(', ')}`)
-  if (p.ora?.trim()) detalii.push(`la ora ${p.ora.trim()}`)
+  const orePeZi =
+    p.orePeZi && typeof p.orePeZi === 'object' && !Array.isArray(p.orePeZi)
+      ? p.orePeZi
+      : null
+  // Per zi DOAR daca orele chiar difera; daca toate zilele au aceeasi ora,
+  // foloseste formularea compacta "in zilele de … la ora …".
+  const oreDistincte = orePeZi
+    ? new Set(zile.map((z) => orePeZi[z] ?? p.ora?.trim()).filter(Boolean))
+    : null
+  if (orePeZi && zile.length && oreDistincte && oreDistincte.size > 1) {
+    // ex: "in zilele de Luni la 17:00, Vineri la 18:00"
+    const parts = zile.map((z) => {
+      const ora = orePeZi[z] ?? p.ora?.trim()
+      return ora ? `${z} la ${ora}` : z
+    })
+    detalii.push(`in zilele de ${parts.join(', ')}`)
+  } else {
+    if (zile.length) detalii.push(`in zilele de ${zile.join(', ')}`)
+    // ora unica: din `ora` sau, daca lipseste, prima ora din map
+    const oraUnica = p.ora?.trim() || (oreDistincte && [...oreDistincte][0])
+    if (oraUnica) detalii.push(`la ora ${oraUnica}`)
+  }
   if (p.instructor?.trim()) detalii.push(`cu instructor ${p.instructor.trim()}`)
   const detaliiStr = detalii.length ? `, ${detalii.join(', ')}` : ''
   const pret =

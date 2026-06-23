@@ -325,8 +325,8 @@ export function CursProfilePage() {
           title="Șterge definitiv curs"
           entityLabel={curs.numele}
           noun="cursul"
-          onConfirm={async () => {
-            await deleteCurs(curs.id)
+          onConfirm={async (force) => {
+            await deleteCurs(curs.id, force)
             await queryClient.invalidateQueries({ queryKey: ['cursuri'] })
             navigate('/cursuri')
           }}

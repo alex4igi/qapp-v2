@@ -1,4 +1,5 @@
 import type { Curs } from '@/types/db'
+import { formatOra } from '../../../program'
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -58,7 +59,7 @@ export function DetaliiTab({
       </Section>
       <Section title="Program">
         <DetailRow label="Zile" value={curs.zile?.join(', ') ?? ''} />
-        <DetailRow label="Ora" value={curs.ora ?? ''} />
+        <DetailRow label="Ora" value={formatOra(curs)} />
         <DetailRow
           label="Durată"
           value={curs.durata_cursului ? `${curs.durata_cursului} min` : ''}

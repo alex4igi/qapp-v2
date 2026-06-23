@@ -1,4 +1,5 @@
 import {
+  Checkbox,
   CheckboxGroup,
   Field,
   Select,
@@ -78,15 +79,48 @@ export function ProgramFields({
         />
       </Field>
 
+      <Checkbox
+        id="orar-diferit"
+        label="Orar diferit pe zile (ex. Luni 17:00, Vineri 18:00)"
+        checked={form.orarDiferit}
+        onChange={(e) => set('orarDiferit', e.target.checked)}
+      />
+
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Ora" htmlFor="ora">
-          <TextInput
-            id="ora"
-            placeholder="17:00"
-            value={form.ora}
-            onChange={(e) => set('ora', e.target.value)}
-          />
-        </Field>
+        {form.orarDiferit ? (
+          <Field label="Ora pe zi">
+            {form.zile.length ? (
+              <div className="space-y-2">
+                {form.zile.map((zi) => (
+                  <div key={zi} className="flex items-center gap-2">
+                    <span className="w-20 text-sm text-quasar-black">{zi}</span>
+                    <TextInput
+                      placeholder="17:00"
+                      value={form.orePeZi[zi] ?? ''}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          orePeZi: { ...prev.orePeZi, [zi]: e.target.value },
+                        }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-quasar-gray">Selectează întâi zilele.</p>
+            )}
+          </Field>
+        ) : (
+          <Field label="Ora" htmlFor="ora">
+            <TextInput
+              id="ora"
+              placeholder="17:00"
+              value={form.ora}
+              onChange={(e) => set('ora', e.target.value)}
+            />
+          </Field>
+        )}
         <Field label="Durată (min)" htmlFor="durata">
           <TextInput
             id="durata"
