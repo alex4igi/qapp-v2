@@ -426,6 +426,11 @@ export async function scheduleConfirmareInrolare(
 // același sezon (necesită aprobarea managerului). Cursul curent (luna asta)
 // rămâne intact (deja plătit / de plătit integral).
 // Trupele NU se pot rezilia — contractul e ferm pe tot sezonul.
+//
+// Lunile viitoare anulate se zerează (suma=0, suma_baza=0): o lună neefectuată nu se
+// facturează, deci nu trebuie să rămână ca datorie. Invariant canonic: o înrolare
+// reziliată NU are datorie (regula de contract). Setăm și suma_baza ca să nu o readucă
+// triggerul de discount (vezi [[invariant_suma_baza_enrollments]]).
 export async function rezilizaInrolari(params: {
   clientId: string
   cursId: string
@@ -445,6 +450,8 @@ export async function rezilizaInrolari(params: {
     .update({
       reziliat: true,
       activ: false,
+      suma: 0,
+      suma_baza: 0,
       motiv_reziliere: params.motiv?.trim() || null,
       data_reziliere: new Date().toISOString(),
     })

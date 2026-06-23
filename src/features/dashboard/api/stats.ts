@@ -5,7 +5,7 @@ export type DashboardStats = {
   cursuri: number
   teacheri: number
   incasariLunaCurenta: number
-  restanteTotale: number
+  restanteNet: number // de recuperat (neprescrise) — aceeași bază ca restul aplicației
 }
 
 // KPI-uri totale (cumulativ peste tot) — cardurile din partea de sus a
@@ -22,7 +22,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .select('total')
       .eq('id', monthId)
       .maybeSingle(),
-    supabase.from('statistica_restante_totale').select('total, incasat'),
+    supabase.rpc('get_restante_totale'),
   ])
 
   const firstError =
@@ -33,16 +33,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     restante.error
   if (firstError) throw firstError
 
-  const restanteTotale = (restante.data ?? []).reduce(
-    (acc, r) => acc + ((r.total ?? 0) - (r.incasat ?? 0)),
-    0,
-  )
+  const restanteNet = Number((restante.data ?? [])[0]?.rest_net ?? 0)
 
   return {
     clienti: clienti.count ?? 0,
     cursuri: cursuri.count ?? 0,
     teacheri: teacheri.count ?? 0,
     incasariLunaCurenta: incLuna.data?.total ?? 0,
-    restanteTotale,
+    restanteNet,
   }
 }

@@ -22,11 +22,13 @@ function KpiCard({
   icon,
   label,
   value,
+  hint,
   highlight,
 }: {
   icon: string
   label: string
   value: string
+  hint?: string
   highlight?: boolean
 }) {
   return (
@@ -44,6 +46,7 @@ function KpiCard({
       <div className="mt-3 font-display text-3xl font-bold text-quasar-black">
         {value}
       </div>
+      {hint ? <div className="mt-1 text-xs text-quasar-gray">{hint}</div> : null}
     </div>
   )
 }
@@ -152,8 +155,13 @@ export function DashboardPage() {
           />
           <KpiCard
             icon="⚠️"
-            label="Total restanțe"
-            value={kpisQ.data ? formatRON(kpisQ.data.restanteTotale) : '—'}
+            label="Restanțe de recuperat"
+            value={kpisQ.data ? formatRON(kpisQ.data.restanteNet) : '—'}
+            hint={
+              kpisQ.data && kpisQ.data.restantePrescris > 0
+                ? `+ ${formatRON(kpisQ.data.restantePrescris)} prescrise (> 2 ani)`
+                : undefined
+            }
           />
           <KpiCard
             icon="📅"

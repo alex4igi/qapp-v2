@@ -2,16 +2,19 @@ import { supabase } from '@/lib/supabase'
 
 export type DashboardKpis = {
   incasariAzi: number
-  restanteTotale: number
+  restanteNet: number // de recuperat (rest>0, neprescrise) — definiția canonică
+  restantePrescris: number // > 2 ani, excluse din totalul de recuperat
   programariAzi: number
 }
 
 // KPI-uri din topbar-ul dashboard-ului zilei: încasări la data X, restanțe
 // totale curente, număr de programări lead pe data X.
+// Restanțele vin din get_restante_totale (aceeași bază ca /financiar și /statistici):
+// net recuperabil + prescris separat, ca toate suprafețele să arate aceeași cifră.
 export async function getDashboardKpis(date: string): Promise<DashboardKpis> {
   const [inc, restante, prog] = await Promise.all([
     supabase.from('incasari').select('suma').eq('data', date),
-    supabase.from('statistica_restante_totale').select('total, incasat'),
+    supabase.rpc('get_restante_totale'),
     supabase
       .from('programari_leads')
       .select('*', { count: 'exact', head: true })
@@ -25,9 +28,11 @@ export async function getDashboardKpis(date: string): Promise<DashboardKpis> {
     (acc, r) => acc + Number(r.suma ?? 0),
     0,
   )
-  const restanteTotale = (restante.data ?? []).reduce(
-    (acc, r) => acc + ((r.total ?? 0) - (r.incasat ?? 0)),
-    0,
-  )
-  return { incasariAzi, restanteTotale, programariAzi: prog.count ?? 0 }
+  const r = (restante.data ?? [])[0]
+  return {
+    incasariAzi,
+    restanteNet: Number(r?.rest_net ?? 0),
+    restantePrescris: Number(r?.rest_prescris ?? 0),
+    programariAzi: prog.count ?? 0,
+  }
 }

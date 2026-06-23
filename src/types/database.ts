@@ -6644,6 +6644,14 @@ export type Database = {
           varsta: Database["public"]["Enums"]["varsta_curs"]
         }[]
       }
+      get_restante_totale: {
+        Args: { p_locatie?: string }
+        Returns: {
+          rest_net: number
+          rest_prescris: number
+          rest_total: number
+        }[]
+      }
       get_restante_worklist: {
         Args: { p_locatie?: string; p_sezon?: string }
         Returns: {
