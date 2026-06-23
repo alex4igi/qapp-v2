@@ -6787,6 +6787,19 @@ export type Database = {
           neachitate: number
         }[]
       }
+      get_teacher_overview: {
+        Args: { p_teacher_id: string }
+        Returns: {
+          activi: number
+          curs_id: string
+          curs_nivel: string
+          curs_nume: string
+          datorie: number
+          facultativ: boolean
+          posibile: number
+          prezenti: number
+        }[]
+      }
       get_trend_prezente: {
         Args: {
           p_locatie?: string

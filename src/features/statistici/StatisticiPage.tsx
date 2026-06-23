@@ -51,6 +51,7 @@ import { CategorieChart } from './CategorieChart'
 import { ReinscrieriDonut } from './ReinscrieriDonut'
 import { IncasariSezonChart } from './IncasariSezonChart'
 import { FunnelLeadsChart } from './FunnelLeadsChart'
+import { TeacherOverviewSection } from './TeacherOverviewSection'
 
 const CATEG_INCASARI_PALETTE: Record<string, string> = {
   Abonament:  '#10b981',
@@ -560,6 +561,8 @@ export function StatisticiPage() {
             <OcupareList rows={ocupareQ.data ?? []} />
           )}
         </section>
+
+        <TeacherOverviewSection />
 
         {privileged && (
           <section>
