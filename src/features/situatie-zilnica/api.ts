@@ -21,6 +21,7 @@ export type SumarZi = {
   card: number
   transfer: number
   revolut: number
+  online: number
 }
 
 export type DenominatiiMap = Record<string, number>
@@ -103,6 +104,7 @@ export function sumarFromRows(rows: IncasareRow[]): SumarZi {
     card: sumByMetoda('Card'),
     transfer: sumByMetoda('Transfer'),
     revolut: sumByMetoda('Revolut'),
+    online: sumByMetoda('Online'),
   }
 }
 

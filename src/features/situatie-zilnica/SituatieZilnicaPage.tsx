@@ -106,21 +106,23 @@ function SumarCard({
 }
 
 function SumarStrip({
-  total, cash, card, transfer, revolut,
+  total, cash, card, transfer, revolut, online,
 }: {
   total: number
   cash: number
   card: number
   transfer: number
   revolut: number
+  online: number
 }) {
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
       <SumarCard icon="💵" label="Total ziua" value={formatRON(total)} highlight />
       <SumarCard icon="💶" label="Cash" value={formatRON(cash)} />
       <SumarCard icon="💳" label="Card" value={formatRON(card)} />
       <SumarCard icon="🔁" label="Transfer" value={formatRON(transfer)} />
       <SumarCard icon="🟣" label="Revolut" value={formatRON(revolut)} />
+      <SumarCard icon="🌐" label="Online" value={formatRON(online)} />
     </div>
   )
 }
