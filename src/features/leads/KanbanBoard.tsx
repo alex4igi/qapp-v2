@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -49,6 +49,7 @@ export function KanbanBoard() {
   const [enrollData, setEnrollData] = useState<ConversieResult | null>(null)
   const [logContactLead, setLogContactLead] = useState<Lead | null>(null)
   const [dragError, setDragError] = useState<string | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const leadsQuery = useQuery({
     queryKey: ['leads'],
@@ -201,7 +202,10 @@ export function KanbanBoard() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex items-start gap-3 overflow-x-auto pb-4">
+        <div
+          ref={scrollRef}
+          className="flex items-start gap-3 overflow-x-auto pb-4"
+        >
           {PIPELINE_COLUMNS.map((column) => (
             <KanbanColumn
               key={column.status}
@@ -228,6 +232,8 @@ export function KanbanBoard() {
           )}
         </DragOverlay>
       </DndContext>
+
+      <BottomScrollbar targetRef={scrollRef} />
 
       {editingLead && (
         <LeadModal
@@ -308,5 +314,84 @@ export function KanbanBoard() {
         </div>
       )}
     </>
+  )
+}
+
+// Bară de scroll orizontal lipită de marginea de jos a ecranului, sincronizată
+// cu board-ul. Necesară pe desktop cu mouse fără rotiță orizontală: bara nativă
+// stă la baza celei mai înalte coloane (sub ecran), aici e mereu la îndemână.
+// NU atinge scroll-ul vertical — derulează doar orizontal board-ul.
+function BottomScrollbar({
+  targetRef,
+}: {
+  targetRef: React.RefObject<HTMLDivElement | null>
+}) {
+  const barRef = useRef<HTMLDivElement>(null)
+  const [m, setM] = useState({ scrollWidth: 0, left: 0, width: 0 })
+
+  useEffect(() => {
+    const target = targetRef.current
+    const bar = barRef.current
+    if (!target || !bar) return
+
+    const update = () => {
+      const rect = target.getBoundingClientRect()
+      setM({
+        scrollWidth: target.scrollWidth,
+        left: rect.left,
+        width: rect.width,
+      })
+    }
+    update()
+
+    let lock = false
+    const onTarget = () => {
+      if (lock) return
+      lock = true
+      bar.scrollLeft = target.scrollLeft
+      requestAnimationFrame(() => (lock = false))
+    }
+    const onBar = () => {
+      if (lock) return
+      lock = true
+      target.scrollLeft = bar.scrollLeft
+      requestAnimationFrame(() => (lock = false))
+    }
+    target.addEventListener('scroll', onTarget, { passive: true })
+    bar.addEventListener('scroll', onBar, { passive: true })
+
+    const ro = new ResizeObserver(update)
+    ro.observe(target)
+    // Coloanele cresc/scad pe filtrare → urmărim și schimbările de conținut.
+    const mo = new MutationObserver(update)
+    mo.observe(target, { childList: true, subtree: true })
+    window.addEventListener('resize', update)
+
+    return () => {
+      target.removeEventListener('scroll', onTarget)
+      bar.removeEventListener('scroll', onBar)
+      ro.disconnect()
+      mo.disconnect()
+      window.removeEventListener('resize', update)
+    }
+  }, [targetRef])
+
+  // Randăm bara mereu (altfel barRef ar fi null și efectul n-ar putea măsura),
+  // dar o ascundem când nu e nimic de derulat orizontal.
+  const overflowing = m.scrollWidth > m.width + 1
+
+  return (
+    <div
+      ref={barRef}
+      className="kanban-scroll fixed bottom-0 z-40 overflow-x-scroll overflow-y-hidden"
+      style={{
+        left: m.left,
+        width: m.width || '100%',
+        height: 16,
+        visibility: overflowing ? 'visible' : 'hidden',
+      }}
+    >
+      <div style={{ width: m.scrollWidth, height: 1 }} />
+    </div>
   )
 }

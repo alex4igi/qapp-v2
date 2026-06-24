@@ -40,3 +40,24 @@ h2,
 h3 {
   font-family: var(--font-display);
 }
+
+/* Scrollbar orizontal mereu vizibil pentru board-ul kanban — pe desktop cu
+   mouse fără rotiță orizontală bara trebuie să fie vizibilă și trăgabilă. */
+.kanban-scroll {
+  scrollbar-color: var(--color-quasar-gray) var(--color-quasar-gray-light);
+}
+.kanban-scroll::-webkit-scrollbar {
+  height: 12px;
+}
+.kanban-scroll::-webkit-scrollbar-track {
+  background: var(--color-quasar-gray-light);
+  border-radius: 6px;
+}
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: #c4c4c4;
+  border-radius: 6px;
+  border: 2px solid var(--color-quasar-gray-light);
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-quasar-gray);
+}
