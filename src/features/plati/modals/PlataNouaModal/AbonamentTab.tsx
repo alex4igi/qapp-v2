@@ -188,6 +188,7 @@ export function AbonamentTab({ onClose, onAddInrolare, defaultClientId }: Props)
       const pool = partialNum != null ? partialNum : total
       const tenders = resolveTenders({ metoda, total: pool, cash, card })
       return registerPlataFifo({
+        clientId,
         enrollmentIds: checkedRowsOrdered.map((r) => String(r.id_enrollment)),
         remaining: checkedRowsOrdered.map((r) => Number(r.rest ?? 0)),
         partialAmount: partialNum,

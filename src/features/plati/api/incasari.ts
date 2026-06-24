@@ -96,6 +96,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100
 // (plată mixtă Cash + Card), fiecare porție FIFO se taie suplimentar pe metode
 // în ordinea tenders → un rând per (înrolare × metodă).
 export async function registerPlataFifo(params: {
+  clientId: string // toate înrolările aparțin aceluiași client
   enrollmentIds: string[] // în ordine vechi → nou
   remaining: number[] // rest per enrollment, în aceeași ordine
   partialAmount: number | null // dacă null, plătim restul fiecăruia integral
@@ -135,6 +136,7 @@ export async function registerPlataFifo(params: {
 
   // 3) taie fiecare porție pe metode, consumând tenders în ordine
   const mk = (inregistrare: string, suma: number, metoda: Enums<'metoda_plata'>): InsertDto<'incasari'> => ({
+    client: params.clientId,
     inregistrare,
     data: params.data,
     suma: round2(suma),
