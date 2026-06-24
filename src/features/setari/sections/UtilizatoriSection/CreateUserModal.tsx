@@ -59,9 +59,6 @@ export function CreateUserModal({ open, roleOptions, locatii, onClose, onSuccess
     setError(null)
     if (!email.trim()) return setError('Email obligatoriu.')
     if (password.length < 8) return setError('Parola: minim 8 caractere.')
-    if (role === 'front_desk' && !locatieId) {
-      return setError('Pentru rolul Front Desk locația e obligatorie.')
-    }
     create.mutate()
   }
 
@@ -122,19 +119,18 @@ export function CreateUserModal({ open, roleOptions, locatii, onClose, onSuccess
         <Field
           label={
             role === 'front_desk'
-              ? 'Locație (obligatoriu — userul nu o poate schimba)'
+              ? 'Locație (opțional — gol = lucrează la mai multe locații)'
               : role === 'teacher'
                 ? 'Locație principală (opțional — gol = predă la mai multe locații)'
                 : 'Locație implicită (opțional)'
           }
-          required={role === 'front_desk'}
           htmlFor="u-locatie"
         >
           <Select
             id="u-locatie"
             placeholder={
               role === 'front_desk'
-                ? '— alege locația —'
+                ? '— lucrează la mai multe locații —'
                 : role === 'teacher'
                   ? '— predă la mai multe locații —'
                   : '— niciuna —'

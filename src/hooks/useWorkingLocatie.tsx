@@ -35,11 +35,11 @@ const WorkingLocatieContext = createContext<Ctx | undefined>(undefined)
 export function WorkingLocatieProvider({ children }: { children: ReactNode }) {
   const { role, locatieId: assignedLocatieId } = useAuth()
   const baseCanChange = canChangeLocatie(role)
-  // Front-desk e mereu locked (locația e enforced la creare).
-  // Teacher: locked DOAR dacă are locație asignată. Dacă predă la mai multe
-  // locații, contul are locatie_id=null → poate bascula liber din header.
-  const teacherFreeLocation = role === 'teacher' && !assignedLocatieId
-  const canChange = baseCanChange || teacherFreeLocation
+  // Front-desk / teacher: locked DOAR dacă au locație asignată. Dacă lucrează/predă
+  // la mai multe locații, contul are locatie_id=null → poate bascula liber din header.
+  const freeLocation =
+    (role === 'teacher' || role === 'front_desk') && !assignedLocatieId
+  const canChange = baseCanChange || freeLocation
   const locked = !canChange
 
   const [storedPref, setStoredPref] = useState<string | null>(() => {

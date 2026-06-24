@@ -303,13 +303,7 @@ export function UtilizatoriSection() {
           validationError={locatieValidationError}
           onChange={setEditLocatieValue}
           onConfirm={() => {
-            const locked = editLocatie.role === 'front_desk'
-            if (locked && !editLocatieValue) {
-              setLocatieValidationError(
-                `${ROLE_LABEL[editLocatie.role]} trebuie să aibă o locație asignată.`,
-              )
-              return
-            }
+            // Locația e opțională pentru toate rolurile: gol = mai multe locații.
             setLocatieValidationError(null)
             updateLocatie.mutate({
               userId: editLocatie.id,

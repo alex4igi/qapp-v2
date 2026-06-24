@@ -153,15 +153,10 @@ Deno.serve(async (req) => {
         targetLocatie = callerLocatie
       }
 
-      // Front desk OBLIGATORIU are locație setată.
-      // Teacher: locația e opțională — null = predă la mai multe locații
-      // (vede toate cursurile lui via M:N cursuri_teacheri).
-      if (body.role === 'front_desk' && !targetLocatie) {
-        return json(
-          { error: `front_desk trebuie să aibă o locație asignată` },
-          400,
-        )
-      }
+      // Locația e opțională pentru front_desk și teacher:
+      //   - cu locație = fix pe acea locație (blocat din header)
+      //   - null = lucrează/predă la mai multe locații, basculează liber din header
+      //     (front_desk vede toate; teacher vede cursurile lui via M:N cursuri_teacheri)
 
       const { data, error } = await admin.auth.admin.createUser({
         email: body.email,
@@ -250,14 +245,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Front desk NU poate rămâne fără locație.
-      // Teacher: poate avea locație null = predă la mai multe locații.
-      if (targetRole === 'front_desk' && !body.locatieId) {
-        return json(
-          { error: `front_desk trebuie să aibă o locație asignată — nu poți seta gol` },
-          400,
-        )
-      }
+      // Locație null e permisă pentru front_desk și teacher = lucrează/predă la
+      // mai multe locații (basculează liber din header).
 
       const { error } = await admin.auth.admin.updateUserById(body.userId, {
         app_metadata: { ...targetMeta, locatie_id: body.locatieId ?? null },
@@ -291,13 +280,8 @@ Deno.serve(async (req) => {
         return json({ error: 'cont la altă locație' }, 403)
       }
 
-      // Front desk / teacher → trebuie să aibă locație setată
-      if ((body.role === 'front_desk' || body.role === 'teacher') && !targetLocatie) {
-        return json(
-          { error: `Pentru rolul ${body.role} contul trebuie să aibă o locație setată întâi.` },
-          400,
-        )
-      }
+      // front_desk și teacher pot avea locație null = lucrează/predă la mai multe
+      // locații; nu mai impunem o locație la schimbarea de rol.
 
       // Protecții: nu degrada ultimul owner / ultimul admin
       if (oldRole === 'owner' && body.role !== 'owner') {

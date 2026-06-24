@@ -14,7 +14,8 @@ type Props = {
 }
 
 // Setează locația implicită a unui utilizator.
-//   - Front Desk: obligatoriu, locked (userul nu o poate schimba din bara de sus)
+//   - Front Desk: opțional (gol = lucrează la mai multe locații, basculează liber);
+//     cu locație = fix pe ea, nu o poate schimba din bara de sus
 //   - Teacher: opțional (gol = predă la mai multe locații, alege liber)
 //   - Admin/Manager: opțional, default pt sesiune (poate schimba liber)
 export function EditLocatieModal({
@@ -49,16 +50,12 @@ export function EditLocatieModal({
           Cont: <strong className="text-quasar-black">{user.email}</strong>
           {' · '}rol: <strong className="text-quasar-black">{ROLE_LABEL[user.role]}</strong>
         </p>
-        <Field
-          label="Locație implicită"
-          required={user.role === 'front_desk'}
-          htmlFor="edit-locatie"
-        >
+        <Field label="Locație implicită" htmlFor="edit-locatie">
           <Select
             id="edit-locatie"
             placeholder={
               user.role === 'front_desk'
-                ? '— alege locația —'
+                ? '— lucrează la mai multe locații —'
                 : user.role === 'teacher'
                   ? '— predă la mai multe locații —'
                   : '— niciuna (alege liber din bara de sus) —'
@@ -70,8 +67,9 @@ export function EditLocatieModal({
         </Field>
         {user.role === 'front_desk' && (
           <p className="text-xs text-quasar-gray">
-            Front Desk e fix pe locație și nu o poate schimba din aplicație
-            — alege locația corectă acum.
+            Dacă lucrează la o singură locație, alege-o aici — va fi fix pe ea și
+            nu o poate schimba. Dacă lucrează la mai multe, lasă gol — va putea
+            bascula liber între ele din bara de sus.
           </p>
         )}
         {user.role === 'teacher' && (
