@@ -12,8 +12,10 @@ import {
   getDashboardKpis,
   getDashboardCourses,
   getDashboardChart,
+  getDashboardEvents,
 } from '@/features/dashboard/api'
 import { CircleCourseCard } from '@/features/dashboard/CircleCourseCard'
+import { EventDashboardCard } from '@/features/dashboard/EventDashboardCard'
 import { DashboardChart } from '@/features/dashboard/DashboardChart'
 import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
 import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
@@ -87,6 +89,13 @@ export function DashboardPage() {
   const kpisQ = useQuery({
     queryKey: ['dashboard', 'kpis', date],
     queryFn: () => getDashboardKpis(date),
+    enabled: !teacherMode,
+  })
+
+  // Evenimentele zilei — staff-facing (ca KPI-urile), nu pentru teacher.
+  const eventsQ = useQuery({
+    queryKey: ['dashboard', 'events', date],
+    queryFn: () => getDashboardEvents(date),
     enabled: !teacherMode,
   })
 
@@ -174,6 +183,19 @@ export function DashboardPage() {
       {!teacherMode && <AgendaAziCard />}
 
       {!teacherMode && <DatorniciWorklistCard locatieId={locatieId ?? null} />}
+
+      {!teacherMode && (eventsQ.data ?? []).length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+            Evenimente azi
+          </h2>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {eventsQ.data!.map((e) => (
+              <EventDashboardCard key={e.id} event={e} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {coursesQ.isLoading || (teacherMode && teacherCursuriQ.isLoading) ? (
         <Spinner />

@@ -28,6 +28,7 @@ import { AnsambluPage } from '@/features/ansamblu/AnsambluPage'
 import { VouchereListPage } from '@/features/vouchere/VouchereListPage'
 import { InventarListPage } from '@/features/inventar/InventarListPage'
 import { EvenimenteListPage } from '@/features/evenimente/EvenimenteListPage'
+import { EvenimentRosterPage } from '@/features/evenimente/EvenimentRosterPage'
 import { ConcursuriListPage } from '@/features/concursuri/ConcursuriListPage'
 import { CampaniiListPage } from '@/features/campanii/CampaniiListPage'
 import { ReinscrieriPage } from '@/features/reinscrieri/ReinscrieriPage'
@@ -149,6 +150,18 @@ function App() {
               <Route path="evenimente" element={<EvenimenteListPage />} />
               <Route path="concursuri" element={<ConcursuriListPage />} />
               <Route path="reinscrieri" element={<ReinscrieriPage />} />
+            </Route>
+          </Route>
+
+          {/* Roster eveniment — accesibil întregului staff (inclusiv recepția),
+              deschis din cardul de pe dashboard; gestiunea evenimentelor rămâne
+              în /evenimente (privilegiat). */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/eveniment']} />}>
+            <Route element={<AppLayout />}>
+              <Route
+                path="eveniment/:evenimentId"
+                element={<EvenimentRosterPage />}
+              />
             </Route>
           </Route>
 

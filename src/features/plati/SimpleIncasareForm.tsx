@@ -34,6 +34,8 @@ type Props = {
   tip: SimpleTip
   onClose: () => void
   defaultClientId?: string
+  /** Pre-selectează biletul/sursa (id eveniment) la deschidere (tip === 'Bilet'). */
+  defaultBiletId?: string
   defaultSuma?: string
   defaultObservatii?: string
   /** Apelat cu încasarea creată (înainte de onClose) — folosit ca să legăm taxa de campania de reînscrieri. */
@@ -63,6 +65,7 @@ export function SimpleIncasareForm({
   tip,
   onClose,
   defaultClientId,
+  defaultBiletId,
   defaultSuma,
   defaultObservatii,
   onCreated,
@@ -71,7 +74,9 @@ export function SimpleIncasareForm({
   const { locatieId, locatieNume } = useWorkingLocatie()
 
   const [clientId, setClientId] = useState(defaultClientId ?? '')
-  const [sursaId, setSursaId] = useState('') // bilet/inventar id
+  const [sursaId, setSursaId] = useState(
+    tip === 'Bilet' ? (defaultBiletId ?? '') : '',
+  ) // bilet/inventar id
   const [bucati, setBucati] = useState('1')
   const [suma, setSuma] = useState(defaultSuma ?? '')
   const [data, setData] = useState(todayIso())

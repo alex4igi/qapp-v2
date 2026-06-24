@@ -12,6 +12,9 @@ export { getDashboardKpis } from './kpi'
 export type { DashboardCourse } from './courses'
 export { getDashboardCourses } from './courses'
 
+export type { DashboardEvent } from './events'
+export { getDashboardEvents } from './events'
+
 export type { DashboardChartRow } from './chart'
 export { getDashboardChart } from './chart'
 

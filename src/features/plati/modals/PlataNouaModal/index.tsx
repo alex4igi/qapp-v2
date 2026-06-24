@@ -11,6 +11,8 @@ type Props = {
   onClose: () => void
   onAddInrolare?: (clientId: string) => void
   defaultClientId?: string
+  defaultTip?: TipPlata
+  defaultBiletId?: string
 }
 
 export function PlataNouaModal({
@@ -18,8 +20,10 @@ export function PlataNouaModal({
   onClose,
   onAddInrolare,
   defaultClientId,
+  defaultTip,
+  defaultBiletId,
 }: Props) {
-  const [tip, setTip] = useState<TipPlata>('Abonament')
+  const [tip, setTip] = useState<TipPlata>(defaultTip ?? 'Abonament')
 
   return (
     <Modal
@@ -44,6 +48,7 @@ export function PlataNouaModal({
           tip={tip}
           onClose={onClose}
           defaultClientId={defaultClientId}
+          defaultBiletId={tip === 'Bilet' ? defaultBiletId : undefined}
         />
       )}
     </Modal>

@@ -19,6 +19,9 @@ type Props = {
   open: boolean
   eveniment?: Eveniment | null
   onClose: () => void
+  /** Apelat la ștergere (în loc de onClose), ca apelantul să navigheze altundeva
+   *  — ex. rosterul evenimentului nu mai are ce afișa. */
+  onDeleted?: () => void
 }
 
 type FormState = {
@@ -53,7 +56,7 @@ function initialState(e?: Eveniment | null): FormState {
 
 const toNum = (s: string) => (s.trim() ? Number(s) : null)
 
-export function EvenimentForm({ open, eveniment, onClose }: Props) {
+export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
   const queryClient = useQueryClient()
   const isEdit = Boolean(eveniment)
   const [form, setForm] = useState<FormState>(() => initialState(eveniment))
@@ -102,7 +105,7 @@ export function EvenimentForm({ open, eveniment, onClose }: Props) {
     mutationFn: () => deleteEveniment(eveniment!.id),
     onSuccess: () => {
       void invalidate()
-      onClose()
+      ;(onDeleted ?? onClose)()
     },
     onError: (e: unknown) =>
       setError(e instanceof Error ? e.message : 'Eroare la ștergere.'),

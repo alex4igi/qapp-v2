@@ -40,7 +40,12 @@ export const ROUTE_ACCESS = {
   '/scorecard': PRIVILEGED,
   '/vouchere': PRIVILEGED,
   '/inventar': PRIVILEGED,
-  '/evenimente': PRIVILEGED,
+  // Lista de evenimente e vizibilă întregului staff (recepția trebuie să ajungă la
+  // roster pentru încasări + înscriere participanți). Acțiunile de creare/editare/
+  // ștergere a evenimentului rămân la manager+ (gating intern în pagină + RLS).
+  '/evenimente': ALL_STAFF,
+  // Rosterul unui eveniment (participanți + încasare bilet) — tot staff-ul.
+  '/eveniment': ALL_STAFF,
   '/concursuri': PRIVILEGED,
   '/campanii': ALL_STAFF,
   '/reinscrieri': PRIVILEGED,

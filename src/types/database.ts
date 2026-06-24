@@ -6241,6 +6241,10 @@ export type Database = {
         Returns: number
       }
       activate_sezon: { Args: { p_sezon_id: string }; Returns: undefined }
+      add_eveniment_participant: {
+        Args: { p_client: string; p_eveniment: string }
+        Returns: undefined
+      }
       anuleaza_rezervare_open: {
         Args: { p_motiv?: string; p_rezervare: string }
         Returns: undefined
@@ -7125,6 +7129,10 @@ export type Database = {
           p_curs_tinta_id: string
         }
         Returns: string
+      }
+      remove_eveniment_participant: {
+        Args: { p_client: string; p_eveniment: string }
+        Returns: undefined
       }
       resolve_anunt_clienti: {
         Args: { p_curs_id?: string }

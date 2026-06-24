@@ -103,3 +103,167 @@ export async function deleteEveniment(id: string): Promise<void> {
   const { error } = await supabase.from('evenimente').delete().eq('id', id)
   if (error) throw error
 }
+
+// ── Roster eveniment ────────────────────────────────────────────────────────
+
+export type EvenimentRosterRow = {
+  refId: string
+  kind: 'client' | 'lead'
+  nume: string
+  prenume: string | null
+  foto: string | null
+  telefon: string | null
+  platit: number
+  rest: number
+  neplatit: boolean
+  /** Adăugat manual în `participant[]` (vs. doar cumpărător de bilet). */
+  manual: boolean
+}
+
+export type EvenimentRoster = {
+  id: string
+  nume: string
+  tip: Eveniment['tip']
+  data: string | null
+  locatia: string | null
+  pretBilet: number | null
+  participant: string[]
+  roster: EvenimentRosterRow[]
+}
+
+// Participanții unui eveniment = adăugați manual (`participant[]`, id-uri de
+// clienți) ∪ cumpărători de bilet (incasari.bilet = eveniment_id, client sau
+// lead/guest). Pentru fiecare se calculează suma plătită la acest eveniment și
+// restul față de prețul biletului. Compunere client-side, fără RPC nou.
+export async function getEvenimentRoster(
+  evenimentId: string,
+): Promise<EvenimentRoster> {
+  const evRes = await supabase
+    .from('evenimente')
+    .select('id, nume_eveniment, tip, data, locatia, pret_bilet, participant')
+    .eq('id', evenimentId)
+    .single()
+  if (evRes.error) throw evRes.error
+  const ev = evRes.data
+
+  const incRes = await supabase
+    .from('incasari')
+    .select('client, lead, suma')
+    .eq('bilet', evenimentId)
+  if (incRes.error) throw incRes.error
+
+  // Sumă plătită per persoană (client sau lead).
+  const platitByPerson = new Map<string, number>()
+  const leadIds = new Set<string>()
+  for (const r of incRes.data ?? []) {
+    const key = r.client ?? r.lead
+    if (!key) continue
+    if (r.lead && !r.client) leadIds.add(r.lead)
+    platitByPerson.set(key, (platitByPerson.get(key) ?? 0) + (r.suma ?? 0))
+  }
+
+  const clientIds = new Set<string>(ev.participant ?? [])
+  for (const r of incRes.data ?? []) {
+    if (r.client) clientIds.add(r.client)
+  }
+
+  const [clientiRes, leadsRes] = await Promise.all([
+    clientIds.size > 0
+      ? supabase
+          .from('clienti')
+          .select('id, nume, prenume, foto, telefon')
+          .in('id', [...clientIds])
+      : Promise.resolve({ data: [], error: null } as const),
+    leadIds.size > 0
+      ? supabase
+          .from('leads')
+          .select('id, nume, prenume, telefon')
+          .in('id', [...leadIds])
+      : Promise.resolve({ data: [], error: null } as const),
+  ])
+  if (clientiRes.error) throw clientiRes.error
+  if (leadsRes.error) throw leadsRes.error
+
+  const pret = ev.pret_bilet ?? null
+  const manualSet = new Set<string>(ev.participant ?? [])
+  const buildRow = (
+    refId: string,
+    kind: 'client' | 'lead',
+    nume: string,
+    prenume: string | null,
+    foto: string | null,
+    telefon: string | null,
+  ): EvenimentRosterRow => {
+    const platit = platitByPerson.get(refId) ?? 0
+    const rest = pret != null ? Math.max(0, pret - platit) : 0
+    return {
+      refId,
+      kind,
+      nume,
+      prenume,
+      foto,
+      telefon,
+      platit,
+      rest,
+      neplatit: platit === 0,
+      manual: kind === 'client' && manualSet.has(refId),
+    }
+  }
+
+  const roster: EvenimentRosterRow[] = []
+  for (const c of clientiRes.data ?? []) {
+    roster.push(buildRow(c.id, 'client', c.nume, c.prenume, c.foto, c.telefon))
+  }
+  for (const l of leadsRes.data ?? []) {
+    roster.push(buildRow(l.id, 'lead', l.nume, l.prenume, null, l.telefon))
+  }
+  roster.sort((a, b) =>
+    [a.nume, a.prenume].join(' ').localeCompare([b.nume, b.prenume].join(' '), 'ro'),
+  )
+
+  return {
+    id: ev.id,
+    nume: ev.nume_eveniment,
+    tip: ev.tip,
+    data: ev.data,
+    locatia: ev.locatia,
+    pretBilet: pret,
+    participant: ev.participant ?? [],
+    roster,
+  }
+}
+
+// Eveniment complet (pt. formularul de editare deschis din roster).
+export async function getEveniment(id: string): Promise<Eveniment> {
+  const { data, error } = await supabase
+    .from('evenimente')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data
+}
+
+// Gestiune participanți — RPC-uri staff-gated (vezi migrarea
+// 20260624100000); singura cale prin care recepția modifică un eveniment.
+export async function addEvenimentParticipant(
+  evenimentId: string,
+  clientId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('add_eveniment_participant', {
+    p_eveniment: evenimentId,
+    p_client: clientId,
+  })
+  if (error) throw error
+}
+
+export async function removeEvenimentParticipant(
+  evenimentId: string,
+  clientId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('remove_eveniment_participant', {
+    p_eveniment: evenimentId,
+    p_client: clientId,
+  })
+  if (error) throw error
+}

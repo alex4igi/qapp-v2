@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   PageHeader,
@@ -11,6 +12,8 @@ import {
   type Column,
 } from '@/components/ui'
 import type { Eveniment } from '@/types/db'
+import { useAuth } from '@/hooks/useAuth'
+import { isPrivileged } from '@/lib/rolesMatrix'
 import { EvenimentForm } from './EvenimentForm'
 import { listEvenimente, listEvenimenteAni, PAGE_SIZE } from './api'
 
@@ -57,13 +60,15 @@ const columns: Column<Eveniment>[] = [
 ]
 
 export function EvenimenteListPage() {
+  const navigate = useNavigate()
+  const { role } = useAuth()
+  const canManage = isPrivileged(role)
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [an, setAn] = useState('')
   const [temporal, setTemporal] = useState<Temporal>('all')
   const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<Eveniment | null>(null)
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), [])
 
@@ -108,7 +113,9 @@ export function EvenimenteListPage() {
         title="Evenimente"
         subtitle={data ? `${data.total} evenimente` : undefined}
         actions={
-          <Button onClick={() => setFormOpen(true)}>+ Eveniment nou</Button>
+          canManage ? (
+            <Button onClick={() => setFormOpen(true)}>+ Eveniment nou</Button>
+          ) : null
         }
       />
 
@@ -165,7 +172,7 @@ export function EvenimenteListPage() {
             columns={columns}
             rows={data?.rows ?? []}
             rowKey={(e) => e.id}
-            onRowClick={(e) => setEditing(e)}
+            onRowClick={(e) => navigate(`/eveniment/${e.id}`)}
             emptyMessage="Niciun eveniment."
           />
 
@@ -194,13 +201,6 @@ export function EvenimenteListPage() {
       )}
 
       {formOpen && <EvenimentForm open onClose={() => setFormOpen(false)} />}
-      {editing && (
-        <EvenimentForm
-          open
-          eveniment={editing}
-          onClose={() => setEditing(null)}
-        />
-      )}
     </div>
   )
 }
