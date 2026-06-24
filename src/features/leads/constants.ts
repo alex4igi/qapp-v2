@@ -11,7 +11,9 @@ export type PipelineColumn = {
   header: string
 }
 
-// Pipeline-ul de 9 coloane (adaptat la tema deschisă a qapp v2).
+// Coloanele board-ului Kanban (8). Nurture NU e coloană — e un pool de reactivare
+// care crește nelimitat (cronul auto-EXclient + rezilierile toarnă ex-clienți acolo),
+// deci trăiește în tab-ul separat „Nurture" (listă căutabilă), nu pe board.
 export const PIPELINE_COLUMNS: PipelineColumn[] = [
   { status: 'nou',          label: 'Nou',          text: 'text-zinc-600',    bg: 'bg-zinc-100',    border: 'border-zinc-300',    header: 'bg-slate-500' },
   { status: 'contactat',    label: 'Contactat',    text: 'text-blue-700',    bg: 'bg-blue-50',     border: 'border-blue-200',    header: 'bg-blue-500' },
@@ -21,11 +23,15 @@ export const PIPELINE_COLUMNS: PipelineColumn[] = [
   { status: 'nu_a_venit',   label: 'Nu a venit',   text: 'text-red-700',     bg: 'bg-red-50',      border: 'border-red-200',     header: 'bg-rose-500' },
   { status: 'convertit',    label: 'Convertit',    text: 'text-green-700',   bg: 'bg-green-50',    border: 'border-green-300',   header: 'bg-green-600' },
   { status: 'pierdut',      label: 'Pierdut',      text: 'text-zinc-500',    bg: 'bg-zinc-50',     border: 'border-zinc-200',    header: 'bg-zinc-500' },
-  { status: 'nurture',      label: 'Nurture',      text: 'text-pink-700',    bg: 'bg-pink-50',     border: 'border-pink-200',    header: 'bg-pink-500' },
 ]
 
+// Nurture rămâne un status valid (badge-uri, modal), dar în afara board-ului.
+const NURTURE_COLUMN: PipelineColumn = {
+  status: 'nurture', label: 'Nurture', text: 'text-pink-700', bg: 'bg-pink-50', border: 'border-pink-200', header: 'bg-pink-500',
+}
+
 export const STATUS_CONFIG = Object.fromEntries(
-  PIPELINE_COLUMNS.map((c) => [c.status, c]),
+  [...PIPELINE_COLUMNS, NURTURE_COLUMN].map((c) => [c.status, c]),
 ) as Record<StatusLead, PipelineColumn>
 
 export const SUB_STATUS_OPTIONS: {

@@ -96,27 +96,36 @@ async function syncProgramarePrezenta(
 // PostgREST returnează max 1000 rânduri/request.
 const PAGE = 1000
 
-export async function listLeads(): Promise<Lead[]> {
-  const { data, error } = await supabase
-    .from('leads')
-    .select('*')
-    .order('created', { ascending: false })
-    .range(0, PAGE - 1)
-  if (error) throw error
-  let all = data ?? []
-  // Paginăm ca să nu trunchiem silențios pipeline-ul — kanban, rapoartele și
-  // „De lucrat azi" au nevoie de TOT setul.
-  while (all.length > 0 && all.length % PAGE === 0) {
-    const { data: page, error: pageError } = await supabase
-      .from('leads')
-      .select('*')
+// Paginare completă pe `leads`, filtrată pe apartenența la `nurture`
+// (PostgREST cap = 1000 rânduri/request).
+async function fetchLeadsPaged(inNurture: boolean): Promise<Lead[]> {
+  let all: Lead[] = []
+  for (;;) {
+    const base = supabase.from('leads').select('*')
+    const filtered = inNurture
+      ? base.eq('status', 'nurture')
+      : base.neq('status', 'nurture')
+    const { data, error } = await filtered
       .order('created', { ascending: false })
       .range(all.length, all.length + PAGE - 1)
-    if (pageError) throw pageError
-    if (!page?.length) break
-    all = all.concat(page)
+    if (error) throw error
+    if (!data?.length) break
+    all = all.concat(data)
+    if (data.length < PAGE) break
   }
   return all
+}
+
+// Lead-urile board-ului Kanban. Excludem `nurture` — e un pool de reactivare ce
+// crește nelimitat (5k+ ex-clienți istorici); trăiește în tab-ul separat „Nurture",
+// nu pe board. Kanban, rapoartele și „De lucrat azi" folosesc doar pipeline-ul activ.
+export async function listLeads(): Promise<Lead[]> {
+  return fetchLeadsPaged(false)
+}
+
+// Pool-ul Nurture complet (separat de board), pentru tab-ul „Nurture".
+export async function listNurtureLeads(): Promise<Lead[]> {
+  return fetchLeadsPaged(true)
 }
 
 // Mută lead-urile cu programări doar în trecut din `programat` → `nu_a_venit`
