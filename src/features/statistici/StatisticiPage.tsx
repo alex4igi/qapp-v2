@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   PageHeader,
   Field,
-  TextInput,
+  MonthPicker,
   Select,
   Spinner,
   Button,
@@ -225,25 +225,21 @@ export function StatisticiPage() {
         title="Statistici"
         actions={
           <div className="flex items-end gap-3">
-            <div className="w-40">
+            <div className="w-44">
               <Field label="De la luna" htmlFor="stat-from">
-                <TextInput
+                <MonthPicker
                   id="stat-from"
-                  type="month"
                   value={fromLuna}
-                  onChange={(e) =>
-                    setFromLuna(e.target.value || lunaCuOffset(-11))
-                  }
+                  onChange={(v) => setFromLuna(v || lunaCuOffset(-11))}
                 />
               </Field>
             </div>
-            <div className="w-40">
+            <div className="w-44">
               <Field label="Până la luna" htmlFor="stat-to">
-                <TextInput
+                <MonthPicker
                   id="stat-to"
-                  type="month"
                   value={toLuna}
-                  onChange={(e) => setToLuna(e.target.value || lunaCurenta())}
+                  onChange={(v) => setToLuna(v || lunaCurenta())}
                 />
               </Field>
             </div>

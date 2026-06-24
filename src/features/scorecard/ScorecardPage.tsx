@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PageHeader, Field, TextInput, Button, Tabs } from '@/components/ui'
+import { PageHeader, Field, MonthPicker, Button, Tabs } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { lunaCurenta } from './api'
@@ -37,11 +37,10 @@ export function ScorecardPage() {
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="w-44">
           <Field label="Luna" htmlFor="sc-luna">
-            <TextInput
+            <MonthPicker
               id="sc-luna"
-              type="month"
               value={luna}
-              onChange={(e) => setLuna(e.target.value)}
+              onChange={(v) => setLuna(v || lunaCurenta())}
             />
           </Field>
         </div>

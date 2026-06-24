@@ -4,7 +4,7 @@ import {
   Modal,
   Field,
   TextArea,
-  Select,
+  MonthPicker,
   Button,
   Spinner,
 } from '@/components/ui'
@@ -22,15 +22,6 @@ const RO_LUNI = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie',
 ]
-
-const LUNA_OPTS = RO_LUNI.map((l, i) => ({ value: String(i + 1), label: l }))
-
-function yearOpts(): { value: string; label: string }[] {
-  const now = new Date().getFullYear()
-  const years: number[] = []
-  for (let y = now + 1; y >= now - 3; y--) years.push(y)
-  return years.map((y) => ({ value: String(y), label: String(y) }))
-}
 
 // Rând de notare 1–5 (Slab → Excelent).
 function RatingRow({
@@ -219,20 +210,13 @@ function EvaluareTeacherForm({
       <form id="evaluare-teacher-form" onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Luna" htmlFor="luna" required>
-            <Select
+            <MonthPicker
               id="luna"
-              options={LUNA_OPTS}
-              value={String(form.luna)}
-              onChange={(e) => setForm((p) => ({ ...p, luna: Number(e.target.value) }))}
-              disabled={isEdit}
-            />
-          </Field>
-          <Field label="An" htmlFor="anul" required>
-            <Select
-              id="anul"
-              options={yearOpts()}
-              value={String(form.anul)}
-              onChange={(e) => setForm((p) => ({ ...p, anul: Number(e.target.value) }))}
+              value={`${form.anul}-${String(form.luna).padStart(2, '0')}`}
+              onChange={(v) => {
+                const [y, m] = v.split('-').map(Number)
+                setForm((p) => ({ ...p, anul: y, luna: m }))
+              }}
               disabled={isEdit}
             />
           </Field>
