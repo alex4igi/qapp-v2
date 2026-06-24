@@ -30,8 +30,15 @@ const NURTURE_COLUMN: PipelineColumn = {
   status: 'nurture', label: 'Nurture', text: 'text-pink-700', bg: 'bg-pink-50', border: 'border-pink-200', header: 'bg-pink-500',
 }
 
+// Toate statusurile valide (board + Nurture) — pentru selectorul de status din
+// modal, ca un lead Nurture deschis din tab să afișeze corect și să poată fi mutat.
+export const ALL_STATUS_COLUMNS: PipelineColumn[] = [
+  ...PIPELINE_COLUMNS,
+  NURTURE_COLUMN,
+]
+
 export const STATUS_CONFIG = Object.fromEntries(
-  [...PIPELINE_COLUMNS, NURTURE_COLUMN].map((c) => [c.status, c]),
+  ALL_STATUS_COLUMNS.map((c) => [c.status, c]),
 ) as Record<StatusLead, PipelineColumn>
 
 export const SUB_STATUS_OPTIONS: {

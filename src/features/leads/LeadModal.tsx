@@ -15,7 +15,7 @@ import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { campaniiOptions } from '@/lib/lookups'
 import type { Lead } from '@/types/db'
 import {
-  PIPELINE_COLUMNS,
+  ALL_STATUS_COLUMNS,
   SUB_STATUS_OPTIONS,
   INTERESE,
   GRUPE,
@@ -25,6 +25,7 @@ import {
 import {
   createLead,
   updateLead,
+  updateLeadStatus,
   deleteLead,
   checkDuplicateTelefon,
   type LeadForm,
@@ -159,6 +160,18 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
       setError(e instanceof Error ? e.message : 'Eroare la ștergere.'),
   })
 
+  // Mutare rapidă în Nurture (pool de reactivare). Folosește updateLeadStatus —
+  // calea ușoară, fără a cere formularul complet valid (ex: lead fără sursă).
+  const moveToNurture = useMutation({
+    mutationFn: () => updateLeadStatus(lead!.id, 'nurture'),
+    onSuccess: () => {
+      void invalidate()
+      onClose()
+    },
+    onError: (e: unknown) =>
+      setError(e instanceof Error ? e.message : 'Eroare la mutare.'),
+  })
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -231,6 +244,15 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
               >
                 📞 Loghează contact
               </Button>
+              {lead.status !== 'nurture' && (
+                <Button
+                  variant="secondary"
+                  disabled={moveToNurture.isPending}
+                  onClick={() => moveToNurture.mutate()}
+                >
+                  {moveToNurture.isPending ? 'Se mută…' : '🌱 Mută în Nurture'}
+                </Button>
+              )}
             </>
           )}
           <Button variant="secondary" onClick={onClose}>
@@ -386,7 +408,7 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
           <Field label="Status" htmlFor="status">
             <Select
               id="status"
-              options={PIPELINE_COLUMNS.map((c) => ({
+              options={ALL_STATUS_COLUMNS.map((c) => ({
                 label: c.label,
                 value: c.status,
               }))}

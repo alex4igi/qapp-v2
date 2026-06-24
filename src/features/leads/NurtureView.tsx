@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Spinner, TextInput, DataTable, type Column } from '@/components/ui'
+import { Spinner, TextInput, Button, DataTable, type Column } from '@/components/ui'
+import { campaniiOptions } from '@/lib/lookups'
 import { matchesWords } from '@/lib/search'
 import type { Lead } from '@/types/db'
 import { listNurtureLeads } from './api'
+import { exportLeadsCsv } from './leadExport'
 import { LeadModal } from './LeadModal'
 
 // Pool-ul Nurture poate avea mii de ex-clienți (istoric + churn nou). Randăm doar
@@ -34,6 +36,16 @@ export function NurtureView() {
     queryKey: ['leads', 'nurture'],
     queryFn: listNurtureLeads,
   })
+  const campaniiQuery = useQuery({
+    queryKey: ['lookup', 'campanii'],
+    queryFn: campaniiOptions,
+  })
+
+  const campaniiById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const c of campaniiQuery.data ?? []) map.set(c.value, c.label)
+    return map
+  }, [campaniiQuery.data])
 
   const leads = nurtureQuery.data ?? []
 
@@ -92,14 +104,25 @@ export function NurtureView() {
             placeholder="Caută după nume, telefon, email…"
           />
         </div>
-        <p className="text-sm text-quasar-gray">
-          {filtered.length === leads.length
-            ? `${leads.length} contacte`
-            : `${filtered.length} din ${leads.length}`}
-          {filtered.length > RENDER_CAP && (
-            <span> · afișate primele {RENDER_CAP}, caută pentru a îngusta</span>
-          )}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-quasar-gray">
+            {filtered.length === leads.length
+              ? `${leads.length} contacte`
+              : `${filtered.length} din ${leads.length}`}
+            {filtered.length > RENDER_CAP && (
+              <span> · afișate primele {RENDER_CAP}, caută pentru a îngusta</span>
+            )}
+          </p>
+          <Button
+            variant="secondary"
+            disabled={filtered.length === 0}
+            onClick={() =>
+              exportLeadsCsv(filtered, campaniiById, 'nurture.csv')
+            }
+          >
+            ⬇ Export CSV
+          </Button>
+        </div>
       </div>
 
       <DataTable
