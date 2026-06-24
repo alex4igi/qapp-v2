@@ -18,8 +18,6 @@ import {
   isValidRoMobile,
   isValidEmail,
 } from '../_shared/intake.ts'
-import { sendEmail } from '../_shared/messaging.ts'
-import { renderAutoReplyWidget } from '../_shared/email-templates.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -96,33 +94,10 @@ Deno.serve(async (req) => {
       `[intake/website] ${result.created ? 'creat' : 'skip'} ${result.reason ?? ''}`,
     )
 
-    // Auto-reply email (fire-and-forget — nu blochează response-ul widget).
-    // Doar pentru lead-uri NOI cu email valid — nu re-trimitem la dedup.
-    const emailDestinatar = emailFinal ?? ''
-    if (result.created && emailDestinatar && result.leadId) {
-      const numePentruSalut = String(body.prenume ?? body.nume ?? '').trim() || null
-      const rendered = renderAutoReplyWidget(numePentruSalut)
-      sendEmail({
-        to: emailDestinatar,
-        subject: rendered.subject,
-        html: rendered.html,
-        text: rendered.text,
-      })
-        .then(async (res) => {
-          await supabase.from('email_logs').insert({
-            lead_id: result.leadId,
-            to_email: emailDestinatar,
-            tip: 'auto_reply_widget',
-            subject: rendered.subject,
-            status: res.stub ? 'stub' : res.ok ? 'trimis' : 'esuat',
-            message_id: res.messageId ?? null,
-            error: res.error ?? null,
-          })
-        })
-        .catch((e) => {
-          console.error('[intake/website] auto-reply email error:', e)
-        })
-    }
+    // Auto-reply email DEZACTIVAT intenționat: site-ul quasardance.ro trimite deja
+    // propriul email de confirmare la submisia formularului. Un al doilea email de la
+    // noi ar dubla mesajul. Capabilitatea există în _shared/messaging.ts (sendEmail)
+    // dacă vreodată mutăm confirmarea în aplicație.
 
     return json(warnings.length ? { ...result, warnings } : result)
   } catch (e) {

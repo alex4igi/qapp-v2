@@ -65,12 +65,19 @@ function getCreds(): { restKey: string; customerId: string } | null {
 // sendSms
 // ============================================================
 
+export type SendSmsOpts = {
+  type?: MessageType
+  // Override punctual al providerului (folosit de calea de test ca să probeze
+  // themarketer fără să mute traficul de producție de pe smslink).
+  provider?: 'smslink' | 'themarketer'
+}
+
 export async function sendSms(
   telefon: string,
   mesaj: string,
-  _type: MessageType = 'tranzactional',
+  opts: SendSmsOpts = {},
 ): Promise<SendResult> {
-  const provider = smsProvider()
+  const provider = opts.provider ?? smsProvider()
   const hasCreds = provider === 'smslink' ? !!getSmslinkCreds() : !!getCreds()
   const testMode = Deno.env.get('SMS_TEST_MODE') === '1'
 

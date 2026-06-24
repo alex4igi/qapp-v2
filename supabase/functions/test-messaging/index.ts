@@ -27,12 +27,17 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}))
     const tip = String(body.tip ?? '').trim()
     const to = String(body.to ?? '').trim()
+    const providerRaw = String(body.provider ?? '').trim()
+    const provider = providerRaw === 'themarketer' || providerRaw === 'smslink'
+      ? providerRaw
+      : undefined
     if (!to) return json({ error: 'lipsește "to"' }, 400)
 
     if (tip === 'sms') {
       const result = await sendSms(
         to,
         'Test Quasar Dance: connectivitate themarketer OK.',
+        { provider },
       )
       return json(result)
     }
