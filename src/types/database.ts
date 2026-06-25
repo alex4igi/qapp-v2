@@ -6543,6 +6543,16 @@ export type Database = {
           locatie_nume: string
         }[]
       }
+      get_colectare_dso: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          dso_zile: number
+          facturat: number
+          incasat: number
+          rata_colectare: number
+          restante_net: number
+        }[]
+      }
       get_conversie_leads: {
         Args: { p_luni?: number }
         Returns: {
@@ -6767,6 +6777,14 @@ export type Database = {
         Returns: {
           tip: string
           total: number
+        }[]
+      }
+      get_mrr_trend: {
+        Args: { p_locatie?: string; p_luni?: number }
+        Returns: {
+          enrolari: number
+          luna: string
+          mrr: number
         }[]
       }
       get_ocupare_prime_time: {

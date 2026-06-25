@@ -50,7 +50,11 @@ import {
   getYoYAceeasiLuna,
   getCursantiMultiStil,
   getFamiliiFrati,
+  getMrrTrend,
+  getColectareDso,
 } from './api'
+import { MrrTrendChart } from './MrrTrendChart'
+import { BreakEvenTable } from './BreakEvenTable'
 import { InstructoriTrendCard } from './InstructoriTrendCard'
 import { RetentieCohorteTable } from './RetentieCohorteTable'
 import { RestanteAgingChart } from './RestanteAgingChart'
@@ -85,6 +89,7 @@ export function AnalyticsPage() {
   const [toLuna, setToLuna] = useState(lunaCurenta())
   const [locatieId, setLocatieId] = useState('')
   const [yoyMetrica, setYoyMetrica] = useState<'venit' | 'activi'>('venit')
+  const [showCfo, setShowCfo] = useState(false)
 
   const anCurent = new Date().getFullYear()
 
@@ -149,6 +154,10 @@ export function AnalyticsPage() {
   const multiStilQ = useQuery({ queryKey: ['an', 'multi-stil'], queryFn: getCursantiMultiStil })
   const fratiQ = useQuery({ queryKey: ['an', 'frati'], queryFn: getFamiliiFrati })
   const incasariSezonQ = useQuery({ queryKey: ['an', 'incasari-sezon'], queryFn: getIncasariPerSezon })
+
+  // ── CFO pack (lazy — doar când e expandat) ───────────────────────────────────
+  const mrrQ = useQuery({ queryKey: ['an', 'mrr', scope], queryFn: () => getMrrTrend(12, scope), enabled: showCfo })
+  const colectareQ = useQuery({ queryKey: ['an', 'colectare', interval], queryFn: () => getColectareDso(interval), enabled: showCfo })
 
   const activiTotal = activiQ.data?.find((r) => r.locatie_id === null)?.activi ?? 0
   const crestereUltima = crestereQ.data?.[crestereQ.data.length - 1]
@@ -242,6 +251,85 @@ export function AnalyticsPage() {
           tone="positive"
           hint="ultimele 12 luni"
         />
+      </div>
+
+      {/* ── CFO pack (toggle) ── */}
+      <div className="mb-8">
+        <button
+          type="button"
+          onClick={() => setShowCfo((v) => !v)}
+          className="flex w-full items-center justify-between rounded-2xl border border-quasar-black bg-quasar-black px-5 py-3 text-left text-white transition-opacity hover:opacity-90"
+        >
+          <span className="flex items-center gap-2 font-bold">
+            💼 CFO pack
+            <span className="font-normal text-gray-300">
+              — MRR, rată de încasare/DSO, prag de rentabilitate, LTV:CAC
+            </span>
+          </span>
+          <span className="text-quasar-yellow">{showCfo ? '▲ ascunde' : '▼ arată'}</span>
+        </button>
+
+        {showCfo && (
+          <div className="mt-4 flex flex-col gap-6 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            {/* MRR */}
+            <div>
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <h3 className="text-sm font-semibold text-quasar-black">
+                  MRR — venit recurent lunar
+                </h3>
+                <span className="text-2xl font-bold text-green-700">
+                  {mrrQ.data?.length ? formatRON(Math.round(mrrQ.data[mrrQ.data.length - 1].mrr)) : '—'}
+                  <span className="ml-1 text-xs font-normal text-quasar-gray">luna curentă</span>
+                </span>
+              </div>
+              {mrrQ.isLoading ? <Spinner /> : <MrrTrendChart rows={mrrQ.data ?? []} />}
+            </div>
+
+            {/* Încasare / DSO + LTV:CAC */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <KpiCard
+                label="Rată de încasare"
+                value={colectareQ.data?.rata_colectare != null ? `${colectareQ.data.rata_colectare}%` : '—'}
+                tone={colectareQ.data && (colectareQ.data.rata_colectare ?? 0) >= 90 ? 'positive' : 'warning'}
+                hint="încasat / facturat în interval"
+              />
+              <KpiCard
+                label="DSO"
+                value={colectareQ.data?.dso_zile != null ? `${colectareQ.data.dso_zile} zile` : '—'}
+                hint="vechimea medie a creanțelor"
+              />
+              <KpiCard
+                label="Facturat (interval)"
+                value={colectareQ.data ? formatRON(colectareQ.data.facturat) : '—'}
+              />
+              <KpiCard
+                label="LTV mediu"
+                value={ltvQ.data?.ltv_mediu != null ? formatRON(ltvQ.data.ltv_mediu) : '—'}
+                tone="positive"
+                hint={ltvQ.data?.durata_medie_luni != null ? `${ltvQ.data.durata_medie_luni} luni medii` : undefined}
+              />
+              <KpiCard
+                label="LTV : CAC"
+                value="—"
+                hint="adaugă bugetul de marketing pentru CAC"
+              />
+            </div>
+
+            {/* Prag de rentabilitate */}
+            <div>
+              <h3 className="mb-2 text-sm font-semibold text-quasar-black">
+                Prag de rentabilitate per grupă
+              </h3>
+              {rentabQ.isLoading ? <Spinner /> : <BreakEvenTable rows={rentabQ.data ?? []} />}
+            </div>
+
+            <p className="text-xs text-quasar-gray">
+              Notă CFO: MRR exclude one-off (bilete/merch/per-ședință). CAC apare
+              când bugetul campaniilor de marketing e introdus ca cheltuieli — apoi
+              LTV:CAC și payback period se calculează automat.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-10">
