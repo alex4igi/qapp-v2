@@ -18,7 +18,6 @@ import { KanbanColumn } from './KanbanColumn'
 import { LeadCard } from './LeadCard'
 import { LeadModal } from './LeadModal'
 import { LogContactModal } from './LogContactModal'
-import { ScheduleModal } from './ScheduleModal'
 import { PierdutModal } from './PierdutModal'
 import { ContactareModal } from './ContactareModal'
 import { WaitingListModal } from './WaitingListModal'
@@ -240,23 +239,21 @@ export function KanbanBoard() {
           open
           lead={editingLead}
           onClose={() => setEditingLead(null)}
-          onReschedule={(lead) => {
-            setEditingLead(null)
-            setSchedulingLead(lead)
-          }}
         />
       )}
       {addingToStatus && (
         <LeadModal
           open
           defaultStatus={addingToStatus}
+          startScheduling={addingToStatus === 'programat'}
           onClose={() => setAddingToStatus(null)}
         />
       )}
       {schedulingLead && (
-        <ScheduleModal
+        <LeadModal
           open
           lead={schedulingLead}
+          startScheduling
           onClose={() => setSchedulingLead(null)}
         />
       )}

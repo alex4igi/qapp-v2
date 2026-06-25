@@ -11,12 +11,9 @@ export async function triggerLeadSms(
   if (!lead.telefon) return
 
   const tips: string[] = []
-  if (
-    lead.status === 'programat' &&
-    prev !== 'programat' &&
-    lead.data_programare
-  )
-    tips.push('confirmare')
+  // NB: confirmarea de programare NU se trimite aici — trece prin coada
+  // `confirmari_programare_sms` cu delay de 2 min (fereastră de undo), drenată
+  // de edge fn `process-programare-sms`. Vezi enqueueConfirmareProgramare.
   // review = la conversie (lead → client), NU după prezența la demo.
   if (lead.status === 'convertit' && prev !== 'convertit') tips.push('review')
   if (lead.status === 'nu_a_venit' && prev !== 'nu_a_venit')

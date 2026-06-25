@@ -316,6 +316,37 @@ export async function getLatestProgramareCurs(
   return data?.cursul_programat ?? null
 }
 
+// Ultima programare (curs SAU eveniment) — pentru pre-completarea selecției în
+// LeadModal la editarea unui lead deja programat.
+export async function getLatestProgramare(
+  leadId: string,
+): Promise<{ cursId: string | null; evenimentId: string | null } | null> {
+  const { data } = await supabase
+    .from('programari_leads')
+    .select('cursul_programat, eveniment_programat')
+    .eq('lead', leadId)
+    .order('data_programarii', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!data) return null
+  return {
+    cursId: data.cursul_programat ?? null,
+    evenimentId: data.eveniment_programat ?? null,
+  }
+}
+
+// Programează (cu delay de 2 min) SMS-ul de confirmare a programării prin RPC —
+// upsert în coada `confirmari_programare_sms` cu send_after = now()+2min (resetat
+// la re-editare în fereastră). Drenarea o face edge fn `process-programare-sms`.
+export async function enqueueConfirmareProgramare(
+  leadId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('enqueue_confirmare_programare', {
+    p_lead: leadId,
+  })
+  if (error) throw error
+}
+
 // Caută un client existent cu același telefon sau email (pentru merge la conversie).
 export async function findMatchingClient(
   telefon: string | null,
@@ -417,7 +448,7 @@ export type CursProgramabil = {
   ore_pe_zi: Record<string, string> | null
 }
 
-// Cursurile nesuspendate, pentru dropdown-ul de programare din ScheduleModal.
+// Cursurile nesuspendate, pentru dropdown-ul de programare din LeadModal.
 export async function listCursuriProgramabile(
   sezonId?: string | null,
 ): Promise<CursProgramabil[]> {

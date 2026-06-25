@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Modal,
@@ -11,15 +11,17 @@ import {
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
-import { campaniiOptions } from '@/lib/lookups'
-import type { Lead } from '@/types/db'
+import { campaniiOptions, locatiiOptions, sezonActivId } from '@/lib/lookups'
+import type { Lead, GrupaLead } from '@/types/db'
 import {
   ALL_STATUS_COLUMNS,
   SUB_STATUS_OPTIONS,
   INTERESE,
   GRUPE,
   GRUPA_LABELS,
+  GRUPA_TO_VARSTA_CURS,
   LOCATII,
+  ZILE_SAPTAMANA,
 } from './constants'
 import {
   createLead,
@@ -27,6 +29,11 @@ import {
   updateLeadStatus,
   deleteLead,
   checkDuplicateTelefon,
+  listCursuriProgramabile,
+  listEvenimenteProgramabile,
+  createProgramareLead,
+  getLatestProgramare,
+  enqueueConfirmareProgramare,
   type LeadForm,
 } from './api'
 import { waLink } from '@/lib/phone'
@@ -39,10 +46,10 @@ type Props = {
   open: boolean
   lead?: Lead | null
   defaultStatus?: string
+  /** Deschis prin drag pe „Programat": pre-setează statusul ca să apară secțiunea
+   *  de programare (dată + curs/eveniment). */
+  startScheduling?: boolean
   onClose: () => void
-  /** Deschide fluxul de (re)programare — sincronizează programarea în roster
-   *  + retrimite confirmarea. Editarea directă a câmpului de mai jos NU face asta. */
-  onReschedule?: (lead: Lead) => void
 }
 
 const EMPTY: LeadForm = {
@@ -89,7 +96,13 @@ function fromLead(lead: Lead): LeadForm {
   }
 }
 
-export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: Props) {
+export function LeadModal({
+  open,
+  lead,
+  defaultStatus,
+  startScheduling,
+  onClose,
+}: Props) {
   const queryClient = useQueryClient()
   const { role } = useAuth()
   const isEdit = Boolean(lead)
@@ -99,24 +112,132 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'detalii' | 'istoric'>('detalii')
   const [showLogContact, setShowLogContact] = useState(false)
+  // Selecția cursului/evenimentului pentru programare: `curs:<id>` / `ev:<id>`.
+  const [selectie, setSelectie] = useState('')
+  // Valorile programării la deschidere — ca să nu re-creăm o programare la edituri
+  // care nu schimbă data/cursul.
+  const [initial, setInitial] = useState<{ data: string; selectie: string }>({
+    data: '',
+    selectie: '',
+  })
 
   const campanii = useQuery({
     queryKey: ['lookup', 'campanii'],
     queryFn: campaniiOptions,
   })
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+    enabled: open,
+  })
+  const cursuriQ = useQuery({
+    queryKey: ['cursuri', 'programabile', sezonActivQ.data ?? null],
+    queryFn: () => listCursuriProgramabile(sezonActivQ.data ?? null),
+    enabled: open && sezonActivQ.isSuccess,
+  })
+  const locatiiQ = useQuery({
+    queryKey: ['lookup', 'locatii'],
+    queryFn: locatiiOptions,
+    enabled: open,
+  })
 
   useEffect(() => {
     if (!open) return
+    const base = lead
+      ? fromLead(lead)
+      : { ...EMPTY, status: (defaultStatus as LeadForm['status']) ?? 'nou' }
     setForm(
-      lead
-        ? fromLead(lead)
-        : { ...EMPTY, status: (defaultStatus as LeadForm['status']) ?? 'nou' },
+      startScheduling ? { ...base, status: 'programat' } : base,
     )
     setError(null)
     setDupWarning(null)
     setConfirmDelete(false)
     setTab('detalii')
-  }, [open, lead, defaultStatus])
+    setSelectie('')
+    setInitial({ data: lead?.data_programare?.slice(0, 10) ?? '', selectie: '' })
+  }, [open, lead, defaultStatus, startScheduling])
+
+  // Prefill selecția cursului/evenimentului la editarea unui lead deja programat.
+  useEffect(() => {
+    if (!open || !lead) return
+    let cancelled = false
+    void getLatestProgramare(lead.id).then((p) => {
+      if (cancelled || !p) return
+      const sel = p.cursId
+        ? `curs:${p.cursId}`
+        : p.evenimentId
+          ? `ev:${p.evenimentId}`
+          : ''
+      setSelectie(sel)
+      setInitial((cur) => ({ ...cur, selectie: sel }))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, lead])
+
+  const evenimenteQ = useQuery({
+    queryKey: ['evenimente', 'programabile', form.data_programare],
+    queryFn: () => listEvenimenteProgramabile(form.data_programare),
+    enabled: open && Boolean(form.data_programare),
+  })
+
+  // Locația preferată (text din form) → uuid (programari_leads.locatie e FK).
+  const leadLocatieId = useMemo(() => {
+    if (!form.locatia) return null
+    return locatiiQ.data?.find((l) => l.label === form.locatia)?.value ?? null
+  }, [form.locatia, locatiiQ.data])
+
+  const weekday = form.data_programare
+    ? ZILE_SAPTAMANA[new Date(form.data_programare).getDay()]
+    : null
+
+  // Cursurile din ziua aleasă (filtrate pe grupă + zi + locație) + evenimentele zilei.
+  const optiuni = useMemo(() => {
+    const all = cursuriQ.data ?? []
+    const varstaCurs = form.grupa_varsta
+      ? GRUPA_TO_VARSTA_CURS[form.grupa_varsta as GrupaLead]
+      : null
+    const filtered = all.filter((c) => {
+      if (varstaCurs && c.varsta && c.varsta !== varstaCurs && c.varsta !== 'Mixt')
+        return false
+      if (weekday && c.zile?.length && !c.zile.includes(weekday)) return false
+      if (leadLocatieId && c.locatie && c.locatie !== leadLocatieId) return false
+      return true
+    })
+    const cursList = filtered.length ? filtered : all
+    return [
+      ...cursList.map((c) => ({ label: c.numele, value: `curs:${c.id}` })),
+      ...(evenimenteQ.data ?? []).map((e) => ({
+        label: `${e.nume_eveniment} (eveniment)`,
+        value: `ev:${e.id}`,
+      })),
+    ]
+  }, [cursuriQ.data, form.grupa_varsta, weekday, leadLocatieId, evenimenteQ.data])
+
+  // Rezolvă curs/eveniment + oră din selecția curentă.
+  const resolveSelectie = () => {
+    if (!selectie) return null
+    if (selectie.startsWith('curs:')) {
+      const id = selectie.slice(5)
+      const curs = cursuriQ.data?.find((c) => c.id === id)
+      const ora = (weekday && curs?.ore_pe_zi?.[weekday]) || curs?.ora || null
+      return {
+        cursId: id,
+        evenimentId: null as string | null,
+        ora,
+        locatie: curs?.locatie ?? leadLocatieId,
+      }
+    }
+    const id = selectie.slice(3)
+    const ev = evenimenteQ.data?.find((e) => e.id === id)
+    return {
+      cursId: null as string | null,
+      evenimentId: id,
+      ora: ev?.ora ?? null,
+      locatie: leadLocatieId,
+    }
+  }
 
   const set = <K extends keyof LeadForm>(key: K, value: LeadForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -138,11 +259,46 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['leads'] })
 
+  // Programarea se aplică doar dacă data + curs/eveniment sunt setate ȘI ceva
+  // s-a schimbat (dată sau selecție) sau leadul nu era deja programat.
+  const scheduleChanged =
+    form.status === 'programat' &&
+    Boolean(form.data_programare) &&
+    Boolean(selectie) &&
+    (form.data_programare !== initial.data ||
+      selectie !== initial.selectie ||
+      lead?.status !== 'programat')
+
   const save = useMutation({
-    mutationFn: () =>
-      isEdit ? updateLead(lead!.id, form) : createLead(form),
+    mutationFn: async () => {
+      // Date-driven: dacă programăm (dată + curs), leadul devine 'programat'.
+      const formToSave: LeadForm = scheduleChanged
+        ? { ...form, status: 'programat' }
+        : form
+      let leadId = lead?.id ?? null
+      if (isEdit) {
+        await updateLead(lead!.id, formToSave)
+      } else {
+        const created = await createLead(formToSave)
+        leadId = created.id
+      }
+      if (scheduleChanged && leadId) {
+        const sel = resolveSelectie()!
+        await createProgramareLead({
+          lead: leadId,
+          cursul_programat: sel.cursId,
+          eveniment_programat: sel.evenimentId,
+          locatie: sel.locatie,
+          data_programarii: form.data_programare.slice(0, 10),
+          ora: sel.ora,
+        })
+        // Confirmarea SMS pleacă după 2 min (fereastră de undo).
+        await enqueueConfirmareProgramare(leadId)
+      }
+    },
     onSuccess: () => {
       void invalidate()
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
     },
     onError: (e: unknown) =>
@@ -185,6 +341,18 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
     if (!form.sursa) {
       setError('Sursa (campania) este obligatorie.')
       return
+    }
+    // Programare: dacă statusul e „Programat", data + curs/eveniment sunt
+    // obligatorii (altfel leadul n-ar ajunge în rosterul unei grupe).
+    if (form.status === 'programat') {
+      if (!form.data_programare) {
+        setError('Setează data programării.')
+        return
+      }
+      if (!selectie) {
+        setError('Alege cursul sau evenimentul pentru programare.')
+        return
+      }
     }
     save.mutate()
   }
@@ -421,22 +589,42 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
             <DateInput
               id="data_programare"
               value={form.data_programare}
-              onChange={(e) => set('data_programare', e.target.value)}
+              onChange={(e) => {
+                set('data_programare', e.target.value)
+                // Date-driven: setarea datei marchează intenția de programare.
+                if (e.target.value) set('status', 'programat')
+              }}
             />
           </Field>
         </div>
 
-        {lead?.status === 'programat' && onReschedule && (
-          <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-            <button
-              type="button"
-              onClick={() => onReschedule(lead)}
-              className="font-semibold underline-offset-2 hover:underline"
-            >
-              📅 Reprogramează
-            </button>{' '}
-            — schimbarea datei direct în câmpul de mai sus nu actualizează
-            programarea din roster. Folosește butonul pentru reprogramare corectă.
+        {/* Programare la o grupă: aleg data → apar cursurile/evenimentele zilei.
+            La salvare, leadul devine „Programat" și intră în rosterul grupei. */}
+        {form.status === 'programat' && (
+          <div className="space-y-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-3">
+            {form.data_programare ? (
+              <Field label="Curs / eveniment" required htmlFor="sch-curs">
+                <Select
+                  id="sch-curs"
+                  placeholder={
+                    cursuriQ.isLoading ? 'Se încarcă…' : '— selectează —'
+                  }
+                  options={optiuni}
+                  value={selectie}
+                  onChange={(e) => setSelectie(e.target.value)}
+                />
+              </Field>
+            ) : (
+              <p className="text-xs text-blue-800">
+                Setează data programării ca să vezi cursurile și evenimentele din
+                acea zi.
+              </p>
+            )}
+            <p className="text-xs text-blue-800">
+              La salvare leadul apare în rosterul grupei din acea zi. Confirmarea
+              prin SMS se trimite după 2 minute (timp de corecții). Data nașterii
+              nu e obligatorie.
+            </p>
           </div>
         )}
 

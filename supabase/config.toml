@@ -409,6 +409,9 @@ verify_jwt = false
 [functions.cron-season-end]
 verify_jwt = false
 
+[functions.process-programare-sms]
+verify_jwt = false
+
 # Webhook-uri publice de intake — apelate din formular website / Meta Lead Ads.
 [functions.intake-website-lead]
 verify_jwt = false

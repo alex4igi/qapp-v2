@@ -770,6 +770,44 @@ export type Database = {
           },
         ]
       }
+      confirmari_programare_sms: {
+        Row: {
+          created: string
+          error: string | null
+          id: string
+          lead_id: string
+          send_after: string
+          status: string
+          trimis_la: string | null
+        }
+        Insert: {
+          created?: string
+          error?: string | null
+          id?: string
+          lead_id: string
+          send_after?: string
+          status?: string
+          trimis_la?: string | null
+        }
+        Update: {
+          created?: string
+          error?: string | null
+          id?: string
+          lead_id?: string
+          send_after?: string
+          status?: string
+          trimis_la?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmari_programare_sms_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cursuri: {
         Row: {
           capacitate_maxima: number | null
@@ -6429,6 +6467,10 @@ export type Database = {
       }
       delete_teacher_safe: {
         Args: { p_force?: boolean; p_id: string }
+        Returns: undefined
+      }
+      enqueue_confirmare_programare: {
+        Args: { p_lead: string }
         Returns: undefined
       }
       evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
