@@ -5,7 +5,6 @@ import {
   Field,
   TextInput,
   DateInput,
-  DateTimeInput,
   TextArea,
   Select,
   Button,
@@ -81,7 +80,7 @@ function fromLead(lead: Lead): LeadForm {
     motiv_pierdut: lead.motiv_pierdut ?? '',
     locatia: lead.locatia ?? '',
     data_programare: lead.data_programare
-      ? lead.data_programare.slice(0, 16)
+      ? lead.data_programare.slice(0, 10)
       : '',
     data_callback_dorit: lead.data_callback_dorit
       ? lead.data_callback_dorit.slice(0, 16)
@@ -419,7 +418,7 @@ export function LeadModal({ open, lead, defaultStatus, onClose, onReschedule }: 
             />
           </Field>
           <Field label="Data programare" htmlFor="data_programare">
-            <DateTimeInput
+            <DateInput
               id="data_programare"
               value={form.data_programare}
               onChange={(e) => set('data_programare', e.target.value)}

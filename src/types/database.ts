@@ -1924,6 +1924,7 @@ export type Database = {
           locatia: string | null
           notite: string | null
           nume_eveniment: string
+          ora: string | null
           organizator: string | null
           participant: string[]
           pret_bilet: number | null
@@ -1942,6 +1943,7 @@ export type Database = {
           locatia?: string | null
           notite?: string | null
           nume_eveniment: string
+          ora?: string | null
           organizator?: string | null
           participant?: string[]
           pret_bilet?: number | null
@@ -1960,6 +1962,7 @@ export type Database = {
           locatia?: string | null
           notite?: string | null
           nume_eveniment?: string
+          ora?: string | null
           organizator?: string | null
           participant?: string[]
           pret_bilet?: number | null
@@ -3706,11 +3709,13 @@ export type Database = {
           created: string
           cursul_programat: string | null
           data_programarii: string | null
+          eveniment_programat: string | null
           id: string
           interes: Database["public"]["Enums"]["interes_programare"] | null
           lead: string | null
           locatie: string | null
           observatii: string | null
+          ora: string | null
           prezenta: Database["public"]["Enums"]["prezenta_lead"]
           updated: string
         }
@@ -3718,11 +3723,13 @@ export type Database = {
           created?: string
           cursul_programat?: string | null
           data_programarii?: string | null
+          eveniment_programat?: string | null
           id?: string
           interes?: Database["public"]["Enums"]["interes_programare"] | null
           lead?: string | null
           locatie?: string | null
           observatii?: string | null
+          ora?: string | null
           prezenta?: Database["public"]["Enums"]["prezenta_lead"]
           updated?: string
         }
@@ -3730,11 +3737,13 @@ export type Database = {
           created?: string
           cursul_programat?: string | null
           data_programarii?: string | null
+          eveniment_programat?: string | null
           id?: string
           interes?: Database["public"]["Enums"]["interes_programare"] | null
           lead?: string | null
           locatie?: string | null
           observatii?: string | null
+          ora?: string | null
           prezenta?: Database["public"]["Enums"]["prezenta_lead"]
           updated?: string
         }
@@ -3850,6 +3859,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "programari_leads_eveniment_programat_fkey"
+            columns: ["eveniment_programat"]
+            isOneToOne: false
+            referencedRelation: "bilete_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programari_leads_eveniment_programat_fkey"
+            columns: ["eveniment_programat"]
+            isOneToOne: false
+            referencedRelation: "evenimente"
+            referencedColumns: ["id"]
           },
         ]
       }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Modal, Field, DateInput, DateTimeInput, Select, Button } from '@/components/ui'
+import { Modal, Field, DateInput, Select, Button } from '@/components/ui'
 import { VacantaWarning } from '@/features/shared/VacantaWarning'
 import { locatiiOptions, sezonActivId } from '@/lib/lookups'
 import type { Lead, GrupaLead } from '@/types/db'
@@ -10,7 +10,12 @@ import {
   GRUPA_TO_VARSTA_CURS,
   ZILE_SAPTAMANA,
 } from './constants'
-import { updateLead, listCursuriProgramabile, createProgramareLead } from './api'
+import {
+  updateLead,
+  listCursuriProgramabile,
+  listEvenimenteProgramabile,
+  createProgramareLead,
+} from './api'
 
 type Props = {
   open: boolean
@@ -23,7 +28,8 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
   const [dataProgramare, setDataProgramare] = useState('')
   const [grupa, setGrupa] = useState('')
   const [dataNasterii, setDataNasterii] = useState('')
-  const [cursId, setCursId] = useState('')
+  // Valoare prefixată: `curs:<id>` sau `ev:<id>`.
+  const [selectie, setSelectie] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const sezonActivQ = useQuery({
@@ -36,6 +42,11 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
     queryFn: () => listCursuriProgramabile(sezonActivQ.data ?? null),
     enabled: open && sezonActivQ.isSuccess,
   })
+  const evenimente = useQuery({
+    queryKey: ['evenimente', 'programabile', dataProgramare],
+    queryFn: () => listEvenimenteProgramabile(dataProgramare),
+    enabled: open && Boolean(dataProgramare),
+  })
   const locatii = useQuery({
     queryKey: ['lookup', 'locatii'],
     queryFn: locatiiOptions,
@@ -45,11 +56,11 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
   useEffect(() => {
     if (!open || !lead) return
     setDataProgramare(
-      lead.data_programare ? lead.data_programare.slice(0, 16) : '',
+      lead.data_programare ? lead.data_programare.slice(0, 10) : '',
     )
     setGrupa(lead.grupa_varsta ?? '')
     setDataNasterii(lead.data_nasterii ?? '')
-    setCursId('')
+    setSelectie('')
     setError(null)
   }, [open, lead])
 
@@ -61,14 +72,15 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
     )
   }, [lead?.locatia, locatii.data])
 
+  const weekday = dataProgramare
+    ? ZILE_SAPTAMANA[new Date(dataProgramare).getDay()]
+    : null
+
   // Cursurile filtrate după grupă + ziua programării + locația lead-ului.
   const cursuriFiltrate = useMemo(() => {
     const all = cursuri.data ?? []
     const varstaCurs = grupa
       ? GRUPA_TO_VARSTA_CURS[grupa as GrupaLead]
-      : null
-    const weekday = dataProgramare
-      ? ZILE_SAPTAMANA[new Date(dataProgramare).getDay()]
       : null
     const filtered = all.filter((c) => {
       if (varstaCurs && c.varsta && c.varsta !== varstaCurs && c.varsta !== 'Mixt')
@@ -79,22 +91,63 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
       return true
     })
     return { list: filtered.length ? filtered : all, fallback: !filtered.length }
-  }, [cursuri.data, grupa, dataProgramare, leadLocatieId])
+  }, [cursuri.data, grupa, weekday, leadLocatieId])
+
+  // Opțiunile dropdown-ului: cursurile din zi (prefix `curs:`) + evenimentele din
+  // ziua aleasă (prefix `ev:`). Evenimentele apar grupate separat, etichetate.
+  const optiuni = useMemo(() => {
+    const cursOpts = cursuriFiltrate.list.map((c) => ({
+      label: c.numele,
+      value: `curs:${c.id}`,
+    }))
+    const evOpts = (evenimente.data ?? []).map((e) => ({
+      label: `${e.nume_eveniment} (eveniment)`,
+      value: `ev:${e.id}`,
+    }))
+    return [...cursOpts, ...evOpts]
+  }, [cursuriFiltrate.list, evenimente.data])
+
+  // Rezolvă ora din selecția curentă (curs: din ore_pe_zi[zi] ori ora; eveniment: ora).
+  const resolveSelectie = (): {
+    cursId: string | null
+    evenimentId: string | null
+    ora: string | null
+    locatie: string | null
+  } | null => {
+    if (!selectie) return null
+    if (selectie.startsWith('curs:')) {
+      const id = selectie.slice(5)
+      const curs = cursuri.data?.find((c) => c.id === id)
+      const ora =
+        (weekday && curs?.ore_pe_zi?.[weekday]) || curs?.ora || null
+      return {
+        cursId: id,
+        evenimentId: null,
+        ora,
+        locatie: curs?.locatie ?? leadLocatieId,
+      }
+    }
+    const id = selectie.slice(3)
+    const ev = evenimente.data?.find((e) => e.id === id)
+    return { cursId: null, evenimentId: id, ora: ev?.ora ?? null, locatie: leadLocatieId }
+  }
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const sel = resolveSelectie()!
       await updateLead(lead!.id, {
         status: 'programat',
         data_programare: dataProgramare,
         grupa_varsta: grupa,
         data_nasterii: dataNasterii,
       })
-      const curs = cursuri.data?.find((c) => c.id === cursId)
       await createProgramareLead({
         lead: lead!.id,
-        cursul_programat: cursId,
-        locatie: curs?.locatie ?? leadLocatieId,
+        cursul_programat: sel.cursId,
+        eveniment_programat: sel.evenimentId,
+        locatie: sel.locatie,
         data_programarii: dataProgramare.slice(0, 10),
+        ora: sel.ora,
       })
     },
     onSuccess: () => {
@@ -109,11 +162,12 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!dataProgramare) {
-      setError('Data și ora sunt obligatorii.')
+      setError('Data este obligatorie.')
       return
     }
-    if (new Date(dataProgramare) <= new Date()) {
-      setError('Programarea trebuie să fie în viitor.')
+    const azi = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD local
+    if (dataProgramare < azi) {
+      setError('Programarea nu poate fi în trecut.')
       return
     }
     if (!grupa) {
@@ -124,8 +178,8 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
       setError('Data nașterii este obligatorie la programare.')
       return
     }
-    if (!cursId) {
-      setError('Selectează cursul.')
+    if (!selectie) {
+      setError('Selectează cursul sau evenimentul.')
       return
     }
     setError(null)
@@ -163,8 +217,8 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Data și ora" required htmlFor="sch-data">
-            <DateTimeInput
+          <Field label="Data" required htmlFor="sch-data">
+            <DateInput
               id="sch-data"
               value={dataProgramare}
               onChange={(e) => setDataProgramare(e.target.value)}
@@ -191,18 +245,15 @@ export function ScheduleModal({ open, lead, onClose }: Props) {
           />
         </Field>
 
-        <Field label="Curs" required htmlFor="sch-curs">
+        <Field label="Curs / eveniment" required htmlFor="sch-curs">
           <Select
             id="sch-curs"
             placeholder={
-              cursuri.isLoading ? 'Se încarcă…' : '— selectează cursul —'
+              cursuri.isLoading ? 'Se încarcă…' : '— selectează —'
             }
-            options={cursuriFiltrate.list.map((c) => ({
-              label: c.numele,
-              value: c.id,
-            }))}
-            value={cursId}
-            onChange={(e) => setCursId(e.target.value)}
+            options={optiuni}
+            value={selectie}
+            onChange={(e) => setSelectie(e.target.value)}
           />
         </Field>
         {cursuriFiltrate.fallback && (grupa || dataProgramare) && (

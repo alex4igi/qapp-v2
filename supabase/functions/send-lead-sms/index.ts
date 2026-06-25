@@ -61,11 +61,21 @@ Deno.serve(async (req) => {
       return json({ skipped: true, reason: 'deja trimis' })
     }
 
+    // Ora ședinței vine din ultima programare (rezolvată din curs/eveniment).
+    const { data: programare } = await supabase
+      .from('programari_leads')
+      .select('ora')
+      .eq('lead', leadId)
+      .order('data_programarii', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
     const mesaj = buildSms(tip, {
       prenume: lead.prenume || lead.nume,
       locatie: lead.locatia,
       grupa: lead.grupa_varsta,
       dataProgramare: lead.data_programare,
+      ora: programare?.ora ?? null,
     })
 
     const result = await sendSms(lead.telefon, mesaj)

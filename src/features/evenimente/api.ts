@@ -118,6 +118,10 @@ export type EvenimentRosterRow = {
   neplatit: boolean
   /** Adăugat manual în `participant[]` (vs. doar cumpărător de bilet). */
   manual: boolean
+  /** Lead programat la acest eveniment (oră demonstrativă), via programari_leads. */
+  scheduled: boolean
+  /** Pentru lead-urile programate: starea prezenței. null pentru clienți/bilete. */
+  prezenta: 'programat' | 'prezent' | 'absent' | null
 }
 
 export type EvenimentRoster = {
@@ -125,6 +129,7 @@ export type EvenimentRoster = {
   nume: string
   tip: Eveniment['tip']
   data: string | null
+  ora: string | null
   locatia: string | null
   pretBilet: number | null
   participant: string[]
@@ -140,7 +145,7 @@ export async function getEvenimentRoster(
 ): Promise<EvenimentRoster> {
   const evRes = await supabase
     .from('evenimente')
-    .select('id, nume_eveniment, tip, data, locatia, pret_bilet, participant')
+    .select('id, nume_eveniment, tip, data, ora, locatia, pret_bilet, participant')
     .eq('id', evenimentId)
     .single()
   if (evRes.error) throw evRes.error
@@ -207,6 +212,8 @@ export async function getEvenimentRoster(
       rest,
       neplatit: platit === 0,
       manual: kind === 'client' && manualSet.has(refId),
+      scheduled: false,
+      prezenta: null,
     }
   }
 
@@ -217,6 +224,61 @@ export async function getEvenimentRoster(
   for (const l of leadsRes.data ?? []) {
     roster.push(buildRow(l.id, 'lead', l.nume, l.prenume, null, l.telefon))
   }
+
+  // Lead-urile programate la acest eveniment (oră demonstrativă) — din
+  // programari_leads.eveniment_programat. Statusul lead-ului dă starea prezenței.
+  const progRes = await supabase
+    .from('programari_leads')
+    .select('lead:leads(id, nume, prenume, status, telefon)')
+    .eq('eveniment_programat', evenimentId)
+  if (progRes.error) throw progRes.error
+  const prezentaDinStatus = (
+    status: string | null,
+  ): 'programat' | 'prezent' | 'absent' | null => {
+    if (status === 'a_venit') return 'prezent'
+    if (status === 'nu_a_venit') return 'absent'
+    if (status === 'nou' || status === 'contactat' || status === 'programat')
+      return 'programat'
+    return null // convertit / pierdut / nurture / waiting_list — nu apar
+  }
+  const existingLeadIds = new Set(
+    roster.filter((r) => r.kind === 'lead').map((r) => r.refId),
+  )
+  for (const p of (progRes.data ?? []) as unknown as Array<{
+    lead: {
+      id: string
+      nume: string
+      prenume: string | null
+      status: string | null
+      telefon: string | null
+    } | null
+  }>) {
+    if (!p.lead) continue
+    const prezenta = prezentaDinStatus(p.lead.status)
+    if (!prezenta) continue
+    const existing = roster.find(
+      (r) => r.kind === 'lead' && r.refId === p.lead!.id,
+    )
+    if (existing) {
+      existing.scheduled = true
+      existing.prezenta = prezenta
+      continue
+    }
+    if (existingLeadIds.has(p.lead.id)) continue
+    existingLeadIds.add(p.lead.id)
+    const row = buildRow(
+      p.lead.id,
+      'lead',
+      p.lead.nume,
+      p.lead.prenume,
+      null,
+      p.lead.telefon,
+    )
+    row.scheduled = true
+    row.prezenta = prezenta
+    roster.push(row)
+  }
+
   roster.sort((a, b) =>
     [a.nume, a.prenume].join(' ').localeCompare([b.nume, b.prenume].join(' '), 'ro'),
   )
@@ -226,6 +288,7 @@ export async function getEvenimentRoster(
     nume: ev.nume_eveniment,
     tip: ev.tip,
     data: ev.data,
+    ora: ev.ora,
     locatia: ev.locatia,
     pretBilet: pret,
     participant: ev.participant ?? [],

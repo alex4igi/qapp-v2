@@ -8,6 +8,7 @@ import { isPrivileged } from '@/lib/rolesMatrix'
 import { clientiOptions } from '@/lib/lookups'
 import { formatRON } from '@/lib/format'
 import { waLink } from '@/lib/phone'
+import { updateLeadStatus } from '@/features/leads/api'
 import { EvenimentForm } from './EvenimentForm'
 import {
   getEvenimentRoster,
@@ -22,22 +23,34 @@ function waParticipantMessage(prenume: string | null, nume: string): string {
   return `Bună ziua! Vă scriem de la Quasar Dance în legătură cu ${cui}.`
 }
 
+const PREZENTA_LABEL: Record<'programat' | 'prezent' | 'absent', string> = {
+  programat: 'Programat',
+  prezent: 'Prezent',
+  absent: 'Absent',
+}
+
 function ParticipantCard({
   row,
   pretBilet,
   onPay,
   onRemove,
   removePending,
+  onPresence,
+  presencePending,
 }: {
   row: EvenimentRosterRow
   pretBilet: number | null
   onPay: (clientId: string) => void
   onRemove: (row: EvenimentRosterRow) => void
   removePending: boolean
+  onPresence: (leadId: string, present: boolean) => void
+  presencePending: boolean
 }) {
   const navigate = useNavigate()
   const name = [row.nume, row.prenume].filter(Boolean).join(', ')
   const isLead = row.kind === 'lead'
+  // Lead programat la ora demonstrativă → card cu prezență, nu cu plată.
+  const isScheduled = row.scheduled
   const showPay = !isLead && (row.neplatit || row.rest > 0)
   const payLabel = row.neplatit
     ? 'Nu a plătit biletul'
@@ -49,9 +62,15 @@ function ParticipantCard({
   const waHref = waLink(row.telefon, waParticipantMessage(row.prenume, row.nume))
 
   const fullyPaid = !row.neplatit && row.rest === 0
-  const bg = fullyPaid
-    ? 'bg-green-100 border-green-200'
-    : 'bg-amber-50 border-amber-200'
+  const bg = isScheduled
+    ? row.prezenta === 'prezent'
+      ? 'bg-green-100 border-green-200'
+      : row.prezenta === 'absent'
+        ? 'bg-red-100 border-red-200'
+        : 'bg-amber-50 border-amber-200'
+    : fullyPaid
+      ? 'bg-green-100 border-green-200'
+      : 'bg-amber-50 border-amber-200'
 
   return (
     <div
@@ -76,17 +95,43 @@ function ParticipantCard({
         {name}
       </span>
       <span className="mb-2 text-center text-xs text-quasar-gray">
-        {pretBilet != null
-          ? row.neplatit
-            ? 'Neplătit'
-            : row.rest > 0
-              ? `Rest ${formatRON(row.rest)}`
-              : 'Plătit integral'
-          : row.platit > 0
-            ? `Achitat ${formatRON(row.platit)}`
-            : '—'}
+        {isScheduled
+          ? PREZENTA_LABEL[row.prezenta ?? 'programat']
+          : pretBilet != null
+            ? row.neplatit
+              ? 'Neplătit'
+              : row.rest > 0
+                ? `Rest ${formatRON(row.rest)}`
+                : 'Plătit integral'
+            : row.platit > 0
+              ? `Achitat ${formatRON(row.platit)}`
+              : '—'}
       </span>
       <div className="mt-auto flex items-center gap-2">
+        {isScheduled && (
+          <>
+            <button
+              type="button"
+              onClick={() => onPresence(row.refId, true)}
+              disabled={presencePending}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-green-600 shadow-sm transition-colors hover:bg-green-50 disabled:opacity-50"
+              aria-label="Marchează prezent"
+              title="Marchează prezent"
+            >
+              ✓
+            </button>
+            <button
+              type="button"
+              onClick={() => onPresence(row.refId, false)}
+              disabled={presencePending}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50"
+              aria-label="Marchează absent"
+              title="Marchează absent"
+            >
+              ✗
+            </button>
+          </>
+        )}
         {showPay && (
           <div className="group relative">
             <button
@@ -196,6 +241,14 @@ export function EvenimentRosterPage() {
       removeEvenimentParticipant(evenimentId!, clientId),
     onSuccess: invalidateRoster,
   })
+  const presenceMut = useMutation({
+    mutationFn: ({ leadId, present }: { leadId: string; present: boolean }) =>
+      updateLeadStatus(leadId, present ? 'a_venit' : 'nu_a_venit'),
+    onSuccess: () => {
+      void invalidateRoster()
+      void queryClient.invalidateQueries({ queryKey: ['leads'] })
+    },
+  })
 
   if (isLoading) return <Spinner />
   if (isError || !data) {
@@ -209,9 +262,16 @@ export function EvenimentRosterPage() {
     )
   }
 
-  const subtitle = [data.tip, data.data, data.locatia].filter(Boolean).join(' · ')
-  const platitIntegral = data.roster.filter((r) => !r.neplatit && r.rest === 0).length
-  const deIncasat = data.roster.filter((r) => r.neplatit || r.rest > 0).length
+  const subtitle = [data.tip, data.data, data.ora, data.locatia]
+    .filter(Boolean)
+    .join(' · ')
+  const platitIntegral = data.roster.filter(
+    (r) => !r.scheduled && !r.neplatit && r.rest === 0,
+  ).length
+  const deIncasat = data.roster.filter(
+    (r) => !r.scheduled && (r.neplatit || r.rest > 0),
+  ).length
+  const leaduriProgramate = data.roster.filter((r) => r.scheduled).length
 
   // Cursanți care nu sunt deja în roster (manual sau cumpărători de bilet).
   const inRoster = new Set(
@@ -242,6 +302,9 @@ export function EvenimentRosterPage() {
         <Counter label="Participanți" value={data.roster.length} />
         <Counter label="Plătit integral" value={platitIntegral} />
         <Counter label="De încasat" value={deIncasat} />
+        {leaduriProgramate > 0 && (
+          <Counter label="Leaduri programate" value={leaduriProgramate} />
+        )}
       </div>
 
       <div className="mb-6 max-w-md">
@@ -272,6 +335,12 @@ export function EvenimentRosterPage() {
               onRemove={(row) => removeMut.mutate(row.refId)}
               removePending={
                 removeMut.isPending && removeMut.variables === r.refId
+              }
+              onPresence={(leadId, present) =>
+                presenceMut.mutate({ leadId, present })
+              }
+              presencePending={
+                presenceMut.isPending && presenceMut.variables?.leadId === r.refId
               }
             />
           ))}

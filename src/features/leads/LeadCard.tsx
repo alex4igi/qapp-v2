@@ -33,9 +33,7 @@ function formatDate(iso: string | null) {
   if (!iso) return null
   const d = new Date(iso)
   const day = String(d.getDate()).padStart(2, '0')
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  return `${day} ${MONTHS[d.getMonth()]}, ${h}:${m}`
+  return `${day} ${MONTHS[d.getMonth()]}`
 }
 
 export function LeadCard({

@@ -67,11 +67,10 @@ function faraDiacritice(s: string): string {
   return s.normalize("NFD").replace(/\p{Diacritic}/gu, "")
 }
 
+// Doar data — ora vine separat (din curs/eveniment), via param `ora`.
 function formatDataProgramare(iso: string): string {
   const d = new Date(iso)
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}, ora ${h}:${m}`
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`
 }
 
 export type SmsTip =
@@ -86,6 +85,8 @@ export type SmsParams = {
   locatie?: string | null
   grupa?: string | null
   dataProgramare?: string | null
+  // Ora ședinței, rezolvată din curs/eveniment la programare (HH:MM). Opțională.
+  ora?: string | null
   // Pentru reminder: 'azi' (programări Luni-Vineri) / 'maine' (Sâmbătă-Duminică).
   cand?: 'azi' | 'maine'
 }
@@ -98,14 +99,15 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
   const data = params.dataProgramare
     ? formatDataProgramare(params.dataProgramare)
     : ''
+  const oraTxt = params.ora ? `, ora ${params.ora}` : ''
 
   // Texte fără diacritice și fără emoji — vezi REGULA din capul fișierului.
   switch (tip) {
     case 'confirmare':
-      return `Buna ${nume}! Sedinta gratuita la Quasar Dance e confirmata pe ${data}. Va asteptam cu drag la ${adresa}!`
+      return `Buna ${nume}! Sedinta gratuita la Quasar Dance e confirmata pe ${data}${oraTxt}. Va asteptam cu drag la ${adresa}!`
     case 'reminder': {
       const cand = params.cand === 'azi' ? 'AZI' : 'MAINE'
-      return `Buna ${nume}! Va reamintim de sedinta gratuita la Quasar Dance ${cand}, ${data}, la ${adresa}. Te asteptam!`
+      return `Buna ${nume}! Va reamintim de sedinta gratuita la Quasar Dance ${cand}, ${data}${oraTxt}, la ${adresa}. Te asteptam!`
     }
     case 'review':
       return `Buna ${nume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: ${reviewLink} Multumim!`

@@ -413,6 +413,8 @@ export type CursProgramabil = {
   varsta: string | null
   zile: string[] | null
   locatie: string | null
+  ora: string | null
+  ore_pe_zi: Record<string, string> | null
 }
 
 // Cursurile nesuspendate, pentru dropdown-ul de programare din ScheduleModal.
@@ -421,13 +423,34 @@ export async function listCursuriProgramabile(
 ): Promise<CursProgramabil[]> {
   let query = supabase
     .from('cursuri')
-    .select('id, numele, varsta, zile, locatie')
+    .select('id, numele, varsta, zile, locatie, ora, ore_pe_zi')
     .eq('suspendat', false)
     .order('numele', { ascending: true })
   if (sezonId) query = query.eq('sezon', sezonId)
   const { data, error } = await query
   if (error) throw error
   return (data ?? []) as CursProgramabil[]
+}
+
+export type EvenimentProgramabil = {
+  id: string
+  nume_eveniment: string
+  ora: string | null
+  locatia: string | null
+}
+
+// Evenimentele dintr-o anumită zi — apar în dropdown-ul de programare alături de
+// cursurile recurente (orele demonstrative/gratuite pot fi create ca evenimente).
+export async function listEvenimenteProgramabile(
+  date: string,
+): Promise<EvenimentProgramabil[]> {
+  const { data, error } = await supabase
+    .from('evenimente')
+    .select('id, nume_eveniment, ora, locatia')
+    .eq('data', date)
+    .order('nume_eveniment', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as EvenimentProgramabil[]
 }
 
 export type LogContactInput = {
@@ -499,15 +522,19 @@ export async function logContact(input: LogContactInput): Promise<void> {
 // Activează badge-ul "LEAD" pe roster-ul grupei respective.
 export async function createProgramareLead(input: {
   lead: string
-  cursul_programat: string | null
+  cursul_programat?: string | null
+  eveniment_programat?: string | null
   locatie: string | null
   data_programarii: string
+  ora?: string | null
 }): Promise<void> {
   const { error } = await supabase.from('programari_leads').insert({
     lead: input.lead,
-    cursul_programat: input.cursul_programat,
+    cursul_programat: input.cursul_programat ?? null,
+    eveniment_programat: input.eveniment_programat ?? null,
     locatie: input.locatie,
     data_programarii: input.data_programarii,
+    ora: input.ora ?? null,
     prezenta: 'programat',
   })
   if (error) throw error

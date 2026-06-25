@@ -101,11 +101,21 @@ Deno.serve(async (req) => {
         .maybeSingle()
       if (existing) continue
 
+      // Ora ședinței din ultima programare (rezolvată din curs/eveniment).
+      const { data: programare } = await supabase
+        .from('programari_leads')
+        .select('ora')
+        .eq('lead', lead.id)
+        .order('data_programarii', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
       const mesaj = buildSms('reminder', {
         prenume: lead.prenume || lead.nume,
         locatie: lead.locatia,
         grupa: lead.grupa_varsta,
         dataProgramare: lead.data_programare,
+        ora: programare?.ora ?? null,
         cand: t.cand,
       })
 

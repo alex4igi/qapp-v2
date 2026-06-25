@@ -29,6 +29,7 @@ type FormState = {
   tip: string
   descriere: string
   data: string
+  ora: string
   locatia: string
   organizator: string
   capacitate: string
@@ -44,6 +45,7 @@ function initialState(e?: Eveniment | null): FormState {
     tip: e?.tip ?? 'Eveniment',
     descriere: e?.descriere ?? '',
     data: e?.data ?? '',
+    ora: e?.ora ?? '',
     locatia: e?.locatia ?? '',
     organizator: e?.organizator ?? '',
     capacitate: e?.capacitate != null ? String(e.capacitate) : '',
@@ -81,6 +83,7 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
         tip: form.tip as Eveniment['tip'],
         descriere: form.descriere.trim() || null,
         data: form.data || null,
+        ora: form.ora.trim() || null,
         locatia: form.locatia.trim() || null,
         organizator: form.organizator || null,
         capacitate: toNum(form.capacitate),
@@ -201,12 +204,20 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Field label="Data" htmlFor="data">
             <DateInput
               id="data"
               value={form.data}
               onChange={(e) => set('data')(e.target.value)}
+            />
+          </Field>
+          <Field label="Ora" htmlFor="ora">
+            <TextInput
+              id="ora"
+              type="time"
+              value={form.ora}
+              onChange={(e) => set('ora')(e.target.value)}
             />
           </Field>
           <Field label="Locație" htmlFor="locatia">
