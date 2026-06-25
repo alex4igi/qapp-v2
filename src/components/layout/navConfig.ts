@@ -32,6 +32,7 @@ export const navSections: NavSection[] = [
     label: 'Statistici',
     items: [
       { label: 'Panou (numere)', path: '/analytics' },
+      { label: 'CFO (finanțe)', path: '/cfo' },
       { label: 'Overview', path: '/overview' },
       { label: 'Situație zilnică', path: '/situatie-zilnica' },
       { label: 'Financiar',        path: '/financiar' },

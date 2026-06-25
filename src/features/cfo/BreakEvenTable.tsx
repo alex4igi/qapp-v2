@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { formatRON } from '@/lib/format'
-import type { RentabilitateGrupaRow } from './api'
+import type { RentabilitateGrupaRow } from '@/features/analytics/api'
 
 // Prag de rentabilitate per grupă: câți cursanți acoperă costul instructorului.
 // Cost lunar ≈ salariu_atribuit/12; preț/client/lună ≈ încasări/activi/12.

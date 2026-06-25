@@ -55,7 +55,7 @@ export function RetentieCohorteTable({ rows }: { rows: CohortaRow[] }) {
         <thead>
           <tr className="text-quasar-gray">
             <th className="sticky left-0 bg-white px-2 py-1 text-left font-medium">
-              Cohortă
+              Luna start
             </th>
             <th className="px-2 py-1 text-right font-medium">Start</th>
             {offsets.map((o) => (
@@ -96,8 +96,8 @@ export function RetentieCohorteTable({ rows }: { rows: CohortaRow[] }) {
         </tbody>
       </table>
       <p className="mt-2 px-2 text-xs text-quasar-gray">
-        Din cei înscriși în luna „cohortă", ce procent mai are o înrolare activă
-        după N luni. Verde = retenție bună, roșu = abandon.
+        Din cei care au început într-o lună, ce procent mai vin după N luni (pe
+        coloane: +1, +2…). Verde = rămân, roșu = pleacă.
       </p>
     </div>
   )

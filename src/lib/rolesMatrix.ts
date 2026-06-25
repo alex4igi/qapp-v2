@@ -40,6 +40,8 @@ export const ROUTE_ACCESS = {
   // Dashboard analitic (numere & direcție) — doar owner + admin. E și landing-ul
   // lor (vezi defaultRouteForRole).
   '/analytics': ADMIN_OR_OWNER,
+  // Zonă dedicată CFO (finanțe) — izolată de operațional. Doar owner + admin.
+  '/cfo': ADMIN_OR_OWNER,
   '/scorecard': PRIVILEGED,
   '/vouchere': PRIVILEGED,
   '/inventar': PRIVILEGED,

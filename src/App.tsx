@@ -23,6 +23,7 @@ import { AnunturiPage } from '@/features/announcements/AnunturiPage'
 import { FinanciarPage } from '@/features/financiar/FinanciarPage'
 import { StatisticiPage } from '@/features/statistici/StatisticiPage'
 import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
+import { CfoPage } from '@/features/cfo/CfoPage'
 import { ScorecardPage } from '@/features/scorecard/ScorecardPage'
 import { RecuperarePage } from '@/features/recuperare/RecuperarePage'
 import { AnsambluPage } from '@/features/ansamblu/AnsambluPage'
@@ -166,10 +167,11 @@ function App() {
             </Route>
           </Route>
 
-          {/* Dashboard analitic — doar owner + admin (landing-ul lor). */}
+          {/* Dashboard analitic + zonă CFO — doar owner + admin. */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/analytics']} />}>
             <Route element={<AppLayout />}>
               <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="cfo" element={<CfoPage />} />
             </Route>
           </Route>
 
