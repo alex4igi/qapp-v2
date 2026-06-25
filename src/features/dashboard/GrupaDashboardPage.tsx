@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Button, Spinner } from '@/components/ui'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
@@ -278,7 +278,14 @@ export function GrupaDashboardPage() {
   return (
     <div>
       <PageHeader
-        title={data.cursNume}
+        title={
+          <Link
+            to={`/cursuri/${cursId}`}
+            className="hover:underline"
+          >
+            {data.cursNume}
+          </Link>
+        }
         subtitle={subtitle || undefined}
         actions={
           <Button variant="secondary" onClick={() => navigate(-1)}>
