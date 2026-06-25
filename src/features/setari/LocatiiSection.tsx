@@ -35,6 +35,12 @@ const columns: Column<Locatie>[] = [
     sortValue: (l) => l.telefon,
   },
   {
+    header: 'Închidere',
+    cell: (l) => (l.ora_inchidere ?? '—').slice(0, 5),
+    className: 'w-24',
+    sortValue: (l) => l.ora_inchidere,
+  },
+  {
     header: 'Hartă',
     cell: (l) =>
       l.link_maps ? (
@@ -59,6 +65,7 @@ type FormState = {
   adresa: string
   telefon: string
   link_maps: string
+  ora_inchidere: string
 }
 
 export function LocatiiSection() {
@@ -69,6 +76,7 @@ export function LocatiiSection() {
     adresa: '',
     telefon: '',
     link_maps: '',
+    ora_inchidere: '22:00',
   })
   const [error, setError] = useState<string | null>(null)
 
@@ -84,6 +92,7 @@ export function LocatiiSection() {
       adresa: loc?.adresa ?? '',
       telefon: loc?.telefon ?? '',
       link_maps: loc?.link_maps ?? '',
+      ora_inchidere: (loc?.ora_inchidere ?? '22:00').slice(0, 5),
     })
     setError(null)
   }
@@ -103,6 +112,7 @@ export function LocatiiSection() {
         adresa: form.adresa.trim() || null,
         telefon: form.telefon.trim() || null,
         link_maps: form.link_maps.trim() || null,
+        ora_inchidere: form.ora_inchidere || '22:00',
       }
       return isEdit
         ? updateLocatie(editing!.id, payload)
@@ -216,6 +226,17 @@ export function LocatiiSection() {
                 value={form.link_maps}
                 onChange={(e) => set('link_maps')(e.target.value)}
               />
+            </Field>
+            <Field label="Oră închidere" htmlFor="loc-ora">
+              <TextInput
+                id="loc-ora"
+                type="time"
+                value={form.ora_inchidere}
+                onChange={(e) => set('ora_inchidere')(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-quasar-gray">
+                Turile de pontaj uitate deschise se închid automat la această oră.
+              </p>
             </Field>
             {error && <p className="text-sm text-red-600">{error}</p>}
           </form>

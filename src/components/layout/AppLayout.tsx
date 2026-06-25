@@ -1,11 +1,13 @@
 import { Outlet } from 'react-router-dom'
 import { WorkingDateProvider } from '@/hooks/useWorkingDate'
 import { WorkingLocatieProvider } from '@/hooks/useWorkingLocatie'
+import { useIdleLogout } from '@/hooks/useIdleLogout'
 import { Header } from './Header'
 import { QuickActions } from './QuickActions'
 import { WorkingDayBanner } from './WorkingDayBanner'
 
 export function AppLayout() {
+  useIdleLogout()
   return (
     <WorkingDateProvider>
       <WorkingLocatieProvider>

@@ -2873,6 +2873,7 @@ export type Database = {
           id: string
           link_maps: string | null
           nume: string
+          ora_inchidere: string
           telefon: string | null
           updated: string
         }
@@ -2882,6 +2883,7 @@ export type Database = {
           id?: string
           link_maps?: string | null
           nume: string
+          ora_inchidere?: string
           telefon?: string | null
           updated?: string
         }
@@ -2891,6 +2893,7 @@ export type Database = {
           id?: string
           link_maps?: string | null
           nume?: string
+          ora_inchidere?: string
           telefon?: string | null
           updated?: string
         }
@@ -7088,6 +7091,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      pontaj_closing_at: {
+        Args: { p_locatie: string; p_start: string }
+        Returns: string
       }
       pontaj_open_session: {
         Args: never

@@ -43,13 +43,15 @@ const SOURCE_LABEL: Record<string, string> = {
   login: 'auto (login)',
   signout: 'sign-out',
   manual: 'încheiat manual',
-  auto_midnight: 'auto 00:00',
+  auto_midnight: 'auto (ora închidere)',
+  idle: 'auto (inactivitate)',
 }
 
 const SOURCE_COLOR: Record<string, string> = {
   manual: 'text-emerald-700',
   signout: 'text-quasar-black',
   auto_midnight: 'text-amber-700',
+  idle: 'text-amber-700',
 }
 
 export function PontajStaffPage() {

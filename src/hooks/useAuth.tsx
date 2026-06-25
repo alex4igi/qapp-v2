@@ -21,6 +21,8 @@ type AuthContextValue = {
   signOut: () => Promise<void>
   /** Închide tura curentă (pontaj manual) și apoi face sign-out. */
   endShift: () => Promise<void>
+  /** Delogare automată după inactivitate (pontaj source='idle'). */
+  idleLogout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -53,7 +55,9 @@ async function openPontajSession(): Promise<void> {
   }
 }
 
-async function closePontajSession(source: 'signout' | 'manual'): Promise<void> {
+async function closePontajSession(
+  source: 'signout' | 'manual' | 'idle',
+): Promise<void> {
   try {
     await supabase.rpc('pontaj_close_session', { p_source: source })
   } catch {
@@ -106,6 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  const idleLogout = async () => {
+    await closePontajSession('idle')
+    await supabase.auth.signOut()
+  }
+
   const value: AuthContextValue = {
     session,
     user: session?.user ?? null,
@@ -115,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signOut,
     endShift,
+    idleLogout,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
