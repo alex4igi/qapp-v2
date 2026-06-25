@@ -37,6 +37,9 @@ export const ROUTE_ACCESS = {
   // (salarii) din /financiar e ascuns intern pentru non-privileged.
   '/financiar': ALL_STAFF,
   '/statistici': ALL_STAFF,
+  // Dashboard analitic (numere & direcție) — doar owner + admin. E și landing-ul
+  // lor (vezi defaultRouteForRole).
+  '/analytics': ADMIN_OR_OWNER,
   '/scorecard': PRIVILEGED,
   '/vouchere': PRIVILEGED,
   '/inventar': PRIVILEGED,
@@ -65,10 +68,13 @@ export function canAccessRoute(role: AppRole, path: AppRoute): boolean {
   return (ROUTE_ACCESS[path] as readonly AppRole[]).includes(role)
 }
 
-export function defaultRouteForRole(_role: AppRole): string {
-  // Toate rolurile aterizează pe Dashboard. Pentru teacher, Dashboard-ul
-  // afișează grupele zilei (filtrate via cursuri_teacheri M:N) și butoane
-  // de marcare prezență.
+export function defaultRouteForRole(role: AppRole): string {
+  // Owner + admin aterizează pe dashboard-ul analitic („numere & direcție") — pe
+  // ei nu-i interesează ce ore sunt azi, ci numerele. Operaționalul zilei rămâne
+  // la 1 click (buton „Operațional zi" + meniu).
+  if (isAdminOrHigher(role)) return '/analytics'
+  // Restul aterizează pe Dashboard. Pentru teacher, Dashboard-ul afișează grupele
+  // zilei (filtrate via cursuri_teacheri M:N) și butoane de marcare prezență.
   return '/'
 }
 

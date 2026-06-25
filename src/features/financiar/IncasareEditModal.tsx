@@ -27,6 +27,7 @@ const METODA_OPTIONS = [
   { value: 'Card', label: 'Card' },
   { value: 'Transfer', label: 'Transfer' },
   { value: 'Revolut', label: 'Revolut' },
+  { value: 'Online', label: 'Online' },
 ]
 
 export function IncasareEditModal({ incasareId, open, onClose }: Props) {

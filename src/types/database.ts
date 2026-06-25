@@ -6475,6 +6475,17 @@ export type Database = {
       }
       evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
       expire_open_holds: { Args: never; Returns: number }
+      get_absente_consecutive: {
+        Args: { p_locatie?: string; p_prag?: number }
+        Returns: {
+          absente_consecutive: number
+          client_id: string
+          client_nume: string
+          curs_id: string
+          curs_nume: string
+          ultima_prezenta: string
+        }[]
+      }
       get_anunturi_client: {
         Args: never
         Returns: {
@@ -6483,6 +6494,15 @@ export type Database = {
           id: string
           read_at: string
           titlu: string
+        }[]
+      }
+      get_arpu_trend: {
+        Args: { p_from: string; p_locatie?: string; p_to: string }
+        Returns: {
+          arpu: number
+          clienti_activi: number
+          luna: string
+          venit: number
         }[]
       }
       get_campanie_progress: {
@@ -6558,6 +6578,14 @@ export type Database = {
           status: string
         }[]
       }
+      get_cursanti_multi_stil: {
+        Args: never
+        Returns: {
+          multi_stil: number
+          procent: number
+          total_activi: number
+        }[]
+      }
       get_documente_client: {
         Args: { p_client: string }
         Returns: {
@@ -6567,6 +6595,13 @@ export type Database = {
           observatii: string
           tip: Database["public"]["Enums"]["tip_document"]
           titlu: string
+        }[]
+      }
+      get_durata_medie_ltv: {
+        Args: { p_locatie?: string }
+        Returns: {
+          durata_medie_luni: number
+          ltv_mediu: number
         }[]
       }
       get_evaluari_client: {
@@ -6600,6 +6635,14 @@ export type Database = {
           nume: string
           pret_bilet: number
           tip: Database["public"]["Enums"]["tip_eveniment"]
+        }[]
+      }
+      get_familii_frati: {
+        Args: never
+        Returns: {
+          copii_in_familii_frati: number
+          familii_cu_frati: number
+          total_familii: number
         }[]
       }
       get_grad_ocupare: {
@@ -6647,6 +6690,18 @@ export type Database = {
           total_incasari: number
         }[]
       }
+      get_instructori_clienti_trend: {
+        Args: { p_luni?: number }
+        Returns: {
+          clienti_curent: number
+          clienti_prev: number
+          delta: number
+          retentie_procent: number
+          serie: number[]
+          teacher_id: string
+          teacher_nume: string
+        }[]
+      }
       get_kpis_financiar: {
         Args: { p_from: string; p_to: string }
         Returns: {
@@ -6667,6 +6722,14 @@ export type Database = {
           retentie_eligibili: number
           sursa_id: string
           sursa_nume: string
+        }[]
+      }
+      get_leads_pe_luna: {
+        Args: { p_from: string; p_locatie?: string; p_to: string }
+        Returns: {
+          convertiti: number
+          leads: number
+          luna: string
         }[]
       }
       get_membri_familie: {
@@ -6697,6 +6760,23 @@ export type Database = {
         Returns: {
           metoda: string
           total: number
+        }[]
+      }
+      get_mix_recurent_oneoff: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          tip: string
+          total: number
+        }[]
+      }
+      get_ocupare_prime_time: {
+        Args: { p_locatie?: string }
+        Returns: {
+          activi: number
+          capacitate: number
+          grupe: number
+          procent: number
+          slot: string
         }[]
       }
       get_participari_client: {
@@ -6834,6 +6914,26 @@ export type Database = {
           varsta: Database["public"]["Enums"]["varsta_curs"]
         }[]
       }
+      get_rentabilitate_grupa: {
+        Args: { p_luni?: number }
+        Returns: {
+          activi: number
+          curs_id: string
+          curs_nume: string
+          incasari: number
+          locatie_nume: string
+          marja: number
+          salariu_atribuit: number
+        }[]
+      }
+      get_restante_aging: {
+        Args: { p_locatie?: string }
+        Returns: {
+          bucket: string
+          nr: number
+          total: number
+        }[]
+      }
       get_restante_totale: {
         Args: { p_locatie?: string }
         Returns: {
@@ -6856,6 +6956,16 @@ export type Database = {
           ultim_apel_rezultat: string
           ultima_prezenta: string
           zile_depasire: number
+        }[]
+      }
+      get_retentie_cohorte: {
+        Args: { p_sezon?: string }
+        Returns: {
+          cohorta_luna: string
+          luni_de_la_start: number
+          procent: number
+          ramasi: number
+          total_initial: number
         }[]
       }
       get_retentie_membri: {
@@ -7027,6 +7137,14 @@ export type Database = {
           rata_recenta: number
           saptamani: Json
           teacher_nume: string
+        }[]
+      }
+      get_yoy_aceeasi_luna: {
+        Args: { p_locatie?: string; p_metrica?: string }
+        Returns: {
+          an_curent: number
+          an_precedent: number
+          luna_num: number
         }[]
       }
       hold_loc_open: {

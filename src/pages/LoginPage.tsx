@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { defaultRouteForRole } from '@/lib/rolesMatrix'
 import { Logo } from '@/components/layout/Logo'
 
 export function LoginPage() {
-  const { session, signIn, loading } = useAuth()
+  const { session, signIn, loading, role } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -12,7 +13,7 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (!loading && session) {
-    return <Navigate to="/" replace />
+    return <Navigate to={defaultRouteForRole(role)} replace />
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -25,6 +26,8 @@ export function LoginPage() {
       setError('Email sau parolă incorecte.')
       return
     }
+    // Redirectul efectiv se face declarativ mai sus (când sesiunea + rolul sunt
+    // încărcate) prin defaultRouteForRole — owner/admin aterizează pe /analytics.
     navigate('/', { replace: true })
   }
 

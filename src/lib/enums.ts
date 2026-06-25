@@ -53,7 +53,7 @@ export const tipPlataOptions = opts('Per sedinta', 'Per luna', 'Per an')
 
 export const tipVoucherOptions = opts('Valoare', 'Procent')
 
-export const metodaPlataOptions = opts('Cash', 'Card', 'Transfer', 'Revolut')
+export const metodaPlataOptions = opts('Cash', 'Card', 'Transfer', 'Revolut', 'Online')
 
 export const statusPrezentaOptions = opts('Prezent', 'Absent', 'Motivat')
 

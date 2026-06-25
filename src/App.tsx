@@ -22,6 +22,7 @@ import { AppFeedbackListPage } from '@/features/feedback-app/AppFeedbackListPage
 import { AnunturiPage } from '@/features/announcements/AnunturiPage'
 import { FinanciarPage } from '@/features/financiar/FinanciarPage'
 import { StatisticiPage } from '@/features/statistici/StatisticiPage'
+import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
 import { ScorecardPage } from '@/features/scorecard/ScorecardPage'
 import { RecuperarePage } from '@/features/recuperare/RecuperarePage'
 import { AnsambluPage } from '@/features/ansamblu/AnsambluPage'
@@ -162,6 +163,13 @@ function App() {
                 path="eveniment/:evenimentId"
                 element={<EvenimentRosterPage />}
               />
+            </Route>
+          </Route>
+
+          {/* Dashboard analitic — doar owner + admin (landing-ul lor). */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/analytics']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="analytics" element={<AnalyticsPage />} />
             </Route>
           </Route>
 
