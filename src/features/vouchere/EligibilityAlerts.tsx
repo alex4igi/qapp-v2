@@ -1,21 +1,28 @@
 import { useQuery } from '@tanstack/react-query'
+import type { Enums } from '@/types/db'
 import { getClientEligibilityContext } from './api'
 
 type Props = {
   clientId: string | null | undefined
+  tipPlata: Enums<'tip_plata'>
+  isFacultativ: boolean
 }
 
 // Sugestii proactive pentru front-desk la crearea unei înrolări:
 // politicile automate care se vor aplica (cross-sell / family).
-export function EligibilityAlerts({ clientId }: Props) {
+export function EligibilityAlerts({ clientId, tipPlata, isFacultativ }: Props) {
+  // Politica −10% se aplică DOAR pe înrolări recurente lunare. La `Per an` sau
+  // facultativ noua înrolare nu primește discount, deci nu promitem nimic.
+  const policyApplies = tipPlata === 'Per luna' && !isFacultativ
+
   const { data, isLoading } = useQuery({
     queryKey: ['client-eligibility', clientId],
     queryFn: () => getClientEligibilityContext(clientId ?? ''),
-    enabled: Boolean(clientId),
+    enabled: Boolean(clientId) && policyApplies,
     staleTime: 30_000,
   })
 
-  if (!clientId || isLoading || !data) return null
+  if (!clientId || !policyApplies || isLoading || !data) return null
 
   const alerts: { key: string; text: string }[] = []
 
@@ -25,7 +32,7 @@ export function EligibilityAlerts({ clientId }: Props) {
       .join(', ')
     alerts.push({
       key: 'cross',
-      text: `Clientul are deja înrolare recurentă pe: ${cursuri}. Politica cross-sell se aplică automat — cel mai ieftin curs primește −10%.`,
+      text: `Clientul are deja înrolare recurentă pe: ${cursuri}. Politica cross-sell se aplică automat — cel mai scump abonament rămâne la preț integral, restul primesc −10%.`,
     })
   }
   if (data.fratiActivi.length > 0) {
@@ -34,7 +41,7 @@ export function EligibilityAlerts({ clientId }: Props) {
       .join(', ')
     alerts.push({
       key: 'family',
-      text: `Frați activi în aceeași familie: ${frati}. Politica family se aplică automat — cel mai ieftin enrollment al familiei primește −10%.`,
+      text: `Frați activi în aceeași familie: ${frati}. Politica family se aplică automat — în pool-ul familiei cel mai scump abonament rămâne integral, restul primesc −10%.`,
     })
   }
 

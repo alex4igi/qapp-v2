@@ -7138,6 +7138,17 @@ export type Database = {
         Args: { p_target_locatie_ids: string[]; p_target_roles: string[] }
         Returns: number
       }
+      preview_pool_discount: {
+        Args: {
+          p_client: string
+          p_suma_baza: number
+          p_tip_plata: Database["public"]["Enums"]["tip_plata"]
+        }
+        Returns: {
+          politica_discount: number
+          suma_finala: number
+        }[]
+      }
       prune_expired_leads: { Args: never; Returns: number }
       recalculate_pool_discount: {
         Args: { p_client: string }

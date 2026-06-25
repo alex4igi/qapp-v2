@@ -112,12 +112,14 @@ export async function getClientEligibilityContext(
   if (clientErr) throw clientErr
 
   // 2. Înrolări active recurente ale clientului (cross-sell)
+  // Doar `Per luna`: politica −10% se aplică exclusiv pe înrolări lunare.
+  // O înrolare `Per an` NU declanșează cross-sell (vezi recalculate_pool_discount).
   const { data: ownEnrollments, error: ownErr } = await supabase
     .from('enrollments')
     .select('cursul, cursuri:cursul(numele)')
     .eq('client', clientId)
     .eq('reziliat', false)
-    .in('tip_plata', ['Per luna', 'Per an'])
+    .eq('tip_plata', 'Per luna')
     .lte('data_incepere', today)
     .or(`data_final.is.null,data_final.gte.${today}`)
   if (ownErr) throw ownErr
@@ -150,7 +152,7 @@ export async function getClientEligibilityContext(
         .select('client')
         .in('client', siblingIds)
         .eq('reziliat', false)
-        .in('tip_plata', ['Per luna', 'Per an'])
+        .eq('tip_plata', 'Per luna')
         .lte('data_incepere', today)
         .or(`data_final.is.null,data_final.gte.${today}`)
       if (sibEnrErr) throw sibEnrErr

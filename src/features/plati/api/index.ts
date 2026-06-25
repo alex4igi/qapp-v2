@@ -37,6 +37,7 @@ export {
   createInrolari,
   rezilizaInrolari,
   scheduleConfirmareInrolare,
+  previewPoolDiscount,
 } from './enrollments'
 
 export {

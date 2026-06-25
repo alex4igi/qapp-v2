@@ -127,6 +127,29 @@ async function getVoucherById(id: string): Promise<Voucher> {
   return data
 }
 
+// Preview read-only al discountului de politică (cross-sell/family) pentru o
+// înrolare prospectivă. Oglindește motorul server-side recalculate_pool_discount
+// (RPC preview_pool_discount). Întoarce null dacă suma nu se poate calcula.
+export async function previewPoolDiscount(p: {
+  client: string
+  tipPlata: Enums<'tip_plata'>
+  sumaBaza: number
+}): Promise<{ politica_discount: number; suma_finala: number } | null> {
+  const { data, error } = await supabase.rpc('preview_pool_discount', {
+    p_client: p.client,
+    p_tip_plata: p.tipPlata,
+    p_suma_baza: p.sumaBaza,
+  })
+  if (error) throw error
+  const row = data?.[0]
+  return row
+    ? {
+        politica_discount: Number(row.politica_discount),
+        suma_finala: Number(row.suma_finala),
+      }
+    : null
+}
+
 function sumaCuVoucher(suma: number | null, voucher: Voucher | null): number | null {
   if (suma == null) return null
   if (!voucher) return suma

@@ -24,6 +24,7 @@ import {
   getCursForInrolare,
   getOpenSesiuneByDate,
   listCursuriPentruInrolare,
+  previewPoolDiscount,
   scheduleConfirmareInrolare,
 } from '../../api'
 import {
@@ -215,6 +216,17 @@ export function EnrollmentForm({
     [vouchereQ.data, voucherId],
   )
 
+  // Preview al discountului automat de politică (cross-sell/family). Voucherul
+  // manual și politica sunt mutual exclusive → nu-l interogăm dacă e voucher ales.
+  const previewQ = useQuery({
+    queryKey: ['preview-pool-discount', clientId, tipPlata, sumaSugerata],
+    queryFn: () =>
+      previewPoolDiscount({ client: clientId, tipPlata, sumaBaza: sumaSugerata! }),
+    enabled: Boolean(clientId) && sumaSugerata != null && !voucherId,
+    staleTime: 30_000,
+  })
+  const policyPreview = voucherId ? null : (previewQ.data ?? null)
+
   const submit = useMutation({
     mutationFn: () => {
       if (!tipInrolare) {
@@ -333,7 +345,11 @@ export function EnrollmentForm({
             />
           </Field>
 
-          <EligibilityAlerts clientId={clientId} />
+          <EligibilityAlerts
+            clientId={clientId}
+            tipPlata={tipPlata}
+            isFacultativ={isFacultativ}
+          />
 
           <Field label="Curs" required htmlFor="curs">
             <Combobox
@@ -413,6 +429,7 @@ export function EnrollmentForm({
               voucherSelectat={voucherSelectat}
               tipPlata={tipPlata}
               isFacultativ={isFacultativ}
+              policyPreview={policyPreview}
             />
           )}
 

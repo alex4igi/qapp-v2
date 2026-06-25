@@ -6,6 +6,7 @@ type Props = {
   voucherSelectat: Voucher | null
   tipPlata: Enums<'tip_plata'>
   isFacultativ: boolean
+  policyPreview?: { politica_discount: number; suma_finala: number } | null
 }
 
 // Info-box cu prețul sugerat (din curs) și — dacă există voucher selectat —
@@ -15,6 +16,7 @@ export function PriceSummary({
   voucherSelectat,
   tipPlata,
   isFacultativ,
+  policyPreview,
 }: Props) {
   if (sumaSugerata == null) {
     return (
@@ -26,6 +28,9 @@ export function PriceSummary({
   }
 
   const preview = voucherSelectat ? applyVoucher(sumaSugerata, voucherSelectat) : null
+  // Politica automată −10% (cross-sell/family). Exclusivă cu voucherul manual.
+  const showPolicy =
+    !preview && policyPreview != null && policyPreview.politica_discount > 0
 
   const pretLabel =
     tipPlata === 'Per luna' && !isFacultativ
@@ -55,6 +60,21 @@ export function PriceSummary({
             <span className="font-medium">Total</span>
             <span className="font-semibold text-quasar-black">
               {preview.sumaFinala.toFixed(2)} RON
+              {!isFacultativ && tipPlata === 'Per luna' && ' / lună'}
+            </span>
+          </div>
+        </>
+      )}
+      {showPolicy && policyPreview && (
+        <>
+          <div className="mt-1 flex items-baseline justify-between text-xs text-quasar-gray">
+            <span>Politică cross-sell/family</span>
+            <span>− {policyPreview.politica_discount.toFixed(2)} RON</span>
+          </div>
+          <div className="mt-1 flex items-baseline justify-between border-t border-quasar-gray-light pt-1">
+            <span className="font-medium">Total</span>
+            <span className="font-semibold text-quasar-black">
+              {policyPreview.suma_finala.toFixed(2)} RON
               {!isFacultativ && tipPlata === 'Per luna' && ' / lună'}
             </span>
           </div>
