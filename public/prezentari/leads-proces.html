@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Procesul de leads · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:24px}
+  html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased;line-height:1.55}
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--galben);z-index:50}
+
+  .layout{max-width:1180px;margin:0 auto;padding:54px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:44px;align-items:start}
+
+  nav.toc{position:sticky;top:30px;max-height:calc(100vh - 60px);overflow:auto;border-right:1px solid var(--linie);padding-right:18px}
+  nav.toc .logo{font-weight:900;letter-spacing:4px;color:var(--accent);font-size:12px;margin-bottom:18px}
+  nav.toc .grp{color:var(--gri2);font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin:18px 0 8px}
+  nav.toc a{display:block;color:#cfcfcf;text-decoration:none;font-size:13.5px;padding:5px 10px;border-radius:8px;border-left:2px solid transparent}
+  nav.toc a:hover{background:#1c1c1c;color:#fff;border-left-color:var(--accent)}
+
+  main{min-width:0}
+  .hero{margin-bottom:30px}
+  .hero .logo{font-weight:900;letter-spacing:5px;color:var(--accent);font-size:13px;margin-bottom:18px}
+  h1{font-size:clamp(30px,4.5vw,48px);line-height:1.05;margin:0 0 14px;font-weight:800}
+  h1 span{color:var(--accent)}
+  .hero .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,19px);max-width:62ch}
+
+  section.block{scroll-margin-top:24px;background:var(--card);border:1px solid var(--linie);border-radius:18px;padding:26px 28px;margin:22px 0}
+  section.block > h2{font-size:clamp(21px,2.6vw,30px);margin:0 0 6px;font-weight:800;display:flex;align-items:center;gap:12px}
+  section.block > h2 .ic{font-size:1.05em}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:2px;font-size:11.5px;text-transform:uppercase;margin-bottom:14px}
+  .intro{color:#d6d6d6;font-size:16px;margin:0 0 14px;max-width:74ch}
+  h3{font-size:16.5px;font-weight:800;margin:22px 0 8px;color:#fff}
+
+  ul.big{margin:10px 0 0;padding:0;list-style:none;max-width:80ch}
+  ul.big li{display:flex;gap:13px;align-items:flex-start;margin:11px 0;font-size:15.5px}
+  ul.big li .b{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  ul.big li b{color:#fff}
+  ul.big li span{color:#d6d6d6}
+
+  .note{margin-top:18px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:13px 17px;color:#f0e6b0;font-size:14.5px;max-width:80ch}
+  .note .lbl{display:block;color:var(--accent);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .note b{color:var(--accent)}
+
+  .tag{font-size:11.5px;font-weight:800;background:var(--accent);color:#000;padding:3px 10px;border-radius:999px;letter-spacing:.4px;vertical-align:middle}
+  .field{display:inline-block;background:#222;border:1px solid var(--linie);color:#fff;font-size:13px;padding:1px 8px;border-radius:6px}
+  .btnlbl{display:inline-block;background:#000;border:1px solid var(--accent);color:var(--accent);font-weight:700;font-size:13px;padding:1px 9px;border-radius:7px;white-space:nowrap}
+
+  /* DIAGRAMA flux */
+  .flow{margin:18px 0 4px}
+  .flow .row{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:10px 0}
+  .node{flex:0 0 auto;border-radius:10px;padding:9px 14px;font-size:13.5px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,.14)}
+  .node small{display:block;font-weight:600;font-size:11px;opacity:.85;margin-top:1px}
+  .n-nou{background:#475569}.n-cont{background:#3b82f6}.n-wait{background:#8b5cf6}
+  .n-prog{background:#d97706}.n-vine{background:#059669}.n-nuvine{background:#e11d48}
+  .n-conv{background:#16a34a}.n-pierd{background:#52525b}.n-nurt{background:#db2777}
+  .arr{color:var(--gri2);font-size:16px;font-weight:800}
+  .split{color:var(--gri2);font-size:12px;font-weight:700;padding:0 2px}
+
+  /* exemplu Diana */
+  .story{margin:16px 0;background:#0c1426;border:1px solid #1e3a5f;border-radius:12px;padding:14px 18px}
+  .story .lbl{display:block;color:#7cc0ff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .story p{margin:6px 0;color:#d6e4f5;font-size:14.8px}
+  .story b{color:#fff}
+
+  /* bula SMS */
+  .sms{margin:12px 0;background:#10271b;border:1px solid #1f5135;border-radius:12px;padding:12px 16px;max-width:80ch}
+  .sms .lbl{display:block;color:#5ee0a0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .sms .txt{color:#e3f7ec;font-size:14px;font-style:italic;line-height:1.5}
+  .sms .meta{color:#8fbfa6;font-size:12.5px;margin-top:7px}
+
+  table.t{width:100%;border-collapse:collapse;margin-top:14px;font-size:14.5px}
+  table.t th,table.t td{text-align:left;padding:9px 12px;border-bottom:1px solid #262626;vertical-align:top}
+  table.t th{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+  table.t td b{color:#fff}
+
+  footer{text-align:center;color:var(--gri);font-size:13px;margin-top:50px}
+  footer b{color:var(--gri2)}
+  .toplink{display:block;text-align:right;margin-top:14px;color:var(--gri);font-size:12.5px;text-decoration:none}
+  .toplink:hover{color:var(--accent)}
+  a.inl{color:var(--accent);text-decoration:none}
+  a.inl:hover{text-decoration:underline}
+
+  @media(max-width:880px){
+    .layout{grid-template-columns:1fr;gap:0}
+    nav.toc{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--linie);padding:0 0 18px;margin-bottom:28px}
+    nav.toc .cols{columns:2;gap:18px}
+  }
+</style>
+</head>
+<body>
+<a href="/" style="position:fixed;top:14px;right:14px;z-index:100;display:inline-flex;align-items:center;gap:7px;background:#FFD600;color:#111;font-weight:800;font-size:13.5px;text-decoration:none;padding:9px 15px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4)">← Înapoi în aplicație</a>
+<span id="top"></span>
+<div class="layout">
+
+  <!-- CUPRINS -->
+  <nav class="toc">
+    <div class="logo">QUASAR DANCE</div>
+    <div class="cols">
+      <div class="grp">Imagine de ansamblu</div>
+      <a href="#ce-e">Ce e un lead</a>
+      <a href="#diagrama">Diagrama întregului proces</a>
+      <a href="#intrare">De unde vin lead-urile</a>
+      <a href="#diana">Exemplu: povestea Dianei</a>
+
+      <div class="grp">Coloană cu coloană</div>
+      <a href="#nou">1 · Nou</a>
+      <a href="#contactat">2 · Contactat</a>
+      <a href="#waiting">3 · Waiting List</a>
+      <a href="#programat">4 · Programat</a>
+      <a href="#a-venit">5 · A venit</a>
+      <a href="#nu-a-venit">6 · Nu a venit</a>
+      <a href="#convertit">7 · Convertit</a>
+      <a href="#pierdut">8 · Pierdut</a>
+
+      <div class="grp">Restul</div>
+      <a href="#nurture">Zona Nurture</a>
+      <a href="#automat">Ce face aplicația singură</a>
+      <a href="#sms">Toate SMS-urile din flux</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div class="logo">QUASAR DANCE · GHID</div>
+      <h1>Procesul de <span>leads</span></h1>
+      <p class="sub">Tot drumul unui potențial client, de când ne lasă datele până devine cursant — coloană cu coloană, cu un exemplu real și cu toate SMS-urile automate. Pagină derulabilă: folosește cuprinsul din stânga.</p>
+    </div>
+
+    <!-- CE E UN LEAD -->
+    <section class="block" id="ce-e">
+      <div class="eyebrow">Imagine de ansamblu</div>
+      <h2><span class="ic">🎯</span>Ce e un „lead"</h2>
+      <p class="intro">Un <b>lead</b> e cineva interesat de cursuri, care încă nu s-a înscris. Pagina <b>Leads</b> e o tablă <b>Kanban</b>: coloane (ca niște sertare) prin care muți cardul persoanei pe măsură ce înaintează spre înscriere. Muți cardul <b>trăgându-l cu mausul</b> (drag &amp; drop) dintr-o coloană în alta.</p>
+      <ul class="big">
+        <li><span class="b">🟨</span><span>Board-ul are <b>8 coloane</b>. A 9-a zonă, <b>Nurture</b>, NU e pe board — e un tab separat (vezi <a class="inl" href="#nurture">Zona Nurture</a>).</span></li>
+        <li><span class="b">🤖</span><span>Unele mutări fac lucruri <b>automat</b>: cer o dată, cer un motiv, sau trimit un <b>SMS</b> clientului. Le vezi la fiecare coloană.</span></li>
+        <li><span class="b">❤️</span><span>Lead-urile uitate urcă singure în capul coloanei cu un <b>steguleț de prioritate</b>, ca să nu-ți scape nimeni.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- DIAGRAMA -->
+    <section class="block" id="diagrama">
+      <div class="eyebrow">Imagine de ansamblu</div>
+      <h2><span class="ic">🗺️</span>Diagrama întregului proces</h2>
+      <p class="intro">Pe scurt, drumul arată așa. Liniile verzi sunt „a mers bine", cele roșii „n-a mers".</p>
+      <div class="flow">
+        <div class="row">
+          <span class="node n-nou">Nou<small>tocmai a intrat</small></span>
+          <span class="arr">→</span>
+          <span class="node n-cont">Contactat<small>l-am sunat</small></span>
+          <span class="arr">→</span>
+          <span class="node n-prog">Programat<small>ședință de probă</small></span>
+          <span class="arr">→</span>
+          <span class="split">se prezintă?</span>
+        </div>
+        <div class="row" style="padding-left:18px">
+          <span class="split">DA →</span>
+          <span class="node n-vine">A venit</span>
+          <span class="arr">→</span>
+          <span class="node n-conv">Convertit<small>devine client 🎉</small></span>
+        </div>
+        <div class="row" style="padding-left:18px">
+          <span class="split">NU →</span>
+          <span class="node n-nuvine">Nu a venit</span>
+          <span class="arr">→</span>
+          <span class="split">reîncercăm sau…</span>
+          <span class="node n-pierd">Pierdut</span>
+          <span class="arr">/</span>
+          <span class="node n-nurt">Nurture</span>
+        </div>
+        <div class="row">
+          <span class="node n-wait">Waiting List<small>ramură laterală: nu e loc acum</small></span>
+        </div>
+      </div>
+      <div class="note"><span class="lbl">De reținut</span><b>Convertit</b> și <b>Pierdut</b> sunt capete de drum (terminale) — cardul rămâne acolo. <b>Nurture</b> e „cămara de reactivare": îi recontactăm mai târziu.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- INTRARE -->
+    <section class="block" id="intrare">
+      <div class="eyebrow">Imagine de ansamblu</div>
+      <h2><span class="ic">📥</span>De unde vin lead-urile</h2>
+      <p class="intro">Un lead poate intra în patru feluri. Indiferent de sursă, ajunge în coloana <b>Nou</b>.</p>
+      <ul class="big">
+        <li><span class="b">📱</span><span><b>Meta Ads</b> (Facebook/Instagram) — intră singure printr-un Google Sheet legat de aplicație.</span></li>
+        <li><span class="b">🌐</span><span><b>Site / formular</b> — formularul de pe site trimite lead-ul direct în aplicație.</span></li>
+        <li><span class="b">✍️</span><span><b>Manual</b> — apeși <span class="btnlbl">+ Lead nou</span> și completezi (nume + telefon obligatorii, plus sursă).</span></li>
+        <li><span class="b">🚶</span><span><b>Walk-in</b> — cineva care vine direct la sală; îl adaugi tot manual.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Sursa contează</span>O notezi pentru fiecare lead — așa vedem mai târziu <b>de unde vin cei mai mulți clienți</b> (rapoarte ROI pe campanii).</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- DIANA -->
+    <section class="block" id="diana">
+      <div class="eyebrow">Imagine de ansamblu</div>
+      <h2><span class="ic">🧑‍🦰</span>Exemplu: povestea Dianei</h2>
+      <p class="intro">Ca să vezi totul legat, urmărim un caz imaginar de la cap la coadă.</p>
+
+      <div class="story">
+        <span class="lbl">1 · Intră</span>
+        <p><b>Diana</b> completează formularul de pe site pentru fata ei, Maria (7 ani, interesată de Street Dance). Pe board apare un card nou în coloana <b>Nou</b>.</p>
+      </div>
+      <div class="story">
+        <span class="lbl">2 · O sunăm</span>
+        <p>Recepția trage cardul în <b>Contactat</b>. Aplicația întreabă: cum a mers apelul?</p>
+        <p>➀ <b>Nu răspunde</b> → alegi sub-statusul „Nu răspunde" și o dată de recontactare. Cardul rămâne în Contactat, iar contorul de încercări crește. Peste câteva zile, dacă tot nu răspunde, primește steguleț de prioritate.</p>
+        <p>➁ <b>Răspunde</b> → e interesată, stabilim o ședință gratuită de probă.</p>
+      </div>
+      <div class="story">
+        <span class="lbl">3 · Programăm proba</span>
+        <p>Tragi cardul în <b>Programat</b>. Alegi data și grupul de Street Dance pentru copii din ziua aceea. Maria apare automat și în <b>catalogul (rosterul)</b> grupei din ziua respectivă, cu eticheta „LEAD". Diana primește un <b>SMS de confirmare</b>.</p>
+      </div>
+      <div class="story">
+        <span class="lbl">4 · Vine la probă</span>
+        <p>În dimineața ședinței, Diana primește automat un <b>SMS de reamintire</b>. Maria vine — la sală, instructorul/recepția o bifează <b>Prezent</b>, iar cardul trece singur în <b>A venit</b>.</p>
+      </div>
+      <div class="story">
+        <span class="lbl">5 · Se înscrie</span>
+        <p>Mariei i-a plăcut. Tragi cardul în <b>Convertit</b>: aplicația creează clientul din datele lead-ului și deschide pe loc <b>înrolarea</b>. Diana primește un <b>SMS prin care o rugăm un review pe Google</b>. Maria e acum cursant. 🎉</p>
+      </div>
+      <div class="story">
+        <span class="lbl">Varianta „nu vine"</span>
+        <p>Dacă Maria nu s-ar fi prezentat, cardul ar fi ajuns în <b>Nu a venit</b> (manual sau automat seara) și Diana ar fi primit un <b>SMS de revenire</b>. De acolo: ori reprogramăm, ori — dacă nu mai e interesată — <b>Pierdut</b> (cu motiv), ori o lăsăm în <b>Nurture</b> pentru mai târziu.</p>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ===== COLOANE ===== -->
+    <section class="block" id="nou">
+      <div class="eyebrow">Coloană cu coloană · 1</div>
+      <h2><span class="ic">🆕</span>Nou</h2>
+      <p class="intro">Punctul de intrare. Aici aterizează orice lead nou, indiferent de sursă.</p>
+      <ul class="big">
+        <li><span class="b">📋</span><span><b>Ce conține:</b> nume, telefon, eventual email, sursă, interes și grupă de vârstă (dacă le știm).</span></li>
+        <li><span class="b">🤖</span><span><b>La mutare aici:</b> nimic special, fără SMS.</span></li>
+        <li><span class="b">🎯</span><span><b>Ce faci:</b> îl suni cât mai repede și îl muți în <b>Contactat</b>.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="contactat">
+      <div class="eyebrow">Coloană cu coloană · 2</div>
+      <h2><span class="ic">📞</span>Contactat</h2>
+      <p class="intro">L-ai sunat. Când muți cardul aici, aplicația deschide un mic formular ca să notezi rezultatul apelului.</p>
+      <ul class="big">
+        <li><span class="b">🔘</span><span><b>Sub-status obligatoriu:</b> <span class="field">De revenit</span> (interesat, dar îl mai cauți) sau <span class="field">Nu răspunde</span> (n-a răspuns).</span></li>
+        <li><span class="b">📅</span><span><b>Dată de recontactare:</b> când să-l suni înapoi (sau când te contactează el).</span></li>
+        <li><span class="b">🔢</span><span><b>Contor încercări:</b> de fiecare dată când reloghezi un contact fără răspuns, crește <b>numărul de contactări</b>.</span></li>
+        <li><span class="b">📝</span><span><b>Notă cu dată:</b> ce ați discutat se salvează în observații, cu data în față.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Atenție</span>După <b>4 încercări</b> fără răspuns, aplicația mută singură lead-ul în <b>Nurture</b> (vezi <a class="inl" href="#nurture">Zona Nurture</a>) — ca să nu pierzi timp pe numere care nu răspund.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="waiting">
+      <div class="eyebrow">Coloană cu coloană · 3</div>
+      <h2><span class="ic">⏳</span>Waiting List</h2>
+      <p class="intro">Ramură laterală: persoana e interesată, dar <b>nu avem loc acum</b> la ce vrea (grupa e plină, ziua nu coincide etc.).</p>
+      <ul class="big">
+        <li><span class="b">🎟️</span><span><b>La mutare aici</b> îți cere <b>interesul</b> (Street Dance, K-pop, Acrobatică, Zumba, Nu știu încă) și <b>grupa de vârstă</b>, ca s-o grupăm corect pe listă.</span></li>
+        <li><span class="b">💬</span><span><b>SMS automat:</b> o anunțăm că e pe lista de așteptare și o contactăm când se eliberează un loc.</span></li>
+      </ul>
+      <div class="sms"><span class="lbl">SMS „waiting list"</span><span class="txt">„Buna {nume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!"</span><div class="meta">Pleacă imediat ce muți cardul în Waiting List.</div></div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="programat">
+      <div class="eyebrow">Coloană cu coloană · 4</div>
+      <h2><span class="ic">📅</span>Programat</h2>
+      <p class="intro">Cel mai important pas: am stabilit o <b>ședință gratuită de probă</b>.</p>
+      <ul class="big">
+        <li><span class="b">📆</span><span><b>Alegi data</b>, apoi un <b>curs sau eveniment</b> dintr-un dropdown filtrat automat pe: grupa de vârstă a lead-ului, ziua aleasă și locație.</span></li>
+        <li><span class="b">🕒</span><span><b>Ora nu se scrie de mână</b> — vine din cursul/evenimentul ales.</span></li>
+        <li><span class="b">🧑‍🤝‍🧑</span><span>Lead-ul apare în <b>rosterul grupei</b> din ziua aceea cu eticheta <b>LEAD</b>. La sală îl bifezi prezent/absent — și cardul se mută singur în „A venit" / „Nu a venit".</span></li>
+        <li><span class="b">💬</span><span><b>SMS de confirmare</b> (cu o mică întârziere de ~2 minute, ca să poți corecta dacă ai greșit data).</span></li>
+      </ul>
+      <div class="sms"><span class="lbl">SMS „confirmare"</span><span class="txt">„Buna {nume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}, ora {ora}. Va asteptam cu drag la {adresa}!"</span><div class="meta">Data + ora + adresa scurtă a locației.</div></div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="a-venit">
+      <div class="eyebrow">Coloană cu coloană · 5</div>
+      <h2><span class="ic">✅</span>A venit</h2>
+      <p class="intro">S-a prezentat la probă. De obicei se întâmplă singur, când bifezi prezența la sală.</p>
+      <ul class="big">
+        <li><span class="b">🔄</span><span><b>La mutare aici</b> se marchează prezența „prezent" pe programare.</span></li>
+        <li><span class="b">🚫</span><span><b>Fără SMS aici.</b> Mesajul de review pleacă <b>la conversie</b>, nu acum (ca să nu cerem review înainte să devină client).</span></li>
+        <li><span class="b">➡️</span><span><b>Ce urmează:</b> dacă vrea să continue → <b>Convertit</b>; dacă nu → Pierdut / Nurture.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="nu-a-venit">
+      <div class="eyebrow">Coloană cu coloană · 6</div>
+      <h2><span class="ic">❌</span>Nu a venit</h2>
+      <p class="intro">Era programat, dar nu s-a prezentat (no-show).</p>
+      <ul class="big">
+        <li><span class="b">🌙</span><span><b>Automat:</b> dacă rămâne în „Programat" cu data trecută, aplicația îl mută singură aici peste noapte.</span></li>
+        <li><span class="b">💬</span><span><b>SMS de revenire</b>, ca să-i mai dăm o șansă.</span></li>
+        <li><span class="b">🔁</span><span><b>Ce urmează:</b> reprogramare, sau Pierdut / Nurture.</span></li>
+      </ul>
+      <div class="sms"><span class="lbl">SMS „follow-up"</span><span class="txt">„Buna {nume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la {telefon locatie}!"</span><div class="meta">Pleacă când cardul ajunge în „Nu a venit".</div></div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="convertit">
+      <div class="eyebrow">Coloană cu coloană · 7</div>
+      <h2><span class="ic">🤝</span>Convertit <span class="tag">cap de drum</span></h2>
+      <p class="intro">Reușita: lead-ul devine <b>client</b>.</p>
+      <ul class="big">
+        <li><span class="b">👤</span><span><b>La mutare aici</b> se deschide un pas care <b>creează clientul</b> din datele lead-ului (sau îl leagă de un client existent dacă telefonul/emailul se potrivește).</span></li>
+        <li><span class="b">📝</span><span>Imediat se deschide <b>înrolarea</b> (alegi cursul, tipul de abonament etc.). Vezi ghidul <a class="inl" href="reguli-plati.html">Cum funcționează plățile</a>.</span></li>
+        <li><span class="b">💬</span><span><b>SMS de review pe Google</b> — acum, când a devenit parte din comunitate.</span></li>
+        <li><span class="b">🔒</span><span>E <b>terminal</b>: cardul rămâne în Convertit.</span></li>
+      </ul>
+      <div class="sms"><span class="lbl">SMS „review"</span><span class="txt">„Buna {nume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: {link} Multumim!"</span><div class="meta">Linkul de review e cel al locației.</div></div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="pierdut">
+      <div class="eyebrow">Coloană cu coloană · 8</div>
+      <h2><span class="ic">🛑</span>Pierdut <span class="tag">cap de drum</span></h2>
+      <p class="intro">Nu se mai întâmplă nimic cu acest lead — dar notăm <b>de ce</b>, ca să învățăm.</p>
+      <ul class="big">
+        <li><span class="b">❓</span><span><b>Motiv obligatoriu</b> la mutare. Motive rapide: <span class="field">Programul nu coincide</span> <span class="field">Copilul nu vrea</span> <span class="field">A găsit altă școală</span> <span class="field">Prea scump</span> <span class="field">Număr greșit</span> <span class="field">Prea multe activități</span> <span class="field">Opt-out</span> — sau text liber.</span></li>
+        <li><span class="b">🚫</span><span><b>Fără SMS.</b></span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- NURTURE -->
+    <section class="block" id="nurture">
+      <div class="eyebrow">Restul</div>
+      <h2><span class="ic">🌱</span>Zona Nurture</h2>
+      <p class="intro">Nurture e <b>cămara de reactivare</b>: oameni pe care nu-i urmărim activ acum, dar pe care îi putem recontacta mai târziu. NU e o coloană pe board — e un <b>tab separat, o listă căutabilă</b> (poate crește la mii de persoane).</p>
+      <h3>Cine ajunge în Nurture</h3>
+      <ul class="big">
+        <li><span class="b">📦</span><span><b>Ex-clienți istorici</b> — foștii cursanți importați și cei deveniți EXclient ajung aici automat.</span></li>
+        <li><span class="b">🔁</span><span><b>Lead-uri „reci"</b> — după 4 încercări fără răspuns, sau un steguleț de prioritate ignorat prea mult, aplicația le mută singură aici.</span></li>
+        <li><span class="b">🌱</span><span><b>Manual</b> — butonul <span class="btnlbl">🌱 Mută în Nurture</span> din fișa lead-ului.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Bun de știut</span>Deschizi pe oricine din listă, îl recontactezi și, dacă redevine interesat, îl <b>muți înapoi</b> în pâlnia activă schimbându-i statusul. Lead-urile din Nurture <b>nu poluează statisticile</b> pâlniei.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- AUTOMAT -->
+    <section class="block" id="automat">
+      <div class="eyebrow">Restul</div>
+      <h2><span class="ic">⏰</span>Ce face aplicația singură</h2>
+      <p class="intro">Două „ture" automate pe zi se ocupă de leads ca să găsești dimineața totul pus la punct. <b>Orele sunt ora României.</b></p>
+      <table class="t">
+        <tr><th>Când</th><th>Ce face cu leads</th></tr>
+        <tr><td><b>Dimineața, ~ora 10</b></td><td>Trimite <b>SMS-ul de reamintire</b> pentru ședințele de probă de <b>azi</b> (Luni–Vineri) sau de <b>mâine</b> (când urmează weekend).</td></tr>
+        <tr><td><b>Noaptea (după închidere)</b></td><td>Cele rămase în „Programat" cu data trecută → trec pe <b>„Nu a venit"</b>. Lead-urilor uitate li se pune <b>steguleț de prioritate</b>. Cele „reci" (multe încercări / flag ignorat) trec singure în <b>Nurture</b>.</td></tr>
+      </table>
+      <div class="sms"><span class="lbl">SMS „reminder" (dimineața)</span><span class="txt">„Buna {nume}! Va reamintim de sedinta gratuita la Quasar Dance {AZI/MAINE}, {data}, ora {ora}, la {adresa}. Te asteptam!"</span><div class="meta">Un singur reminder per lead pe zi.</div></div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- SMS RECAP -->
+    <section class="block" id="sms">
+      <div class="eyebrow">Restul</div>
+      <h2><span class="ic">💬</span>Toate SMS-urile din flux</h2>
+      <p class="intro">Pe scurt, ce pleacă și când. Textele exacte ale tuturor mesajelor (inclusiv cele de plăți/restanțe) sunt în <a class="inl" href="sms-template.html">catalogul de template-uri SMS</a>.</p>
+      <table class="t">
+        <tr><th>Trigger</th><th>SMS</th><th>Conține</th></tr>
+        <tr><td>→ <b>Waiting List</b></td><td>waiting list</td><td>confirmare că e pe listă</td></tr>
+        <tr><td>→ <b>Programat</b></td><td>confirmare</td><td>data + ora + adresa</td></tr>
+        <tr><td><b>Dimineața</b>, ziua probei</td><td>reminder</td><td>azi/mâine + data + ora + adresa</td></tr>
+        <tr><td>→ <b>Nu a venit</b></td><td>follow-up</td><td>telefonul locației</td></tr>
+        <tr><td>→ <b>Convertit</b></td><td>review</td><td>link review Google</td></tr>
+      </table>
+      <div class="note"><span class="lbl">Regulă</span>Recepția și vânzările trimit <b>doar șabloane gata făcute</b>, niciodată text liber. Mesajele sunt scurte, fără diacritice și fără emoji. Nu se trimite același SMS de două ori (deduplicare).</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <footer>Procesul de leads · beta · <b>Quasar Dance</b> · Material viu — îl actualizăm când se schimbă fluxul.</footer>
+  </main>
+</div>
+</body>
+</html>

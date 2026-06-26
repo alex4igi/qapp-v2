@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Statistici pentru manageri · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:24px}
+  html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased;line-height:1.55}
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--galben);z-index:50}
+
+  .layout{max-width:1180px;margin:0 auto;padding:54px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:44px;align-items:start}
+
+  nav.toc{position:sticky;top:30px;max-height:calc(100vh - 60px);overflow:auto;border-right:1px solid var(--linie);padding-right:18px}
+  nav.toc .logo{font-weight:900;letter-spacing:4px;color:var(--accent);font-size:12px;margin-bottom:18px}
+  nav.toc .grp{color:var(--gri2);font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin:18px 0 8px}
+  nav.toc a{display:block;color:#cfcfcf;text-decoration:none;font-size:13.5px;padding:5px 10px;border-radius:8px;border-left:2px solid transparent}
+  nav.toc a:hover{background:#1c1c1c;color:#fff;border-left-color:var(--accent)}
+
+  main{min-width:0}
+  .hero{margin-bottom:30px}
+  .hero .logo{font-weight:900;letter-spacing:5px;color:var(--accent);font-size:13px;margin-bottom:18px}
+  h1{font-size:clamp(30px,4.5vw,48px);line-height:1.05;margin:0 0 14px;font-weight:800}
+  h1 span{color:var(--accent)}
+  .hero .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,19px);max-width:62ch}
+
+  section.block{scroll-margin-top:24px;background:var(--card);border:1px solid var(--linie);border-radius:18px;padding:26px 28px;margin:22px 0}
+  section.block > h2{font-size:clamp(21px,2.6vw,30px);margin:0 0 6px;font-weight:800;display:flex;align-items:center;gap:12px}
+  section.block > h2 .ic{font-size:1.05em}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:2px;font-size:11.5px;text-transform:uppercase;margin-bottom:14px}
+  .intro{color:#d6d6d6;font-size:16px;margin:0 0 14px;max-width:78ch}
+
+  /* stat item */
+  .stat{border-top:1px solid #262626;padding:15px 0 4px}
+  .stat:first-of-type{border-top:none}
+  .stat h3{font-size:16.5px;font-weight:800;margin:0 0 8px;color:#fff;display:flex;align-items:center;gap:9px}
+  .stat .pair{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font-size:14.8px}
+  .stat .pair .k{color:var(--accent);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;padding-top:2px}
+  .stat .pair .v{color:#d8d8d8}
+  .stat .v b{color:#fff}
+
+  .note{margin-top:18px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:13px 17px;color:#f0e6b0;font-size:14.5px;max-width:82ch}
+  .note .lbl{display:block;color:var(--accent);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .note b{color:var(--accent)}
+  .lock{background:#241312;border-color:#6b2c28;color:#ffd9d4}
+  .lock .lbl{color:#ff9b8f}
+  .lock b{color:#ffb4a8}
+
+  code{background:#222;border:1px solid var(--linie);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#ffe98a}
+  a.inl{color:var(--accent);text-decoration:none}
+  a.inl:hover{text-decoration:underline}
+  .tagm{font-size:11px;font-weight:800;background:#10271b;color:#5ee0a0;border:1px solid #1f5135;padding:2px 9px;border-radius:999px;letter-spacing:.4px}
+
+  footer{text-align:center;color:var(--gri);font-size:13px;margin-top:50px}
+  footer b{color:var(--gri2)}
+  .toplink{display:block;text-align:right;margin-top:14px;color:var(--gri);font-size:12.5px;text-decoration:none}
+  .toplink:hover{color:var(--accent)}
+
+  @media(max-width:880px){
+    .layout{grid-template-columns:1fr;gap:0}
+    nav.toc{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--linie);padding:0 0 18px;margin-bottom:28px}
+    nav.toc .cols{columns:2;gap:18px}
+    .stat .pair{grid-template-columns:1fr}
+    .stat .pair .k{padding-top:8px}
+  }
+</style>
+</head>
+<body>
+<a href="/" style="position:fixed;top:14px;right:14px;z-index:100;display:inline-flex;align-items:center;gap:7px;background:#FFD600;color:#111;font-weight:800;font-size:13.5px;text-decoration:none;padding:9px 15px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4)">← Înapoi în aplicație</a>
+<span id="top"></span>
+<div class="layout">
+
+  <nav class="toc">
+    <div class="logo">QUASAR DANCE</div>
+    <div class="cols">
+      <div class="grp">Cum citești</div>
+      <a href="#intro">Trei locuri, ce vezi</a>
+
+      <div class="grp">Operațional (azi)</div>
+      <a href="#op">Privire de ansamblu</a>
+
+      <div class="grp">Statistici (grafice)</div>
+      <a href="#bani">Bani: încasări &amp; restanțe</a>
+      <a href="#prezente">Prezențe &amp; ocupare</a>
+      <a href="#leads">Leads &amp; conversie</a>
+      <a href="#clienti">Clienți: creștere &amp; retenție</a>
+      <a href="#sezon">Reînscrieri &amp; sezon</a>
+
+      <div class="grp">Scorecard</div>
+      <a href="#scorecard">Call-center pe operator</a>
+
+      <div class="grp">Limite</div>
+      <a href="#acces">Ce NU vezi (admin/owner)</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div class="logo">QUASAR DANCE · GHID</div>
+      <h1>Statistici pentru <span>manageri</span></h1>
+      <p class="sub">Fiecare grafic și indicator la care ai acces — <b>ce arată</b> și <b>cum se calculează</b>. Astfel știi exact ce înseamnă cifrele înainte să iei decizii pe baza lor.</p>
+    </div>
+
+    <section class="block" id="intro">
+      <div class="eyebrow">Cum citești</div>
+      <h2><span class="ic">🧭</span>Trei locuri, ce vezi în fiecare</h2>
+      <p class="intro">Datele tale stau în trei pagini, fiecare cu alt scop:</p>
+      <div class="stat"><h3>📌 Operațional</h3><div class="pair"><span class="k">Scop</span><span class="v">Poză de <b>acum / luna curentă</b> — cum stăm azi.</span></div></div>
+      <div class="stat"><h3>📊 Statistici</h3><div class="pair"><span class="k">Scop</span><span class="v">Grafice pe <b>interval ales</b> (perioadă, locație, curs) — tendințe și comparații.</span></div></div>
+      <div class="stat"><h3>🎯 Scorecard</h3><div class="pair"><span class="k">Scop</span><span class="v">Performanța echipei de <b>telefon</b> (leads, restanțe, reactivări).</span></div></div>
+      <div class="note"><span class="lbl">Regulă de aur a banilor</span>Peste tot, un <b>venit</b> se numără la <b>data plății</b> (când au intrat banii), nu la data facturării. <b>Restanțele</b> sunt suma datorată minus cât s-a plătit, fără cele <b>prescrise</b> (mai vechi de 2 ani). Vezi diferența <b>tabele vs grafice</b>: tabelele cu cifre sunt în <a class="inl" href="manual-complet.html#financiar">Financiar</a>, graficele aici.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- OPERATIONAL -->
+    <section class="block" id="op">
+      <div class="eyebrow">Operațional · luna curentă</div>
+      <h2><span class="ic">📌</span>Privire de ansamblu</h2>
+      <p class="intro">Cinci indicatori despre starea de azi, fiecare cu defalcare pe locație.</p>
+
+      <div class="stat"><h3>👥 Clienți activi</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Câți cursanți avem <b>activi</b> acum, în total și pe fiecare locație.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">„Activ" = are o înrolare validă în luna curentă <b>sau</b> a fost prezent recent. Cine n-a mai venit de mult devine Inactiv, apoi EXclient (automat).</span></div>
+      </div>
+      <div class="stat"><h3>💰 Venit luna curentă</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Cât s-a încasat de la 1 ale lunii până azi.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Suma tuturor încasărilor cu data în luna curentă (toate categoriile: abonament, bilet, taxă, merch).</span></div>
+      </div>
+      <div class="stat"><h3>✋ Rată prezență</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Din câte prezențe posibile, câte au fost bifate „prezent" luna asta.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v"><b>prezenți ÷ locuri din catalog</b>, doar la cursurile recurente și de trupă (facultativele se numără altfel, ca să nu amestecăm unități).</span></div>
+      </div>
+      <div class="stat"><h3>📈 Grad de ocupare grupe</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Cât de pline sunt grupele față de capacitate.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v"><b>cursanți activi ÷ capacitate maximă</b>, însumat pe grupele lunii curente.</span></div>
+      </div>
+      <div class="stat"><h3>🔁 Retenție membri</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Din cei care veneau, câți au rămas — lună vs lună.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Din cei <b>prezenți acum două luni</b>, câți au mai fost prezenți luna trecută (se compară luni complete, încheiate). Se bazează pe <b>prezență</b>, nu pe înrolare.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- BANI -->
+    <section class="block" id="bani">
+      <div class="eyebrow">Statistici · grafice pe interval</div>
+      <h2><span class="ic">💵</span>Bani: încasări &amp; restanțe</h2>
+
+      <div class="stat"><h3>Încasări <span class="tagm">manager</span></h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Total încasat în intervalul ales.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Suma încasărilor cu data plății în interval.</span></div>
+      </div>
+      <div class="stat"><h3>Cheltuieli <span class="tagm">manager</span></h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Total cheltuieli în interval (Administrativă / Salarială / Alta).</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Suma cheltuielilor cu data în interval.</span></div>
+      </div>
+      <div class="stat"><h3>Restanțe</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Cât avem de recuperat (net recuperabil).</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Pe fiecare înrolare: <b>suma − cât s-a plătit</b>. Se exclud cele <b>prescrise</b> (peste 2 ani) și înrolările reziliate.</span></div>
+      </div>
+      <div class="stat"><h3>Balanță pe locație / pe curs</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Lună de lună: cât s-a încasat vs cât a mai rămas de încasat.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Per lună: <b>datorie = de încasat − încasat</b> (minim 0). Filtrabil pe locație sau pe curs.</span></div>
+      </div>
+      <div class="stat"><h3>Mix metode de plată</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Cât din bani au venit cash / card / transfer / online.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Încasările grupate pe metodă (procent din total).</span></div>
+      </div>
+      <div class="stat"><h3>Încasări pe categorie · Cheltuieli pe categorie <span class="tagm">cheltuieli: manager</span></h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Structura banilor: Abonament / Bilet / Merch / Taxă; iar la cheltuieli Administrativă / Salarială / Alta.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Sumele grupate pe categorie.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- PREZENTE -->
+    <section class="block" id="prezente">
+      <div class="eyebrow">Statistici · grafice pe interval</div>
+      <h2><span class="ic">✋</span>Prezențe &amp; ocupare</h2>
+
+      <div class="stat"><h3>Prezențe pe achitare</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Lună de lună: prezențe <b>achitate</b>, <b>neachitate</b> și <b>din trecut</b> (din luni vechi, plătite acum).</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Se urmărește, pe fiecare înrolare, în ce lună s-a acoperit plata — o prezență devine „achitată" când plata cumulată ajunge la suma datorată. Filtrabil pe locație / instructor / curs.</span></div>
+      </div>
+      <div class="stat"><h3>Trend prezențe (pe grupă)</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Dacă prezența la o grupă <b>crește sau scade</b>. Grupele în scădere apar primele (semnal de atenție).</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Compară media ultimelor 3 săptămâni cu cele 3 dinainte. <b>Exclude vacanțele</b>.</span></div>
+      </div>
+      <div class="stat"><h3>Grad de ocupare cursuri</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Per curs: câți activi din capacitate, cu cod de culoare (verde/galben/roșu).</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v"><b>Recurent:</b> activi ÷ capacitate. <b>Facultativ:</b> media participanților pe ședință (informativ — facultativele n-au roster fix).</span></div>
+      </div>
+      <div class="stat"><h3>Privire pe instructor</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Per instructor, pe fiecare curs al lui: activi, prezență, datorie pe acel curs.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Agregare pe luna curentă, pe cursurile legate de instructor.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- LEADS -->
+    <section class="block" id="leads">
+      <div class="eyebrow">Statistici · grafice pe interval</div>
+      <h2><span class="ic">🎯</span>Leads &amp; conversie</h2>
+
+      <div class="stat"><h3>Funnel leads — conversie &amp; retenție</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Pâlnia: <b>Lead → Contact → Probă → Prezent → Înscriere → Retenție 90 zile</b>, cu defalcare pe sursă.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Pe <b>semnale persistente</b> (a fost contactat, a avut programare, a venit, are client legat), nu doar pe statusul curent. Fiecare treaptă îi include pe cei care au mers mai departe. <b>Retenția 90z</b> = convertiți care au o prezență reală la ≥90 zile după înscriere. Lead-urile din Nurture sunt <b>excluse</b>.</span></div>
+      </div>
+      <div class="stat"><h3>Conversie lead → client (12 luni)</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Câte lead-uri au intrat, câte s-au convertit, rata și zilele medii până la conversie.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v"><b>Rată = convertiți ÷ intrate × 100</b>. „Zile medii" = media de la creare la conversie, pentru cei convertiți.</span></div>
+      </div>
+      <div class="note"><span class="lbl">Notă</span>Importul vechi (v1) poate „polua" pâlnia istorică — interpretarea corectă e <b>forward-looking</b> (lead-urile noi, de acum încolo).</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- CLIENTI -->
+    <section class="block" id="clienti">
+      <div class="eyebrow">Statistici · grafice pe interval</div>
+      <h2><span class="ic">👥</span>Clienți: creștere &amp; retenție</h2>
+
+      <div class="stat"><h3>Total clienți / creștere netă (12 luni) <span class="tagm">manager</span></h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Lună de lună: <b>intrați</b>, <b>pierduți</b>, <b>net</b> (diferența) și <b>activi</b> (stocul).</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Pe baza înrolărilor active (nereziliate) care acoperă fiecare lună.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- SEZON -->
+    <section class="block" id="sezon">
+      <div class="eyebrow">Statistici · grafice pe interval</div>
+      <h2><span class="ic">📅</span>Reînscrieri &amp; sezon</h2>
+
+      <div class="stat"><h3>Reînscrieri (progres)</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Pentru sezonul ales: potențial, reînscriși, rămași, rată de reînscriere %.</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v"><b>reînscriși ÷ potențial × 100</b>.</span></div>
+      </div>
+      <div class="stat"><h3>Încasări per sezon</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Total venituri pe fiecare sezon (perspectivă istorică).</span></div>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v">Suma încasărilor grupate pe sezon, în ordine cronologică.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- SCORECARD -->
+    <section class="block" id="scorecard">
+      <div class="eyebrow">Scorecard</div>
+      <h2><span class="ic">🎯</span>Scorecard call-center (pe operator)</h2>
+      <p class="intro">Performanța fiecărui om de la telefon, pe trei tab-uri. Ideea de bază: comparăm <b>ce s-a logat</b> cu <b>ce s-a întâmplat real</b> (anti-trișare).</p>
+
+      <div class="stat"><h3>Tab Leads</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Contacte (total &amp; verificate), leaduri lucrate, viteză de contact, <b>conversie %</b>, <b>show rate %</b> (din câte programări, câte s-au prezentat).</span></div>
+      </div>
+      <div class="stat"><h3>Tab Restanțe</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Contacte de recuperare, sumă recuperată, rest rămas, <b>rată recuperare %</b>.</span></div>
+      </div>
+      <div class="stat"><h3>Tab Reactivări</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Foști clienți contactați și câți s-au reactivat, <b>rată reactivare %</b>.</span></div>
+      </div>
+      <div class="stat"><h3>Scor &amp; clasă</h3>
+        <div class="pair"><span class="k">Cum se calc.</span><span class="v"><b>Scor total</b> (0–100) compus din indicatorii de mai sus, cu <b>praguri editabile</b> (le setează admin/owner). Clasă: 📉 sub standard · 👌 standard · 🚀 peste standard. Steaguri pentru „rafală suspectă" și „decalaj activitate↔rezultat".</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ACCES -->
+    <section class="block" id="acces">
+      <div class="eyebrow">Limite</div>
+      <h2><span class="ic">🔐</span>Ce NU vezi (de la admin în sus)</h2>
+      <p class="intro">Câteva lucruri sunt rezervate rolurilor superioare. E normal să nu apară la tine:</p>
+      <div class="note lock"><span class="lbl">Doar admin / owner</span>
+        <b>Profitul</b> (încasări − cheltuieli) și <b>profitabilitatea instructorilor</b> · pachetul <b>CFO</b> (venit recurent MRR, viteza de încasare DSO, prag de rentabilitate per grupă) · <b>analytics de cohorte</b> (retenție pe luna înscrierii, trend clienți per instructor, an-la-an, aging restanțe). Acestea nu apar în paginile tale de statistici.
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <footer>Statistici pentru manageri · beta · <b>Quasar Dance</b> · Material viu — completăm pe măsură ce adăugăm grafice.</footer>
+  </main>
+</div>
+</body>
+</html>

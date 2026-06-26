@@ -143,6 +143,7 @@
       <div class="logo">QUASAR DANCE</div>
       <h1>Manual complet <span>Qapp</span></h1>
       <p class="sub">Tot ce poți face în aplicație, explicat simplu. Nu trebuie citit cap-coadă — folosește cuprinsul din stânga și sari direct la ce te interesează („cum fac un sezon?", „cum fac un voucher?").</p>
+      <div class="note" style="margin-top:18px"><span class="lbl">Material viu</span>Aplicația crește des. Actualizăm manualul pe măsură ce apar funcții noi — dacă ceva nu se mai potrivește cu ce vezi pe ecran, spune-ne.</div>
     </div>
 
     <!-- ====== PRIMII PAȘI ====== -->
@@ -179,22 +180,25 @@
       <h2><span class="ic">🎯</span>Leads — potențialii clienți</h2>
       <p class="intro">Un „lead" e cineva interesat care încă nu s-a înscris. Pagina <b>Leads</b> e o tablă cu coloane (ca niște sertare). Muți cardul persoanei dintr-o coloană în alta, pe măsură ce înaintează spre înscriere — trăgând cu mausul (drag &amp; drop).</p>
 
-      <h3>Drumul unui lead (coloanele)</h3>
+      <div class="note"><span class="lbl">Ghid dedicat</span>Aici e doar pe scurt. Pentru tot procesul detaliat — fiecare coloană, exemple, zona Nurture și SMS-urile automate — vezi ghidul <a href="leads-proces.html" style="color:var(--accent)">Procesul de leads</a>.</div>
+
+      <h3>Drumul unui lead (cele 8 coloane)</h3>
       <div class="pipe">
         <span class="col"><b>Nou</b></span><span class="arrow">→</span>
         <span class="col"><b>Contactat</b></span><span class="arrow">→</span>
-        <span class="col"><b>Listă așteptare</b></span><span class="arrow">→</span>
+        <span class="col"><b>Waiting List</b></span><span class="arrow">→</span>
         <span class="col"><b>Programat</b></span><span class="arrow">→</span>
         <span class="col"><b>A venit</b> / <b>Nu a venit</b></span><span class="arrow">→</span>
-        <span class="col"><b>Convertit</b> / <b>Pierdut</b> / <b>Nurture</b></span>
+        <span class="col"><b>Convertit</b> / <b>Pierdut</b></span>
       </div>
+      <p class="intro" style="margin-top:10px;font-size:14.5px"><b>Nurture</b> nu e coloană pe board — e un <b>tab separat</b> (listă căutabilă) pentru reactivare. Vezi mai jos.</p>
 
       <h3>Ce se întâmplă când muți cardul</h3>
       <ul class="big">
         <li><span class="b">📅</span><span><b>→ Programat:</b> îți cere data și ora ședinței de probă. Persoanei i se trimite automat un SMS de confirmare.</span></li>
         <li><span class="b">✅</span><span><b>→ A venit:</b> i se trimite automat un SMS prin care îl rugăm să lase un review pe Google.</span></li>
         <li><span class="b">❌</span><span><b>→ Nu a venit:</b> i se trimite automat un SMS de revenire („ne pare rău că nu ai ajuns...").</span></li>
-        <li><span class="b">⏳</span><span><b>→ Listă așteptare:</b> SMS că îl anunțăm când se eliberează loc.</span></li>
+        <li><span class="b">⏳</span><span><b>→ Waiting List:</b> SMS că îl anunțăm când se eliberează loc.</span></li>
         <li><span class="b">🛑</span><span><b>→ Pierdut:</b> îți cere obligatoriu un <b>motiv</b> (prea scump, program nepotrivit etc.).</span></li>
         <li><span class="b">🤝</span><span><b>→ Convertit:</b> se deschide pașii de înscriere — îți creează clientul din datele lead-ului și deschizi înrolarea.</span></li>
       </ul>
@@ -215,7 +219,7 @@
       <p class="intro">Aici sunt toți cursanții. Cauți după nume / telefon / email, deschizi fișa și vezi tot: înrolări, plăți, prezențe, note.</p>
       <ul class="big">
         <li><span class="b">🔎</span><span>Filtrezi după status: <b>Activ</b>, <b>Inactiv</b> (n-a mai venit de ceva timp), <b>EXclient</b> (plecat).</span></li>
-        <li><span class="b">👪</span><span>Pagina <b>Familii</b> leagă frați/părinți. E importantă pentru <b>reducerea de 10%</b> la al doilea abonament din familie — se aplică automat.</span></li>
+        <li><span class="b">👪</span><span>Pagina <b>Familii</b> leagă frați/părinți. E importantă pentru <b>reducerea automată de 10%</b>: cel mai scump abonament din familie e întreg, toate celelalte −10%. Detalii în <a href="reguli-plati.html" style="color:var(--accent)">Cum funcționează plățile</a>.</span></li>
         <li><span class="b">✏️</span><span>Deschizi fișa și editezi orice câmp (nume, telefon, școală, note etc.).</span></li>
       </ul>
       <div class="note"><span class="lbl">Statusurile se schimbă singure</span>Cine nu mai vine la sală devine automat <b>Inactiv</b>, apoi <b>EXclient</b> după mai mult timp. Dacă revine, redevine Activ singur. Vezi <a href="#automat" style="color:var(--accent)">Ce se întâmplă singur</a>.</div>
@@ -264,6 +268,7 @@
       <h2><span class="ic">💬</span>SMS-uri</h2>
       <p class="intro">Aplicația trimite SMS-uri singură la momentele importante (confirmare programare, review, revenire, reamintiri). Pagina <b>SMS</b> îți arată ce s-a trimis, ce e în așteptare și ce a eșuat.</p>
       <div class="note"><span class="lbl">Regulă importantă</span>Recepția și vânzările trimit <b>doar șabloane gata făcute</b>, niciodată text liber. Asta ca mesajele să fie corecte și fără greșeli. Mesajele evită diacriticele și emoji și sunt scurte (sub 160 caractere).</div>
+      <div class="note"><span class="lbl">Ce ajunge la client</span>Textul exact al fiecărui mesaj (cu ce conține și când pleacă) e în catalogul <a href="sms-template.html" style="color:var(--accent)">Template-uri SMS</a>.</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
@@ -417,6 +422,7 @@
       <div class="eyebrow">Bani și rapoarte</div>
       <h2><span class="ic">📊</span>Statistici</h2>
       <p class="intro">Grafice: venituri pe curs/locație/profesor, grad de ocupare, pâlnia de conversie a lead-urilor, retenție, prezențe vs. plătite, progres reînscrieri. Filtrezi pe perioadă, locație, curs.</p>
+      <div class="note"><span class="lbl">Ce arată &amp; cum se calculează</span>Pentru fiecare grafic și indicator (și ce vezi în funcție de rol), vezi ghidul <a href="statistici-manager.html" style="color:var(--accent)">Statistici pentru manageri</a>.</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 

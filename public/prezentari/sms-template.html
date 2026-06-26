@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Template-uri SMS · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:24px}
+  html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased;line-height:1.55}
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--galben);z-index:50}
+
+  .layout{max-width:1180px;margin:0 auto;padding:54px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:44px;align-items:start}
+
+  nav.toc{position:sticky;top:30px;max-height:calc(100vh - 60px);overflow:auto;border-right:1px solid var(--linie);padding-right:18px}
+  nav.toc .logo{font-weight:900;letter-spacing:4px;color:var(--accent);font-size:12px;margin-bottom:18px}
+  nav.toc .grp{color:var(--gri2);font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin:18px 0 8px}
+  nav.toc a{display:block;color:#cfcfcf;text-decoration:none;font-size:13.5px;padding:5px 10px;border-radius:8px;border-left:2px solid transparent}
+  nav.toc a:hover{background:#1c1c1c;color:#fff;border-left-color:var(--accent)}
+
+  main{min-width:0}
+  .hero{margin-bottom:30px}
+  .hero .logo{font-weight:900;letter-spacing:5px;color:var(--accent);font-size:13px;margin-bottom:18px}
+  h1{font-size:clamp(30px,4.5vw,48px);line-height:1.05;margin:0 0 14px;font-weight:800}
+  h1 span{color:var(--accent)}
+  .hero .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,19px);max-width:62ch}
+
+  section.block{scroll-margin-top:24px;background:var(--card);border:1px solid var(--linie);border-radius:18px;padding:26px 28px;margin:22px 0}
+  section.block > h2{font-size:clamp(21px,2.6vw,30px);margin:0 0 6px;font-weight:800;display:flex;align-items:center;gap:12px}
+  section.block > h2 .ic{font-size:1.05em}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:2px;font-size:11.5px;text-transform:uppercase;margin-bottom:14px}
+  .intro{color:#d6d6d6;font-size:16px;margin:0 0 14px;max-width:74ch}
+
+  /* card SMS */
+  .smscard{border:1px solid var(--linie);border-radius:14px;padding:16px 18px;margin:16px 0;background:#141414}
+  .smscard .head{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+  .smscard .name{font-weight:800;font-size:17px}
+  .chip{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.4px}
+  .chip.auto{background:#10271b;color:#5ee0a0;border:1px solid #1f5135}
+  .chip.bulk{background:#241a2e;color:#cf9bff;border:1px solid #4a2d63}
+  .chip.role{background:#000;border:1px solid var(--accent);color:var(--accent)}
+  .txt{background:#0c0c0c;border-left:3px solid #1f5135;border-radius:8px;padding:12px 14px;color:#e3f7ec;font-size:14.5px;font-style:italic;line-height:1.55}
+  .smscard.b .txt{border-left-color:#4a2d63;color:#f0e6ff}
+  .ph{display:block;margin-top:10px;color:var(--gri2);font-size:13px}
+  .ph b{color:#fff;font-style:normal}
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:10px;font-size:13.5px;color:#cfcfcf}
+  .meta-row b{color:var(--accent);font-weight:700}
+  code{background:#222;border:1px solid var(--linie);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#ffe98a}
+
+  .note{margin-top:18px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:13px 17px;color:#f0e6b0;font-size:14.5px;max-width:82ch}
+  .note .lbl{display:block;color:var(--accent);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .note b{color:var(--accent)}
+  ul.big{margin:10px 0 0;padding:0;list-style:none;max-width:82ch}
+  ul.big li{display:flex;gap:13px;align-items:flex-start;margin:11px 0;font-size:15px}
+  ul.big li .b{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  ul.big li b{color:#fff}
+  ul.big li span{color:#d6d6d6}
+
+  table.t{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+  table.t th,table.t td{text-align:left;padding:8px 12px;border-bottom:1px solid #262626;vertical-align:top}
+  table.t th{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+  table.t td b{color:#fff}
+
+  footer{text-align:center;color:var(--gri);font-size:13px;margin-top:50px}
+  footer b{color:var(--gri2)}
+  .toplink{display:block;text-align:right;margin-top:14px;color:var(--gri);font-size:12.5px;text-decoration:none}
+  .toplink:hover{color:var(--accent)}
+  a.inl{color:var(--accent);text-decoration:none}
+  a.inl:hover{text-decoration:underline}
+
+  @media(max-width:880px){
+    .layout{grid-template-columns:1fr;gap:0}
+    nav.toc{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--linie);padding:0 0 18px;margin-bottom:28px}
+    nav.toc .cols{columns:2;gap:18px}
+  }
+</style>
+</head>
+<body>
+<a href="/" style="position:fixed;top:14px;right:14px;z-index:100;display:inline-flex;align-items:center;gap:7px;background:#FFD600;color:#111;font-weight:800;font-size:13.5px;text-decoration:none;padding:9px 15px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4)">← Înapoi în aplicație</a>
+<span id="top"></span>
+<div class="layout">
+
+  <nav class="toc">
+    <div class="logo">QUASAR DANCE</div>
+    <div class="cols">
+      <div class="grp">Reguli</div>
+      <a href="#reguli">Reguli de aur</a>
+
+      <div class="grp">Automate · Leads</div>
+      <a href="#confirmare">Confirmare programare</a>
+      <a href="#reminder">Reamintire (dimineața)</a>
+      <a href="#waiting">Listă de așteptare</a>
+      <a href="#followup">Nu a venit (revenire)</a>
+      <a href="#review">Review Google</a>
+
+      <div class="grp">Automate · Înrolare</div>
+      <a href="#inrolare">Confirmare înrolare</a>
+
+      <div class="grp">În masă · Plăți</div>
+      <a href="#reminder-plata">Reminder plată</a>
+      <a href="#restante">Notificare restanțe</a>
+      <a href="#avertisment">Avertisment pierdere loc</a>
+      <a href="#liber">Mesaj liber</a>
+
+      <div class="grp">Referință</div>
+      <a href="#date">Adrese, telefoane, linkuri</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div class="logo">QUASAR DANCE · GHID</div>
+      <h1>Template-uri <span>SMS</span></h1>
+      <p class="sub">Toate mesajele pe care le trimite aplicația, cu textul exact care ajunge la client, cine le declanșează și ce conțin. Ca front-desk-ul să știe mereu ce primește clientul.</p>
+    </div>
+
+    <!-- REGULI -->
+    <section class="block" id="reguli">
+      <div class="eyebrow">Reguli</div>
+      <h2><span class="ic">⭐</span>Reguli de aur</h2>
+      <ul class="big">
+        <li><span class="b">📋</span><span>Recepția și vânzările trimit <b>doar șabloanele de mai jos</b>, niciodată text liber. Mesaj liber ad-hoc poate trimite <b>doar managerul</b>.</span></li>
+        <li><span class="b">🔤</span><span>Mesajele nu au <b>diacritice</b> și nu au <b>emoji</b> — telefoanele le-ar strica. De aceea scrie „Buna", nu „Bună".</span></li>
+        <li><span class="b">📏</span><span>Sunt cât mai <b>scurte</b> (ideal sub 160 caractere = 1 SMS). Câteva mesaje mai lungi pleacă în 2 segmente — e asumat.</span></li>
+        <li><span class="b">🚫</span><span><b>Nu trimitem același mesaj de două ori</b> — aplicația ține evidența și sare peste duplicate.</span></li>
+        <li><span class="b">🙅</span><span>Clienții cu <b>opt-out</b> (au cerut să nu fie contactați) sunt respectați — nu primesc SMS.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Cum se citesc textele</span>Lucrurile dintre acolade — <code>{nume}</code>, <code>{data}</code>, <code>{adresa}</code> — se înlocuiesc automat cu valorile reale când pleacă mesajul. Dacă lipsește prenumele, se folosește „bun venit".</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ============ AUTOMATE LEADS ============ -->
+    <section class="block" id="confirmare">
+      <div class="eyebrow">Automate · Leads</div>
+      <h2><span class="ic">📅</span>Confirmare programare</h2>
+      <div class="smscard">
+        <div class="head"><span class="name">confirmare</span><span class="chip auto">automat</span></div>
+        <div class="txt">Buna {nume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}, ora {ora}. Va asteptam cu drag la {adresa}!</div>
+        <span class="ph"><b>{data}</b> = ziua programării (ex. „12 iunie") · <b>{ora}</b> = ora cursului ales (se omite dacă nu există) · <b>{adresa}</b> = adresa scurtă a locației.</span>
+        <div class="meta-row"><span><b>Când:</b> lead-ul ajunge în coloana „Programat"</span><span><b>Întârziere:</b> ~2 minute (fereastră de corecție)</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="reminder">
+      <div class="eyebrow">Automate · Leads</div>
+      <h2><span class="ic">⏰</span>Reamintire (dimineața)</h2>
+      <div class="smscard">
+        <div class="head"><span class="name">reminder</span><span class="chip auto">automat · cron</span></div>
+        <div class="txt">Buna {nume}! Va reamintim de sedinta gratuita la Quasar Dance {AZI/MAINE}, {data}, ora {ora}, la {adresa}. Te asteptam!</div>
+        <span class="ph"><b>{AZI/MAINE}</b> = „AZI" pentru programări Luni–Vineri, „MAINE" în weekend.</span>
+        <div class="meta-row"><span><b>Când:</b> dimineața (~ora 10), pentru proba de azi/mâine</span><span><b>Frecvență:</b> o singură reamintire / lead / zi</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="waiting">
+      <div class="eyebrow">Automate · Leads</div>
+      <h2><span class="ic">⏳</span>Listă de așteptare</h2>
+      <div class="smscard">
+        <div class="head"><span class="name">waiting_list</span><span class="chip auto">automat</span></div>
+        <div class="txt">Buna {nume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!</div>
+        <div class="meta-row"><span><b>Când:</b> lead-ul ajunge în coloana „Waiting List"</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="followup">
+      <div class="eyebrow">Automate · Leads</div>
+      <h2><span class="ic">❌</span>Nu a venit (revenire)</h2>
+      <div class="smscard">
+        <div class="head"><span class="name">followup</span><span class="chip auto">automat</span></div>
+        <div class="txt">Buna {nume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la {telefon locatie}!</div>
+        <span class="ph"><b>{telefon locatie}</b> = numărul locației lead-ului.</span>
+        <div class="meta-row"><span><b>Când:</b> lead-ul ajunge în „Nu a venit" (manual sau automat, seara)</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="review">
+      <div class="eyebrow">Automate · Leads</div>
+      <h2><span class="ic">⭐</span>Review Google</h2>
+      <div class="smscard">
+        <div class="head"><span class="name">review</span><span class="chip auto">automat</span></div>
+        <div class="txt">Buna {nume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: {link} Multumim!</div>
+        <span class="ph"><b>{link}</b> = linkul de recenzie Google al locației.</span>
+        <div class="meta-row"><span><b>Când:</b> lead-ul devine client (coloana „Convertit") — NU la proba gratuită</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ============ INROLARE ============ -->
+    <section class="block" id="inrolare">
+      <div class="eyebrow">Automate · Înrolare</div>
+      <h2><span class="ic">🎟️</span>Confirmare înrolare</h2>
+      <div class="smscard">
+        <div class="head"><span class="name">confirmare_inrolare</span><span class="chip auto">automat · cron</span><span class="chip role">2 segmente</span></div>
+        <div class="txt">Buna {nume}! Iti confirmam locul in grupa {curs}, in zilele de {zile}, la ora {ora}, cu instructor {instructor}. Abonamentul lunar este {pret} RON. Grup WhatsApp: {link}</div>
+        <span class="ph">Părțile lipsă se omit elegant (dacă un curs n-are oră / instructor / link WhatsApp, fraza se scurtează). Dacă orele diferă pe zile, mesajul listează „Luni la 17:00, Vineri la 18:00".</span>
+        <div class="meta-row"><span><b>Când:</b> a doua zi dimineața după ce s-a făcut înrolarea</span><span><b>De ce a doua zi:</b> fereastră de anulare; dacă înrolarea e ștearsă/reziliată între timp, SMS-ul nu mai pleacă</span></div>
+      </div>
+      <div class="note"><span class="lbl">Rezumat util</span>Acest SMS strânge tot ce trebuie să știe părintele după înscriere: curs, zile, oră, instructor, preț lunar și linkul grupului de WhatsApp.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ============ BULK ============ -->
+    <section class="block" id="reminder-plata">
+      <div class="eyebrow">În masă · Plăți</div>
+      <h2><span class="ic">🔔</span>Reminder plată</h2>
+      <div class="smscard b">
+        <div class="head"><span class="name">reminder_plata</span><span class="chip bulk">în masă</span><span class="chip role">Manager+</span></div>
+        <div class="txt">Buna ziua! Va reamintim ca {peste N zile / maine / astazi} este termenul de plata pentru cursurile Quasar Dance. Echipa Quasar Dance</div>
+        <span class="ph">Textul cu zilele se adaptează: „peste N zile", „maine" (1 zi) sau „astazi" (azi), față de scadența reală a fiecărei familii.</span>
+        <div class="meta-row"><span><b>Când:</b> trimis manual de manager, înainte de termenul de plată</span><span><b>Cui:</b> familii cu abonamente active</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="restante">
+      <div class="eyebrow">În masă · Plăți</div>
+      <h2><span class="ic">💸</span>Notificare restanțe</h2>
+      <div class="smscard b">
+        <div class="head"><span class="name">notificare_restante</span><span class="chip bulk">în masă</span><span class="chip role">Manager+</span></div>
+        <div class="txt">Buna ziua! Exista plati restante la cursurile Quasar Dance pentru {nume + suma}. Se poate achita cash/card la studio sau prin transfer la IBAN RO85 INGB 0000 9999 1498 9082. Pentru intrebari, contactati-ne la {telefon locatie}. Echipa Quasar Dance</div>
+        <span class="ph"><b>{nume + suma}</b> = lista membrilor familiei cu suma fiecăruia, ex. „Maria Popescu in valoare de 200 RON si Andrei Popescu in valoare de 180 RON". „o plata restanta" la singular dacă e un singur copil.</span>
+        <div class="meta-row"><span><b>Când:</b> trimis manual, pentru familii cu restanțe</span><span><b>IBAN:</b> e inclus în mesaj</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="avertisment">
+      <div class="eyebrow">În masă · Plăți</div>
+      <h2><span class="ic">⚠️</span>Avertisment pierdere loc</h2>
+      <div class="smscard b">
+        <div class="head"><span class="name">avertisment_loc</span><span class="chip bulk">în masă</span><span class="chip role">Manager+</span><span class="chip role">peste 50 zile</span></div>
+        <div class="txt">Buna ziua! Pentru a pastra {locul lui X / locurile lui X si Y} la Quasar Dance, te rugam sa achiti {total} RON pana pe {termen}. Pentru intrebari, contactati-ne la {telefon locatie}. Echipa Quasar Dance</div>
+        <span class="ph"><b>{termen}</b> = data trimiterii + 2 zile · <b>{total}</b> = suma totală a familiei. Listează toți copiii în pericol.</span>
+        <div class="meta-row"><span><b>Când:</b> trimis manual, doar pentru restanțe mai vechi de 50 de zile</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="liber">
+      <div class="eyebrow">În masă · Plăți</div>
+      <h2><span class="ic">✍️</span>Mesaj liber</h2>
+      <div class="smscard b">
+        <div class="head"><span class="name">mesaj_liber</span><span class="chip bulk">în masă</span><span class="chip role">doar Manager</span></div>
+        <div class="txt">(text tastat de manager — fără diacritice)</div>
+        <span class="ph">Singurul mesaj care nu e șablon. Doar managerul îl poate trimite, și obligatoriu cu o locație selectată (ca să nu plece la toată baza). Aplicația scoate automat diacriticele.</span>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ============ DATE ============ -->
+    <section class="block" id="date">
+      <div class="eyebrow">Referință</div>
+      <h2><span class="ic">📇</span>Adrese, telefoane și linkuri pe locație</h2>
+      <p class="intro">Ce se completează în SMS-uri, în funcție de locația lead-ului/clientului:</p>
+      <table class="t">
+        <tr><th>Locație</th><th>Adresă în SMS</th><th>Telefon</th></tr>
+        <tr><td><b>Ștefan cel Mare</b></td><td>Galeriile Stefan cel Mare, et. 1 (langa SYNEVO)</td><td>0730 534 172</td></tr>
+        <tr><td><b>Nicolina</b></td><td>Str. Izvor 14</td><td>0770 227 580</td></tr>
+        <tr><td><b>Quasar 4 Kids</b></td><td>Str. Clopotari 24 (intrarea din spate, usa mov)</td><td>0745 371 200</td></tr>
+      </table>
+      <div class="note"><span class="lbl">Excepție</span>Lead-urile de la <b>Nicolina</b> din grupa <b>Tiny</b> (sau fără grupă) primesc adresa și linkul de review de la <b>Quasar 4 Kids</b> (acolo au cei mici cursurile). <br><b>IBAN</b> pentru transfer: RO85 INGB 0000 9999 1498 9082.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <footer>Template-uri SMS · beta · <b>Quasar Dance</b> · Textele sunt cele exacte din aplicație — dacă se modifică, actualizăm ghidul.</footer>
+  </main>
+</div>
+</body>
+</html>
