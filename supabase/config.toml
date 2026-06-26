@@ -419,6 +419,10 @@ verify_jwt = false
 [functions.intake-meta-lead]
 verify_jwt = false
 
+# Intake din Google Sheet (Meta Ads → Sheet → Apps Script). Protejat prin x-sheets-secret.
+[functions.intake-sheets-lead]
+verify_jwt = false
+
 # Portal membri — login propriu (director separat de auth.users). Endpoint public:
 # primește email+parolă (nu JWT), verifică în portal_accounts și emite tokenul portalului.
 [functions.portal-auth]

@@ -139,6 +139,7 @@ export async function insertLead(
   supabase: SupabaseClient,
   lead: IntakeLead,
   sursaId: string | null,
+  opts?: { status?: string },
 ): Promise<{ created: boolean; leadId: string | null; reason?: string }> {
   const telefon = lead.telefon ? normalizeTelefon(lead.telefon) : null
 
@@ -183,7 +184,7 @@ export async function insertLead(
       grupa_varsta: safeEnum(lead.grupa_varsta, GRUPA_VALUES),
       locatia,
       sursa: sursaId,
-      status: 'nou',
+      status: opts?.status ?? 'nou',
       observatii: note.length ? note.join('\n') : null,
       utm_source: lead.utm_source?.trim() || null,
       utm_medium: lead.utm_medium?.trim() || null,
