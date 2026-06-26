@@ -54,6 +54,19 @@ Deno.serve(async (req) => {
     const supabase = serviceClient()
     const sursaId = await resolveCampanie(supabase, 'Meta Ads')
 
+    // Dedup în masă: scriptul trimite TOT setul la fiecare rulare (conectorul Meta
+    // nu adaugă la coadă, ci reordonează), așa că luăm o dată toate id-urile deja
+    // importate, nu câte o interogare per rând.
+    const seen = new Set<string>()
+    const { data: existing } = await supabase
+      .from('leads')
+      .select('observatii')
+      .like('observatii', '%metasheet:%')
+    for (const row of existing ?? []) {
+      const m = (row.observatii as string | null)?.match(/metasheet:(\S+)/)
+      if (m) seen.add(m[1])
+    }
+
     let created = 0
     let skipped = 0
     for (const r of rows) {
@@ -65,18 +78,11 @@ Deno.serve(async (req) => {
 
       // Dedup pe id-ul liniei Meta.
       const marker = r.id ? `metasheet:${r.id}` : null
-      if (marker) {
-        const { data: existing } = await supabase
-          .from('leads')
-          .select('id')
-          .like('observatii', `%${marker}%`)
-          .limit(1)
-          .maybeSingle()
-        if (existing) {
-          skipped++
-          continue
-        }
+      if (r.id && seen.has(r.id)) {
+        skipped++
+        continue
       }
+      if (r.id) seen.add(r.id) // evită dubluri în același batch
 
       const note: string[] = []
       if (marker) {
