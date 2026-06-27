@@ -25,3 +25,10 @@ export type {
   GrupaDashboard,
 } from './grupa'
 export { getGrupaDashboard } from './grupa'
+
+export type {
+  IncasareAziRow,
+  ProgramareAziRow,
+  RestantierAziRow,
+} from './preview'
+export { getIncasariAzi, getProgramariAzi, getRestantieriAzi } from './preview'

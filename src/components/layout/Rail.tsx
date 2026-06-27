@@ -315,19 +315,13 @@ function RailAccount() {
 export function Rail(): ReactNode {
   return (
     <aside className="flex w-[236px] min-w-[236px] max-w-[236px] shrink-0 flex-col overflow-y-auto overflow-x-hidden bg-rail px-4 py-5 text-white [scrollbar-gutter:stable]">
-      <Link to="/" className="mb-5 flex items-center gap-2.5 px-1.5" title="Acasă">
+      <Link to="/" className="mb-5 flex items-center px-1.5" title="Acasă">
         <img
-          src="/favicon.png"
-          alt="Quasar"
-          className="h-[30px] w-[30px] select-none"
+          src="/logo-q-a-l-contur.png"
+          alt="Quasar Dance"
+          className="h-12 w-auto select-none"
           draggable={false}
         />
-        <span className="leading-none">
-          <span className="block font-display text-base font-semibold">Quasar</span>
-          <span className="mt-0.5 block text-[10px] font-semibold tracking-[2px] text-quasar-yellow">
-            OS
-          </span>
-        </span>
       </Link>
 
       <RailNav />
