@@ -8,20 +8,24 @@ type Props = {
 }
 
 const toneClass: Record<NonNullable<Props['tone']>, string> = {
-  default: 'text-quasar-black',
-  positive: 'text-green-700',
-  negative: 'text-red-600',
-  warning: 'text-amber-600',
+  default: 'text-ink',
+  positive: 'text-success',
+  negative: 'text-danger',
+  warning: 'text-warn',
 }
 
 export function KpiCard({ label, value, tone = 'default', hint }: Props) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className="text-sm font-medium text-quasar-gray">{label}</div>
-      <div className={`mt-2 font-display text-3xl font-bold ${toneClass[tone]}`}>
+    <div className="rounded-2xl border border-line bg-card p-5 transition-shadow hover:shadow-md">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+        {label}
+      </div>
+      <div
+        className={`fnum mt-2.5 font-display text-3xl font-bold tracking-tight ${toneClass[tone]}`}
+      >
         {value}
       </div>
-      {hint && <div className="mt-1.5 text-xs text-quasar-gray">{hint}</div>}
+      {hint && <div className="mt-1.5 text-xs text-muted-2">{hint}</div>}
     </div>
   )
 }

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PageHeader, Button, Spinner, Tabs } from '@/components/ui'
+import { Button, Spinner, Tabs } from '@/components/ui'
+import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { listSezoane } from '@/features/plati/api'
 import {
@@ -165,19 +166,13 @@ export function CursProfilePage() {
   const initials = getCursInitials(curs.numele)
 
   return (
-    <div>
-      <PageHeader
+    <>
+      <ProfileScaffold
+        section="Studio"
+        backTo="/cursuri"
         title={curs.numele}
-        subtitle={
-          [curs.nivelul, curs.varsta, curs.suspendat ? 'Suspendat' : null]
-            .filter(Boolean)
-            .join(' · ') || undefined
-        }
         actions={
           <>
-            <Button variant="secondary" onClick={() => navigate('/cursuri')}>
-              ← Înapoi
-            </Button>
             <Button onClick={() => setEditOpen(true)}>Editează</Button>
             {canArchive && (
               <Button
@@ -201,15 +196,14 @@ export function CursProfilePage() {
             )}
           </>
         }
-      />
-
-      <div className="grid gap-6 md:grid-cols-[256px_minmax(0,1fr)]">
-        <CursSidebar
-          initials={initials}
-          numele={curs.numele}
-          ocupare={ocupareQuery.data}
-        />
-
+        sidebar={
+          <CursSidebar
+            initials={initials}
+            numele={curs.numele}
+            ocupare={ocupareQuery.data}
+          />
+        }
+      >
         <div className="min-w-0">
           <Tabs
             tabs={[
@@ -286,7 +280,7 @@ export function CursProfilePage() {
             />
           )}
         </div>
-      </div>
+      </ProfileScaffold>
 
       {editOpen && (
         <CursForm open curs={curs} onClose={() => setEditOpen(false)} />
@@ -333,6 +327,6 @@ export function CursProfilePage() {
           onClose={() => setDeleteOpen(false)}
         />
       )}
-    </div>
+    </>
   )
 }

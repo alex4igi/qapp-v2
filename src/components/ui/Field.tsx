@@ -13,13 +13,13 @@ export function Field({ label, htmlFor, error, required, children }: Props) {
     <div>
       <label
         htmlFor={htmlFor}
-        className="mb-1 block text-sm font-medium text-quasar-black"
+        className="mb-1 block text-sm font-medium text-ink"
       >
         {label}
-        {required && <span className="ml-0.5 text-red-600">*</span>}
+        {required && <span className="ml-0.5 text-danger">*</span>}
       </label>
       {children}
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   )
 }

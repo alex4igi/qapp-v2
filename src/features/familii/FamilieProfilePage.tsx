@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  PageHeader,
   Button,
   Spinner,
   Select,
   Tabs,
 } from '@/components/ui'
+import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
 import type { Client, Familie } from '@/types/db'
 import { FamilieForm } from './FamilieForm'
 import { AddMembersModal } from './AddMembersModal'
@@ -43,8 +43,8 @@ function getFamilieInitials(numeFamilie: string): string {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-quasar-gray">{label}</dt>
-      <dd className="text-sm break-words text-quasar-black">{value || '—'}</dd>
+      <dt className="text-xs font-medium text-muted">{label}</dt>
+      <dd className="text-sm break-words text-ink">{value || '—'}</dd>
     </div>
   )
 }
@@ -148,21 +148,14 @@ export function FamilieProfilePage() {
   const members = membersQuery.data ?? []
 
   return (
-    <div>
-      <PageHeader
+    <>
+      <ProfileScaffold
+        section="Familii"
+        backTo="/familii"
         title={`Familia ${familie.nume_familie}`}
-        actions={
-          <>
-            <Button variant="secondary" onClick={() => navigate('/familii')}>
-              ← Înapoi
-            </Button>
-            <Button onClick={() => setEditOpen(true)}>Editează</Button>
-          </>
-        }
-      />
-
-      <div className="grid gap-6 md:grid-cols-[256px_1fr]">
-        <Sidebar
+        actions={<Button onClick={() => setEditOpen(true)}>Editează</Button>}
+        sidebar={
+          <Sidebar
           initials={initials}
           numeFamilie={familie.nume_familie}
           reprezentanti={reprezentanti}
@@ -181,30 +174,29 @@ export function FamilieProfilePage() {
           members={members}
           onNavigateMember={(cid) => navigate(`/clienti/${cid}`)}
           onAddMembers={() => setAddMembersOpen(true)}
+          />
+        }
+      >
+        <Tabs
+          tabs={[
+            { id: 'inrolari', label: 'Detalii înrolări' },
+            { id: 'date',     label: 'Detalii personale' },
+          ]}
+          active={tab}
+          onChange={(t) => setTab(t as TabId)}
         />
 
-        <div>
-          <Tabs
-            tabs={[
-              { id: 'inrolari', label: 'Detalii înrolări' },
-              { id: 'date',     label: 'Detalii personale' },
-            ]}
-            active={tab}
-            onChange={(t) => setTab(t as TabId)}
-          />
+        <div className="mt-4">
+          {tab === 'inrolari' && (
+            <InrolariTab
+              loading={inrolariQuery.isLoading}
+              rows={inrolariQuery.data ?? []}
+            />
+          )}
 
-          <div className="mt-4">
-            {tab === 'inrolari' && (
-              <InrolariTab
-                loading={inrolariQuery.isLoading}
-                rows={inrolariQuery.data ?? []}
-              />
-            )}
-
-            {tab === 'date' && <DatePersonaleTab familie={familie} />}
-          </div>
+          {tab === 'date' && <DatePersonaleTab familie={familie} />}
         </div>
-      </div>
+      </ProfileScaffold>
 
       {editOpen && (
         <FamilieForm
@@ -222,7 +214,7 @@ export function FamilieProfilePage() {
           onClose={() => setAddMembersOpen(false)}
         />
       )}
-    </div>
+    </>
   )
 }
 
@@ -250,23 +242,23 @@ function Sidebar({
   members, onNavigateMember, onAddMembers,
 }: SidebarProps) {
   return (
-    <aside className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <aside className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <div className="mb-3 flex justify-center">
-        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-quasar-black shadow-sm">
+        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-ink shadow-sm">
           {initials}
         </div>
       </div>
-      <h2 className="text-center font-display text-lg font-bold text-quasar-black">
+      <h2 className="text-center font-display text-lg font-bold text-ink">
         Familia {numeFamilie}
       </h2>
 
       <dl className="mt-4 space-y-3">
         <div>
-          <dt className="mb-1 text-xs font-medium text-quasar-gray">
+          <dt className="mb-1 text-xs font-medium text-muted">
             Reprezentant{reprezentanti.length > 1 ? 'i' : ''}
           </dt>
           {reprezentanti.length === 0 ? (
-            <p className="text-sm text-quasar-black">
+            <p className="text-sm text-ink">
               {numeReprezentantText || '—'}
             </p>
           ) : (
@@ -278,10 +270,10 @@ function Sidebar({
                     onClick={() => onNavigateMember(r.id)}
                     className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-quasar-yellow/10"
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow text-xs font-bold text-quasar-black">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow text-xs font-bold text-ink">
                       {getFamilieInitials(`${r.nume} ${r.prenume ?? ''}`)}
                     </span>
-                    <span className="truncate text-quasar-black">
+                    <span className="truncate text-ink">
                       {r.nume} {r.prenume ?? ''}
                     </span>
                   </button>
@@ -291,13 +283,13 @@ function Sidebar({
           )}
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-3 text-center shadow-sm">
-          <dt className="text-xs font-medium text-quasar-gray">
+        <div className="rounded-xl border border-line bg-card p-3 text-center shadow-sm">
+          <dt className="text-xs font-medium text-muted">
             Balanța Familiei
           </dt>
           <dd className="mt-1 space-y-0.5">
             <p className="text-sm">
-              <span className="text-quasar-gray">Rest: </span>
+              <span className="text-muted">Rest: </span>
               <span
                 className={`font-display font-bold ${
                   balanta.rest > 0 ? 'text-red-600' : 'text-green-600'
@@ -307,8 +299,8 @@ function Sidebar({
               </span>
             </p>
             <p className="text-sm">
-              <span className="text-quasar-gray">Total: </span>
-              <span className="font-display font-bold text-quasar-black">
+              <span className="text-muted">Total: </span>
+              <span className="font-display font-bold text-ink">
                 {balanta.total} RON
               </span>
             </p>
@@ -316,7 +308,7 @@ function Sidebar({
         </div>
 
         <div>
-          <dt className="mb-1 text-xs font-medium text-quasar-gray">
+          <dt className="mb-1 text-xs font-medium text-muted">
             În sezonul
           </dt>
           <Select
@@ -328,11 +320,11 @@ function Sidebar({
         </div>
 
         <div>
-          <dt className="mb-1 text-xs font-medium text-quasar-gray">
+          <dt className="mb-1 text-xs font-medium text-muted">
             Membri ({members.length})
           </dt>
           {members.length === 0 ? (
-            <p className="text-sm text-quasar-gray">—</p>
+            <p className="text-sm text-muted">—</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {members.map((m) => {
@@ -345,13 +337,13 @@ function Sidebar({
                       onClick={() => onNavigateMember(m.id)}
                       className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-quasar-yellow/10"
                     >
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow text-xs font-bold text-quasar-black">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow text-xs font-bold text-ink">
                         {getFamilieInitials(`${m.nume} ${m.prenume ?? ''}`)}
                       </span>
-                      <span className="min-w-0 truncate text-quasar-black">
+                      <span className="min-w-0 truncate text-ink">
                         {m.nume} {m.prenume ?? ''}
                         {v != null && (
-                          <span className="ml-1 text-xs text-quasar-gray">
+                          <span className="ml-1 text-xs text-muted">
                             ({v} ani{isAdult ? ', reprezentant' : ''})
                           </span>
                         )}
@@ -385,15 +377,15 @@ function InrolariTab({
   if (loading) return <Spinner />
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-quasar-gray">
+      <p className="text-sm text-muted">
         Nicio înrolare în acest sezon pentru membrii familiei.
       </p>
     )
   }
   return (
-    <div className="overflow-hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden overflow-x-auto rounded-2xl border border-line bg-card shadow-sm">
       <table className="w-full min-w-[700px] text-sm">
-        <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-quasar-gray">
+        <thead className="border-b border-line bg-surface text-left text-xs uppercase tracking-wide text-muted">
           <tr>
             <th className="whitespace-nowrap px-4 py-3 font-medium">Nume membru</th>
             <th className="whitespace-nowrap px-4 py-3 font-medium">Nume curs</th>
@@ -402,19 +394,19 @@ function InrolariTab({
             <th className="whitespace-nowrap px-4 py-3 text-right font-medium">Status plată</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-line-2">
           {rows.map((r) => {
             const rest = r.rest ?? 0
             const total = r.total_de_plata ?? 0
             const achitat = rest <= 0
             return (
-              <tr key={r.id_enrollment} className="transition-colors hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-quasar-black">
+              <tr key={r.id_enrollment} className="transition-colors hover:bg-rowhover">
+                <td className="px-4 py-3 font-medium text-ink">
                   {r.nume_client} {r.prenume_client ?? ''}
                 </td>
-                <td className="px-4 py-3 text-quasar-gray">{r.nume_curs}</td>
-                <td className="px-4 py-3 text-quasar-gray">{r.data_incepere}</td>
-                <td className="px-4 py-3 text-quasar-gray">{r.tip_plata ?? '—'}</td>
+                <td className="px-4 py-3 text-muted">{r.nume_curs}</td>
+                <td className="px-4 py-3 text-muted">{r.data_incepere}</td>
+                <td className="px-4 py-3 text-muted">{r.tip_plata ?? '—'}</td>
                 <td className="px-4 py-3 text-right">
                   {achitat ? (
                     <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
@@ -475,7 +467,7 @@ function DatePersonaleTab({ familie }: { familie: Familie }) {
       {familie.observatii && (
         <Section title="Observații">
           <div className="col-span-full">
-            <p className="whitespace-pre-wrap text-sm text-quasar-black">
+            <p className="whitespace-pre-wrap text-sm text-ink">
               {familie.observatii}
             </p>
           </div>
@@ -509,8 +501,8 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-3 text-sm font-bold text-quasar-black">{title}</h2>
+    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
+      <h2 className="mb-3 text-sm font-bold text-ink">{title}</h2>
       <dl className="grid grid-cols-2 gap-4 md:grid-cols-3">{children}</dl>
     </div>
   )

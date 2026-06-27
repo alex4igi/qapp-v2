@@ -189,7 +189,7 @@ export function DateInput({
         onBlur={handleBlur}
         disabled={disabled}
         className={cn(
-          'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-9 text-sm text-quasar-black outline-none transition-colors focus:border-quasar-yellow focus:ring-2 focus:ring-quasar-yellow/40 disabled:bg-quasar-gray-light',
+          'w-full rounded-[10px] border border-line bg-card px-3 py-2 pr-9 text-sm text-ink outline-none transition-colors focus:border-quasar-yellow focus:ring-2 focus:ring-quasar-yellow/30 disabled:bg-surface',
           className,
         )}
         {...rest}
@@ -200,26 +200,26 @@ export function DateInput({
         onClick={() => !disabled && setOpen((o) => !o)}
         disabled={disabled}
         aria-label="Deschide calendar"
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-base leading-none hover:bg-quasar-gray-light disabled:cursor-not-allowed"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-base leading-none hover:bg-surface disabled:cursor-not-allowed"
       >
         📅
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border border-line bg-card p-2 shadow-lg">
           <div className="mb-2 flex items-center gap-1">
             <button
               type="button"
               onClick={() => shiftMonth(-1)}
               aria-label="Luna anterioară"
-              className="rounded px-2 py-1 text-sm hover:bg-quasar-gray-light"
+              className="rounded px-2 py-1 text-sm hover:bg-surface"
             >
               ‹
             </button>
             <select
               value={view.m}
               onChange={(e) => setView((v) => ({ ...v, m: Number(e.target.value) }))}
-              className="flex-1 rounded border border-gray-300 px-1 py-1 text-sm outline-none focus:border-quasar-yellow"
+              className="flex-1 rounded border border-line px-1 py-1 text-sm outline-none focus:border-quasar-yellow"
             >
               {LUNI.map((l, i) => (
                 <option key={l} value={i}>
@@ -230,7 +230,7 @@ export function DateInput({
             <select
               value={view.y}
               onChange={(e) => setView((v) => ({ ...v, y: Number(e.target.value) }))}
-              className="rounded border border-gray-300 px-1 py-1 text-sm outline-none focus:border-quasar-yellow"
+              className="rounded border border-line px-1 py-1 text-sm outline-none focus:border-quasar-yellow"
             >
               {years.map((y) => (
                 <option key={y} value={y}>
@@ -242,13 +242,13 @@ export function DateInput({
               type="button"
               onClick={() => shiftMonth(1)}
               aria-label="Luna următoare"
-              className="rounded px-2 py-1 text-sm hover:bg-quasar-gray-light"
+              className="rounded px-2 py-1 text-sm hover:bg-surface"
             >
               ›
             </button>
           </div>
 
-          <div className="mb-1 grid grid-cols-7 text-center text-[11px] font-medium text-quasar-gray">
+          <div className="mb-1 grid grid-cols-7 text-center text-[11px] font-medium text-muted">
             {ZILE_SCURT.map((z, i) => (
               <span key={i}>{z}</span>
             ))}

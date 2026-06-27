@@ -63,10 +63,10 @@ export function DataTable<T>({
   }, [rows, columns, sortIdx, sortDir])
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-sm">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50 text-left">
+          <tr className="border-b border-line bg-surface text-left">
             {columns.map((col, idx) => {
               const sortable = !!col.sortValue
               const active = sortIdx === idx
@@ -81,7 +81,7 @@ export function DataTable<T>({
                       : undefined
                   }
                   className={cn(
-                    'px-3 py-2.5 font-semibold text-quasar-black',
+                    'px-3 py-2.5 font-semibold text-ink',
                     col.className,
                   )}
                 >
@@ -90,12 +90,12 @@ export function DataTable<T>({
                       type="button"
                       onClick={() => toggleSort(idx)}
                       className={cn(
-                        'inline-flex items-center gap-1 font-semibold hover:text-quasar-black/70',
+                        'inline-flex items-center gap-1 font-semibold hover:text-ink/70',
                         col.className?.includes('text-right') && 'flex-row-reverse',
                       )}
                     >
                       {col.header}
-                      <span className="text-xs text-quasar-gray">
+                      <span className="text-xs text-muted">
                         {active ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
                       </span>
                     </button>
@@ -112,7 +112,7 @@ export function DataTable<T>({
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-3 py-8 text-center text-quasar-gray"
+                className="px-3 py-8 text-center text-muted"
               >
                 {emptyMessage}
               </td>
@@ -123,14 +123,14 @@ export function DataTable<T>({
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 className={cn(
-                  'border-b border-gray-100 last:border-0',
-                  onRowClick && 'cursor-pointer hover:bg-gray-50',
+                  'border-b border-line-2 last:border-0',
+                  onRowClick && 'cursor-pointer hover:bg-rowhover',
                 )}
               >
                 {columns.map((col, idx) => (
                   <td
                     key={col.header || idx}
-                    className={cn('px-3 py-2.5 text-quasar-black', col.className)}
+                    className={cn('px-3 py-2.5 text-ink', col.className)}
                   >
                     {col.cell(row)}
                   </td>

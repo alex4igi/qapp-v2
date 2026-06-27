@@ -202,13 +202,13 @@ export function DashboardPage() {
       ) : coursesQ.isError ? (
         <p className="text-sm text-red-600">Eroare la încărcarea cursurilor.</p>
       ) : (coursesQ.data ?? []).length === 0 ? (
-        <p className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-quasar-gray shadow-sm">
+        <p className="rounded-2xl border border-line bg-card p-6 text-center text-sm text-muted">
           {teacherMode
             ? 'Nicio grupă a ta programată azi.'
             : `Niciun curs programat în ziua selectată${salaId ? ' pentru această sală' : ''}.`}
         </p>
       ) : (
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {coursesQ.data!.map((c) => (
             <CircleCourseCard
               key={c.id}
@@ -227,7 +227,7 @@ export function DashboardPage() {
 
       {!teacherMode && (
         <>
-          <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+          <h2 className="mb-2 text-sm font-semibold text-ink">
             Încasări vs Restanțe (cursurile zilei)
           </h2>
           {chartQ.isLoading ? (

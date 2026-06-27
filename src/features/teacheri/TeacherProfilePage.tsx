@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { PageHeader, Button, Spinner, Tabs } from '@/components/ui'
+import { Button, Spinner, Tabs, Badge } from '@/components/ui'
+import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher, isManagerOrHigher } from '@/lib/rolesMatrix'
 import { getTeacher, toggleTeacherArchived, deleteTeacher } from './api'
@@ -71,15 +72,13 @@ export function TeacherProfilePage() {
   ]
 
   return (
-    <div>
-      <PageHeader
+    <>
+      <ProfileScaffold
+        section="Teacheri"
+        backTo="/teacheri"
         title={fullName}
-        subtitle={teacher.nivelul ?? undefined}
         actions={
           <>
-            <Button variant="secondary" onClick={() => navigate('/teacheri')}>
-              ← Înapoi
-            </Button>
             {canArchive && (
               <Button
                 variant={teacher.arhivat ? 'secondary' : 'ghost'}
@@ -100,47 +99,38 @@ export function TeacherProfilePage() {
             )}
           </>
         }
-      />
-
-      <div className="flex flex-col gap-6 md:flex-row">
-        {/* Avatar lateral */}
-        <aside className="md:w-56">
-          <div className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm">
-            <div className="flex h-28 w-28 items-center justify-center rounded-full bg-quasar-yellow text-4xl font-bold text-quasar-black">
+        sidebar={
+          <aside className="rounded-2xl border border-line bg-card p-5 text-center shadow-sm">
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-ink">
               {initials(teacher.nume, teacher.prenume)}
             </div>
-            <p className="mt-4 font-display text-lg font-bold text-quasar-black">
+            <p className="mt-4 font-display text-lg font-bold tracking-tight text-ink">
               {fullName}
             </p>
             {teacher.nivelul && (
-              <span className="mt-1.5 rounded-full bg-quasar-yellow/40 px-2 py-0.5 text-xs font-medium text-quasar-black">
-                {teacher.nivelul}
-              </span>
+              <div className="mt-2 flex justify-center">
+                <Badge tone="warn">{teacher.nivelul}</Badge>
+              </div>
             )}
             {teacher.email && (
-              <p className="mt-3 break-all text-xs text-quasar-gray">
-                {teacher.email}
-              </p>
+              <p className="mt-3 break-all text-xs text-muted">{teacher.email}</p>
             )}
-          </div>
-        </aside>
+          </aside>
+        }
+      >
+        <Tabs tabs={tabs} active={tab} onChange={(t) => setTab(t as typeof tab)} />
 
-        {/* Tabs */}
-        <div className="flex-1 min-w-0">
-          <Tabs tabs={tabs} active={tab} onChange={(t) => setTab(t as typeof tab)} />
-
-          {tab === 'cursuri' && <TeacherTabCursuri teacherId={teacher.id} />}
-          {tab === 'salarii' && canSeeSalarii && (
-            <TeacherTabSalarii teacherId={teacher.id} />
-          )}
-          {tab === 'personale' && (
-            <TeacherTabPersonale teacher={teacher} canEdit={canEditPersonale} />
-          )}
-          {tab === 'evaluari' && canSeeEvaluari && (
-            <TeacherTabEvaluari teacherId={teacher.id} />
-          )}
-        </div>
-      </div>
+        {tab === 'cursuri' && <TeacherTabCursuri teacherId={teacher.id} />}
+        {tab === 'salarii' && canSeeSalarii && (
+          <TeacherTabSalarii teacherId={teacher.id} />
+        )}
+        {tab === 'personale' && (
+          <TeacherTabPersonale teacher={teacher} canEdit={canEditPersonale} />
+        )}
+        {tab === 'evaluari' && canSeeEvaluari && (
+          <TeacherTabEvaluari teacherId={teacher.id} />
+        )}
+      </ProfileScaffold>
 
       {archiveOpen && (
         <ArchiveConfirmModal
@@ -175,6 +165,6 @@ export function TeacherProfilePage() {
           onClose={() => setDeleteOpen(false)}
         />
       )}
-    </div>
+    </>
   )
 }

@@ -38,12 +38,12 @@ export function DetailRow({
 }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-quasar-gray">{label}</dt>
-      <dd className="text-sm break-words text-quasar-black">
+      <dt className="text-xs font-medium text-muted">{label}</dt>
+      <dd className="text-sm break-words text-ink">
         {to && value ? (
           <Link
             to={to}
-            className="underline decoration-quasar-yellow decoration-2 underline-offset-2 hover:text-quasar-gray"
+            className="underline decoration-quasar-yellow decoration-2 underline-offset-2 hover:text-muted-2"
           >
             {value}
           </Link>
@@ -63,8 +63,8 @@ export function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-3 font-display text-sm font-bold text-quasar-black">{title}</h2>
+    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
+      <h2 className="mb-3 font-display text-sm font-bold text-ink">{title}</h2>
       <dl className="grid grid-cols-2 gap-4 md:grid-cols-3">{children}</dl>
     </div>
   )

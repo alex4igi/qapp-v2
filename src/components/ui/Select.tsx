@@ -19,7 +19,7 @@ export function Select({ options, placeholder, className, ...rest }: Props) {
     <select
       className={cn(
         // h-[38px] = aceeași înălțime ca TextInput (select-ul nativ ignoră line-height, deci o fixăm)
-        'h-[38px] w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-quasar-black outline-none transition-colors focus:border-quasar-yellow focus:ring-2 focus:ring-quasar-yellow/40 disabled:bg-quasar-gray-light',
+        'h-[38px] w-full rounded-[10px] border border-line bg-card px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-quasar-yellow focus:ring-2 focus:ring-quasar-yellow/30 disabled:bg-surface',
         className,
       )}
       {...rest}

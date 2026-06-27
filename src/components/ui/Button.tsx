@@ -9,11 +9,11 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-quasar-yellow text-quasar-black hover:bg-quasar-yellow-dark disabled:opacity-60',
+    'bg-quasar-yellow text-ink hover:bg-quasar-yellow-dark disabled:opacity-60',
   secondary:
-    'border border-gray-300 bg-white text-quasar-black hover:bg-quasar-gray-light disabled:opacity-60',
-  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-60',
-  ghost: 'text-quasar-gray hover:bg-quasar-gray-light hover:text-quasar-black',
+    'border border-line bg-card text-ink hover:bg-surface disabled:opacity-60',
+  danger: 'bg-danger text-white hover:brightness-95 disabled:opacity-60',
+  ghost: 'text-muted-2 hover:bg-surface hover:text-ink',
 }
 
 export function Button({
@@ -26,7 +26,7 @@ export function Button({
     <button
       type={type}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center rounded-[10px] px-3.5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed',
         variants[variant],
         className,
       )}

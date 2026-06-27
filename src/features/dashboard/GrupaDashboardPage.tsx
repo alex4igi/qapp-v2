@@ -21,17 +21,17 @@ function waParinteMessage(prenume: string): string {
 }
 
 const STATUS_BG: Record<RosterStatus, string> = {
-  prezent: 'bg-green-200 border-green-300',
-  absent: 'bg-red-200 border-red-300',
-  programat: 'bg-amber-50 border-amber-200',
-  inactiv: 'bg-quasar-gray-light border-quasar-gray-light',
+  prezent: 'bg-success-bg border-success/30',
+  absent: 'bg-danger-bg border-danger/30',
+  programat: 'bg-warn-bg border-warn/30',
+  inactiv: 'bg-neutral-bg border-line',
 }
 
 const STATUS_TEXT: Record<RosterStatus, string> = {
-  prezent: 'text-green-900',
-  absent: 'text-red-900',
-  programat: 'text-quasar-black',
-  inactiv: 'text-quasar-gray',
+  prezent: 'text-success',
+  absent: 'text-danger',
+  programat: 'text-ink',
+  inactiv: 'text-muted',
 }
 
 function ClientCard({
@@ -81,7 +81,7 @@ function ClientCard({
   return (
     <div
       className={[
-        'relative flex flex-col items-center rounded-lg border p-3',
+        'mcard relative flex flex-col items-center rounded-[14px] border p-3',
         STATUS_BG[row.status],
       ].join(' ')}
     >
@@ -94,7 +94,7 @@ function ClientCard({
         type="button"
         onClick={handlePhotoClick}
         disabled={togglePending}
-        className="mb-2 flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-md bg-white transition-shadow hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+        className="mb-2 flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-card transition-shadow hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
         aria-label={nextLabel}
         title={nextLabel}
       >
@@ -105,7 +105,7 @@ function ClientCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="text-3xl text-quasar-gray">👤</span>
+          <span className="text-3xl text-muted">👤</span>
         )}
       </button>
       <span
@@ -127,7 +127,7 @@ function ClientCard({
             </span>
             <span
               role="tooltip"
-              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-quasar-black px-2 py-1 text-xs text-white shadow-md group-hover:block"
+              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-ink px-2 py-1 text-xs text-white shadow-md group-hover:block"
             >
               La mulți ani!
             </span>
@@ -138,14 +138,14 @@ function ClientCard({
             <button
               type="button"
               onClick={() => onPay(row.refId)}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-red-100 text-sm font-bold text-red-700 shadow-sm ring-1 ring-red-300 transition-colors hover:bg-quasar-yellow hover:text-quasar-black"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-danger-bg text-sm font-bold text-danger shadow-sm ring-1 ring-danger/30 transition-colors hover:bg-quasar-yellow hover:text-ink"
               aria-label={`Restanță ${formatRON(row.restanta)}`}
             >
               $
             </button>
             <span
               role="tooltip"
-              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-quasar-black px-2 py-1 text-xs text-white shadow-md group-hover:block"
+              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-ink px-2 py-1 text-xs text-white shadow-md group-hover:block"
             >
               Restanță: {formatRON(row.restanta)}
             </span>
@@ -154,7 +154,7 @@ function ClientCard({
         <button
           type="button"
           onClick={() => navigate(navTarget)}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm shadow-sm transition-colors hover:bg-quasar-gray-light"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-card text-sm shadow-sm transition-colors hover:bg-surface"
           aria-label={isLead ? 'Vezi în pipeline leads' : 'Profil cursant'}
           title={isLead ? 'Vezi în pipeline leads' : 'Profil cursant'}
         >
@@ -166,7 +166,7 @@ function ClientCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600 shadow-sm transition-colors hover:bg-green-50"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-card text-success shadow-sm transition-colors hover:bg-success-bg"
             aria-label="Scrie părintelui pe WhatsApp"
             title="Scrie părintelui pe WhatsApp"
           >

@@ -1,4 +1,4 @@
-import { Field, TextInput, Select } from '@/components/ui'
+import { Field, TextInput } from '@/components/ui'
 import type { SelectOption } from '@/components/ui'
 import { metodaPlataOptions } from '@/lib/enums'
 import { formatRON } from '@/lib/format'
@@ -80,15 +80,30 @@ export function MetodaPlataField({
   return (
     <div className="space-y-2">
       <Field label={label}>
-        <Select
-          options={metodaPlataSelectOptions}
-          value={metoda}
-          onChange={(e) => onMetoda(e.target.value as MetodaSel)}
-        />
+        <div className="flex flex-wrap gap-1.5">
+          {metodaPlataSelectOptions.map((opt) => {
+            const active = opt.value === metoda
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onMetoda(opt.value as MetodaSel)}
+                className={[
+                  'rounded-[10px] border px-3 py-2 text-[13px] font-semibold transition-colors',
+                  active
+                    ? 'border-quasar-yellow bg-quasar-yellow text-ink'
+                    : 'border-line bg-card text-muted-2 hover:border-quasar-yellow/60 hover:text-ink',
+                ].join(' ')}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
       </Field>
 
       {isSplit && (
-        <div className="grid grid-cols-2 gap-3 rounded-md border border-quasar-gray-light bg-quasar-gray-light/20 p-3">
+        <div className="grid grid-cols-2 gap-3 rounded-[10px] border border-line bg-surface p-3">
           <Field label="Cash (RON)">
             <TextInput
               type="number"
@@ -120,7 +135,7 @@ export function MetodaPlataField({
           <p
             className={[
               'col-span-2 text-xs',
-              mismatch ? 'font-medium text-red-600' : 'text-quasar-gray',
+              mismatch ? 'font-medium text-danger' : 'text-muted',
             ].join(' ')}
           >
             Cash + Card = {formatRON(sum)}
