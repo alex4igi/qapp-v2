@@ -39,7 +39,7 @@ export function DatorniciWorklistCard({
   const top = rows.slice(0, TOP)
 
   return (
-    <div className="mb-6 overflow-hidden rounded-2xl border border-red-200 bg-white shadow-sm">
+    <div className="mb-6 overflow-hidden rounded-2xl border border-danger/30 bg-card shadow-sm">
       <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-3">
         <h2 className="text-sm font-semibold text-red-800">
           📞 Datornici de sunat ({rows.length})
@@ -59,11 +59,11 @@ export function DatorniciWorklistCard({
           >
             <Link
               to={`/clienti/${r.client_id}`}
-              className="min-w-0 flex-1 truncate font-medium text-quasar-black hover:underline"
+              className="min-w-0 flex-1 truncate font-medium text-ink hover:underline"
             >
               {r.nume} {r.prenume ?? ''}
             </Link>
-            <span className="shrink-0 text-xs text-quasar-gray">
+            <span className="shrink-0 text-xs text-muted">
               {r.nr_rate_neachitate} rate
               {r.zile_depasire != null && ` · ${r.zile_depasire}z`}
             </span>
@@ -79,7 +79,7 @@ export function DatorniciWorklistCard({
                   rest: r.rest_total,
                 })
               }
-              className="shrink-0 rounded-md border border-quasar-gray-light px-2 py-1 text-xs text-quasar-gray transition-colors hover:border-quasar-yellow hover:text-quasar-black"
+              className="shrink-0 rounded-md border border-line px-2 py-1 text-xs text-muted-2 transition-colors hover:border-quasar-yellow hover:text-ink"
               title="Loghează apel de recuperare"
             >
               📞

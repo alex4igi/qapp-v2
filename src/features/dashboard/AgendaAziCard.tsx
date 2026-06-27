@@ -25,9 +25,9 @@ export function AgendaAziCard() {
   const total = items.reduce((a, b) => a + b.n, 0)
 
   return (
-    <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="mb-6 rounded-2xl border border-line bg-card p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-bold text-quasar-black">
+        <h2 className="text-sm font-bold text-ink">
           ⚡ De lucrat azi (lead-uri){total > 0 ? ` — ${total}` : ''}
         </h2>
         <Link
@@ -39,9 +39,9 @@ export function AgendaAziCard() {
       </div>
 
       {leadsQ.isLoading ? (
-        <p className="text-sm text-quasar-gray">Se încarcă…</p>
+        <p className="text-sm text-muted">Se încarcă…</p>
       ) : total === 0 ? (
-        <p className="text-sm text-quasar-gray">
+        <p className="text-sm text-muted">
           Nimic urgent în lead-uri azi. 🎉
         </p>
       ) : (
@@ -53,7 +53,7 @@ export function AgendaAziCard() {
                 key={it.label}
                 className="flex items-center justify-between text-sm"
               >
-                <span className="text-quasar-black">{it.label}</span>
+                <span className="text-ink">{it.label}</span>
                 <strong className={it.cls}>{it.n}</strong>
               </li>
             ))}

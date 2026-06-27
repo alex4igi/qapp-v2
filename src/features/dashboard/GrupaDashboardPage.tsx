@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PageHeader, Button, Spinner } from '@/components/ui'
+import { Button, Spinner, Tabs, Badge, type BadgeTone } from '@/components/ui'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
@@ -9,11 +9,33 @@ import { upsertPrezenta } from '@/features/prezente/api'
 import { updateLeadStatus } from '@/features/leads/api'
 import { formatRON } from '@/lib/format'
 import { waLink } from '@/lib/phone'
+import { listSezoane } from '@/features/plati/api'
+import { getCursDatorii } from '@/features/cursuri/api'
+import { RestantieriTab } from '@/features/cursuri/pages/CursProfilePage/tabs/RestantieriTab'
 import {
   getGrupaDashboard,
   type RosterStatus,
   type GrupaRosterRow,
 } from './api'
+
+type RosterView = 'cards' | 'list' | 'cols'
+
+const STATUS_LABEL: Record<RosterStatus, string> = {
+  prezent: 'Prezent',
+  absent: 'Absent',
+  programat: 'Programat',
+  inactiv: 'Inactiv',
+}
+const STATUS_TONE: Record<RosterStatus, BadgeTone> = {
+  prezent: 'success',
+  absent: 'danger',
+  programat: 'warn',
+  inactiv: 'neutral',
+}
+
+function initialsOf(nume: string, prenume: string | null): string {
+  return `${nume?.[0] ?? ''}${prenume?.[0] ?? ''}`.toUpperCase() || '?'
+}
 
 // Mesaj pre-completat pentru WhatsApp către părintele cursantului.
 function waParinteMessage(prenume: string): string {
@@ -21,17 +43,17 @@ function waParinteMessage(prenume: string): string {
 }
 
 const STATUS_BG: Record<RosterStatus, string> = {
-  prezent: 'bg-green-200 border-green-300',
-  absent: 'bg-red-200 border-red-300',
-  programat: 'bg-amber-50 border-amber-200',
-  inactiv: 'bg-quasar-gray-light border-quasar-gray-light',
+  prezent: 'bg-success-bg border-success/30',
+  absent: 'bg-danger-bg border-danger/30',
+  programat: 'bg-warn-bg border-warn/30',
+  inactiv: 'bg-neutral-bg border-line',
 }
 
 const STATUS_TEXT: Record<RosterStatus, string> = {
-  prezent: 'text-green-900',
-  absent: 'text-red-900',
-  programat: 'text-quasar-black',
-  inactiv: 'text-quasar-gray',
+  prezent: 'text-success',
+  absent: 'text-danger',
+  programat: 'text-ink',
+  inactiv: 'text-muted',
 }
 
 function ClientCard({
@@ -81,7 +103,7 @@ function ClientCard({
   return (
     <div
       className={[
-        'relative flex flex-col items-center rounded-lg border p-3',
+        'mcard relative flex flex-col items-center rounded-[14px] border p-3',
         STATUS_BG[row.status],
       ].join(' ')}
     >
@@ -94,7 +116,7 @@ function ClientCard({
         type="button"
         onClick={handlePhotoClick}
         disabled={togglePending}
-        className="mb-2 flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-md bg-white transition-shadow hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+        className="mb-2 flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-card transition-shadow hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
         aria-label={nextLabel}
         title={nextLabel}
       >
@@ -105,7 +127,7 @@ function ClientCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="text-3xl text-quasar-gray">👤</span>
+          <span className="text-3xl text-muted">👤</span>
         )}
       </button>
       <span
@@ -127,7 +149,7 @@ function ClientCard({
             </span>
             <span
               role="tooltip"
-              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-quasar-black px-2 py-1 text-xs text-white shadow-md group-hover:block"
+              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-ink px-2 py-1 text-xs text-white shadow-md group-hover:block"
             >
               La mulți ani!
             </span>
@@ -138,14 +160,14 @@ function ClientCard({
             <button
               type="button"
               onClick={() => onPay(row.refId)}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-red-100 text-sm font-bold text-red-700 shadow-sm ring-1 ring-red-300 transition-colors hover:bg-quasar-yellow hover:text-quasar-black"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-danger-bg text-sm font-bold text-danger shadow-sm ring-1 ring-danger/30 transition-colors hover:bg-quasar-yellow hover:text-ink"
               aria-label={`Restanță ${formatRON(row.restanta)}`}
             >
               $
             </button>
             <span
               role="tooltip"
-              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-quasar-black px-2 py-1 text-xs text-white shadow-md group-hover:block"
+              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-ink px-2 py-1 text-xs text-white shadow-md group-hover:block"
             >
               Restanță: {formatRON(row.restanta)}
             </span>
@@ -154,7 +176,7 @@ function ClientCard({
         <button
           type="button"
           onClick={() => navigate(navTarget)}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm shadow-sm transition-colors hover:bg-quasar-gray-light"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-card text-sm shadow-sm transition-colors hover:bg-surface"
           aria-label={isLead ? 'Vezi în pipeline leads' : 'Profil cursant'}
           title={isLead ? 'Vezi în pipeline leads' : 'Profil cursant'}
         >
@@ -166,7 +188,7 @@ function ClientCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600 shadow-sm transition-colors hover:bg-green-50"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-card text-success shadow-sm transition-colors hover:bg-success-bg"
             aria-label="Scrie părintelui pe WhatsApp"
             title="Scrie părintelui pe WhatsApp"
           >
@@ -180,14 +202,130 @@ function ClientCard({
   )
 }
 
-function Counter({ label, value }: { label: string; value: number }) {
+/* ---------- roster: variantă Listă ---------- */
+function RosterList({
+  rows,
+  onMemberClick,
+  onPay,
+  navigate,
+}: {
+  rows: GrupaRosterRow[]
+  onMemberClick: (row: GrupaRosterRow) => void
+  onPay: (clientId: string) => void
+  navigate: (to: string) => void
+}) {
   return (
-    <span className="inline-flex items-center gap-1 text-sm">
-      <span className="font-medium uppercase tracking-wide text-quasar-gray">
-        {label}
-      </span>
-      <span className="text-base font-bold text-quasar-black">{value}</span>
-    </span>
+    <div className="overflow-hidden rounded-2xl border border-line bg-card">
+      {rows.map((r) => {
+        const isLead = r.kind === 'lead'
+        const name = [r.nume, r.prenume].filter(Boolean).join(' ')
+        return (
+          <div
+            key={r.rowId}
+            onClick={() => onMemberClick(r)}
+            className="qrow flex cursor-pointer items-center gap-3 border-t border-line-2 px-4 py-2.5 first:border-t-0"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-bg text-[11px] font-bold text-muted-2">
+              {initialsOf(r.nume, r.prenume)}
+            </span>
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="truncate text-sm font-medium text-ink">{name}</span>
+              {isLead && <Badge tone="warn">LEAD</Badge>}
+            </span>
+            {r.esteZiua && <span title="Aniversare azi">🎂</span>}
+            {r.restanta > 0 && (
+              <span className="fnum text-sm font-bold text-danger">
+                {formatRON(r.restanta)}
+              </span>
+            )}
+            {!isLead && r.status !== 'inactiv' && r.restanta > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onPay(r.refId)
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-danger-bg text-sm font-bold text-danger ring-1 ring-danger/30 hover:bg-quasar-yellow hover:text-ink"
+                title="Plată restanță"
+              >
+                $
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(isLead ? '/leads' : `/clienti/${r.refId}`)
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-surface text-sm hover:bg-rowhover"
+              title="Profil"
+            >
+              👤
+            </button>
+            <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ---------- roster: variantă Coloane pe status ---------- */
+const COLS: { status: RosterStatus; title: string }[] = [
+  { status: 'prezent', title: 'Prezenți' },
+  { status: 'absent', title: 'Absenți' },
+  { status: 'programat', title: 'Programați' },
+  { status: 'inactiv', title: 'Inactivi' },
+]
+
+function RosterColumns({
+  rows,
+  onMemberClick,
+}: {
+  rows: GrupaRosterRow[]
+  onMemberClick: (row: GrupaRosterRow) => void
+}) {
+  return (
+    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {COLS.map((col) => {
+        const members = rows.filter((r) => r.status === col.status)
+        return (
+          <div key={col.status} className="rounded-2xl border border-line bg-surface p-3">
+            <div className="mb-3 flex items-center gap-2 px-1">
+              <Badge tone={STATUS_TONE[col.status]}>{col.title}</Badge>
+              <span className="fnum ml-auto text-xs font-semibold text-muted">
+                {members.length}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {members.length === 0 ? (
+                <div className="py-3 text-center text-xs text-muted">— niciun cursant —</div>
+              ) : (
+                members.map((m) => (
+                  <button
+                    key={m.rowId}
+                    type="button"
+                    onClick={() => onMemberClick(m)}
+                    className="mcard flex items-center gap-2 rounded-[11px] border border-line bg-card px-2.5 py-2 text-left"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-bg text-[10px] font-bold text-muted-2">
+                      {initialsOf(m.nume, m.prenume)}
+                    </span>
+                    <span className="flex-1 truncate text-[12.5px] font-medium text-ink">
+                      {[m.nume, m.prenume].filter(Boolean).join(' ')}
+                    </span>
+                    {m.esteZiua && <span title="Aniversare azi">🎂</span>}
+                    {m.restanta > 0 && (
+                      <span className="h-2 w-2 rounded-full bg-danger" title="Restanță" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -198,11 +336,57 @@ export function GrupaDashboardPage() {
   const queryClient = useQueryClient()
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [enrollClientId, setEnrollClientId] = useState<string | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [tab, setTab] = useState<'roster' | 'restantieri'>('roster')
+  const [rosterView, setRosterView] = useState<RosterView>(() => {
+    try {
+      return (localStorage.getItem('qapp.roster_view') as RosterView) || 'cards'
+    } catch {
+      return 'cards'
+    }
+  })
+  const setView = (v: RosterView) => {
+    setRosterView(v)
+    try {
+      localStorage.setItem('qapp.roster_view', v)
+    } catch {
+      /* localStorage indisponibil */
+    }
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['grupa-dashboard', cursId, date],
     queryFn: () => getGrupaDashboard({ cursId: cursId!, date }),
     enabled: Boolean(cursId),
+  })
+
+  // Sezonul curent + restanțierii cursului (tab Restanțieri) — refolosesc logica fișei cursului.
+  const sezoaneQ = useQuery({ queryKey: ['sezoane-list'], queryFn: listSezoane })
+  const sezon = useMemo(() => {
+    const list = sezoaneQ.data ?? []
+    if (!list.length) return null
+    const today = new Date().toISOString().slice(0, 10)
+    return (
+      list.find(
+        (s) =>
+          s.data_incepere &&
+          s.data_final &&
+          s.data_incepere <= today &&
+          today <= s.data_final,
+      ) ?? list[0]
+    )
+  }, [sezoaneQ.data])
+  const restantieriQ = useQuery({
+    queryKey: ['curs', cursId, 'restantieri', sezon?.id],
+    queryFn: () =>
+      getCursDatorii({
+        cursId: cursId!,
+        sezonStart: sezon!.data_incepere!,
+        sezonEnd: sezon!.data_final!,
+      }),
+    enabled:
+      tab === 'restantieri' &&
+      Boolean(cursId && sezon?.data_incepere && sezon?.data_final),
   })
 
   // Ordine stabilă: fixăm pozițiile cardurilor la primul fetch pentru această
@@ -271,67 +455,169 @@ export function GrupaDashboardPage() {
     )
   }
 
-  const subtitle = [data.ora, data.teacher, data.sala]
-    .filter(Boolean)
-    .join(' · ')
+  const meta = [data.teacher, data.sala, data.ora].filter(Boolean).join(' · ')
+  const initials =
+    data.cursNume.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() ||
+    '?'
+  const present = data.counters.prezenti
+  const enrolled =
+    data.counters.prezenti + data.counters.absenti + data.counters.programati
+  const occPct = enrolled > 0 ? Math.min(100, Math.round((present / enrolled) * 100)) : 0
+
+  const handleMemberClick = (row: GrupaRosterRow) => {
+    const isInactiv = row.kind !== 'lead' && row.status === 'inactiv'
+    if (isInactiv) {
+      if (data.facultativ) {
+        setEnrollClientId(row.refId)
+      } else {
+        const name = [row.nume, row.prenume].filter(Boolean).join(' ')
+        if (window.confirm(`${name} revine la grupă? Va fi marcat Prezent azi.`)) {
+          toggleMut.mutate(row)
+        }
+      }
+    } else {
+      toggleMut.mutate(row)
+    }
+  }
+
+  const seg = (active: boolean) =>
+    [
+      'rounded-[8px] px-3 py-1.5 text-[13px] font-semibold transition-colors',
+      active ? 'bg-ink text-white' : 'text-muted-2 hover:text-ink',
+    ].join(' ')
 
   return (
     <div>
-      <PageHeader
-        title={
-          <Link
-            to={`/cursuri/${cursId}`}
-            className="hover:underline"
-          >
-            {data.cursNume}
-          </Link>
-        }
-        subtitle={subtitle || undefined}
-        actions={
-          <Button variant="secondary" onClick={() => navigate(-1)}>
-            ← Înapoi
-          </Button>
-        }
-      />
-
-      <div className="mb-6 flex flex-wrap items-center gap-6 rounded-md border border-quasar-gray-light bg-white px-4 py-3">
-        <Counter label="Prezenți" value={data.counters.prezenti} />
-        <Counter label="Absenți" value={data.counters.absenti} />
-        <Counter label="Inactivi" value={data.counters.inactivi} />
-        <Counter label="Programați" value={data.counters.programati} />
+      {/* header dark */}
+      <div className="mb-5 flex items-center gap-2">
+        <Button variant="secondary" onClick={() => navigate(-1)}>
+          ‹ Program
+        </Button>
+        <div className="flex-1" />
+        <Button variant="secondary" onClick={() => navigate(`/cursuri/${cursId}`)}>
+          Editează grupa
+        </Button>
       </div>
 
-      {data.roster.length === 0 ? (
-        <p className="rounded-lg border border-quasar-gray-light bg-white p-6 text-center text-sm text-quasar-gray">
-          Niciun cursant sau lead în roster.
-        </p>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {orderedRoster.map((r) => (
-            <ClientCard
-              key={r.rowId}
-              row={r}
-              facultativ={data.facultativ}
-              onPay={(id) => setPayClientId(id)}
-              onTogglePrezenta={(row) => toggleMut.mutate(row)}
-              onReactivateRecurent={(row) => {
-                const name = [row.nume, row.prenume]
-                  .filter(Boolean)
-                  .join(' ')
-                if (
-                  window.confirm(
-                    `${name} revine la grupă? Va fi marcat Prezent azi.`,
-                  )
-                ) {
-                  toggleMut.mutate(row)
-                }
-              }}
-              onReactivateFacultativ={(row) => setEnrollClientId(row.refId)}
-              togglePending={
-                toggleMut.isPending && toggleMut.variables?.rowId === r.rowId
-              }
+      <div className="flex items-center gap-5 rounded-2xl bg-rail p-6 text-white">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-quasar-yellow font-display text-2xl font-bold text-ink">
+          {initials}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-display text-xl font-bold tracking-tight">
+            {data.cursNume}
+          </div>
+          <div className="mt-1 truncate text-[13px] text-rail-soft">{meta || '—'}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-quasar-yellow">
+            Prezenți azi
+          </div>
+          <div className="fnum mt-1 font-display text-2xl font-bold">
+            {present} <span className="text-base text-rail-soft">/ {enrolled}</span>
+          </div>
+          <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-rail-2">
+            <div
+              className="h-full rounded-full bg-quasar-yellow"
+              style={{ width: `${occPct}%` }}
             />
-          ))}
+          </div>
+        </div>
+      </div>
+
+      {/* tab-uri */}
+      <div className="mt-5">
+        <Tabs
+          tabs={[
+            { id: 'roster', label: 'Roster' },
+            { id: 'restantieri', label: 'Restanțieri' },
+          ]}
+          active={tab}
+          onChange={(t) => setTab(t as 'roster' | 'restantieri')}
+        />
+      </div>
+
+      {tab === 'roster' && (
+        <>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              <Badge tone="success">{data.counters.prezenti} prezenți</Badge>
+              <Badge tone="danger">{data.counters.absenti} absenți</Badge>
+              <Badge tone="warn">{data.counters.programati} programați</Badge>
+              <Badge tone="neutral">{data.counters.inactivi} inactivi</Badge>
+            </div>
+            <div className="flex items-center gap-1 rounded-[10px] border border-line bg-card p-1">
+              <button type="button" onClick={() => setView('cards')} className={seg(rosterView === 'cards')}>
+                Carduri
+              </button>
+              <button type="button" onClick={() => setView('list')} className={seg(rosterView === 'list')}>
+                Listă
+              </button>
+              <button type="button" onClick={() => setView('cols')} className={seg(rosterView === 'cols')}>
+                Coloane
+              </button>
+            </div>
+          </div>
+          <div className="mb-3 text-xs text-muted">
+            💡 Apasă pe un cursant pentru a marca prezent / absent
+          </div>
+
+          {data.roster.length === 0 ? (
+            <p className="rounded-2xl border border-line bg-card p-6 text-center text-sm text-muted">
+              Niciun cursant sau lead în roster.
+            </p>
+          ) : rosterView === 'list' ? (
+            <RosterList
+              rows={orderedRoster}
+              onMemberClick={handleMemberClick}
+              onPay={(id) => setPayClientId(id)}
+              navigate={(to) => navigate(to)}
+            />
+          ) : rosterView === 'cols' ? (
+            <RosterColumns rows={orderedRoster} onMemberClick={handleMemberClick} />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {orderedRoster.map((r) => (
+                <ClientCard
+                  key={r.rowId}
+                  row={r}
+                  facultativ={data.facultativ}
+                  onPay={(id) => setPayClientId(id)}
+                  onTogglePrezenta={(row) => toggleMut.mutate(row)}
+                  onReactivateRecurent={(row) => {
+                    const name = [row.nume, row.prenume].filter(Boolean).join(' ')
+                    if (
+                      window.confirm(`${name} revine la grupă? Va fi marcat Prezent azi.`)
+                    ) {
+                      toggleMut.mutate(row)
+                    }
+                  }}
+                  onReactivateFacultativ={(row) => setEnrollClientId(row.refId)}
+                  togglePending={
+                    toggleMut.isPending && toggleMut.variables?.rowId === r.rowId
+                  }
+                />
+              ))}
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                className="flex items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-dashed border-line text-sm font-semibold text-muted transition-colors hover:border-quasar-yellow hover:text-ink"
+              >
+                + Adaugă cursant
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'restantieri' && (
+        <div className="mt-2">
+          <RestantieriTab
+            loading={restantieriQ.isLoading}
+            rows={restantieriQ.data ?? []}
+            onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+            onPayClick={(cid) => setPayClientId(cid)}
+          />
         </div>
       )}
 
@@ -349,6 +635,18 @@ export function GrupaDashboardPage() {
           defaultCursId={cursId}
           onClose={() => {
             setEnrollClientId(null)
+            void queryClient.invalidateQueries({
+              queryKey: ['grupa-dashboard', cursId, date],
+            })
+          }}
+        />
+      )}
+      {addOpen && (
+        <EnrollmentForm
+          open
+          defaultCursId={cursId}
+          onClose={() => {
+            setAddOpen(false)
             void queryClient.invalidateQueries({
               queryKey: ['grupa-dashboard', cursId, date],
             })

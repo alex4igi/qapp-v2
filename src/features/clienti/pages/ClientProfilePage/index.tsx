@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PageHeader, Button, Spinner, Tabs } from '@/components/ui'
+import { Button, Spinner, Tabs } from '@/components/ui'
+import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
 import {
   listSezoane,
   rezilizaInrolari,
@@ -10,6 +11,7 @@ import {
 } from '@/features/plati/api'
 import { reintegrateClientAsLead } from '@/features/leads/api'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
+import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
 import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
 import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
@@ -40,6 +42,7 @@ export function ClientProfilePage() {
   const queryClient = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
   const [enrollOpen, setEnrollOpen] = useState(false)
+  const [plataOpen, setPlataOpen] = useState(false)
   const [confirmCursId, setConfirmCursId] = useState<string | null>(null)
   const [reintegrateAsLead, setReintegrateAsLead] = useState(false)
   const [recalcUltimaLuna, setRecalcUltimaLuna] = useState(false)
@@ -215,15 +218,18 @@ export function ClientProfilePage() {
   const familiaLabel = familiaQuery.data?.nume_familie ?? ''
 
   return (
-    <div>
-      <PageHeader
+    <>
+      <ProfileScaffold
+        section="Clienți"
+        backTo="/clienti"
         title={`${client.nume} ${client.prenume ?? ''}`.trim()}
-        subtitle={client.status ?? undefined}
         actions={
           <>
-            <Button variant="secondary" onClick={() => navigate('/clienti')}>
-              ← Înapoi
-            </Button>
+            {!teacherMode && (
+              <Button variant="secondary" onClick={() => setPlataOpen(true)}>
+                ＄ Plată
+              </Button>
+            )}
             {waLink(
               client.telefon,
               `Bună ziua! Vă scriem de la Quasar Dance în legătură cu ${client.prenume || client.nume}.`,
@@ -249,13 +255,12 @@ export function ClientProfilePage() {
             <Button onClick={() => setEditOpen(true)}>Editează</Button>
           </>
         }
-      />
-
-      <div className="grid gap-6 md:grid-cols-[256px_1fr]">
-        <ClientSidebar
+        sidebar={
+          <ClientSidebar
           initials={initials}
           nume={client.nume}
           prenume={client.prenume}
+          status={client.status}
           varsta={varsta}
           familia={familiaLabel}
           familiaId={familiaQuery.data?.id ?? null}
@@ -267,8 +272,9 @@ export function ClientProfilePage() {
           onSezonChange={setSezonId}
           cursuri={cursuriSezon}
           onEnroll={() => setEnrollOpen(true)}
-        />
-
+          />
+        }
+      >
         <div>
           <Tabs
             tabs={
@@ -332,7 +338,7 @@ export function ClientProfilePage() {
             <DocumenteTab client={client} />
           )}
         </div>
-      </div>
+      </ProfileScaffold>
 
       {editOpen && (
         <ClientForm open client={client} onClose={() => setEditOpen(false)} />
@@ -343,6 +349,14 @@ export function ClientProfilePage() {
           open
           defaultClientId={client.id}
           onClose={() => setEnrollOpen(false)}
+        />
+      )}
+
+      {plataOpen && (
+        <PlataNouaModal
+          open
+          defaultClientId={client.id}
+          onClose={() => setPlataOpen(false)}
         />
       )}
 
@@ -395,6 +409,6 @@ export function ClientProfilePage() {
           onClose={closeReziliereModal}
         />
       )}
-    </div>
+    </>
   )
 }

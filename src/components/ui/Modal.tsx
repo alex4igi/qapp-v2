@@ -35,19 +35,19 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', min
       onMouseDown={onClose}
     >
       <div
-        className={`max-h-[90vh] w-full ${SIZE_CLASS[size]} overflow-y-auto rounded-2xl bg-white shadow-2xl`}
+        className={`max-h-[90vh] w-full ${SIZE_CLASS[size]} overflow-y-auto rounded-2xl bg-card shadow-2xl`}
         style={minHeight ? { minHeight } : undefined}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3.5">
-          <h2 className="text-xl font-bold text-quasar-black">{title}</h2>
+        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+          <h2 className="text-xl font-bold text-ink">{title}</h2>
           <Button variant="ghost" onClick={onClose} aria-label="Închide">
             ✕
           </Button>
         </div>
         <div className="p-5">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-gray-200 px-5 py-3.5">
+          <div className="flex justify-end gap-2 border-t border-line px-5 py-3.5">
             {footer}
           </div>
         )}

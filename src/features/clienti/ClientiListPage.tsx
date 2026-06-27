@@ -4,12 +4,14 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   PageHeader,
   Button,
+  Badge,
   TextInput,
   Select,
   Field,
   DataTable,
   Spinner,
   type Column,
+  type BadgeTone,
 } from '@/components/ui'
 import type { Client } from '@/types/db'
 import { ClientForm } from './ClientForm'
@@ -21,6 +23,18 @@ const STATUS_OPTIONS = [
   { label: 'Inactiv', value: 'Inactiv' },
   { label: 'EXclient', value: 'EXclient' },
 ]
+
+function statusTone(status: string | null | undefined): BadgeTone {
+  switch (status) {
+    case 'Activ':
+      return 'success'
+    case 'Programat':
+    case 'Lead':
+      return 'warn'
+    default:
+      return 'neutral'
+  }
+}
 
 const columns: Column<Client>[] = [
   {
@@ -36,7 +50,8 @@ const columns: Column<Client>[] = [
   { header: 'Email', cell: (c) => c.email ?? '—', sortValue: (c) => c.email?.toLowerCase() },
   {
     header: 'Status',
-    cell: (c) => c.status ?? '—',
+    cell: (c) =>
+      c.status ? <Badge tone={statusTone(c.status)}>{c.status}</Badge> : '—',
     className: 'w-28',
     sortValue: (c) => c.status?.toLowerCase(),
   },
@@ -79,7 +94,7 @@ export function ClientiListPage() {
               e.stopPropagation()
               setReactivareClient(c)
             }}
-            className="rounded-md border border-quasar-gray-light px-2 py-1 text-xs text-quasar-gray transition-colors hover:border-quasar-yellow hover:text-quasar-black"
+            className="rounded-md border border-line px-2 py-1 text-xs text-muted-2 transition-colors hover:border-quasar-yellow hover:text-ink"
             title="Loghează contact de reactivare"
           >
             📞 Reactivare
@@ -147,7 +162,7 @@ export function ClientiListPage() {
             emptyMessage="Niciun client găsit."
           />
 
-          <div className="mt-4 flex items-center justify-between text-sm text-quasar-gray">
+          <div className="mt-4 flex items-center justify-between text-sm text-muted">
             <span>
               Pagina {page + 1} din {totalPages}
             </span>

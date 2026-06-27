@@ -3,55 +3,21 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Select, Spinner } from '@/components/ui'
 import { saliOptions, cursuriOptionsForCurrentTeacher } from '@/lib/lookups'
-import { formatRON } from '@/lib/format'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { isTeacher } from '@/lib/rolesMatrix'
 import {
-  getDashboardKpis,
   getDashboardCourses,
   getDashboardChart,
   getDashboardEvents,
 } from '@/features/dashboard/api'
-import { CircleCourseCard } from '@/features/dashboard/CircleCourseCard'
+import { DailyAgenda } from '@/features/dashboard/DailyAgenda'
+import { DashboardKpis } from '@/features/dashboard/DashboardKpis'
 import { EventDashboardCard } from '@/features/dashboard/EventDashboardCard'
 import { DashboardChart } from '@/features/dashboard/DashboardChart'
 import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
 import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
-
-function KpiCard({
-  icon,
-  label,
-  value,
-  hint,
-  highlight,
-}: {
-  icon: string
-  label: string
-  value: string
-  hint?: string
-  highlight?: boolean
-}) {
-  return (
-    <div
-      className={`rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md ${
-        highlight ? 'border-quasar-yellow ring-1 ring-quasar-yellow' : 'border-gray-200'
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-xl">
-          {icon}
-        </div>
-        <span className="text-sm font-medium text-quasar-gray">{label}</span>
-      </div>
-      <div className="mt-3 font-display text-3xl font-bold text-quasar-black">
-        {value}
-      </div>
-      {hint ? <div className="mt-1 text-xs text-quasar-gray">{hint}</div> : null}
-    </div>
-  )
-}
 
 export function DashboardPage() {
   const { role } = useAuth()
@@ -82,13 +48,6 @@ export function DashboardPage() {
   const saliQ = useQuery({
     queryKey: ['lookup', 'sali', locatieId ?? 'all'],
     queryFn: () => saliOptions(locatieId),
-    enabled: !teacherMode,
-  })
-
-  // KPI-uri financiare doar pentru staff
-  const kpisQ = useQuery({
-    queryKey: ['dashboard', 'kpis', date],
-    queryFn: () => getDashboardKpis(date),
     enabled: !teacherMode,
   })
 
@@ -154,31 +113,7 @@ export function DashboardPage() {
         }
       />
 
-      {!teacherMode && (
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <KpiCard
-            icon="💰"
-            label="Încasări azi"
-            value={kpisQ.data ? formatRON(kpisQ.data.incasariAzi) : '—'}
-            highlight
-          />
-          <KpiCard
-            icon="⚠️"
-            label="Restanțe de recuperat"
-            value={kpisQ.data ? formatRON(kpisQ.data.restanteNet) : '—'}
-            hint={
-              kpisQ.data && kpisQ.data.restantePrescris > 0
-                ? `+ ${formatRON(kpisQ.data.restantePrescris)} prescrise (> 2 ani)`
-                : undefined
-            }
-          />
-          <KpiCard
-            icon="📅"
-            label="Programări azi"
-            value={kpisQ.data ? String(kpisQ.data.programariAzi) : '—'}
-          />
-        </div>
-      )}
+      {!teacherMode && <DashboardKpis date={date} courses={courseRefs} />}
 
       {!teacherMode && <AgendaAziCard />}
 
@@ -197,37 +132,21 @@ export function DashboardPage() {
         </div>
       )}
 
-      {coursesQ.isLoading || (teacherMode && teacherCursuriQ.isLoading) ? (
-        <Spinner />
-      ) : coursesQ.isError ? (
-        <p className="text-sm text-red-600">Eroare la încărcarea cursurilor.</p>
-      ) : (coursesQ.data ?? []).length === 0 ? (
-        <p className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-quasar-gray shadow-sm">
-          {teacherMode
+      <DailyAgenda
+        courses={coursesQ.data ?? []}
+        loading={coursesQ.isLoading || (teacherMode && teacherCursuriQ.isLoading)}
+        isError={coursesQ.isError}
+        salaId={salaId}
+        emptyMessage={
+          teacherMode
             ? 'Nicio grupă a ta programată azi.'
-            : `Niciun curs programat în ziua selectată${salaId ? ' pentru această sală' : ''}.`}
-        </p>
-      ) : (
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          {coursesQ.data!.map((c) => (
-            <CircleCourseCard
-              key={c.id}
-              cursId={c.id}
-              numele={c.numele}
-              ora={c.ora}
-              sala={c.sala}
-              teacher={c.teacher}
-              prezenti={c.prezenti}
-              enrolled={c.enrolled}
-              to={`/grupa/${c.id}${salaId ? `?sala=${salaId}` : ''}`}
-            />
-          ))}
-        </div>
-      )}
+            : `Niciun curs programat în ziua selectată${salaId ? ' pentru această sală' : ''}.`
+        }
+      />
 
       {!teacherMode && (
         <>
-          <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+          <h2 className="mb-2 text-sm font-semibold text-ink">
             Încasări vs Restanțe (cursurile zilei)
           </h2>
           {chartQ.isLoading ? (

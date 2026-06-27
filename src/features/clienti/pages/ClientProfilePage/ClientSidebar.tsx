@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
-import { Button, Select } from '@/components/ui'
+import { Button, Select, Badge, type BadgeTone } from '@/components/ui'
 import { DetailRow } from './helpers'
 
 type Props = {
   initials: string
   nume: string
   prenume: string | null
+  status?: string | null
   varsta: number | null
   familia: string
   familiaId: string | null
@@ -16,10 +17,23 @@ type Props = {
   onEnroll: () => void
 }
 
+function statusTone(status: string | null | undefined): BadgeTone {
+  switch (status) {
+    case 'Activ':
+      return 'success'
+    case 'Programat':
+    case 'Lead':
+      return 'warn'
+    default:
+      return 'neutral'
+  }
+}
+
 export function ClientSidebar({
   initials,
   nume,
   prenume,
+  status,
   varsta,
   familia,
   familiaId,
@@ -30,20 +44,25 @@ export function ClientSidebar({
   onEnroll,
 }: Props) {
   return (
-    <aside className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <aside className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <div className="mb-3 flex justify-center">
-        <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-quasar-black">
+        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-ink">
           {initials}
         </div>
       </div>
-      <h2 className="text-center font-display text-lg font-bold text-quasar-black">
+      <h2 className="text-center font-display text-lg font-bold tracking-tight text-ink">
         {nume} {prenume ?? ''}
       </h2>
+      {status && (
+        <div className="mt-2 flex justify-center">
+          <Badge tone={statusTone(status)}>{status}</Badge>
+        </div>
+      )}
       {familiaId && (
-        <div className="mt-1 text-center">
+        <div className="mt-2 text-center">
           <Link
             to={`/familii/${familiaId}`}
-            className="text-sm font-medium text-quasar-black underline decoration-quasar-yellow decoration-2 underline-offset-2 hover:text-quasar-gray"
+            className="text-sm font-medium text-ink underline decoration-quasar-yellow decoration-2 underline-offset-2 hover:text-muted-2"
           >
             {familia || 'Vezi familia'} →
           </Link>
@@ -57,9 +76,7 @@ export function ClientSidebar({
           to={familiaId ? `/familii/${familiaId}` : undefined}
         />
         <div>
-          <dt className="mb-1 text-xs font-medium text-quasar-gray">
-            În sezonul
-          </dt>
+          <dt className="mb-1 text-xs font-medium text-muted">În sezonul</dt>
           <Select
             options={sezoaneOptions}
             value={sezonValue}
@@ -68,16 +85,16 @@ export function ClientSidebar({
           />
         </div>
         <div>
-          <dt className="mb-1 text-xs font-medium text-quasar-gray">Cursuri</dt>
+          <dt className="mb-1 text-xs font-medium text-muted">Cursuri</dt>
           {cursuri.length === 0 ? (
-            <p className="text-sm text-quasar-gray">—</p>
+            <p className="text-sm text-muted">—</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {cursuri.map((c) => (
                 <li key={c.id}>
                   <Link
                     to={`/cursuri/${c.id}`}
-                    className="text-quasar-black hover:text-quasar-gray hover:underline"
+                    className="text-ink hover:text-muted-2 hover:underline"
                   >
                     {c.nume}
                   </Link>
@@ -87,8 +104,8 @@ export function ClientSidebar({
           )}
         </div>
       </dl>
-      <Button className="mt-4 w-full" onClick={onEnroll}>
-        + Înrolează
+      <Button variant="secondary" className="mt-4 w-full" onClick={onEnroll}>
+        + Înrolează la curs
       </Button>
     </aside>
   )

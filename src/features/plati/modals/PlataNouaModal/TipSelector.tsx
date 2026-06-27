@@ -7,7 +7,7 @@ type Props = {
 
 export function TipSelector({ value, onChange }: Props) {
   return (
-    <div className="mb-4 flex gap-1 border-b border-quasar-gray-light">
+    <div className="mb-4 flex gap-1 border-b border-line">
       {tipTabs.map((t) => (
         <button
           key={t.id}
@@ -16,8 +16,8 @@ export function TipSelector({ value, onChange }: Props) {
           className={[
             '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors',
             t.id === value
-              ? 'border-quasar-yellow text-quasar-black'
-              : 'border-transparent text-quasar-gray hover:text-quasar-black',
+              ? 'border-quasar-yellow text-ink'
+              : 'border-transparent text-muted-2 hover:text-ink',
           ].join(' ')}
         >
           {t.label}

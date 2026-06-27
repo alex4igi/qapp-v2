@@ -11,7 +11,7 @@ type Props = {
 
 export function Tabs({ tabs, active, onChange }: Props) {
   return (
-    <div className="mb-4 flex gap-1 border-b border-gray-200">
+    <div className="mb-4 flex gap-1 border-b border-line">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -20,8 +20,8 @@ export function Tabs({ tabs, active, onChange }: Props) {
           className={[
             '-mb-px border-b-2 px-4 py-2 text-sm transition-colors',
             tab.id === active
-              ? 'border-quasar-yellow font-semibold text-quasar-black'
-              : 'border-transparent font-medium text-quasar-gray hover:text-quasar-black',
+              ? 'border-quasar-yellow font-semibold text-ink'
+              : 'border-transparent font-medium text-muted-2 hover:text-ink',
           ].join(' ')}
         >
           {tab.label}

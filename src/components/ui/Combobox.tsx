@@ -113,7 +113,7 @@ export function Combobox({
           }
         }}
         className={cn(
-          'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-9 text-sm text-quasar-black outline-none transition-colors focus:border-quasar-yellow focus:ring-2 focus:ring-quasar-yellow/40 disabled:bg-quasar-gray-light',
+          'w-full rounded-lg border border-line bg-card px-3 py-2 pr-9 text-sm text-ink outline-none transition-colors focus:border-quasar-yellow focus:ring-2 focus:ring-quasar-yellow/30 disabled:bg-surface',
         )}
       />
 
@@ -122,21 +122,21 @@ export function Combobox({
           type="button"
           onClick={clear}
           aria-label="Șterge selecția"
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-quasar-gray hover:bg-quasar-gray-light hover:text-quasar-black"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted hover:bg-surface hover:text-ink"
         >
           ✕
         </button>
       )}
       {(!selected || open) && (
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-quasar-gray">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted">
           ▾
         </span>
       )}
 
       {open && (
-        <div className="absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+        <div className="absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-line bg-card shadow-lg">
           {filtered.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-quasar-gray">
+            <div className="px-3 py-2 text-sm text-muted">
               Niciun rezultat.
             </div>
           ) : (
@@ -154,14 +154,14 @@ export function Combobox({
                   className={cn(
                     'cursor-pointer px-3 py-2 text-sm',
                     i === hi
-                      ? 'bg-quasar-yellow/30 text-quasar-black'
-                      : 'text-quasar-black hover:bg-quasar-gray-light/50',
+                      ? 'bg-quasar-yellow/30 text-ink'
+                      : 'text-ink hover:bg-surface',
                     o.value === value && 'font-medium',
                   )}
                 >
                   <div>{o.label}</div>
                   {o.secondary && (
-                    <div className="text-xs text-quasar-gray">
+                    <div className="text-xs text-muted">
                       {o.secondary}
                     </div>
                   )}

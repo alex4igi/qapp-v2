@@ -11,6 +11,7 @@ export type DashboardCourse = {
   teacher: string | null
   enrolled: number
   prezenti: number
+  capacitate: number | null
 }
 
 // Cursurile zilei pentru sala/locația selectată. Pentru teacher se poate
@@ -37,7 +38,7 @@ export async function getDashboardCourses(params: {
 
   let cursQ = supabase
     .from('cursuri')
-    .select(`id, numele, ora, ${saliRel}, teacher:teacheri!fk_cursuri_teacher(nume, prenume)`)
+    .select(`id, numele, ora, capacitate_maxima, ${saliRel}, teacher:teacheri!fk_cursuri_teacher(nume, prenume)`)
     .contains('zile', [dow])
     .eq('suspendat', false)
 
@@ -52,6 +53,7 @@ export async function getDashboardCourses(params: {
     id: string
     numele: string
     ora: string | null
+    capacitate_maxima: number | null
     sala: { nume: string } | null
     teacher: { nume: string; prenume: string | null } | null
   }>
@@ -119,6 +121,7 @@ export async function getDashboardCourses(params: {
         : null,
       enrolled: enrolledByCurs.get(c.id) ?? 0,
       prezenti: prezByCurs.get(c.id) ?? 0,
+      capacitate: c.capacitate_maxima,
     }))
     .sort((a, b) => (a.ora ?? '').localeCompare(b.ora ?? ''))
 }

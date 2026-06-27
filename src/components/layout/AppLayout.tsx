@@ -2,8 +2,8 @@ import { Outlet } from 'react-router-dom'
 import { WorkingDateProvider } from '@/hooks/useWorkingDate'
 import { WorkingLocatieProvider } from '@/hooks/useWorkingLocatie'
 import { useIdleLogout } from '@/hooks/useIdleLogout'
-import { Header } from './Header'
-import { QuickActions } from './QuickActions'
+import { Rail } from './Rail'
+import { TopBar } from './TopBar'
 import { WorkingDayBanner } from './WorkingDayBanner'
 
 export function AppLayout() {
@@ -11,14 +11,12 @@ export function AppLayout() {
   return (
     <WorkingDateProvider>
       <WorkingLocatieProvider>
-        <div className="flex h-screen w-screen flex-col">
-          <Header />
-          <WorkingDayBanner />
-          <div className="flex flex-1 overflow-hidden">
-            <aside className="w-40 shrink-0 overflow-y-auto border-r border-quasar-gray-light bg-white">
-              <QuickActions />
-            </aside>
-            <main className="flex-1 overflow-y-auto p-6">
+        <div className="flex h-screen w-screen overflow-hidden bg-surface">
+          <Rail />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <TopBar />
+            <WorkingDayBanner />
+            <main className="qcontent flex-1 overflow-y-auto p-6">
               <Outlet />
             </main>
           </div>
