@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Ce s-a schimbat (Quasar OS) · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;overflow:hidden;-webkit-font-smoothing:antialiased}
+  .deck{height:100vh;width:100vw;position:relative}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:5vh 7vw 9vh;animation:fade .45s ease}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .deck::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--accent);z-index:5}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:3px;font-size:13px;text-transform:uppercase;margin-bottom:14px}
+  h1{font-size:clamp(30px,5vw,58px);line-height:1.05;margin:0 0 16px;font-weight:800}
+  h1 span{color:var(--accent)}
+  h2{font-size:clamp(24px,3.4vw,40px);margin:0 0 8px;font-weight:800;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+  h2 .ic{font-size:.95em}
+  .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,20px);max-width:62ch;line-height:1.5}
+  .title .logo{font-weight:900;letter-spacing:6px;color:var(--accent);font-size:15px;margin-bottom:26px}
+  .title .role-chip{display:inline-block;background:var(--accent);color:#000;font-weight:800;padding:8px 18px;border-radius:999px;font-size:15px;margin-top:8px}
+  .title .meta{margin-top:34px;color:var(--gri);font-size:14px}
+  .tag{font-size:12px;font-weight:800;background:var(--accent);color:#000;padding:4px 12px;border-radius:999px;letter-spacing:.5px}
+  ul.big{margin:14px 0 0;padding:0;list-style:none;max-width:80ch}
+  ul.big li{display:flex;gap:14px;align-items:flex-start;margin:13px 0;font-size:clamp(15px,1.6vw,19px)}
+  ul.big li .b{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+  ul.big li b{color:#fff}
+  ul.big li span{color:#d6d6d6}
+  .note{margin-top:22px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:14px 18px;color:#f0e6b0;font-size:14.5px;max-width:82ch}
+  .note .lbl{display:block;color:var(--accent);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .note b{color:var(--accent)}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:20px}
+  .flow .step{background:var(--card);border:1px solid var(--linie);border-radius:12px;padding:12px 16px;font-weight:700;font-size:15px}
+  .flow .step b{color:var(--accent)}
+  .flow .arr{color:var(--accent);font-weight:800;font-size:20px}
+  .bar{position:fixed;left:0;right:0;bottom:0;height:54px;display:flex;align-items:center;gap:14px;padding:0 18px;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:6}
+  .progress{flex:1;height:5px;background:#2a2a2a;border-radius:3px;overflow:hidden}
+  .progress > i{display:block;height:100%;background:var(--accent);width:0;transition:width .35s}
+  .count{color:var(--gri2);font-size:13px;min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+  .btns{display:flex;gap:8px}
+  .btns button{background:#222;border:1px solid var(--linie);color:#fff;width:38px;height:34px;border-radius:9px;font-size:16px;cursor:pointer}
+  .btns button:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+  .hint{position:fixed;top:16px;right:18px;color:var(--gri);font-size:12px;z-index:6}
+  @media(max-width:640px){ .slide{padding:7vh 7vw 11vh} .hint{display:none} }
+</style>
+</head>
+<body>
+<a href="/" style="position:fixed;top:14px;left:14px;z-index:100;display:inline-flex;align-items:center;gap:7px;background:#FFD600;color:#111;font-weight:800;font-size:13.5px;text-decoration:none;padding:9px 15px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4)">← Înapoi în aplicație</a>
+<div class="hint">← → pentru navigare</div>
+<div class="deck" id="deck">
+
+  <section class="slide title active">
+    <div class="logo">QUASAR DANCE</div>
+    <h1>Ce s-a schimbat <span>· noul look</span></h1>
+    <p class="sub">Aplicația arată altfel, dar <b style="color:#fff">aceleași date și aceleași funcții</b> — doar mai clar și mai rapid. În 2 minute îți arătăm unde a ajuns fiecare lucru și cum faci treburile zilnice.</p>
+    <div><span class="role-chip">✨ Noutăți Quasar OS</span></div>
+    <div class="meta">Nimic nu s-a pierdut. Doar s-a mutat și s-a făcut mai frumos.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Orientare</div>
+    <h2><span class="ic">🧭</span>Unde a ajuns fiecare lucru</h2>
+    <ul class="big">
+      <li><span class="b">◧</span><span><b>Meniul</b> e acum în <b>stânga</b> (bara întunecată). Apeși pe o secțiune (Clienți / Statistici / Studio / Personal) și se <b>deschide ca un acordeon</b> cu paginile ei.</span></li>
+      <li><span class="b">📍</span><span><b>Locația</b> și <b>ziua de lucru</b> (calendarul) sunt <b>sus, în dreapta</b>.</span></li>
+      <li><span class="b">🔎</span><span><b>Căutarea de clienți</b> e <b>sus, în stânga</b> — mereu la îndemână.</span></li>
+      <li><span class="b">👤</span><span><b>Contul tău</b> e <b>jos-stânga</b>: de acolo deschizi <b>Ghiduri &amp; manual</b> (📚), Anunțuri și Ieșire.</span></li>
+    </ul>
+    <div class="note"><span class="lbl">Pe scurt</span>Stânga = unde te duci. Sus = pe ce zi/locație lucrezi + căutare. Jos-stânga = contul tău.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Fluxul de zi cu zi</div>
+    <h2><span class="ic">💳</span>Caută clientul → dă Plată sau Înrolare</h2>
+    <div class="flow">
+      <span class="step">1. Scrii numele/telefonul în <b>bara de sus</b></span>
+      <span class="arr">→</span>
+      <span class="step">2. Alegi clientul din <b>listă</b></span>
+      <span class="arr">→</span>
+      <span class="step">3. Pe fișă apeși <b>＄ Plată</b> sau <b>+ Înrolează</b></span>
+    </div>
+    <ul class="big">
+      <li><span class="b">＄</span><span>Butonul <b>Plată</b> e sus pe fișa clientului (lângă WhatsApp și Editează) — deschide fereastra de plată cu clientul deja completat.</span></li>
+      <li><span class="b">🎓</span><span><b>+ Înrolează la curs</b> e în panoul din stânga al fișei.</span></li>
+    </ul>
+    <div class="note"><span class="lbl">De ce așa</span>Asta e cel mai des făcut la recepție — acum e un drum scurt: o căutare și un buton. Nu mai cauți prin liste.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Adăugări rapide</div>
+    <h2><span class="ic">➕</span>Client nou și Lead nou</h2>
+    <ul class="big">
+      <li><span class="b">＋</span><span>Jos în meniul din stânga ai 2 butoane: <b>+ Client</b> (galben) și <b>+ Lead</b>.</span></li>
+      <li><span class="b">💳</span><span>„Plată nouă" și „Înrolare nouă" <b>nu mai sunt butoane separate</b> — pornesc din <b>fișa clientului</b> (după ce-l cauți sus). Funcția e neschimbată, doar locul.</span></li>
+    </ul>
+    <div class="note"><span class="lbl">Tip</span>Nu mai ții minte unde e fiecare buton: <b>întâi clientul</b>, apoi acțiunea de pe fișa lui.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Dashboard</div>
+    <h2><span class="ic">📊</span>Cifrele zilei — apasă pentru detaliu</h2>
+    <ul class="big">
+      <li><span class="b">💰</span><span><b>Încasări azi</b> — apeși și vezi <b>plățile</b>: cine, cât, cum (cash/card/transfer…).</span></li>
+      <li><span class="b">📅</span><span><b>Programări azi</b> — apeși și vezi <b>cine</b> vine și la <b>ce grupă</b>.</span></li>
+      <li><span class="b">⚠️</span><span><b>Restanțieri azi</b> — apeși și vezi <b>cine</b> are de plătit, la <b>ce grupă</b> și <b>cât</b> (pe grupele de azi).</span></li>
+      <li><span class="b">⚡</span><span>Panoul <b>„De lucrat azi"</b> (lead-uri de sunat) e tot acolo, ca înainte.</span></li>
+    </ul>
+    <div class="note"><span class="lbl">Nou</span>Cardurile sunt <b>click-abile</b> — vezi lista pe loc, fără să schimbi pagina.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Programul zilei</div>
+    <h2><span class="ic">🗓️</span>Agenda de grupe</h2>
+    <ul class="big">
+      <li><span class="b">📆</span><span>Banda cu <b>zilele săptămânii</b> schimbă rapid ziua (sau săgețile ‹ › / „Azi"). Se sincronizează cu ziua de lucru de sus.</span></li>
+      <li><span class="b">◍</span><span>Fiecare grupă = un card cu <b>inel = rata de prezență</b> a zilei și <b>bară jos = ocuparea</b> (înscriși/capacitate).</span></li>
+      <li><span class="b">🟢</span><span>Pe ziua de azi apare o <b>pastilă</b>: <b>Acum</b> / <b>Urmează</b> / <b>Încheiat</b>.</span></li>
+      <li><span class="b">👉</span><span><b>Click pe o grupă</b> → intri în <b>roster</b> (lista cursanților).</span></li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Roster (grupa)</div>
+    <h2><span class="ic">✅</span>Marcarea prezenței &amp; restanțe</h2>
+    <ul class="big">
+      <li><span class="b">👆</span><span><b>Apeși pe un cursant</b> ca să-l marchezi <b>Prezent / Absent</b> — la fel ca înainte.</span></li>
+      <li><span class="b">▦</span><span>3 moduri de afișare (sus-dreapta): <b>Carduri</b>, <b>Listă</b>, <b>Coloane pe status</b> (Prezenți / Absenți / Programați / Inactivi). Alegi cum îți place.</span></li>
+      <li><span class="b">⚠️</span><span>Tab <b>Restanțieri</b> — vezi cine din grupă are de plătit și dai plata pe loc (butonul $).</span></li>
+      <li><span class="b">＋</span><span><b>+ Adaugă cursant</b> — înscrii pe cineva direct în grupă (cursul e deja ales).</span></li>
+    </ul>
+    <div class="note"><span class="lbl">Inactivi &amp; programați</span>Sunt tot în roster: cei <b>programați</b> (lead la probă) și <b>inactivii</b> apar cu eticheta lor; click pe un inactiv îl reactivează.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Fișele</div>
+    <h2><span class="ic">🗂️</span>Client, Familie, Curs, Teacher — același aspect</h2>
+    <ul class="big">
+      <li><span class="b">◧</span><span><b>Stânga:</b> cartonașul de identitate (poză/inițiale, status, date, sold, sezon, legături).</span></li>
+      <li><span class="b">▤</span><span><b>Dreapta:</b> tab-urile cu detalii (înrolări, prezențe, documente etc.).</span></li>
+      <li><span class="b">↩</span><span>Sus, breadcrumb-ul „‹ Clienți / Nume" te duce înapoi la listă.</span></li>
+    </ul>
+    <div class="note"><span class="lbl">Important</span>Toate informațiile sunt aceleași ca înainte — doar aranjate la fel pe toate fișele, ca să te descurci mai ușor.</div>
+  </section>
+
+  <section class="slide title">
+    <div class="logo">QUASAR DANCE</div>
+    <h1>Asta e tot ✨</h1>
+    <p class="sub">Caută clientul sus → acțiune de pe fișă · meniul în stânga · ziua &amp; locația sus · contul jos cu 📚 Ghiduri. Restul funcționează ca înainte.</p>
+    <div class="meta">Ai întrebări sau ceva pare ciudat? Spune-ne — suntem în beta și lămurim pe loc. Deschizi oricând ghidul din <b>cont → Ghiduri &amp; manual</b>.</div>
+  </section>
+
+</div>
+
+<div class="bar">
+  <div class="btns"><button id="prev" aria-label="Înapoi">←</button><button id="next" aria-label="Înainte">→</button></div>
+  <div class="progress"><i id="pfill"></i></div>
+  <div class="count"><span id="cur">1</span> / <span id="tot">9</span></div>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0; const tot=slides.length;
+  document.getElementById('tot').textContent=tot;
+  function show(n){
+    i=Math.max(0,Math.min(tot-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('cur').textContent=i+1;
+    document.getElementById('pfill').style.width=((i+1)/tot*100)+'%';
+  }
+  document.getElementById('next').onclick=()=>show(i+1);
+  document.getElementById('prev').onclick=()=>show(i-1);
+  addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')show(i+1);
+    if(e.key==='ArrowLeft'||e.key==='PageUp')show(i-1);
+    if(e.key==='Home')show(0); if(e.key==='End')show(tot-1);
+  });
+  addEventListener('click',e=>{
+    if(e.target.closest('.bar')||e.target.closest('a'))return;
+    const x=e.clientX/innerWidth; if(x>0.62)show(i+1); else if(x<0.38)show(i-1);
+  });
+  show(0);
+</script>
+</body>
+</html>
