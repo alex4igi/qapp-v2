@@ -5026,6 +5026,7 @@ export type Database = {
       }
       vouchere: {
         Row: {
+          cerinta_eligibilitate: string | null
           client: string | null
           cod_voucher: string
           created: string
@@ -5042,6 +5043,7 @@ export type Database = {
           valoare: number | null
         }
         Insert: {
+          cerinta_eligibilitate?: string | null
           client?: string | null
           cod_voucher: string
           created?: string
@@ -5058,6 +5060,7 @@ export type Database = {
           valoare?: number | null
         }
         Update: {
+          cerinta_eligibilitate?: string | null
           client?: string | null
           cod_voucher?: string
           created?: string
@@ -6393,6 +6396,7 @@ export type Database = {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
       }
+      client_in_trupa: { Args: { p_client: string }; Returns: boolean }
       client_member_ids: { Args: never; Returns: string[] }
       clone_sezon: {
         Args: {
@@ -7089,6 +7093,15 @@ export type Database = {
           volum_clasa: string
         }[]
       }
+      get_sezon_curent_client: {
+        Args: never
+        Returns: {
+          data_final: string
+          data_incepere: string
+          nume: string
+          sezon_id: string
+        }[]
+      }
       get_sms_recipients: {
         Args: { p_cod?: string; p_locatie?: string; p_sezon?: string }
         Returns: {
@@ -7155,6 +7168,15 @@ export type Database = {
           rata_recenta: number
           saptamani: Json
           teacher_nume: string
+        }[]
+      }
+      get_vacante_client: {
+        Args: never
+        Returns: {
+          data_final: string
+          data_incepere: string
+          nume: string
+          vacanta_id: string
         }[]
       }
       get_yoy_aceeasi_luna: {
@@ -7358,6 +7380,10 @@ export type Database = {
         Returns: {
           client_id: string
         }[]
+      }
+      rezerva_bonus_open: {
+        Args: { p_date_list: string[]; p_enrollment: string }
+        Returns: number
       }
       rezerva_loc_open: {
         Args: {

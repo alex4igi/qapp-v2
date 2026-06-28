@@ -67,6 +67,7 @@ export {
   listOpenSesiuni,
   listRezervariSesiune,
   rezervaLocOpen,
+  rezervaBonusOpen,
   createOpenSesiune,
   anuleazaRezervare,
 } from './open-class'

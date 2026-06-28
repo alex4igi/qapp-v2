@@ -182,6 +182,21 @@ export async function rezervaLocOpen(params: RezervaLocParams): Promise<string> 
   return data as string
 }
 
+// Rezervări OPEN bonus (gratuite) pe ședințe specifice, legate de o înrolare
+// facultativă „Per lună" existentă (promo iulie — bonus 29-30 iunie). Nu încasează
+// nimic; idempotentă (re-apelarea nu dublează). Întoarce nr. de rezervări create.
+export async function rezervaBonusOpen(
+  enrollmentId: string,
+  dates: string[],
+): Promise<number> {
+  const { data, error } = await supabase.rpc('rezerva_bonus_open', {
+    p_enrollment: enrollmentId,
+    p_date_list: dates,
+  })
+  if (error) throw new Error(error.message)
+  return (data as number) ?? 0
+}
+
 export type CreateOpenSesiuneParams = {
   cursId: string
   data: string

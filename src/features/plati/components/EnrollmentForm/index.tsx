@@ -25,8 +25,10 @@ import {
   getOpenSesiuneByDate,
   listCursuriPentruInrolare,
   previewPoolDiscount,
+  rezervaBonusOpen,
   scheduleConfirmareInrolare,
 } from '../../api'
+import { PROMO_BONUS_IUNIE, PROMO_BONUS_IUNIE_PANA_LA } from '../../promo'
 import {
   TIP_LABEL,
   TIP_ORDER,
@@ -60,6 +62,7 @@ export function EnrollmentForm({
   const [dataIncepere, setDataIncepere] = useState(todayIso())
   const [voucherId, setVoucherId] = useState('')
   const [forceReinrolare, setForceReinrolare] = useState(false)
+  const [includeBonusIunie, setIncludeBonusIunie] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const clientiQ = useQuery({
@@ -243,7 +246,7 @@ export function EnrollmentForm({
         voucherId: voucherId || null,
       })
     },
-    onSuccess: (rows) => {
+    onSuccess: async (rows) => {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -257,6 +260,21 @@ export function EnrollmentForm({
         void scheduleConfirmareInrolare(rows[0].id).catch((e) =>
           console.error('[confirmare-inrolare]', e),
         )
+      }
+      // Promo iulie: rezervări bonus 29-30 iunie pe înrolarea facultativă Per lună.
+      // Înrolarea e deja creată; dacă bonusul eșuează, păstrăm modalul deschis cu
+      // eroarea ca recepția să știe (idempotent → re-submit nu dublează).
+      if (includeBonusIunie && showBonusIunie && rows[0]) {
+        try {
+          await rezervaBonusOpen(rows[0].id, PROMO_BONUS_IUNIE)
+        } catch (e) {
+          setError(
+            'Înrolarea s-a creat, dar rezervările bonus 29-30 iunie au eșuat: ' +
+              (e instanceof Error ? e.message : 'eroare necunoscută') +
+              '. Reîncearcă.',
+          )
+          return
+        }
       }
       onClose()
     },
@@ -304,6 +322,15 @@ export function EnrollmentForm({
     Boolean(cursSelectat) &&
     cursSelectat?.pret_sedinta == null &&
     cursSelectat?.pret_anual == null
+
+  // Promo iulie: abonament facultativ „Per lună" cu start în iulie 2026, creat în
+  // fereastra promoției (≤ 30 iunie) → poate include gratuit ședințele 29-30 iunie.
+  // Guard pe luna iulie: la un abonament de iunie zilele sunt deja acoperite.
+  const showBonusIunie =
+    isFacultativ &&
+    tipPlata === 'Per luna' &&
+    todayIso() <= PROMO_BONUS_IUNIE_PANA_LA &&
+    dataIncepere.slice(0, 7) === '2026-07'
 
   return (
     <Modal
@@ -438,6 +465,15 @@ export function EnrollmentForm({
               preview={previewRecurent}
               cursSelectat={cursSelectat}
               blockantPretLipsa={blockantPretLipsa}
+            />
+          )}
+
+          {showBonusIunie && (
+            <Checkbox
+              id="bonus-iunie"
+              label="Include ședințele bonus 29-30 iunie (promo iulie) — acces gratuit, fără plată suplimentară"
+              checked={includeBonusIunie}
+              onChange={(e) => setIncludeBonusIunie(e.target.checked)}
             />
           )}
 
