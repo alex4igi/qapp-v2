@@ -31,7 +31,7 @@ export function PortalAccountSection({
   const [email, setEmail] = useState(defaultEmail ?? '')
   const [password, setPassword] = useState(() => suggestPortalPassword(nameHint))
   const [resetPwd, setResetPwd] = useState(() => suggestPortalPassword(nameHint))
-  const [sendEmail, setSendEmail] = useState(true)
+  const [notify, setNotify] = useState<'none' | 'email' | 'sms'>('email')
   const [showReset, setShowReset] = useState(false)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -94,15 +94,9 @@ export function PortalAccountSection({
                     ...target,
                     email,
                     password,
-                    notify: sendEmail ? 'email' : undefined,
+                    notify: notify === 'none' ? undefined : notify,
                   })
-                  setMsg(
-                    sendEmail && r.emailed
-                      ? `Cont creat. Datele au fost trimise pe ${email}.`
-                      : sendEmail
-                        ? `Cont creat. ⚠️ Emailul NU a plecat (Resend neconfigurat?) — comunică manual parola: ${password}`
-                        : `Cont creat. Parolă: ${password} (comunic-o membrului).`,
-                  )
+                  setMsg(deliveryMsg('Cont creat', notify, r, password))
                   setPassword(suggestPortalPassword(nameHint))
                 })
               }
@@ -110,14 +104,7 @@ export function PortalAccountSection({
               Creează cont
             </Button>
           </div>
-          <label className="flex items-center gap-2 text-xs text-quasar-gray">
-            <input
-              type="checkbox"
-              checked={sendEmail}
-              onChange={(e) => setSendEmail(e.target.checked)}
-            />
-            Trimite datele de acces pe email
-          </label>
+          <NotifyPicker value={notify} onChange={setNotify} />
         </div>
       ) : (
         <div className="space-y-2">
@@ -155,15 +142,9 @@ export function PortalAccountSection({
                         const r = await resetPortalPassword(
                           authUserId,
                           resetPwd,
-                          sendEmail ? 'email' : undefined,
+                          notify === 'none' ? undefined : notify,
                         )
-                        setMsg(
-                          sendEmail && r.emailed
-                            ? 'Parolă resetată și trimisă pe email.'
-                            : sendEmail
-                              ? `Parolă resetată. ⚠️ Emailul NU a plecat — comunică manual: ${resetPwd}`
-                              : `Parolă resetată: ${resetPwd} (comunic-o membrului).`,
-                        )
+                        setMsg(deliveryMsg('Parolă resetată', notify, r, resetPwd))
                         setResetPwd(suggestPortalPassword(nameHint))
                         setShowReset(false)
                       })
@@ -175,14 +156,7 @@ export function PortalAccountSection({
                     Anulează
                   </Button>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-quasar-gray">
-                  <input
-                    type="checkbox"
-                    checked={sendEmail}
-                    onChange={(e) => setSendEmail(e.target.checked)}
-                  />
-                  Trimite parola nouă pe email
-                </label>
+                <NotifyPicker value={notify} onChange={setNotify} />
               </div>
             )}
             <Button
@@ -206,4 +180,48 @@ export function PortalAccountSection({
       {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
     </div>
   )
+}
+
+// Selector canal de livrare a datelor de acces (datele se trimit prin TheMarketer).
+function NotifyPicker({
+  value,
+  onChange,
+}: {
+  value: 'none' | 'email' | 'sms'
+  onChange: (v: 'none' | 'email' | 'sms') => void
+}) {
+  return (
+    <label className="flex items-center gap-2 text-xs text-quasar-gray">
+      Trimite datele de acces:
+      <select
+        className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+        value={value}
+        onChange={(e) => onChange(e.target.value as 'none' | 'email' | 'sms')}
+      >
+        <option value="email">Pe email</option>
+        <option value="sms">Pe SMS</option>
+        <option value="none">Nu trimite (comunic manual)</option>
+      </select>
+    </label>
+  )
+}
+
+// Mesaj de rezultat în funcție de canalul ales și de ce s-a trimis efectiv.
+function deliveryMsg(
+  prefix: string,
+  notify: 'none' | 'email' | 'sms',
+  r: { emailed?: boolean; smsSent?: boolean },
+  password: string,
+): string {
+  if (notify === 'email') {
+    return r.emailed
+      ? `${prefix}. Datele au fost trimise pe email.`
+      : `${prefix}. ⚠️ Emailul NU a plecat (TheMarketer neconfigurat?) — comunică manual parola: ${password}`
+  }
+  if (notify === 'sms') {
+    return r.smsSent
+      ? `${prefix}. Datele au fost trimise pe SMS.`
+      : `${prefix}. ⚠️ SMS-ul NU a plecat (lipsă număr sau provider neconfigurat) — comunică manual parola: ${password}`
+  }
+  return `${prefix}. Parolă: ${password} (comunic-o membrului).`
 }

@@ -1,8 +1,10 @@
 // Wrapper unificat pentru SMS + Email.
 //
 // SMS — provider comutabil via env `SMS_PROVIDER`:
-//   - 'smslink'    (DEFAULT, beta) → SMSLink SMS Gateway, vezi [smslink.ts](smslink.ts)
-//   - 'themarketer'                → themarketer.com transactional (dormant, revenim mai târziu)
+//   - 'themarketer' → themarketer.com transactional. ACTIV ÎN PRODUCȚIE (SMS_PROVIDER=themarketer).
+//   - 'smslink'     → SMSLink SMS Gateway, vezi [smslink.ts](smslink.ts). Fallback; e și DEFAULT-ul
+//                     codului când env-ul lipsește (dev local), DAR producția rulează pe themarketer.
+//   ⚠️ Nu deduce providerul din acest comentariu — verifică `supabase secrets` (valoarea reală).
 //
 // Email — întotdeauna themarketer.com (transactional):
 //   POST https://t.themarketer.com/api/v1/transactional/send-email?k={REST_KEY}&u={CUSTOMER_ID}
@@ -103,6 +105,15 @@ export async function sendSms(
   return sendSmsThemarketer(telefon, mesaj)
 }
 
+// TheMarketer cere format E.164 (numărul trebuie să înceapă cu „+"). Numerele
+// noastre sunt stocate ca „07…"/„40…" → normalizăm la +40<9 cifre>.
+function toE164RO(telefon: string): string {
+  let d = telefon.replace(/\D/g, '')
+  if (d.startsWith('40')) return '+' + d
+  if (d.startsWith('0')) d = d.slice(1)
+  return '+40' + d.slice(-9)
+}
+
 async function sendSmsThemarketer(
   telefon: string,
   mesaj: string,
@@ -113,7 +124,7 @@ async function sendSmsThemarketer(
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: telefon, content: mesaj }),
+      body: JSON.stringify({ to: toE164RO(telefon), content: mesaj }),
     })
     const text = await res.text()
     let parsed: { result?: string; message?: string; message_id?: string } = {}

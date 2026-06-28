@@ -9,6 +9,7 @@
 // Acțiuni: login, refresh, logout, request_reset, reset, change_password.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import * as jose from 'npm:jose@5'
+import { sendEmail } from '../_shared/messaging.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,8 +23,7 @@ const RESET_TTL_MIN = 60
 
 const JWT_SECRET = Deno.env.get('PORTAL_JWT_SECRET') ?? ''
 const PORTAL_URL = Deno.env.get('PORTAL_URL') ?? 'https://membri.quasardance.ro'
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
-const RESEND_FROM = Deno.env.get('PORTAL_FROM_EMAIL') ?? 'Quasar Dance <no-reply@quasardance.ro>'
+const PORTAL_FROM_EMAIL = Deno.env.get('PORTAL_FROM_EMAIL') || undefined
 
 const admin = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -83,18 +83,18 @@ async function issueTokens(accountId: string) {
 }
 
 async function sendResetEmail(email: string, link: string) {
-  if (!RESEND_API_KEY) throw new Error('email indisponibil (RESEND_API_KEY nesetat)')
   const html = `
     <p>Salut,</p>
     <p>Ai cerut resetarea parolei pentru contul tău de portal Quasar Dance.</p>
     <p><a href="${link}">Setează o parolă nouă</a> (link valabil ${RESET_TTL_MIN} de minute).</p>
     <p>Dacă nu ai cerut tu, ignoră acest email.</p>`
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: RESEND_FROM, to: email, subject: 'Resetare parolă portal Quasar Dance', html }),
+  const r = await sendEmail({
+    to: email,
+    subject: 'Resetare parolă portal Quasar Dance',
+    html,
+    fromOverride: PORTAL_FROM_EMAIL,
   })
-  if (!res.ok) throw new Error(`trimitere email eșuată: ${await res.text()}`)
+  if (!r.ok) throw new Error(`trimitere email eșuată: ${r.error ?? 'necunoscut'}`)
 }
 
 Deno.serve(async (req) => {

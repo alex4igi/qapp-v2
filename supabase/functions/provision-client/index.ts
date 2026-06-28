@@ -8,6 +8,7 @@
 // Securitate: parolele se hash-uiesc DOAR în DB (RPC pgcrypto SECURITY DEFINER); rolul
 // 'parinte' NU are acces direct la tabele (politica RESTRICTIVE deny_parinte_direct).
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { sendEmail, sendSms } from '../_shared/messaging.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,25 +18,24 @@ const corsHeaders = {
 const STAFF_ROLES = ['owner', 'admin', 'manager', 'front_desk']
 
 const PORTAL_URL = Deno.env.get('PORTAL_URL') ?? 'https://membri.quasardance.ro'
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
-const RESEND_FROM = Deno.env.get('PORTAL_FROM_EMAIL') ?? 'Quasar Dance <no-reply@quasardance.ro>'
+const PORTAL_FROM_EMAIL = Deno.env.get('PORTAL_FROM_EMAIL') || undefined
 
+type Notify = 'email' | 'sms'
 type CreatePayload = {
   action: 'create'
   email: string
   password: string
   familieId?: string | null
   clientId?: string | null
-  notify?: 'email'
+  notify?: Notify
 }
-type ResetPayload = { action: 'reset_password'; userId: string; password: string; notify?: 'email' }
+type ResetPayload = { action: 'reset_password'; userId: string; password: string; notify?: Notify }
 type UnlinkPayload = { action: 'unlink'; familieId?: string | null; clientId?: string | null }
 type Payload = CreatePayload | ResetPayload | UnlinkPayload
 
-// Trimite datele de acces pe email (Resend). Întoarce true dacă a plecat emailul.
+// Trimite datele de acces pe email (TheMarketer transactional). Întoarce true dacă a plecat.
 // Nu aruncă — provisioning-ul nu trebuie să eșueze dacă emailul nu pleacă.
 async function sendCredentialsEmail(email: string, password: string): Promise<boolean> {
-  if (!RESEND_API_KEY) return false
   const html = `
     <p>Bun venit în portalul Quasar Dance!</p>
     <p>Datele tale de acces la <a href="${PORTAL_URL}">${PORTAL_URL}</a>:</p>
@@ -45,12 +45,27 @@ async function sendCredentialsEmail(email: string, password: string): Promise<bo
     </ul>
     <p>Te recomandăm să schimbi parola după prima autentificare (Profil → Schimbă parola).</p>`
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: RESEND_FROM, to: email, subject: 'Contul tău de portal Quasar Dance', html }),
+    const r = await sendEmail({
+      to: email,
+      subject: 'Contul tău de portal Quasar Dance',
+      html,
+      fromOverride: PORTAL_FROM_EMAIL,
     })
-    return res.ok
+    return r.ok
+  } catch {
+    return false
+  }
+}
+
+// Trimite datele de acces pe SMS (TheMarketer/SMSLink prin wrapper). Fără diacritice
+// (GSM-7) și ≤160 caractere. Întoarce true dacă a plecat.
+async function sendCredentialsSms(telefon: string, email: string, password: string): Promise<boolean> {
+  const mesaj =
+    `Quasar Dance - cont portal: ${PORTAL_URL} ` +
+    `Email: ${email} Parola: ${password} Schimba parola dupa prima logare.`
+  try {
+    const r = await sendSms(telefon, mesaj)
+    return r.ok
   } catch {
     return false
   }
@@ -89,7 +104,7 @@ Deno.serve(async (req) => {
       const targetId = (body.familieId ?? body.clientId)!
       const { data: existing, error: exErr } = await admin
         .from(table)
-        .select('id, auth_user_id')
+        .select('id, auth_user_id, telefon')
         .eq('id', targetId)
         .maybeSingle()
       if (exErr) return json({ error: exErr.message }, 400)
@@ -124,7 +139,12 @@ Deno.serve(async (req) => {
       }
 
       const emailed = body.notify === 'email' ? await sendCredentialsEmail(email, body.password) : undefined
-      return json({ user: { id: newId, email }, emailed })
+      const smsSent = body.notify === 'sms'
+        ? (existing.telefon
+            ? await sendCredentialsSms(existing.telefon, email, body.password)
+            : false)
+        : undefined
+      return json({ user: { id: newId, email }, emailed, smsSent })
     }
 
     if (body.action === 'reset_password') {
@@ -139,7 +159,17 @@ Deno.serve(async (req) => {
       const { error } = await admin.rpc('portal_set_password', { p_id: body.userId, p_password: body.password })
       if (error) return json({ error: error.message }, 500)
       const emailed = body.notify === 'email' ? await sendCredentialsEmail(acc.email, body.password) : undefined
-      return json({ ok: true, emailed })
+      let smsSent: boolean | undefined
+      if (body.notify === 'sms') {
+        // contul e legat fie de o familie, fie de un client → caută telefonul în ambele
+        const [fam, cli] = await Promise.all([
+          admin.from('familii').select('telefon').eq('auth_user_id', body.userId).maybeSingle(),
+          admin.from('clienti').select('telefon').eq('auth_user_id', body.userId).maybeSingle(),
+        ])
+        const telefon = fam.data?.telefon ?? cli.data?.telefon ?? null
+        smsSent = telefon ? await sendCredentialsSms(telefon, acc.email, body.password) : false
+      }
+      return json({ ok: true, emailed, smsSent })
     }
 
     if (body.action === 'unlink') {

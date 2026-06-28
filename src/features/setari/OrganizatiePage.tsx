@@ -23,9 +23,9 @@ export function OrganizatiePage() {
           <ul className="space-y-2 text-sm text-quasar-black">
             <li className="flex items-center justify-between">
               <span>
-                <strong>SMS — smslink.ro</strong>
+                <strong>SMS — themarketer.com</strong>
                 <span className="ml-2 text-xs text-quasar-gray">
-                  provider activ în beta (themarketer dormant); secrete în edge function
+                  provider activ (smslink.ro = fallback); secrete în edge function
                 </span>
               </span>
               <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
@@ -34,13 +34,13 @@ export function OrganizatiePage() {
             </li>
             <li className="flex items-center justify-between">
               <span>
-                <strong>Email — Resend</strong>
+                <strong>Email — themarketer.com</strong>
                 <span className="ml-2 text-xs text-quasar-gray">
-                  planificat Faza 2
+                  transactional 1-la-1; secrete THEMARKETER_* în edge function
                 </span>
               </span>
-              <span className="rounded bg-quasar-gray-light px-2 py-0.5 text-xs font-medium text-quasar-gray">
-                neactivat
+              <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                activ
               </span>
             </li>
           </ul>

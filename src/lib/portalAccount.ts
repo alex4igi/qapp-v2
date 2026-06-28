@@ -36,22 +36,33 @@ export function suggestPortalPassword(nameHint?: string | null): string {
   return pwd
 }
 
+export type NotifyChannel = 'email' | 'sms'
+
 export async function createPortalAccount(
-  input: Target & { email: string; password: string; notify?: 'email' },
-): Promise<{ id: string; email: string | null; emailed?: boolean }> {
-  const data = await invoke<{ user: { id: string; email: string | null }; emailed?: boolean }>({
+  input: Target & { email: string; password: string; notify?: NotifyChannel },
+): Promise<{ id: string; email: string | null; emailed?: boolean; smsSent?: boolean }> {
+  const data = await invoke<{
+    user: { id: string; email: string | null }
+    emailed?: boolean
+    smsSent?: boolean
+  }>({
     action: 'create',
     ...input,
   })
-  return { ...data.user, emailed: data.emailed }
+  return { ...data.user, emailed: data.emailed, smsSent: data.smsSent }
 }
 
 export async function resetPortalPassword(
   userId: string,
   password: string,
-  notify?: 'email',
-): Promise<{ emailed?: boolean }> {
-  return invoke<{ emailed?: boolean }>({ action: 'reset_password', userId, password, notify })
+  notify?: NotifyChannel,
+): Promise<{ emailed?: boolean; smsSent?: boolean }> {
+  return invoke<{ emailed?: boolean; smsSent?: boolean }>({
+    action: 'reset_password',
+    userId,
+    password,
+    notify,
+  })
 }
 
 export async function unlinkPortalAccount(target: Target): Promise<void> {
