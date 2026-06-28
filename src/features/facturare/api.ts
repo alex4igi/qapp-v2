@@ -65,6 +65,17 @@ export async function listFacturi(
   return (data ?? []) as FacturaRow[]
 }
 
+// „Ignoră" — scoate rândurile din lista de lucru fără să le șteargă (păstrează
+// deduplicarea pe ref). Pentru transferuri care nu se facturează / deja facturate manual.
+export async function ignoraFacturi(refs: string[]): Promise<void> {
+  if (refs.length === 0) return
+  const { error } = await supabase
+    .from('facturi_fgo')
+    .update({ status: 'Ignorata' })
+    .in('ref', refs)
+  if (error) throw error
+}
+
 export async function matchPayer(
   nume: string,
   detalii: string,

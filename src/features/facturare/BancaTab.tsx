@@ -6,6 +6,7 @@ import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { ClientMatcher } from './ClientMatcher'
 import {
   emiteFacturi,
+  ignoraFacturi,
   ingestExtras,
   listFacturi,
   marcheazaFacturi,
@@ -42,7 +43,7 @@ export function BancaTab() {
   })
   const recent = useQuery({
     queryKey: ['facturi-fgo', 'banca', 'recent'],
-    queryFn: () => listFacturi('banca', ['Emisa', 'Marcata', 'Eroare']),
+    queryFn: () => listFacturi('banca', ['Emisa', 'Marcata', 'Eroare', 'Ignorata']),
   })
 
   const rows = pending.data ?? []
@@ -109,6 +110,15 @@ export function BancaTab() {
       void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
     },
     onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Eroare la emitere.'),
+  })
+
+  const ignora = useMutation({
+    mutationFn: () => ignoraFacturi(selectedRows.map((r) => r.ref)),
+    onSuccess: () => {
+      setReport(null)
+      void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
+    },
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Eroare la ignorare.'),
   })
 
   const marcheaza = useMutation({
@@ -267,6 +277,14 @@ export function BancaTab() {
             <div className="flex gap-2">
               <Button
                 variant="secondary"
+                disabled={selectedRows.length === 0 || ignora.isPending}
+                onClick={() => ignora.mutate()}
+                title="Scoate rândurile din listă (transferuri care nu se facturează). Rămân în registru — nu se mai propun din nou."
+              >
+                Ignoră
+              </Button>
+              <Button
+                variant="secondary"
                 disabled={selectedRows.length === 0 || marcheaza.isPending}
                 onClick={() => marcheaza.mutate()}
                 title="Pentru încasări facturate deja manual în FGO — intră în registru fără emitere"
@@ -300,7 +318,11 @@ export function BancaTab() {
                     r.status === 'Eroare' ? 'text-red-700' : 'text-muted'
                   }
                 >
-                  {r.status === 'Eroare' ? `eroare: ${r.eroare_mesaj}` : r.factura_fgo}
+                  {r.status === 'Eroare'
+                    ? `eroare: ${r.eroare_mesaj}`
+                    : r.status === 'Ignorata'
+                      ? 'ignorată'
+                      : r.factura_fgo}
                 </span>
               </li>
             ))}
