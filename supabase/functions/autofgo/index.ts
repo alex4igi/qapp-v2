@@ -1,0 +1,411 @@
+// Edge Function: Autofgo — facturare FGO din extrasul de cont bancar (flux 1).
+// Acțiuni:
+//   ingest        (admin/owner)  — parsează CSV-ul ING, detectează firma după IBAN,
+//                                   persistă încasările ca facturi_fgo status 'Pending' (dedup).
+//   emite         (front_desk+)  — emite facturi FGO + înregistrează incasari (RPC record_bank_incasare).
+//   marcheaza     (front_desk+)  — marchează ca facturat manual (doar registru).
+//   retry_portal  (front_desk+)  — reemite o factură de portal eșuată (force).
+// Potrivirea fuzzy (match_bank_payer) și warn_existing_incasare se cheamă DIRECT din browser (RPC).
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { createHash } from 'node:crypto'
+import { emitInvoice, type FgoClient, type FgoFirma } from '../_shared/fgo.ts'
+import { emitPortalInvoice } from '../_shared/portal-invoice.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  try {
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const token = authHeader.replace(/^Bearer\s+/i, '')
+    if (!token) return json({ error: 'missing auth' }, 401)
+
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
+
+    const { data: userRes, error: userErr } = await admin.auth.getUser(token)
+    if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
+    const role = ((userRes.user.app_metadata ?? {}) as { role?: string }).role ?? 'front_desk'
+
+    const STAFF = ['owner', 'admin', 'manager', 'front_desk']
+    const ADMINS = ['owner', 'admin']
+    if (!STAFF.includes(role)) return json({ error: 'forbidden' }, 403)
+
+    const body = await req.json()
+    const action = body.action as string
+
+    if (action === 'ingest') {
+      if (!ADMINS.includes(role)) return json({ error: 'doar adminul încarcă extrasul' }, 403)
+      return await handleIngest(admin, body.csv as string)
+    }
+    if (action === 'emite') {
+      return await handleEmite(admin, body.firmaCui as string, body.items as EmitItem[])
+    }
+    if (action === 'marcheaza') {
+      return await handleMarcheaza(admin, body.firmaCui as string, body.items as MarkItem[])
+    }
+    if (action === 'retry_portal') {
+      const r = await emitPortalInvoice(admin, body.orderRef as string, { force: true })
+      return json({ result: r })
+    }
+
+    return json({ error: 'acțiune necunoscută' }, 400)
+  } catch (e) {
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500)
+  }
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Acțiuni
+// ─────────────────────────────────────────────────────────────────────────────
+
+type FirmaRow = {
+  cui: string
+  nume: string
+  ibans: string[] | null
+  serie: string | null
+  cota_tva: number | null
+  tip_factura: string | null
+  judet: string | null
+  localitate: string | null
+}
+
+async function loadFirme(admin: SupabaseClient): Promise<FirmaRow[]> {
+  const { data, error } = await admin
+    .from('organizatie_firme')
+    .select('cui, nume, ibans, serie, cota_tva, tip_factura, judet, localitate')
+  if (error) throw error
+  return (data ?? []) as FirmaRow[]
+}
+
+async function handleIngest(admin: SupabaseClient, csv: string) {
+  if (!csv) return json({ error: 'lipsește conținutul CSV' }, 400)
+  const firme = await loadFirme(admin)
+  const parsed = parseStatement(csv, firme)
+
+  // dedup vs registrul existent
+  const refs = parsed.items.map((i) => i.ref)
+  const existing = new Set<string>()
+  if (refs.length) {
+    const { data } = await admin.from('facturi_fgo').select('ref, status').in('ref', refs)
+    for (const r of data ?? []) existing.add((r as { ref: string }).ref)
+  }
+
+  const toInsert = parsed.items
+    .filter((i) => !existing.has(i.ref))
+    .map((i) => ({
+      ref: i.ref,
+      sursa: 'banca',
+      firma_cui: parsed.firma.cui,
+      client_nume: i.client,
+      suma: i.suma,
+      valuta: i.valuta,
+      data_tranzactie: i.dataISO,
+      descriere: i.descriere,
+      status: 'Pending',
+    }))
+
+  if (toInsert.length) {
+    const { error } = await admin
+      .from('facturi_fgo')
+      .upsert(toInsert, { onConflict: 'ref', ignoreDuplicates: true })
+    if (error) return json({ error: error.message }, 500)
+  }
+
+  return json({
+    firma: parsed.firma,
+    total: parsed.items.length,
+    ignored: parsed.ignored,
+    inserted: toInsert.length,
+    duplicates: parsed.items.length - toInsert.length,
+  })
+}
+
+type EmitItem = {
+  ref: string
+  client_nume: string
+  suma: number
+  data: string // ISO
+  descriere: string
+  valuta?: string
+  client_id?: string | null
+  familia_id?: string | null
+}
+
+async function handleEmite(admin: SupabaseClient, firmaCui: string, items: EmitItem[]) {
+  if (!firmaCui || !Array.isArray(items)) return json({ error: 'firmaCui și items obligatorii' }, 400)
+  const firme = await loadFirme(admin)
+  const firmaRow = firme.find((f) => f.cui === firmaCui)
+  if (!firmaRow) return json({ error: `firma ${firmaCui} nu există` }, 400)
+  const firma: FgoFirma = {
+    cui: firmaRow.cui,
+    serie: firmaRow.serie ?? '',
+    cotaTVA: Number(firmaRow.cota_tva ?? 0),
+    tipFactura: firmaRow.tip_factura,
+    judet: firmaRow.judet,
+    localitate: firmaRow.localitate,
+  }
+
+  const results: { ref: string; client: string; status: string; factura?: string; mesaj?: string }[] = []
+  for (const item of items) {
+    try {
+      const fgoClient = await buildClient(admin, item)
+      const { numar, link } = await emitInvoice(
+        firma,
+        fgoClient,
+        [{ denumire: item.descriere, pretTotal: Number(item.suma) }],
+        item.valuta || 'RON',
+      )
+      const { data, error } = await admin.rpc('record_bank_incasare', {
+        p_ref: item.ref,
+        p_sursa: 'banca',
+        p_firma_cui: firmaCui,
+        p_client_id: item.client_id ?? null,
+        p_familia_id: item.familia_id ?? null,
+        p_client_nume: fgoClient.denumire,
+        p_suma: Number(item.suma),
+        p_data: item.data,
+        p_descriere: item.descriere,
+        p_factura: numar,
+        p_factura_link: link,
+      })
+      if (error) throw new Error(error.message)
+      results.push({ ref: item.ref, client: fgoClient.denumire, status: 'emisa', factura: numar })
+      void data
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      await admin
+        .from('facturi_fgo')
+        .update({ status: 'Eroare', eroare_mesaj: msg })
+        .eq('ref', item.ref)
+      results.push({ ref: item.ref, client: item.client_nume, status: 'eroare', mesaj: msg })
+    }
+  }
+  return json({ results })
+}
+
+type MarkItem = { ref: string; client_nume: string; suma: number; data: string; descriere: string }
+
+async function handleMarcheaza(admin: SupabaseClient, firmaCui: string, items: MarkItem[]) {
+  if (!firmaCui || !Array.isArray(items)) return json({ error: 'firmaCui și items obligatorii' }, 400)
+  const results: { ref: string; client: string; status: string; mesaj?: string }[] = []
+  for (const item of items) {
+    const { error } = await admin.rpc('mark_bank_factura', {
+      p_ref: item.ref,
+      p_sursa: 'banca',
+      p_firma_cui: firmaCui,
+      p_client_nume: item.client_nume,
+      p_suma: Number(item.suma),
+      p_data: item.data,
+      p_descriere: item.descriere,
+    })
+    if (error) results.push({ ref: item.ref, client: item.client_nume, status: 'eroare', mesaj: error.message })
+    else results.push({ ref: item.ref, client: item.client_nume, status: 'marcata' })
+  }
+  return json({ results })
+}
+
+// Construiește clientul de facturat: PJ dacă familia are factură pe firmă, altfel PF.
+async function buildClient(admin: SupabaseClient, item: EmitItem): Promise<FgoClient> {
+  if (item.familia_id) {
+    const { data: fam } = await admin
+      .from('familii')
+      .select('nume_familie, factura_pe_firma, firma_denumire, firma_cif, firma_reg_com, firma_adresa')
+      .eq('id', item.familia_id)
+      .maybeSingle()
+    if (fam?.factura_pe_firma && fam.firma_cif) {
+      return {
+        tip: 'PJ',
+        denumire: fam.firma_denumire || fam.nume_familie || item.client_nume,
+        cui: fam.firma_cif,
+        regCom: fam.firma_reg_com,
+        adresa: fam.firma_adresa,
+      }
+    }
+  }
+  if (item.client_id) {
+    const { data: c } = await admin
+      .from('clienti')
+      .select('nume, prenume')
+      .eq('id', item.client_id)
+      .maybeSingle()
+    if (c) {
+      const denumire = [c.nume, c.prenume].filter(Boolean).join(' ').trim()
+      if (denumire) return { tip: 'PF', denumire }
+    }
+  }
+  return { tip: 'PF', denumire: item.client_nume }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parsare extras ING (CSV cu ;) — portată din Autofgo/server.mjs
+// ─────────────────────────────────────────────────────────────────────────────
+
+type ParsedItem = {
+  ref: string
+  data: string // dd.mm.yyyy (afișare)
+  dataISO: string // yyyy-mm-dd
+  client: string
+  suma: number
+  valuta: string
+  descriere: string
+  dejaFacturata: string | null
+  atentie: string | null
+}
+
+function parseCsvLine(line: string): string[] {
+  const fields: string[] = []
+  let cur = ''
+  let inQuotes = false
+  for (const ch of line) {
+    if (ch === '"') {
+      inQuotes = !inQuotes
+      continue
+    }
+    if (ch === ';' && !inQuotes) {
+      fields.push(cur)
+      cur = ''
+      continue
+    }
+    cur += ch
+  }
+  fields.push(cur)
+  return fields.map((f) => f.trim())
+}
+
+function parseAmount(s: string): number {
+  const n = parseFloat(s.replace(/\./g, '').replace(',', '.'))
+  return Number.isFinite(n) ? n : NaN
+}
+
+function toISODate(s: string): string {
+  const m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`
+  return s
+}
+
+function cleanClientName(name: string): string {
+  return name
+    .replace(/^\s*(dna\.?|dl\.?|dra\.?|d-na|d-l|doamna|domnul|domnisoara)\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function isInternalTransfer(clientName: string, firmaNume: string): boolean {
+  const norm = (s: string) =>
+    s.toUpperCase().replace(/[.,]/g, '').replace(/\s+/g, ' ').replace(/\bS R L\b|\bSRL\b/g, '').trim()
+  return norm(clientName).includes(norm(firmaNume)) || norm(firmaNume).includes(norm(clientName))
+}
+
+function extractBankRef(details: string): string | null {
+  const m = details.match(/Referinta bancii\s+([0-9a-f-]{30,40})/i)
+  return m ? m[1] : null
+}
+
+function cleanDescription(details: string, fallbackDate: string): string {
+  const d = details
+    .replace(/Referinta bancii\s+[0-9a-f-]{30,40}/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return d || `Servicii conform extras de cont din ${fallbackDate}`
+}
+
+function sha1(s: string): string {
+  // ref de rezervă când lipsește „Referinta bancii" — hash determinist al rândului
+  return createHash('sha1').update(s, 'utf-8').digest('hex')
+}
+
+function parseStatement(csvText: string, firme: FirmaRow[]) {
+  const lines = csvText.split(/\r?\n/).filter((l) => l.trim() !== '')
+  if (lines.length < 2) throw new Error('Fișierul CSV pare gol sau nu conține tranzacții.')
+
+  const header = parseCsvLine(lines[0]).map((h) => h.toLowerCase())
+  const col = (name: string) => header.findIndex((h) => h.includes(name))
+  const idx = {
+    cont: col('numar cont'),
+    data: col('data procesarii'),
+    suma: col('suma'),
+    valuta: col('valuta'),
+    tip: col('tip tranzactie'),
+    nume: col('nume beneficiar'),
+    detalii: col('detalii tranzactie'),
+  }
+  if (idx.cont < 0 || idx.suma < 0 || idx.tip < 0) {
+    throw new Error(
+      'Fișierul nu pare a fi un extras ING în format CSV — lipsesc coloanele așteptate (numar cont, suma, tip tranzactie).',
+    )
+  }
+
+  const rows = lines.slice(1).map(parseCsvLine).filter((f) => f.length > Math.max(idx.tip, idx.suma))
+  if (rows.length === 0) throw new Error('Extrasul nu conține nicio tranzacție.')
+
+  const iban = rows[0][idx.cont]
+  const firma = firme.find((f) =>
+    (f.ibans || []).map((i) => i.replace(/\s/g, '')).includes(iban.replace(/\s/g, '')),
+  )
+  if (!firma) {
+    throw new Error(
+      `IBAN-ul din extras (${iban}) nu corespunde niciunei firme configurate. Adaugă-l la firma potrivită în Setări (organizatie_firme.ibans).`,
+    )
+  }
+
+  const items: ParsedItem[] = []
+  let ignored = 0
+
+  for (const f of rows) {
+    const tip = (f[idx.tip] || '').trim().toLowerCase()
+    const suma = parseAmount(f[idx.suma] || '')
+    if (tip !== 'incasare' || !(suma > 0)) {
+      ignored++
+      continue
+    }
+
+    const data = (f[idx.data] || '').trim()
+    const detalii = f[idx.detalii] || ''
+    const ref =
+      extractBankRef(detalii) ||
+      sha1(`${iban}|${data}|${f[idx.suma]}|${f[idx.nume]}|${detalii}`)
+    const client = cleanClientName(f[idx.nume] || '')
+
+    let atentie: string | null = null
+    if (isInternalTransfer(client, firma.nume)) {
+      atentie = 'posibil transfer intern — verifică'
+    } else if (
+      /\bFF\b/i.test(detalii) ||
+      (firma.serie && new RegExp(`\\b${firma.serie}\\s*\\d+`, 'i').test(detalii))
+    ) {
+      atentie = 'pare plata unei facturi deja emise — verifică'
+    }
+
+    items.push({
+      ref,
+      data,
+      dataISO: toISODate(data),
+      client,
+      suma,
+      valuta: (f[idx.valuta] || 'RON').trim() || 'RON',
+      descriere: cleanDescription(detalii, data),
+      dejaFacturata: null,
+      atentie,
+    })
+  }
+
+  return {
+    firma: { nume: firma.nume, cui: firma.cui, iban, serie: firma.serie ?? '' },
+    items,
+    ignored,
+  }
+}
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}

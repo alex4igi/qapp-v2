@@ -2054,6 +2054,161 @@ export type Database = {
           },
         ]
       }
+      facturi_fgo: {
+        Row: {
+          client_id: string | null
+          client_nume: string
+          created: string
+          data_tranzactie: string
+          descriere: string | null
+          emis_la: string | null
+          eroare_mesaj: string | null
+          factura_fgo: string | null
+          factura_link: string | null
+          familia_id: string | null
+          firma_cui: string
+          incasare_id: string | null
+          ref: string
+          status: Database["public"]["Enums"]["factura_fgo_status"]
+          suma: number
+          sursa: Database["public"]["Enums"]["factura_fgo_sursa"]
+          updated: string
+          valuta: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_nume?: string
+          created?: string
+          data_tranzactie: string
+          descriere?: string | null
+          emis_la?: string | null
+          eroare_mesaj?: string | null
+          factura_fgo?: string | null
+          factura_link?: string | null
+          familia_id?: string | null
+          firma_cui: string
+          incasare_id?: string | null
+          ref: string
+          status?: Database["public"]["Enums"]["factura_fgo_status"]
+          suma: number
+          sursa: Database["public"]["Enums"]["factura_fgo_sursa"]
+          updated?: string
+          valuta?: string
+        }
+        Update: {
+          client_id?: string | null
+          client_nume?: string
+          created?: string
+          data_tranzactie?: string
+          descriere?: string | null
+          emis_la?: string | null
+          eroare_mesaj?: string | null
+          factura_fgo?: string | null
+          factura_link?: string | null
+          familia_id?: string | null
+          firma_cui?: string
+          incasare_id?: string | null
+          ref?: string
+          status?: Database["public"]["Enums"]["factura_fgo_status"]
+          suma?: number
+          sursa?: Database["public"]["Enums"]["factura_fgo_sursa"]
+          updated?: string
+          valuta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facturi_fgo_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "lista_familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_incasare_id_fkey"
+            columns: ["incasare_id"]
+            isOneToOne: false
+            referencedRelation: "incasari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facturi_fgo_incasare_id_fkey"
+            columns: ["incasare_id"]
+            isOneToOne: false
+            referencedRelation: "lista_incasari"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       familii: {
         Row: {
           auth_user_id: string | null
@@ -3063,6 +3218,8 @@ export type Database = {
           auth_user_id: string
           client_id: string
           created: string
+          fgo_emitat: string | null
+          fgo_factura: string | null
           fifo_plan: Json
           id: string
           netopia_transaction_id: string | null
@@ -3078,6 +3235,8 @@ export type Database = {
           auth_user_id: string
           client_id: string
           created?: string
+          fgo_emitat?: string | null
+          fgo_factura?: string | null
           fifo_plan: Json
           id?: string
           netopia_transaction_id?: string | null
@@ -3093,6 +3252,8 @@ export type Database = {
           auth_user_id?: string
           client_id?: string
           created?: string
+          fgo_emitat?: string | null
+          fgo_factura?: string | null
           fifo_plan?: Json
           id?: string
           netopia_transaction_id?: string | null
@@ -3486,33 +3647,57 @@ export type Database = {
       }
       organizatie_firme: {
         Row: {
+          auto_factura_portal: boolean
           capital: number | null
+          cota_tva: number
           created: string
           cui: string | null
+          factureaza: boolean
+          ibans: string[]
           id: string
+          judet: string | null
+          localitate: string | null
           nume: string
           observatii: string | null
           registru_comert: string | null
+          serie: string | null
+          tip_factura: string
           updated: string
         }
         Insert: {
+          auto_factura_portal?: boolean
           capital?: number | null
+          cota_tva?: number
           created?: string
           cui?: string | null
+          factureaza?: boolean
+          ibans?: string[]
           id?: string
+          judet?: string | null
+          localitate?: string | null
           nume: string
           observatii?: string | null
           registru_comert?: string | null
+          serie?: string | null
+          tip_factura?: string
           updated?: string
         }
         Update: {
+          auto_factura_portal?: boolean
           capital?: number | null
+          cota_tva?: number
           created?: string
           cui?: string | null
+          factureaza?: boolean
+          ibans?: string[]
           id?: string
+          judet?: string | null
+          localitate?: string | null
           nume?: string
           observatii?: string | null
           registru_comert?: string | null
+          serie?: string | null
+          tip_factura?: string
           updated?: string
         }
         Relationships: []
@@ -7239,9 +7424,31 @@ export type Database = {
       }
       mark_anunt_read: { Args: { p_anunt_id: string }; Returns: undefined }
       mark_anunturi_citite: { Args: never; Returns: undefined }
+      mark_bank_factura: {
+        Args: {
+          p_client_nume: string
+          p_data: string
+          p_descriere: string
+          p_firma_cui: string
+          p_ref: string
+          p_suma: number
+          p_sursa: string
+        }
+        Returns: Json
+      }
       mark_opt_out: {
         Args: { p_entity: string; p_id: string; p_motiv?: string }
         Returns: undefined
+      }
+      match_bank_payer: {
+        Args: { p_detalii?: string; p_nume: string }
+        Returns: {
+          familia_id: string
+          id: string
+          nume: string
+          scor: number
+          tip: string
+        }[]
       }
       my_teacher_id: { Args: never; Returns: string }
       notifications_mark_all_read: { Args: never; Returns: number }
@@ -7354,6 +7561,22 @@ export type Database = {
         Args: { p_client: string }
         Returns: undefined
       }
+      record_bank_incasare: {
+        Args: {
+          p_client_id: string
+          p_client_nume: string
+          p_data: string
+          p_descriere: string
+          p_factura: string
+          p_factura_link: string
+          p_familia_id: string
+          p_firma_cui: string
+          p_ref: string
+          p_suma: number
+          p_sursa: string
+        }
+        Returns: Json
+      }
       record_taxa_rezervare: {
         Args: {
           p_campanie_id: string
@@ -7425,6 +7648,8 @@ export type Database = {
         }
         Returns: string
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       submit_rating_client: {
         Args: {
           p_client: string
@@ -7483,6 +7708,10 @@ export type Database = {
           voucher_id: string
         }[]
       }
+      warn_existing_incasare: {
+        Args: { p_client: string; p_data: string; p_suma: number }
+        Returns: boolean
+      }
     }
     Enums: {
       app_feedback_status:
@@ -7509,6 +7738,14 @@ export type Database = {
         | "Costume"
         | "Merch"
         | "Consumabil"
+      factura_fgo_status:
+        | "Pending"
+        | "Matched"
+        | "Emisa"
+        | "Marcata"
+        | "Eroare"
+        | "Ignorata"
+      factura_fgo_sursa: "banca" | "portal"
       grupa_lead:
         | "Tiny"
         | "Junior"
@@ -7763,6 +8000,15 @@ export const Constants = {
         "Merch",
         "Consumabil",
       ],
+      factura_fgo_status: [
+        "Pending",
+        "Matched",
+        "Emisa",
+        "Marcata",
+        "Eroare",
+        "Ignorata",
+      ],
+      factura_fgo_sursa: ["banca", "portal"],
       grupa_lead: ["Tiny", "Junior", "Varsity", "Teens", "Students", "Adults"],
       interes_lead: [
         "Street Dance",

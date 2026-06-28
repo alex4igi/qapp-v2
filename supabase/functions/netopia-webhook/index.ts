@@ -11,6 +11,7 @@
 // IDEMPOTENT: confirmarea scrie `incasari` o singură dată (dedup pe transaction id în
 // confirm_netopia_payment). Răspundem cu { errorCode: 0 } ca Netopia să nu reîncerce.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { emitPortalInvoice } from '../_shared/portal-invoice.ts'
 
 // v2 payment.status (constante din SDK-ul oficial netopia-payment2):
 // 3 = paid, 5 = confirmed (banii s-au mișcat) => confirmăm (idempotent).
@@ -54,6 +55,15 @@ Deno.serve(async (req) => {
       })
       if (error) return json({ errorCode: 1, error: error.message }, 500)
       if (data?.ok === false) return json({ errorCode: 1, reason: data.reason }, 400)
+
+      // Flux 2 — factură FGO auto. IZOLAT: o eroare aici NU trebuie să rateze
+      // confirmarea plății (altfel Netopia reîncearcă toată tranzacția). Idempotent
+      // pe netopia_orders.fgo_emitat; respectă toggle-ul organizatie_firme.auto_factura_portal.
+      try {
+        await emitPortalInvoice(admin, orderRef)
+      } catch (_e) {
+        // înghițit intenționat — starea (Eroare) e deja persistată în facturi_fgo
+      }
     } else if (FAILED_STATUSES.has(status)) {
       // anulează comanda + eliberează holdul de rezervare (dacă există)
       await admin.rpc('cancel_netopia_order', { p_order_ref: orderRef })

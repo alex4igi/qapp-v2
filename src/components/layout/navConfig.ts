@@ -22,6 +22,7 @@ export const navSections: NavSection[] = [
       { label: 'Leads',          path: '/leads' },
       { label: 'Recuperare',     path: '/recuperare' },
       { label: 'Plăți',          path: '/plati' },
+      { label: 'Facturare',      path: '/facturare' },
       { label: 'Prezențe',       path: '/prezente' },
       { label: 'Evaluări',       path: '/evaluari' },
       { label: 'Notificări SMS', path: '/sms' },

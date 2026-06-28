@@ -436,6 +436,9 @@ verify_jwt = true
 [functions.netopia-webhook]
 verify_jwt = false
 
+[functions.autofgo]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

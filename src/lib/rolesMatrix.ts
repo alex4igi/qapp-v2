@@ -24,6 +24,9 @@ export const ROUTE_ACCESS = {
   '/teacheri': ALL_STAFF,
   '/prezente': WITH_TEACHER,
   '/plati': ALL_STAFF,
+  // Facturare FGO: recepția lucrează lista; upload-ul extrasului e gardat la admin/owner
+  // în pagină + în edge function (acțiunea `ingest`).
+  '/facturare': ALL_STAFF,
   '/leads': ALL_STAFF,
   '/recuperare': ALL_STAFF,
   '/sms': ALL_STAFF,

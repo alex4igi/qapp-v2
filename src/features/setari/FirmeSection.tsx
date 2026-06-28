@@ -16,6 +16,11 @@ type Firma = {
   registru_comert: string | null
   capital: number | null
   observatii: string | null
+  ibans: string[] | null
+  serie: string | null
+  cota_tva: number | null
+  factureaza: boolean
+  auto_factura_portal: boolean
 }
 
 type FormState = {
@@ -24,6 +29,11 @@ type FormState = {
   registru_comert: string
   capital: string
   observatii: string
+  ibans: string
+  serie: string
+  cota_tva: string
+  factureaza: boolean
+  auto_factura_portal: boolean
 }
 
 const emptyForm: FormState = {
@@ -32,12 +42,19 @@ const emptyForm: FormState = {
   registru_comert: '',
   capital: '',
   observatii: '',
+  ibans: '',
+  serie: '',
+  cota_tva: '0',
+  factureaza: false,
+  auto_factura_portal: false,
 }
 
 async function listFirme(): Promise<Firma[]> {
   const { data, error } = await supabase
     .from('organizatie_firme')
-    .select('id, nume, cui, registru_comert, capital, observatii')
+    .select(
+      'id, nume, cui, registru_comert, capital, observatii, ibans, serie, cota_tva, factureaza, auto_factura_portal',
+    )
     .order('nume', { ascending: true })
   if (error) throw error
   return (data ?? []) as Firma[]
@@ -50,28 +67,33 @@ async function saveFirma(input: {
   registru_comert: string | null
   capital: number | null
   observatii: string | null
+  ibans: string[]
+  serie: string | null
+  cota_tva: number
+  factureaza: boolean
+  auto_factura_portal: boolean
 }): Promise<void> {
-  if (input.id) {
-    const { error } = await supabase
-      .from('organizatie_firme')
-      .update({
-        nume: input.nume,
-        cui: input.cui,
-        registru_comert: input.registru_comert,
-        capital: input.capital,
-        observatii: input.observatii,
-      })
-      .eq('id', input.id)
-    if (error) throw error
-    return
-  }
-  const { error } = await supabase.from('organizatie_firme').insert({
+  const payload = {
     nume: input.nume,
     cui: input.cui,
     registru_comert: input.registru_comert,
     capital: input.capital,
     observatii: input.observatii,
-  })
+    ibans: input.ibans,
+    serie: input.serie,
+    cota_tva: input.cota_tva,
+    factureaza: input.factureaza,
+    auto_factura_portal: input.auto_factura_portal,
+  }
+  if (input.id) {
+    const { error } = await supabase
+      .from('organizatie_firme')
+      .update(payload)
+      .eq('id', input.id)
+    if (error) throw error
+    return
+  }
+  const { error } = await supabase.from('organizatie_firme').insert(payload)
   if (error) throw error
 }
 
@@ -101,6 +123,11 @@ export function FirmeSection() {
             registru_comert: f.registru_comert ?? '',
             capital: f.capital != null ? String(f.capital) : '',
             observatii: f.observatii ?? '',
+            ibans: (f.ibans ?? []).join(', '),
+            serie: f.serie ?? '',
+            cota_tva: f.cota_tva != null ? String(f.cota_tva) : '0',
+            factureaza: f.factureaza ?? false,
+            auto_factura_portal: f.auto_factura_portal ?? false,
           }
         : emptyForm,
     )
@@ -125,6 +152,14 @@ export function FirmeSection() {
         registru_comert: form.registru_comert.trim() || null,
         capital: form.capital.trim() ? Number(form.capital) : null,
         observatii: form.observatii.trim() || null,
+        ibans: form.ibans
+          .split(',')
+          .map((s) => s.replace(/\s/g, ''))
+          .filter(Boolean),
+        serie: form.serie.trim() || null,
+        cota_tva: form.cota_tva.trim() ? Number(form.cota_tva) : 0,
+        factureaza: form.factureaza,
+        auto_factura_portal: form.auto_factura_portal,
       }),
     onSuccess: () => {
       void invalidate()
@@ -272,6 +307,64 @@ export function FirmeSection() {
                 onChange={(e) => set('observatii')(e.target.value)}
               />
             </Field>
+
+            <div className="mt-2 border-t border-quasar-gray-light pt-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-quasar-gray">
+                Facturare FGO
+              </p>
+              <Field
+                label="IBAN-uri (separate prin virgulă)"
+                htmlFor="firma-ibans"
+              >
+                <TextInput
+                  id="firma-ibans"
+                  placeholder="RO85INGB0000999914989082"
+                  value={form.ibans}
+                  onChange={(e) => set('ibans')(e.target.value)}
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Serie facturi" htmlFor="firma-serie">
+                  <TextInput
+                    id="firma-serie"
+                    placeholder="QDS"
+                    value={form.serie}
+                    onChange={(e) => set('serie')(e.target.value)}
+                  />
+                </Field>
+                <Field label="Cotă TVA (%)" htmlFor="firma-tva">
+                  <TextInput
+                    id="firma-tva"
+                    type="number"
+                    value={form.cota_tva}
+                    onChange={(e) => set('cota_tva')(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <label className="mt-2 flex items-center gap-2 text-sm text-quasar-black">
+                <input
+                  type="checkbox"
+                  checked={form.factureaza}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, factureaza: e.target.checked }))
+                  }
+                />
+                Are cheie API FGO (poate emite din extras)
+              </label>
+              <label className="mt-1 flex items-center gap-2 text-sm text-quasar-black">
+                <input
+                  type="checkbox"
+                  checked={form.auto_factura_portal}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      auto_factura_portal: e.target.checked,
+                    }))
+                  }
+                />
+                Emite automat factura la plata din portal
+              </label>
+            </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
           </form>
         </Modal>

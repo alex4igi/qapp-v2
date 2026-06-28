@@ -26,6 +26,7 @@ import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
 import { CfoPage } from '@/features/cfo/CfoPage'
 import { ScorecardPage } from '@/features/scorecard/ScorecardPage'
 import { RecuperarePage } from '@/features/recuperare/RecuperarePage'
+import { FacturarePage } from '@/features/facturare/FacturarePage'
 import { AnsambluPage } from '@/features/ansamblu/AnsambluPage'
 import { VouchereListPage } from '@/features/vouchere/VouchereListPage'
 import { InventarListPage } from '@/features/inventar/InventarListPage'
@@ -131,6 +132,7 @@ function App() {
               <Route path="leads" element={<LeadsPage />} />
               <Route path="recuperare" element={<RecuperarePage />} />
               <Route path="sms" element={<NotificariSmsPage />} />
+              <Route path="facturare" element={<FacturarePage />} />
               <Route path="feedback" element={<FeedbackListPage />} />
               <Route path="situatie-zilnica" element={<SituatieZilnicaPage />} />
             </Route>
