@@ -1,4 +1,6 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Spinner } from '@/components/ui'
 import { AuthProvider } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -21,13 +23,20 @@ import { FeedbackListPage } from '@/features/feedback/FeedbackListPage'
 import { AppFeedbackListPage } from '@/features/feedback-app/AppFeedbackListPage'
 import { AnunturiPage } from '@/features/announcements/AnunturiPage'
 import { FinanciarPage } from '@/features/financiar/FinanciarPage'
-import { StatisticiPage } from '@/features/statistici/StatisticiPage'
-import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
 import { CfoPage } from '@/features/cfo/CfoPage'
 import { ScorecardPage } from '@/features/scorecard/ScorecardPage'
 import { RecuperarePage } from '@/features/recuperare/RecuperarePage'
 import { FacturarePage } from '@/features/facturare/FacturarePage'
-import { AnsambluPage } from '@/features/ansamblu/AnsambluPage'
+// Paginile de statistici trag recharts — code-split din bundle-ul inițial.
+const AnalyticsPage = lazy(() =>
+  import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
+)
+const StatisticiPage = lazy(() =>
+  import('@/features/statistici/StatisticiPage').then((m) => ({ default: m.StatisticiPage })),
+)
+const AnsambluPage = lazy(() =>
+  import('@/features/ansamblu/AnsambluPage').then((m) => ({ default: m.AnsambluPage })),
+)
 import { VouchereListPage } from '@/features/vouchere/VouchereListPage'
 import { InventarListPage } from '@/features/inventar/InventarListPage'
 import { EvenimenteListPage } from '@/features/evenimente/EvenimenteListPage'
@@ -52,6 +61,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center"><Spinner /></div>}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
@@ -206,6 +216,7 @@ function App() {
             element={<Placeholder title="404" description="Pagina nu există." />}
           />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   )
