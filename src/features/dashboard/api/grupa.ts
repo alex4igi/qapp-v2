@@ -105,6 +105,55 @@ export async function getGrupaDashboard(params: {
   const enrollmentIds = enrollments.map((e) => e.id)
   const todayMmDd = params.date.slice(5) // "MM-DD"
 
+  // Cursuri facultative: clienții cu rezervare OPEN ne-anulată pe această zi au
+  // acces și trebuie să apară în roster (ex. ședințele bonus din promo), chiar
+  // dacă înrolarea lor nu acoperă luna afișată. Oglindește getOpenRosterForDate
+  // din prezente/api.ts, ca să fie consistent cardul recepției cu pagina de prezențe.
+  type OpenEntry = {
+    enrollmentId: string
+    client: {
+      id: string
+      nume: string
+      prenume: string | null
+      foto: string | null
+      data_nasterii: string | null
+      telefon: string | null
+    }
+  }
+  const openEntries: OpenEntry[] = []
+  if (cursRow.facultativ) {
+    const { data: sesiune, error: sErr } = await supabase
+      .from('open_sesiuni')
+      .select('id')
+      .eq('curs', params.cursId)
+      .eq('data', params.date)
+      .maybeSingle()
+    if (sErr) throw sErr
+    if (sesiune) {
+      const { data: rez, error: rezErr } = await supabase
+        .from('open_rezervari')
+        .select(
+          'enrollment, client:clienti(id, nume, prenume, foto, data_nasterii, telefon)',
+        )
+        .eq('sesiune', sesiune.id)
+        .neq('status', 'anulat')
+      if (rezErr) throw rezErr
+      for (const r of (rez ?? []) as unknown as Array<{
+        enrollment: string | null
+        client: OpenEntry['client'] | null
+      }>) {
+        if (r.enrollment && r.client) {
+          openEntries.push({ enrollmentId: r.enrollment, client: r.client })
+        }
+      }
+    }
+  }
+  // Status-ul de azi se citește și pentru înrolările rezervărilor OPEN.
+  const statusEnrollmentIds = [
+    ...enrollmentIds,
+    ...openEntries.map((o) => o.enrollmentId),
+  ]
+
   const baseHeader = {
     cursId: cursRow.id,
     cursNume: cursRow.numele,
@@ -116,11 +165,11 @@ export async function getGrupaDashboard(params: {
       : null,
   }
 
-  const { data: prezToday, error: pErr } = enrollmentIds.length
+  const { data: prezToday, error: pErr } = statusEnrollmentIds.length
     ? await supabase
         .from('prezente')
         .select('enrollment, status')
-        .in('enrollment', enrollmentIds)
+        .in('enrollment', statusEnrollmentIds)
         .eq('data', params.date)
     : { data: [], error: null }
   if (pErr) throw pErr
@@ -218,6 +267,30 @@ export async function getGrupaDashboard(params: {
         ),
       })
     }
+  }
+
+  // Merge clienții cu rezervare OPEN pe această zi care NU au fost deja prinși
+  // dintr-o înrolare ce acoperă luna (ex. bonus 29-30 iun pe abonamentul de iulie).
+  for (const o of openEntries) {
+    if (byClient.has(o.client.id)) continue
+    const s = statusToday.get(o.enrollmentId)
+    const status: RosterStatus =
+      s === 'Prezent' ? 'prezent' : s === 'Absent' || s === 'Motivat' ? 'absent' : 'absent'
+    byClient.set(o.client.id, {
+      rowId: o.enrollmentId,
+      kind: 'client',
+      enrollmentId: o.enrollmentId,
+      refId: o.client.id,
+      nume: o.client.nume,
+      prenume: o.client.prenume,
+      poza: o.client.foto,
+      telefon: o.client.telefon,
+      status,
+      restanta: 0,
+      esteZiua: Boolean(
+        o.client.data_nasterii && o.client.data_nasterii.slice(5) === todayMmDd,
+      ),
+    })
   }
 
   // Leads programați pentru acest curs+data (via tabelul programari_leads).
