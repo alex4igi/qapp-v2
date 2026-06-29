@@ -7,6 +7,7 @@ import {
   listSezoane,
   rezilizaInrolari,
   recalcUltimaLunaReziliere,
+  deleteInrolareDuplicat,
   endOfMonth,
 } from '@/features/plati/api'
 import { reintegrateClientAsLead } from '@/features/leads/api'
@@ -25,9 +26,11 @@ import {
   getClientFamilia,
   getClientInrolariSezon,
   getClientPrezenteSezon,
+  type ClientInrolareSezon,
 } from '../../api'
 import { ClientSidebar } from './ClientSidebar'
 import { ConfirmReziliereModal } from './ConfirmReziliereModal'
+import { ConfirmDeleteInrolareModal } from './ConfirmDeleteInrolareModal'
 import { calcAge, getInitials } from './helpers'
 import { InrolariSezonTab } from './tabs/InrolariSezonTab'
 import { PrezenteSezonTab } from './tabs/PrezenteSezonTab'
@@ -55,6 +58,8 @@ export function ClientProfilePage() {
   const [adjustEnrollmentId, setAdjustEnrollmentId] = useState<string | null>(null)
   const [moveEnrollmentId, setMoveEnrollmentId] = useState<string | null>(null)
   const [motivareEnrollmentId, setMotivareEnrollmentId] = useState<string | null>(null)
+  const [deleteRow, setDeleteRow] = useState<ClientInrolareSezon | null>(null)
+  const [motivStergere, setMotivStergere] = useState('')
 
   const clientQuery = useQuery({
     queryKey: ['client', id],
@@ -196,6 +201,28 @@ export function ClientProfilePage() {
     setMotivReziliere('')
   }
 
+  const stergeInrolare = useMutation({
+    mutationFn: (input: { enrollmentId: string; motiv: string }) =>
+      deleteInrolareDuplicat(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['client', id] })
+      void queryClient.invalidateQueries({ queryKey: ['plati'] })
+      void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
+      void queryClient.invalidateQueries({
+        queryKey: ['client-inrolari-sezon', id],
+      })
+      // Restanța din rosterul grupei se însumează per client → invalidăm grupele.
+      void queryClient.invalidateQueries({ queryKey: ['grupa-dashboard'] })
+      setDeleteRow(null)
+      setMotivStergere('')
+    },
+  })
+
+  const closeDeleteModal = () => {
+    setDeleteRow(null)
+    setMotivStergere('')
+  }
+
   if (clientQuery.isLoading) return <Spinner />
   if (clientQuery.isError || !clientQuery.data) {
     return (
@@ -316,6 +343,15 @@ export function ClientProfilePage() {
               onMotiveaza={
                 canManagerActions ? (eId) => setMotivareEnrollmentId(eId) : undefined
               }
+              // Ștergerea fizică a unei înrolări (duplicat din eroare) e doar manager+.
+              onDelete={
+                canManagerActions
+                  ? (r) => {
+                      setDeleteRow(r)
+                      setMotivStergere('')
+                    }
+                  : undefined
+              }
             />
           )}
 
@@ -381,6 +417,23 @@ export function ClientProfilePage() {
           open
           enrollmentId={motivareEnrollmentId}
           onClose={() => setMotivareEnrollmentId(null)}
+        />
+      )}
+
+      {deleteRow && (
+        <ConfirmDeleteInrolareModal
+          open
+          platit={deleteRow.platit ?? 0}
+          motiv={motivStergere}
+          isPending={stergeInrolare.isPending}
+          onMotivChange={setMotivStergere}
+          onConfirm={() =>
+            stergeInrolare.mutate({
+              enrollmentId: deleteRow.id_enrollment,
+              motiv: motivStergere,
+            })
+          }
+          onClose={closeDeleteModal}
         />
       )}
 

@@ -17,6 +17,7 @@ const ACTION_LABEL: Record<string, string> = {
   price_override: 'Override preț',
   enrollment_moved: 'Mutare curs',
   enrollment_reziliata: 'Reziliere',
+  enrollment_deleted: 'Ștergere înrolare',
   incasare_modified: 'Modificare încasare',
   incasare_deleted: 'Ștergere încasare',
   lead_deleted: 'Ștergere lead',

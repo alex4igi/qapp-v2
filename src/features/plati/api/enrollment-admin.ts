@@ -291,6 +291,41 @@ export async function aprobaMotivareAbsenta(params: {
   return data as MotivareAbsentaResult
 }
 
+// Șterge fizic o înrolare creată din greșeală (ex: dublu-submit → duplicat pe
+// același curs). Gărzile reale (rol manager+ și „fără încasări") sunt în RPC-ul
+// sterge_inrolare; aici capturăm snapshotul pentru audit înainte de ștergere.
+export async function deleteInrolareDuplicat(params: {
+  enrollmentId: string
+  motiv: string
+}): Promise<void> {
+  const motiv = params.motiv.trim()
+  if (!motiv) throw new Error('Motivul e obligatoriu.')
+
+  const { data: snapshot, error: gErr } = await supabase
+    .from('enrollments')
+    .select('id, client, cursul, suma, data_incepere, tip_plata')
+    .eq('id', params.enrollmentId)
+    .single()
+  if (gErr) throw gErr
+
+  const locatieId = await getLocatieFromCurs(snapshot.cursul)
+
+  const { error: dErr } = await supabase.rpc('sterge_inrolare', {
+    p_enrollment: params.enrollmentId,
+    p_motiv: motiv,
+  })
+  if (dErr) throw dErr
+
+  await recordAuditLog({
+    action: 'enrollment_deleted',
+    entityType: 'enrollment',
+    entityId: params.enrollmentId,
+    oldValue: snapshot,
+    reason: motiv,
+    locatieId,
+  })
+}
+
 // Mută o înrolare la alt curs (păstrează plata curentă, fără prorata).
 // Auditată cu motiv.
 export async function moveEnrollmentToCurs(params: {

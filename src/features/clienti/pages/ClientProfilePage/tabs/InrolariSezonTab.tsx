@@ -11,6 +11,7 @@ type Props = {
   onAdjustPrice?: (enrollmentId: string) => void
   onMoveCurs?: (enrollmentId: string) => void
   onMotiveaza?: (enrollmentId: string) => void
+  onDelete?: (row: ClientInrolareSezon) => void
 }
 
 export function InrolariSezonTab({
@@ -22,6 +23,7 @@ export function InrolariSezonTab({
   onAdjustPrice,
   onMoveCurs,
   onMotiveaza,
+  onDelete,
 }: Props) {
   if (loading) return <Spinner />
   if (rows.length === 0) {
@@ -105,6 +107,15 @@ export function InrolariSezonTab({
                         title="Motivează absențele lunii (adeverință medicală → eventual scutire)"
                       >
                         🩺 Motivează
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => onDelete(r)}
+                        title="Șterge înrolarea (duplicat creat din greșeală)"
+                      >
+                        🗑️ Șterge
                       </Button>
                     )}
                   </li>

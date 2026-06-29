@@ -8056,6 +8056,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      sterge_inrolare: {
+        Args: { p_enrollment: string; p_motiv: string }
+        Returns: undefined
+      }
       submit_rating_client: {
         Args: {
           p_client: string
