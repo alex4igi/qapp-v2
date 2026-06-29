@@ -11,7 +11,7 @@ import {
   Button,
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
-import { isAdminOrHigher } from '@/lib/rolesMatrix'
+import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { campaniiOptions, locatiiOptions, sezonActivId } from '@/lib/lookups'
 import type { Lead, GrupaLead } from '@/types/db'
 import {
@@ -398,7 +398,7 @@ export function LeadModal({
       onClose={onClose}
       footer={
         <>
-          {isEdit && isAdminOrHigher(role) && tab === 'detalii' && (
+          {isEdit && isManagerOrHigher(role) && tab === 'detalii' && (
             <div className="mr-auto flex items-center gap-2">
               {confirmDelete ? (
                 <>
