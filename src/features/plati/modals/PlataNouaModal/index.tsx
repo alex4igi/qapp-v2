@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui'
 import { SimpleIncasareForm } from '../../SimpleIncasareForm'
 import { AbonamentTab } from './AbonamentTab'
 import { OpenClassTab } from './OpenClassTab'
+import { DatoriiTab } from './DatoriiTab'
 import { TipSelector } from './TipSelector'
 import type { TipPlata } from './helpers'
 
@@ -42,6 +43,8 @@ export function PlataNouaModal({
         />
       ) : tip === 'Open' ? (
         <OpenClassTab onClose={onClose} defaultClientId={defaultClientId} />
+      ) : tip === 'Datorii' ? (
+        <DatoriiTab onClose={onClose} defaultClientId={defaultClientId} />
       ) : (
         <SimpleIncasareForm
           key={tip}

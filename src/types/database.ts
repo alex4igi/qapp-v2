@@ -1218,6 +1218,188 @@ export type Database = {
           },
         ]
       }
+      datorii: {
+        Row: {
+          articol_inventar: string | null
+          bilet: string | null
+          bucati: number | null
+          categorie: Database["public"]["Enums"]["categorie_incasare"]
+          client: string
+          created: string
+          descriere: string | null
+          id: string
+          locatie: string | null
+          sezon: string | null
+          suma_datorata: number
+          updated: string
+          voucher: string | null
+        }
+        Insert: {
+          articol_inventar?: string | null
+          bilet?: string | null
+          bucati?: number | null
+          categorie: Database["public"]["Enums"]["categorie_incasare"]
+          client: string
+          created?: string
+          descriere?: string | null
+          id?: string
+          locatie?: string | null
+          sezon?: string | null
+          suma_datorata: number
+          updated?: string
+          voucher?: string | null
+        }
+        Update: {
+          articol_inventar?: string | null
+          bilet?: string | null
+          bucati?: number | null
+          categorie?: Database["public"]["Enums"]["categorie_incasare"]
+          client?: string
+          created?: string
+          descriere?: string | null
+          id?: string
+          locatie?: string | null
+          sezon?: string | null
+          suma_datorata?: number
+          updated?: string
+          voucher?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datorii_articol_inventar_fkey"
+            columns: ["articol_inventar"]
+            isOneToOne: false
+            referencedRelation: "inventar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_articol_inventar_fkey"
+            columns: ["articol_inventar"]
+            isOneToOne: false
+            referencedRelation: "produse_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_bilet_fkey"
+            columns: ["bilet"]
+            isOneToOne: false
+            referencedRelation: "bilete_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_bilet_fkey"
+            columns: ["bilet"]
+            isOneToOne: false
+            referencedRelation: "evenimente"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_sezon_fkey"
+            columns: ["sezon"]
+            isOneToOne: false
+            referencedRelation: "sezoane"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_voucher_fkey"
+            columns: ["voucher"]
+            isOneToOne: false
+            referencedRelation: "vouchere"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documente_client: {
         Row: {
           client: string
@@ -2496,6 +2678,7 @@ export type Database = {
           client: string | null
           created: string
           data: string | null
+          datorie: string | null
           id: string
           inregistrare: string | null
           lead: string | null
@@ -2515,6 +2698,7 @@ export type Database = {
           client?: string | null
           created?: string
           data?: string | null
+          datorie?: string | null
           id?: string
           inregistrare?: string | null
           lead?: string | null
@@ -2534,6 +2718,7 @@ export type Database = {
           client?: string | null
           created?: string
           data?: string | null
+          datorie?: string | null
           id?: string
           inregistrare?: string | null
           lead?: string | null
@@ -2698,6 +2883,20 @@ export type Database = {
             columns: ["voucher"]
             isOneToOne: false
             referencedRelation: "vouchere"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incasari_datorie_fkey"
+            columns: ["datorie"]
+            isOneToOne: false
+            referencedRelation: "datorii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incasari_datorie_fkey"
+            columns: ["datorie"]
+            isOneToOne: false
+            referencedRelation: "datorii_rest"
             referencedColumns: ["id"]
           },
           {
@@ -5416,6 +5615,153 @@ export type Database = {
         }
         Relationships: []
       }
+      datorii_rest: {
+        Row: {
+          articol_inventar: string | null
+          bilet: string | null
+          bucati: number | null
+          categorie: Database["public"]["Enums"]["categorie_incasare"] | null
+          client: string | null
+          created: string | null
+          descriere: string | null
+          id: string | null
+          locatie: string | null
+          nume: string | null
+          platit: number | null
+          prenume: string | null
+          rest: number | null
+          sezon: string | null
+          suma_datorata: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datorii_articol_inventar_fkey"
+            columns: ["articol_inventar"]
+            isOneToOne: false
+            referencedRelation: "inventar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_articol_inventar_fkey"
+            columns: ["articol_inventar"]
+            isOneToOne: false
+            referencedRelation: "produse_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_bilet_fkey"
+            columns: ["bilet"]
+            isOneToOne: false
+            referencedRelation: "bilete_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_bilet_fkey"
+            columns: ["bilet"]
+            isOneToOne: false
+            referencedRelation: "evenimente"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "datorii_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_sezon_fkey"
+            columns: ["sezon"]
+            isOneToOne: false
+            referencedRelation: "sezoane"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       de_incasat_pe_luna: {
         Row: {
           curs: string | null
@@ -6561,7 +6907,12 @@ export type Database = {
         }[]
       }
       build_fifo_plan_membru: {
-        Args: { p_client: string; p_pana_la?: string }
+        Args: {
+          p_client: string
+          p_datorii?: string[]
+          p_include_inrolari?: boolean
+          p_pana_la?: string
+        }
         Returns: Json
       }
       calculeaza_salariu_teacher: {
@@ -6783,6 +7134,18 @@ export type Database = {
           multi_stil: number
           procent: number
           total_activi: number
+        }[]
+      }
+      get_datorii_client: {
+        Args: { p_client: string }
+        Returns: {
+          categorie: Database["public"]["Enums"]["categorie_incasare"]
+          created: string
+          datorie_id: string
+          descriere: string
+          platit: number
+          rest: number
+          suma_datorata: number
         }[]
       }
       get_documente_client: {

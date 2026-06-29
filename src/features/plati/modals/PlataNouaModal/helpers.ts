@@ -1,6 +1,6 @@
 import type { SimpleTip } from '../../SimpleIncasareForm'
 
-export type TipPlata = 'Abonament' | 'Open' | SimpleTip
+export type TipPlata = 'Abonament' | 'Open' | 'Datorii' | SimpleTip
 
 export const tipTabs: { id: TipPlata; label: string }[] = [
   { id: 'Abonament', label: 'Abonament' },
@@ -8,6 +8,7 @@ export const tipTabs: { id: TipPlata; label: string }[] = [
   { id: 'Bilet',     label: 'Bilet' },
   { id: 'Merch',     label: 'Merch' },
   { id: 'Taxa',      label: 'Taxă' },
+  { id: 'Datorii',   label: 'Datorii' },
 ]
 
 export function todayIso(): string {

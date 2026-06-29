@@ -17,6 +17,7 @@ import { listAvailableVouchere } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
 import type { Incasare, InsertDto, Voucher } from '@/types/db'
 import {
+  createDatorie,
   createIncasari,
   listBiletSurse,
   listInventarOptiuni,
@@ -85,6 +86,9 @@ export function SimpleIncasareForm({
   const [card, setCard] = useState('')
   const [observatii, setObservatii] = useState(defaultObservatii ?? '')
   const [voucherId, setVoucherId] = useState('')
+  // Cât se încasează ACUM (0..preț). Restul devine datorie one-off urmărită.
+  const [incasat, setIncasat] = useState('')
+  const [incasatTouched, setIncasatTouched] = useState(false)
   const [guestMode, setGuestMode] = useState(false)
   const [guestNume, setGuestNume] = useState('')
   const [guestTelefon, setGuestTelefon] = useState('')
@@ -131,6 +135,16 @@ export function SimpleIncasareForm({
   )
   const sumaNum = Number(suma) || 0
   const preview = applyVoucher(sumaNum, voucherSelectat)
+  const finalSuma = preview.sumaFinala
+  const incasatNum = Number(incasat) || 0
+  const collectedClamped = Math.min(Math.max(0, incasatNum), finalSuma)
+  const restDatorie = Math.max(0, finalSuma - collectedClamped)
+
+  // Default „Încasează acum" = prețul final, până când recepția îl editează.
+  useEffect(() => {
+    if (incasatTouched) return
+    setIncasat(finalSuma > 0 ? String(finalSuma) : '')
+  }, [finalSuma, incasatTouched])
 
   // Auto-completează suma pe baza pretului din sursă × bucăți, doar dacă userul n-a editat
   const [sumaTouched, setSumaTouched] = useState(false)
@@ -191,9 +205,11 @@ export function SimpleIncasareForm({
         }
       }
 
-      const finalSuma = applyVoucher(sumaInput, voucherSelectat).sumaFinala
-      const tenders = resolveTenders({ metoda, total: finalSuma, cash, card })
+      const charge = applyVoucher(sumaInput, voucherSelectat).sumaFinala
+      const collected = Math.min(Math.max(0, Number(incasat) || 0), charge)
 
+      const bucNum = Number(bucati)
+      const buc = isFinite(bucNum) && bucNum > 0 ? Math.round(bucNum) : 1
       const base: InsertDto<'incasari'> = {
         client: clientField,
         lead: leadField,
@@ -203,34 +219,64 @@ export function SimpleIncasareForm({
         categorie: selectedBilet?.categorie ?? tip,
         voucher: voucherId || null,
       }
-      // La plată mixtă rezultă mai multe rânduri; articolul/biletul/bucățile
-      // se atașează DOAR primului rând (evită dublarea atribuirii).
-      const payloads: InsertDto<'incasari'>[] = tenders.map((t, idx) => {
-        const p: InsertDto<'incasari'> = {
-          ...base,
-          suma: t.suma,
-          metoda: t.metoda,
-        }
-        if (idx === 0) {
-          if (tip === 'Bilet') {
-            p.bilet = sursaId
-          } else if (tip === 'Merch') {
+      // Atașează sursa (bilet/articol/bucăți) DOAR primului rând (evită dublarea
+      // atribuirii la plata mixtă cu mai multe rânduri).
+      const withSource = (p: InsertDto<'incasari'>, first: boolean) => {
+        if (first) {
+          if (tip === 'Bilet') p.bilet = sursaId
+          else if (tip === 'Merch') {
             p.articol_inventar = sursaId
-            const buc = Number(bucati)
-            p.bucati = isFinite(buc) && buc > 0 ? Math.round(buc) : 1
+            p.bucati = buc
           }
         }
         return p
+      }
+
+      // Plată integrală → comportament clasic (incasari cu bilet/articol, fără datorie).
+      if (collected >= charge - 0.001) {
+        const tenders = resolveTenders({ metoda, total: charge, cash, card })
+        const payloads = tenders.map((t, idx) =>
+          withSource({ ...base, suma: t.suma, metoda: t.metoda }, idx === 0),
+        )
+        const created = await createIncasari(payloads)
+        return created[0] ?? null
+      }
+
+      // Parțial / 0 → creează datoria (charge) + (dacă s-a încasat) incasari legate de ea.
+      if (!clientField) {
+        throw new Error(
+          'Pentru plată parțială/0 e nevoie de un client (datoria se urmărește pe client). Pentru guest, încasează integral.',
+        )
+      }
+      const datorie = await createDatorie({
+        client: clientField,
+        categorie: selectedBilet?.categorie ?? tip,
+        descriere: observatii.trim() || null,
+        suma_datorata: charge,
+        bilet: tip === 'Bilet' ? sursaId : null,
+        articol_inventar: tip === 'Merch' ? sursaId : null,
+        bucati: tip === 'Merch' ? buc : null,
+        voucher: voucherId || null,
+        locatie: locatieId,
       })
+      if (collected <= 0) return null
+      const tenders = resolveTenders({ metoda, total: collected, cash, card })
+      const payloads = tenders.map((t, idx) =>
+        withSource(
+          { ...base, suma: t.suma, metoda: t.metoda, datorie: datorie.id },
+          idx === 0,
+        ),
+      )
       const created = await createIncasari(payloads)
-      return created[0]
+      return created[0] ?? null
     },
     onSuccess: (incasare) => {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
+      void queryClient.invalidateQueries({ queryKey: ['datorii'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['stat'] })
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
-      onCreated?.(incasare)
+      if (incasare) onCreated?.(incasare)
       onClose()
     },
     onError: (e: unknown) =>
@@ -368,15 +414,27 @@ export function SimpleIncasareForm({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <MetodaPlataField
-          metoda={metoda}
-          onMetoda={setMetoda}
-          total={preview.sumaFinala}
-          cash={cash}
-          card={card}
-          onCash={setCash}
-          onCard={setCard}
-        />
+        <Field label="Încasează acum (RON)">
+          <TextInput
+            type="number"
+            min={0}
+            max={finalSuma || undefined}
+            step="0.01"
+            value={incasat}
+            onChange={(e) => {
+              setIncasat(e.target.value)
+              setIncasatTouched(true)
+            }}
+          />
+          {finalSuma > 0 && (
+            <p className="mt-1 text-xs text-quasar-gray">
+              Preț: <strong className="text-quasar-black">{formatRON(finalSuma)}</strong>
+              {restDatorie > 0 && (
+                <> · rest <strong className="text-quasar-black">{formatRON(restDatorie)}</strong> (datorie)</>
+              )}
+            </p>
+          )}
+        </Field>
         <Field label="Voucher (opțional)">
           <Select
             placeholder="Fără voucher"
@@ -394,6 +452,18 @@ export function SimpleIncasareForm({
           )}
         </Field>
       </div>
+
+      {collectedClamped > 0 && (
+        <MetodaPlataField
+          metoda={metoda}
+          onMetoda={setMetoda}
+          total={collectedClamped}
+          cash={cash}
+          card={card}
+          onCash={setCash}
+          onCard={setCard}
+        />
+      )}
 
       <Field
         label={tip === 'Taxa' ? 'Descriere taxă (obligatoriu)' : 'Observații'}
@@ -433,7 +503,13 @@ export function SimpleIncasareForm({
           onClick={() => mutation.mutate()}
           disabled={mutation.isPending}
         >
-          {mutation.isPending ? 'Se înregistrează…' : 'Înregistrează plata'}
+          {mutation.isPending
+            ? 'Se înregistrează…'
+            : collectedClamped <= 0
+              ? 'Înregistrează datoria'
+              : restDatorie > 0
+                ? 'Încasează + datorie'
+                : 'Înregistrează plata'}
         </Button>
       </div>
     </div>

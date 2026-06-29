@@ -25,6 +25,10 @@ type Body = {
   // abonament: plătește restanța până la (și inclusiv) această înrolare/lună (FIFO);
   // null => toată restanța. Garda cronologică e validată server-side în RPC.
   panaLa?: string
+  // abonament: datorii one-off (Bilet/Merch/Taxă) selectate — fiecare se plătește INTEGRAL.
+  datorii?: string[]
+  // abonament: include înrolările în plan (false => părintele plătește DOAR datorii one-off).
+  includeInrolari?: boolean
   // rezervare: cod de voucher opțional, aplicat pe prețul ședinței (validat server-side).
   voucherCod?: string
 }
@@ -63,7 +67,7 @@ Deno.serve(async (req) => {
       return json({ error: 'invalid token' }, 401)
     }
 
-    const { clientId, kind = 'abonament', sesiuneId, panaLa, voucherCod } = (await req.json()) as Body
+    const { clientId, kind = 'abonament', sesiuneId, panaLa, datorii, includeInrolari, voucherCod } = (await req.json()) as Body
     if (!clientId) return json({ error: 'clientId obligatoriu' }, 400)
 
     // Client scopat pe JWT-ul părintelui => RPC-urile validează apartenența la familie
@@ -116,9 +120,12 @@ Deno.serve(async (req) => {
       }
     } else {
       // Abonament: recalculează restanța FIFO server-side (sursa de adevăr a sumei).
+      // Include opțional datoriile one-off (Bilet/Merch/Taxă) selectate (plată integrală).
       const { data: planRes, error: planErr } = await userClient.rpc('build_fifo_plan_membru', {
         p_client: clientId,
         p_pana_la: panaLa ?? undefined,
+        p_datorii: datorii ?? undefined,
+        p_include_inrolari: includeInrolari ?? undefined,
       })
       if (planErr) return json({ error: planErr.message }, 403)
       amount = Number(planRes?.amount ?? 0)

@@ -24,6 +24,12 @@ export {
   resolveWorkshopGuest,
 } from './incasari'
 
+export {
+  createDatorie,
+  listDatoriiClient,
+  registerPlataDatoriiFifo,
+} from './datorii'
+
 export type { BiletSursaOption, InventarOptionRow } from './sources'
 export { listBiletSurse, listInventarOptiuni } from './sources'
 
