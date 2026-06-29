@@ -7619,6 +7619,7 @@ export type Database = {
           p_metoda: Database["public"]["Enums"]["metoda_plata"]
           p_metoda2?: Database["public"]["Enums"]["metoda_plata"]
           p_permite_overbook?: boolean
+          p_pret?: number
           p_sesiune?: string
           p_suma: number
           p_suma2?: number

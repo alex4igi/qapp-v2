@@ -4,6 +4,7 @@ import {
   Modal,
   Field,
   DateInput,
+  TextInput,
   Select,
   Combobox,
   Checkbox,
@@ -15,8 +16,10 @@ import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { clientiOptions, sezonActiv } from '@/lib/lookups'
+import { formatRON } from '@/lib/format'
 import type { Curs, Enrollment, Enums } from '@/types/db'
 import { listAvailableVouchere } from '@/features/vouchere/api'
+import { applyVoucher } from '@/features/vouchere/calc'
 import { getCursOcupare } from '@/features/cursuri/api/profile'
 import { EligibilityAlerts } from '@/features/vouchere/EligibilityAlerts'
 import {
@@ -30,6 +33,7 @@ import {
   getOpenSesiuneByDate,
   listCursuriPentruInrolare,
   previewPoolDiscount,
+  registerPlataFifo,
   rezervaBonusOpen,
   rezervaLocOpen,
   scheduleConfirmareInrolare,
@@ -69,7 +73,11 @@ export function EnrollmentForm({
   const [voucherId, setVoucherId] = useState('')
   const [forceReinrolare, setForceReinrolare] = useState(false)
   const [includeBonusIunie, setIncludeBonusIunie] = useState(false)
-  // Plata pentru facultativ „Per ședință" (flux OPEN: rezervare + încasare).
+  // Încasare la înrolare (toate tipurile): cât se plătește ACUM (0..preț).
+  // Restul rămâne restanță. Pentru flux OPEN merge prin rezerva_loc_open,
+  // pentru recurent/per lună prin registerPlataFifo după creare.
+  const [incasat, setIncasat] = useState('')
+  const [incasatTouched, setIncasatTouched] = useState(false)
   const [metoda, setMetoda] = useState<MetodaSel>('Cash')
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
@@ -166,6 +174,7 @@ export function EnrollmentForm({
     if (lastCursIdRef.current === cursId) return
     lastCursIdRef.current = cursId
     setVoucherId('')
+    setIncasatTouched(false)
     const allowed: Enums<'tip_plata'>[] = isFacultativ
       ? ['Per sedinta', 'Per luna']
       : ['Per luna', 'Per an']
@@ -175,6 +184,7 @@ export function EnrollmentForm({
   // Voucherul depinde și de tip_plata; resetează la schimbare.
   useEffect(() => {
     setVoucherId('')
+    setIncasatTouched(false)
   }, [tipPlata])
 
   // Opțiuni curs grupate vizual: Grupe → Trupe → Facultative, alfabetic în grup.
@@ -242,31 +252,55 @@ export function EnrollmentForm({
   const policyPreview =
     voucherId || isFacultativPerSedinta ? null : (previewQ.data ?? null)
 
+  // Prețul final afișat (după voucher / politică). Pentru recurent „Per lună"
+  // = rata lunară; pentru OPEN/facultativ = prețul ședinței/lunii.
+  const finalPret = useMemo(() => {
+    if (sumaSugerata == null) return null
+    if (voucherSelectat) return applyVoucher(sumaSugerata, voucherSelectat).sumaFinala
+    if (policyPreview) return policyPreview.suma_finala
+    return sumaSugerata
+  }, [sumaSugerata, voucherSelectat, policyPreview])
+
+  const incasatNum = Number(incasat) || 0
+  const restInrolare = finalPret != null ? Math.max(0, finalPret - incasatNum) : 0
+
+  // Default „Încasează acum" = prețul final, până când recepția îl editează.
+  useEffect(() => {
+    if (incasatTouched) return
+    setIncasat(finalPret != null ? String(finalPret) : '')
+  }, [finalPret, incasatTouched])
+
   const submit = useMutation({
     mutationFn: (): Promise<Enrollment[] | string> => {
       if (!tipInrolare) {
         throw new Error('Cursul selectat nu e încărcat. Reîncearcă.')
       }
-      // Facultativ „Per ședință" = rezervare la o sesiune OPEN + încasare, atomic
-      // (același flux ca tab-ul Open class). Nu creăm un enrollment „sec".
+      // Facultativ „Per ședință" = rezervare la o sesiune OPEN + încasare (parțial/0),
+      // atomic (același flux ca tab-ul Open class). Nu creăm un enrollment „sec".
       if (isFacultativPerSedinta) {
         if (!locatieId) {
           throw new Error(
             'Setează locația de lucru din bara de sus (📍 lângă dată).',
           )
         }
-        const total = sumaSugerata ?? 0
-        if (!(total > 0)) {
+        const pretSed = sumaSugerata ?? 0
+        if (!(pretSed > 0)) {
           throw new Error('Cursul nu are preț pe ședință configurat.')
         }
-        const tenders = resolveTenders({ metoda, total, cash, card })
+        if (incasatNum > pretSed + 0.001) {
+          throw new Error('Suma încasată depășește prețul.')
+        }
+        // Încasare 0 → fără tenders (nicio metodă cerută); restul rămâne restanță.
+        const tenders =
+          incasatNum > 0 ? resolveTenders({ metoda, total: incasatNum, cash, card }) : []
         const [t0, t1] = tenders
         return rezervaLocOpen({
           clientId,
-          suma: t0.suma,
-          metoda: t0.metoda,
+          suma: t0?.suma ?? 0,
+          metoda: t0?.metoda ?? 'Cash',
           metoda2: t1?.metoda ?? null,
           suma2: t1?.suma ?? null,
+          pret: pretSed,
           locatieId,
           sesiuneId: sesiuneQ.data?.sesiune?.id ?? null,
           cursId,
@@ -302,6 +336,41 @@ export function EnrollmentForm({
       }
       const rows = result as Enrollment[]
       console.info(`[Înrolare] ${rows.length} rânduri create.`)
+      // Încasare la înrolare (parțial/0): distribuie FIFO peste rândurile create
+      // (vechi → nou). Înrolarea există deja; dacă încasarea eșuează păstrăm modalul
+      // deschis cu eroarea (se poate încasa ulterior din „Plată nouă → Abonament").
+      if (incasatNum > 0 && rows.length > 0 && locatieId) {
+        const ordered = [...rows].sort((a, b) =>
+          (a.data_incepere ?? '').localeCompare(b.data_incepere ?? ''),
+        )
+        const remaining = ordered.map((r) => Number(r.suma ?? 0))
+        const pool = Math.min(
+          incasatNum,
+          remaining.reduce((a, b) => a + b, 0),
+        )
+        if (pool > 0) {
+          try {
+            const tenders = resolveTenders({ metoda, total: pool, cash, card })
+            await registerPlataFifo({
+              clientId,
+              enrollmentIds: ordered.map((r) => r.id),
+              remaining,
+              partialAmount: pool,
+              metoda: tenders[0].metoda,
+              tenders,
+              data: todayIso(),
+              locatieId,
+            })
+          } catch (e) {
+            setError(
+              'Înrolarea s-a creat, dar încasarea a eșuat: ' +
+                (e instanceof Error ? e.message : 'eroare necunoscută') +
+                '. Încaseaz-o din „Plată nouă → Abonament".',
+            )
+            return
+          }
+        }
+      }
       // SMS de confirmare doar pentru recurent (grupă/trupă), cu fereastră de
       // undo de 5 min. Best-effort: o eroare aici nu blochează înrolarea.
       if (
@@ -523,16 +592,48 @@ export function EnrollmentForm({
             />
           )}
 
-          {isFacultativPerSedinta && cursSelectat && (
-            <MetodaPlataField
-              metoda={metoda}
-              onMetoda={setMetoda}
-              total={sumaSugerata ?? 0}
-              cash={cash}
-              card={card}
-              onCash={setCash}
-              onCard={setCard}
-            />
+          {cursSelectat && sumaSugerata != null && !blockantPretLipsa && (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <Field label="Încasează acum (RON)">
+                <TextInput
+                  type="number"
+                  min={0}
+                  max={finalPret ?? undefined}
+                  step="0.01"
+                  value={incasat}
+                  onChange={(e) => {
+                    setIncasat(e.target.value)
+                    setIncasatTouched(true)
+                  }}
+                />
+                <p className="mt-1 text-xs text-quasar-gray">
+                  {!isFacultativ && tipPlata === 'Per luna' ? 'Rată curentă: ' : 'Preț: '}
+                  <strong className="text-quasar-black">
+                    {formatRON(finalPret ?? 0)}
+                  </strong>
+                  {restInrolare > 0 && (
+                    <>
+                      {' '}· rest{' '}
+                      <strong className="text-quasar-black">
+                        {formatRON(restInrolare)}
+                      </strong>{' '}
+                      (restanță)
+                    </>
+                  )}
+                </p>
+              </Field>
+              {incasatNum > 0 && (
+                <MetodaPlataField
+                  metoda={metoda}
+                  onMetoda={setMetoda}
+                  total={incasatNum}
+                  cash={cash}
+                  card={card}
+                  onCash={setCash}
+                  onCard={setCard}
+                />
+              )}
+            </div>
           )}
 
           {!isFacultativ && tipPlata === 'Per luna' && (

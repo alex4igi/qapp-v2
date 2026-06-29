@@ -53,6 +53,9 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
     () => cursuriQ.data?.find((c) => c.id === cursId) ?? null,
     [cursuriQ.data, cursId],
   )
+  const pret = cursSelectat?.pret_sedinta ?? null
+  const incasat = Number(suma) || 0
+  const rest = pret != null ? Math.max(0, pret - incasat) : 0
 
   // Ocuparea sesiunii (curs + dată), reîncărcată la schimbarea oricăruia.
   const sesiuneQ = useQuery({
@@ -81,21 +84,29 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
       if (!data) throw new Error('Alege data sesiunii.')
       if (data < todayIso()) throw new Error('Sesiunea nu poate fi în trecut.')
       if (!clientId) throw new Error('Alege cursantul.')
-      const sumaNum = Number(suma)
-      if (!suma.trim() || !isFinite(sumaNum) || sumaNum <= 0) {
-        throw new Error('Suma este obligatorie și pozitivă.')
+      if (pret == null || !(pret > 0)) {
+        throw new Error('Cursul nu are preț pe ședință configurat.')
+      }
+      const sumaNum = Number(suma) || 0
+      if (!isFinite(sumaNum) || sumaNum < 0) {
+        throw new Error('Suma încasată este invalidă.')
+      }
+      if (sumaNum > pret + 0.001) {
+        throw new Error('Suma încasată depășește prețul.')
       }
       if (!locatieId) {
         throw new Error('Setează locația de lucru din bara de sus (📍 lângă dată).')
       }
-      const tenders = resolveTenders({ metoda, total: sumaNum, cash, card })
+      // Încasare 0 → fără tenders (nicio metodă cerută); restul rămâne restanță.
+      const tenders = sumaNum > 0 ? resolveTenders({ metoda, total: sumaNum, cash, card }) : []
       const [t0, t1] = tenders
       return rezervaLocOpen({
         clientId,
-        suma: t0.suma,
-        metoda: t0.metoda,
+        suma: t0?.suma ?? 0,
+        metoda: t0?.metoda ?? 'Cash',
         metoda2: t1?.metoda ?? null,
         suma2: t1?.suma ?? null,
+        pret,
         locatieId,
         sesiuneId: ocupare?.sesiune?.id ?? null,
         cursId,
@@ -211,10 +222,11 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
             onChange={(e) => setInstructorId(e.target.value)}
           />
         </Field>
-        <Field label="Sumă (RON)" required>
+        <Field label="Încasează acum (RON)">
           <TextInput
             type="number"
             min={0}
+            max={pret ?? undefined}
             step="0.01"
             value={suma}
             onChange={(e) => {
@@ -222,25 +234,35 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
               setSumaTouched(true)
             }}
           />
+          {pret != null && (
+            <p className="mt-1 text-xs text-quasar-gray">
+              Preț: <strong className="text-quasar-black">{formatRON(pret)}</strong>
+              {rest > 0 && (
+                <> · rest <strong className="text-quasar-black">{formatRON(rest)}</strong> (restanță)</>
+              )}
+            </p>
+          )}
         </Field>
-        <MetodaPlataField
-          metoda={metoda}
-          onMetoda={setMetoda}
-          total={Number(suma) || 0}
-          cash={cash}
-          card={card}
-          onCash={setCash}
-          onCard={setCard}
-        />
+        {incasat > 0 && (
+          <MetodaPlataField
+            metoda={metoda}
+            onMetoda={setMetoda}
+            total={incasat}
+            cash={cash}
+            card={card}
+            onCash={setCash}
+            onCard={setCard}
+          />
+        )}
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex items-center justify-end gap-2 border-t border-quasar-gray-light pt-3">
         <div className="mr-auto text-sm">
-          <span className="text-quasar-gray">Total:</span>{' '}
+          <span className="text-quasar-gray">Încasează:</span>{' '}
           <span className="font-semibold text-quasar-black">
-            {formatRON(Number(suma) || 0)}
+            {formatRON(incasat)}
           </span>
         </div>
         <Button variant="secondary" onClick={onClose}>
@@ -254,7 +276,9 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
             ? 'Se rezervă…'
             : plin && !overbook
               ? 'Sesiune completă'
-              : 'Rezervă + încasează'}
+              : incasat > 0
+                ? 'Rezervă + încasează'
+                : 'Rezervă (fără plată)'}
         </Button>
       </div>
     </div>

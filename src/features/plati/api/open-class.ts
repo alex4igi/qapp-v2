@@ -152,9 +152,12 @@ export type RezervaLocParams = {
   // walk-in la recepție: permite depășirea limitei sesiunii (limita rămâne strictă online)
   permiteOverbook?: boolean
   // plată mixtă: a doua metodă + sumă (ex: `suma`=Cash, `metoda2`/`suma2`=Card).
-  // Totalul rezervării = suma + (suma2 ?? 0).
+  // Totalul ÎNCASAT = suma + (suma2 ?? 0).
   metoda2?: Enums<'metoda_plata'> | null
   suma2?: number | null
+  // Prețul cursului (cât datorează). Dacă lipsește → = suma încasată (comportament vechi).
+  // Când e dat, enrollment.suma = pret, iar restul (pret − încasat) devine restanță.
+  pret?: number | null
 }
 
 // Rezervă un loc + încasează, atomic (blocare strictă la capacitate în RPC).
@@ -172,6 +175,7 @@ export async function rezervaLocOpen(params: RezervaLocParams): Promise<string> 
     p_permite_overbook: params.permiteOverbook ?? undefined,
     p_metoda2: params.metoda2 ?? undefined,
     p_suma2: params.suma2 ?? undefined,
+    p_pret: params.pret ?? undefined,
   })
   if (error) {
     if (error.code === '23505') {
