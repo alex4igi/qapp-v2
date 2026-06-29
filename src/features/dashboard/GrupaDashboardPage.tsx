@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Spinner, Tabs, Badge, type BadgeTone } from '@/components/ui'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
@@ -70,6 +70,7 @@ function ClientCard({
   onReactivateFacultativ,
   togglePending,
   facultativ,
+  backState,
 }: {
   row: GrupaRosterRow
   onPay: (clientId: string) => void
@@ -78,6 +79,7 @@ function ClientCard({
   onReactivateFacultativ: (row: GrupaRosterRow) => void
   togglePending: boolean
   facultativ: boolean
+  backState: { backTo: string; backLabel: string }
 }) {
   const navigate = useNavigate()
   const name = [row.nume, row.prenume].filter(Boolean).join(', ')
@@ -171,7 +173,7 @@ function ClientCard({
         type="button"
         onClick={(e) => {
           e.stopPropagation()
-          navigate(navTarget)
+          navigate(navTarget, isLead ? undefined : { state: backState })
         }}
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-white/75 text-[#6B6760]"
         style={{ borderColor: st.bd }}
@@ -332,6 +334,7 @@ function RosterColumns({
 export function GrupaDashboardPage() {
   const { cursId } = useParams<{ cursId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { date } = useWorkingDate()
   const queryClient = useQueryClient()
   const [payClientId, setPayClientId] = useState<string | null>(null)
@@ -456,6 +459,8 @@ export function GrupaDashboardPage() {
   }
 
   const meta = [data.teacher, data.sala, data.ora].filter(Boolean).join(' · ')
+  // Back-ul fișei de client revine la acest roster (nu la lista /clienti).
+  const backToRoster = { backTo: location.pathname, backLabel: data.cursNume }
   const initials =
     data.cursNume.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() ||
     '?'
@@ -575,7 +580,9 @@ export function GrupaDashboardPage() {
               rows={orderedRoster}
               onMemberClick={handleMemberClick}
               onPay={(id) => setPayClientId(id)}
-              navigate={(to) => navigate(to)}
+              navigate={(to) =>
+                navigate(to, to === '/leads' ? undefined : { state: backToRoster })
+              }
             />
           ) : rosterView === 'cols' ? (
             <RosterColumns rows={orderedRoster} onMemberClick={handleMemberClick} />
@@ -600,6 +607,7 @@ export function GrupaDashboardPage() {
                   togglePending={
                     toggleMut.isPending && toggleMut.variables?.rowId === r.rowId
                   }
+                  backState={backToRoster}
                 />
               ))}
               <button
@@ -619,7 +627,7 @@ export function GrupaDashboardPage() {
           <RestantieriTab
             loading={restantieriQ.isLoading}
             rows={restantieriQ.data ?? []}
-            onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+            onRowClick={(cid) => navigate(`/clienti/${cid}`, { state: backToRoster })}
             onPayClick={(cid) => setPayClientId(cid)}
           />
         </div>
