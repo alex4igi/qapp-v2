@@ -99,6 +99,39 @@ h3 {
   box-shadow: 0 3px 10px rgba(70, 55, 10, 0.1);
 }
 
+/* === Quasar OS — modal lead (design „Lead Modal") === */
+.qf {
+  font-family: var(--font-sans);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.qf:focus {
+  border-color: var(--color-quasar-yellow) !important;
+  box-shadow: 0 0 0 3px rgba(255, 214, 0, 0.22);
+}
+.qbody::-webkit-scrollbar {
+  width: 10px;
+}
+.qbody::-webkit-scrollbar-thumb {
+  background: #d8d3c8;
+  border-radius: 6px;
+  border: 2px solid #fff;
+}
+.qbtnp:hover {
+  background: var(--color-quasar-yellow-dark) !important;
+}
+.qstep:hover .qstep-label {
+  color: var(--color-ink) !important;
+}
+.qexit {
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.qact {
+  transition: background 0.12s ease;
+}
+.qact:hover {
+  background: #f0ece3 !important;
+}
+
 /* Scrollbar orizontal mereu vizibil pentru board-ul kanban — pe desktop cu
    mouse fără rotiță orizontală bara trebuie să fie vizibilă și trăgabilă. */
 .kanban-scroll {

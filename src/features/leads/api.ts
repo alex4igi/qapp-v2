@@ -537,6 +537,55 @@ export async function getEnrolledClientIds(
   return [...new Set((data ?? []).map((r) => r.client as string))]
 }
 
+// Pentru un lead deja convertit: clientul legat + grupa/cursul REAL din înrolarea
+// activă (sursa de adevăr pentru reguli — nu `grupa_varsta` de pe lead, care e doar
+// banda de vârstă-intenție).
+export type LeadConversionInfo = {
+  clientId: string
+  clientNume: string
+  cursNume: string | null
+  cursVarsta: string | null
+  cursId: string | null
+  dataIncepere: string | null
+}
+
+export async function getLeadConversionInfo(
+  clientId: string,
+): Promise<LeadConversionInfo | null> {
+  const { data: client, error: cErr } = await supabase
+    .from('clienti')
+    .select('id, nume, prenume')
+    .eq('id', clientId)
+    .maybeSingle()
+  if (cErr) throw cErr
+  if (!client) return null
+
+  const { data: enr, error: eErr } = await supabase
+    .from('enrollments')
+    .select('cursul(id, numele, varsta), data_incepere')
+    .eq('client', clientId)
+    .eq('reziliat', false)
+    .order('data_incepere', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (eErr) throw eErr
+
+  const cursRaw = enr?.cursul as unknown
+  const curs = (Array.isArray(cursRaw) ? cursRaw[0] : cursRaw) as
+    | { id: string; numele: string; varsta: string | null }
+    | null
+    | undefined
+
+  return {
+    clientId: client.id as string,
+    clientNume: [client.prenume, client.nume].filter(Boolean).join(' ').trim(),
+    cursNume: curs?.numele ?? null,
+    cursVarsta: curs?.varsta ?? null,
+    cursId: curs?.id ?? null,
+    dataIncepere: (enr?.data_incepere as string | null) ?? null,
+  }
+}
+
 export type CursProgramabil = {
   id: string
   numele: string
