@@ -1,8 +1,9 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, useEffect, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Modal, Field, DateTimeInput, TextArea, Button } from '@/components/ui'
+import { Modal, Field, DateInput, TextArea, Button } from '@/components/ui'
 import type { Lead } from '@/types/db'
-import { SUB_STATUS_OPTIONS, prependObservatie } from './constants'
+import { SUB_STATUS_OPTIONS, prependObservatie, dataPesteZile } from './constants'
 import { updateLead, type LeadForm } from './api'
 
 type Props = {
@@ -24,7 +25,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
     if (!open) return
     setSubStatus((lead?.sub_status as SubStatus | null) ?? '')
     setDataCallback(
-      lead?.data_callback_dorit ? lead.data_callback_dorit.slice(0, 16) : '',
+      lead?.data_callback_dorit ? lead.data_callback_dorit.slice(0, 10) : '',
     )
     setNota('')
     setError(null)
@@ -50,7 +51,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {
@@ -60,7 +61,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
       return
     }
     if (!dataCallback) {
-      setError('Data și ora sunt obligatorii.')
+      setError('Data este obligatorie.')
       return
     }
     setError(null)
@@ -72,7 +73,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
       ? 'Când îl sunăm înapoi (sau când ne contactează el)?'
       : subStatus === 'nu_raspunde'
         ? 'Când re-încercăm?'
-        : 'Data și ora următoarei contactări'
+        : 'Data următoarei contactări'
 
   return (
     <Modal
@@ -112,6 +113,10 @@ export function ContactareModal({ open, lead, onClose }: Props) {
                 type="button"
                 onClick={() => {
                   setSubStatus(o.value)
+                  // „Nu răspunde" → follow-up implicit peste o săptămână
+                  // (editabil). Operatorul nu trebuie să aleagă manual o dată.
+                  if (o.value === 'nu_raspunde' && !dataCallback)
+                    setDataCallback(dataPesteZile(7))
                   setError(null)
                 }}
                 className={`rounded-full border px-3 py-1 text-xs transition-colors ${
@@ -127,7 +132,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
         </Field>
 
         <Field label={dateLabel} required htmlFor="contactare-data">
-          <DateTimeInput
+          <DateInput
             id="contactare-data"
             value={dataCallback}
             onChange={(e) => setDataCallback(e.target.value)}

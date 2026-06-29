@@ -133,6 +133,17 @@ export function isToday(iso: string | null): boolean {
   )
 }
 
+// Data (YYYY-MM-DD, fus local) la `zile` zile distanță de azi. Folosit pentru
+// follow-up-ul implicit: când un lead „nu răspunde", revenim peste o săptămână.
+export function dataPesteZile(zile: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + zile)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 // Prepend o notă datată la observații, cu o etichetă de context.
 // Ex: prependObservatie('Contactat', 'sunat, indecis', '...existent') →
 //     "[Contactat 21 mai] sunat, indecis\n...existent"

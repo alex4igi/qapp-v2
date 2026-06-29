@@ -46,14 +46,28 @@ function sortLeads(leads: Lead[], status: string): Lead[] {
     }
     if (status === 'waiting_list') return ts(a.created) - ts(b.created)
 
-    const aFlag = a.flag_reminder ? 0 : 1
-    const bFlag = b.flag_reminder ? 0 : 1
-    if (aFlag !== bFlag) return aFlag - bFlag
     if (status === 'contactat') {
+      const now = Date.now()
+      // Follow-up scadent (data a trecut) → capul coloanei, imediat ce se
+      // declanșează, fără să aștepte flag-ul de seară al cron-ului.
+      const due = (l: Lead) =>
+        l.sub_status && l.data_callback_dorit && ts(l.data_callback_dorit) <= now
+          ? 0
+          : 1
+      const aDue = due(a)
+      const bDue = due(b)
+      if (aDue !== bDue) return aDue - bDue
+      // Ambele scadente: cel mai demult scadent primul.
+      if (aDue === 0)
+        return ts(a.data_callback_dorit!) - ts(b.data_callback_dorit!)
+      // Niciunul scadent: flag sus, apoi contacte proaspete (fără sub-status),
+      // apoi follow-up apropiat.
+      const aFlag = a.flag_reminder ? 0 : 1
+      const bFlag = b.flag_reminder ? 0 : 1
+      if (aFlag !== bFlag) return aFlag - bFlag
       const aSub = a.sub_status ? 1 : 0
       const bSub = b.sub_status ? 1 : 0
       if (aSub !== bSub) return aSub - bSub
-      // Ambele cu sub-status: cel cu follow-up mai apropiat/scadent urcă.
       if (a.sub_status && b.sub_status) {
         const aCb = a.data_callback_dorit ? ts(a.data_callback_dorit) : Infinity
         const bCb = b.data_callback_dorit ? ts(b.data_callback_dorit) : Infinity
@@ -61,6 +75,10 @@ function sortLeads(leads: Lead[], status: string): Lead[] {
       }
       return 0
     }
+
+    const aFlag = a.flag_reminder ? 0 : 1
+    const bFlag = b.flag_reminder ? 0 : 1
+    if (aFlag !== bFlag) return aFlag - bFlag
     return 0
   })
 }

@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -5,7 +6,6 @@ import {
   Field,
   TextInput,
   DateInput,
-  DateTimeInput,
   TextArea,
   Select,
   Button,
@@ -23,6 +23,7 @@ import {
   GRUPA_TO_VARSTA_CURS,
   LOCATII,
   ZILE_SAPTAMANA,
+  dataPesteZile,
 } from './constants'
 import {
   createLead,
@@ -91,7 +92,7 @@ function fromLead(lead: Lead): LeadForm {
       ? lead.data_programare.slice(0, 10)
       : '',
     data_callback_dorit: lead.data_callback_dorit
-      ? lead.data_callback_dorit.slice(0, 16)
+      ? lead.data_callback_dorit.slice(0, 10)
       : '',
     observatii: lead.observatii ?? '',
   }
@@ -328,7 +329,7 @@ export function LeadModal({
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const remove = useMutation({
@@ -338,7 +339,7 @@ export function LeadModal({
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la ștergere.'),
+      setError(humanizeError(e, 'Eroare la ștergere.')),
   })
 
   // Mutare rapidă în Nurture (pool de reactivare). Folosește updateLeadStatus —
@@ -350,7 +351,7 @@ export function LeadModal({
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la mutare.'),
+      setError(humanizeError(e, 'Eroare la mutare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {
@@ -621,7 +622,7 @@ export function LeadModal({
             // Pentru leadurile contactate data programării nu are sens — are sens
             // data de follow-up (când revenim la client).
             <Field label="Data follow-up" htmlFor="data_callback_dorit">
-              <DateTimeInput
+              <DateInput
                 id="data_callback_dorit"
                 value={form.data_callback_dorit}
                 onChange={(e) => set('data_callback_dorit', e.target.value)}
@@ -682,7 +683,19 @@ export function LeadModal({
                 value: o.value,
               }))}
               value={form.sub_status}
-              onChange={(e) => set('sub_status', e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value
+                // „Nu răspunde" → follow-up implicit peste o săptămână
+                // (editabil) dacă nu e deja setat.
+                setForm((prev) => ({
+                  ...prev,
+                  sub_status: v,
+                  data_callback_dorit:
+                    v === 'nu_raspunde' && !prev.data_callback_dorit
+                      ? dataPesteZile(7)
+                      : prev.data_callback_dorit,
+                }))
+              }}
             />
           </Field>
         )}
