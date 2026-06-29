@@ -415,6 +415,9 @@ verify_jwt = false
 [functions.process-review-sms]
 verify_jwt = false
 
+[functions.process-sms-amanate]
+verify_jwt = false
+
 # Webhook-uri publice de intake — apelate din formular website / Meta Lead Ads.
 [functions.intake-website-lead]
 verify_jwt = false

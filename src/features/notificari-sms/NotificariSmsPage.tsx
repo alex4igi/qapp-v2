@@ -32,6 +32,7 @@ const STATUS_STYLE: Record<string, string> = {
   'In curs de trimitere': 'text-blue-700',
   Trimis: 'text-green-700',
   Esuat: 'text-red-600',
+  Amanat: 'text-purple-700',
 }
 
 export function NotificariSmsPage() {

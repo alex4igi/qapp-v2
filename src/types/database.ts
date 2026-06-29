@@ -5082,6 +5082,53 @@ export type Database = {
           },
         ]
       }
+      sms_amanate: {
+        Row: {
+          created: string
+          error: string | null
+          id: string
+          lead_id: string | null
+          mesaj: string
+          send_after: string
+          status: string
+          telefon: string
+          tip: string | null
+          trimis_la: string | null
+        }
+        Insert: {
+          created?: string
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          mesaj: string
+          send_after?: string
+          status?: string
+          telefon: string
+          tip?: string | null
+          trimis_la?: string | null
+        }
+        Update: {
+          created?: string
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          mesaj?: string
+          send_after?: string
+          status?: string
+          telefon?: string
+          tip?: string | null
+          trimis_la?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_amanate_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_logs: {
         Row: {
           error: string | null
@@ -8222,7 +8269,12 @@ export type Database = {
         | "Convertit"
         | "Nu doreste"
       status_rezervare: "rezervat" | "platit" | "anulat"
-      status_sms: "De trimis" | "In curs de trimitere" | "Trimis" | "Esuat"
+      status_sms:
+        | "De trimis"
+        | "In curs de trimitere"
+        | "Trimis"
+        | "Esuat"
+        | "Amanat"
       sub_status_lead: "de_revenit" | "nu_raspunde"
       sursa_prospect:
         | "Meta ADS"
@@ -8484,7 +8536,13 @@ export const Constants = {
         "Nu doreste",
       ],
       status_rezervare: ["rezervat", "platit", "anulat"],
-      status_sms: ["De trimis", "In curs de trimitere", "Trimis", "Esuat"],
+      status_sms: [
+        "De trimis",
+        "In curs de trimitere",
+        "Trimis",
+        "Esuat",
+        "Amanat",
+      ],
       sub_status_lead: ["de_revenit", "nu_raspunde"],
       sursa_prospect: [
         "Meta ADS",

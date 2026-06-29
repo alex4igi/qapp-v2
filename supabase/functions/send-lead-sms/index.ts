@@ -2,6 +2,7 @@
 // Apelată din client după schimbările de status. Dedup prin tabelul sms_logs.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms, type SmsTip } from '../_shared/sms.ts'
+import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -77,6 +78,21 @@ Deno.serve(async (req) => {
       dataProgramare: lead.data_programare,
       ora: programare?.ora ?? null,
     })
+
+    // Zonă interzisă: nu trimitem acum — punem mesajul (deja compus) în coada
+    // sms_amanate, drenată de process-sms-amanate după ce iese din fereastră.
+    const now = new Date()
+    const quietCfg = await getQuietHoursConfig(supabase)
+    if (isQuiet(now, quietCfg)) {
+      await supabase.from('sms_amanate').insert({
+        telefon: lead.telefon,
+        mesaj,
+        tip,
+        lead_id: leadId,
+        send_after: deferUntil(now, quietCfg),
+      })
+      return json({ deferred: true })
+    }
 
     const result = await sendSms(lead.telefon, mesaj)
 

@@ -5,6 +5,7 @@ import { isOwner, ROLE_LABEL } from '@/lib/rolesMatrix'
 import { SaliSection } from './SaliSection'
 import { SezoaneSection } from './SezoaneSection'
 import { UtilizatoriSection } from './UtilizatoriSection'
+import { SmsQuietHoursSection } from './SmsQuietHoursSection'
 
 export function SetariPage() {
   const { role } = useAuth()
@@ -25,6 +26,7 @@ export function SetariPage() {
       <div className="space-y-8">
         <SaliSection />
         <SezoaneSection />
+        <SmsQuietHoursSection />
         <UtilizatoriSection />
       </div>
     </div>

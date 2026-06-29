@@ -87,6 +87,7 @@ export const statusSmsOptions = opts(
   'In curs de trimitere',
   'Trimis',
   'Esuat',
+  'Amanat',
 )
 
 export const categorieIncasareOptions = opts(

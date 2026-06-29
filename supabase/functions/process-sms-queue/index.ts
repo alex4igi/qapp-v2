@@ -3,6 +3,7 @@
 // Mesajul e deja compus și stocat în rând — nu folosește buildSms.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { sendSms } from '../_shared/sms.ts'
+import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,39 @@ Deno.serve(async (req) => {
       .eq('status', 'De trimis')
 
     if (error) return json({ error: error.message }, 500)
+
+    // Zonă interzisă: și batch-urile manuale o respectă. Mutăm fiecare rând valid
+    // în coada de noapte (sms_amanate) și îl marcăm 'Amanat' — process-sms-amanate
+    // îl trimite după 10:00. Nu trimitem nimic acum.
+    const now = new Date()
+    const quietCfg = await getQuietHoursConfig(supabase)
+    if (isQuiet(now, quietCfg)) {
+      const next = deferUntil(now, quietCfg)
+      let deferred = 0
+      let invalid = 0
+      for (const row of queue ?? []) {
+        if (!row.telefon || !row.mesaj) {
+          await supabase
+            .from('situatie_sms_uri')
+            .update({ status: 'Esuat' })
+            .eq('id', row.id)
+          invalid++
+          continue
+        }
+        await supabase.from('sms_amanate').insert({
+          telefon: row.telefon,
+          mesaj: row.mesaj,
+          tip: 'manual',
+          send_after: next,
+        })
+        await supabase
+          .from('situatie_sms_uri')
+          .update({ status: 'Amanat' })
+          .eq('id', row.id)
+        deferred++
+      }
+      return json({ total: queue?.length ?? 0, deferred, failed: invalid, quiet: true })
+    }
 
     const today = new Date().toISOString().slice(0, 10)
     let sent = 0

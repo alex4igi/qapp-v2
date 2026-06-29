@@ -8,6 +8,7 @@
 // de undo: daca recepatia anuleaza/revine din conversie, SMS-ul nu mai pleaca.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms } from '../_shared/sms.ts'
+import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
 
 Deno.serve(async (req) => {
   const cronSecret = Deno.env.get('CRON_SECRET')
@@ -23,7 +24,21 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  const nowIso = new Date().toISOString()
+  // Zonă interzisă: amână tot lotul scadent spre dimineață și ieși (vezi
+  // process-programare-sms — același tratament).
+  const now = new Date()
+  const quietCfg = await getQuietHoursConfig(supabase)
+  const nowIso = now.toISOString()
+  if (isQuiet(now, quietCfg)) {
+    const next = deferUntil(now, quietCfg)
+    const { data: deferred } = await supabase
+      .from('confirmari_review_sms')
+      .update({ send_after: next })
+      .eq('status', 'programat')
+      .lte('send_after', nowIso)
+      .select('id')
+    return Response.json({ deferred: deferred?.length ?? 0, quiet: true })
+  }
   const { data: due, error } = await supabase
     .from('confirmari_review_sms')
     .select('id, lead_id')

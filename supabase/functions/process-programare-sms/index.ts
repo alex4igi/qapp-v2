@@ -7,6 +7,7 @@
 // Apelata de pg_cron la ~1 min. Delay-ul de 2 min vine din send_after.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms } from '../_shared/sms.ts'
+import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
 
 Deno.serve(async (req) => {
   const cronSecret = Deno.env.get('CRON_SECRET')
@@ -22,7 +23,21 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  const nowIso = new Date().toISOString()
+  // Zonă interzisă: dacă suntem în fereastră, împinge tot lotul scadent spre
+  // dimineață (lasă status 'programat') și ieși — cronul de 1 min le reia la 10:00.
+  const now = new Date()
+  const quietCfg = await getQuietHoursConfig(supabase)
+  const nowIso = now.toISOString()
+  if (isQuiet(now, quietCfg)) {
+    const next = deferUntil(now, quietCfg)
+    const { data: deferred } = await supabase
+      .from('confirmari_programare_sms')
+      .update({ send_after: next })
+      .eq('status', 'programat')
+      .lte('send_after', nowIso)
+      .select('id')
+    return Response.json({ deferred: deferred?.length ?? 0, quiet: true })
+  }
   const { data: due, error } = await supabase
     .from('confirmari_programare_sms')
     .select('id, lead_id')
