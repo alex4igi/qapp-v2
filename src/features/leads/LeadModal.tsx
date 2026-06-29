@@ -195,20 +195,31 @@ export function LeadModal({
   // Cursurile din ziua aleasă (filtrate pe grupă + zi + locație) + evenimentele zilei.
   const optiuni = useMemo(() => {
     const all = cursuriQ.data ?? []
+    // Locația e filtru DUR: dacă e aleasă, nu arătăm niciodată cursuri din alte
+    // locații (cursurile fără locație rămân, fiind valabile oriunde).
+    const byLocatie = leadLocatieId
+      ? all.filter((c) => !c.locatie || c.locatie === leadLocatieId)
+      : all
     const varstaCurs = form.grupa_varsta
       ? GRUPA_TO_VARSTA_CURS[form.grupa_varsta as GrupaLead]
       : null
-    const filtered = all.filter((c) => {
+    // Grupa + ziua sunt filtre SOFT: dacă golesc lista, revenim la toate
+    // cursurile din locația aleasă (nu din toate locațiile).
+    const filtered = byLocatie.filter((c) => {
       if (varstaCurs && c.varsta && c.varsta !== varstaCurs && c.varsta !== 'Mixt')
         return false
       if (weekday && c.zile?.length && !c.zile.includes(weekday)) return false
-      if (leadLocatieId && c.locatie && c.locatie !== leadLocatieId) return false
       return true
     })
-    const cursList = filtered.length ? filtered : all
+    const cursList = filtered.length ? filtered : byLocatie
+    // Aceeași regulă pentru evenimente: dacă locația e aleasă, doar evenimentele
+    // din ea (plus cele fără locație setată).
+    const evList = (evenimenteQ.data ?? []).filter((e) =>
+      leadLocatieId ? !e.locatia || e.locatia === leadLocatieId : true,
+    )
     return [
       ...cursList.map((c) => ({ label: c.numele, value: `curs:${c.id}` })),
-      ...(evenimenteQ.data ?? []).map((e) => ({
+      ...evList.map((e) => ({
         label: `${e.nume_eveniment} (eveniment)`,
         value: `ev:${e.id}`,
       })),
