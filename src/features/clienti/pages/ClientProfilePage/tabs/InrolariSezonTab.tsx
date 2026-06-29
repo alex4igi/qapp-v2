@@ -11,6 +11,7 @@ type Props = {
   onAdjustPrice?: (enrollmentId: string) => void
   onMoveCurs?: (enrollmentId: string) => void
   onMotiveaza?: (enrollmentId: string) => void
+  onConvertToAbonament?: (enrollmentId: string, cursId: string) => void
   onDelete?: (row: ClientInrolareSezon) => void
 }
 
@@ -23,6 +24,7 @@ export function InrolariSezonTab({
   onAdjustPrice,
   onMoveCurs,
   onMotiveaza,
+  onConvertToAbonament,
   onDelete,
 }: Props) {
   if (loading) return <Spinner />
@@ -107,6 +109,15 @@ export function InrolariSezonTab({
                         title="Motivează absențele lunii (adeverință medicală → eventual scutire)"
                       >
                         🩺 Motivează
+                      </Button>
+                    )}
+                    {onConvertToAbonament && r.tip_plata === 'Per sedinta' && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => onConvertToAbonament(r.id_enrollment, r.id_curs)}
+                        title="Convertește ședința în abonament (creează abonamentul, ședința rămâne gratuită)"
+                      >
+                        🎓 Abonează
                       </Button>
                     )}
                     {onDelete && (

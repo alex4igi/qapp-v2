@@ -56,8 +56,9 @@ type Props = {
   defaultClientId?: string
   defaultCursId?: string
   // Apelat o singură dată când înrolarea s-a creat cu succes (independent de
-  // încasare/bonus). Folosit de fluxul de conversie lead → marchează convertit.
-  onEnrolled?: () => void
+  // încasare/bonus). Primește rândurile create (gol pentru fluxul OPEN per ședință).
+  // Folosit de: conversia lead → marchează convertit; conversia ședință → abonament.
+  onEnrolled?: (rows: Enrollment[]) => void
 }
 
 export function EnrollmentForm({
@@ -328,7 +329,7 @@ export function EnrollmentForm({
     onSuccess: async (result) => {
       // Înrolarea există deja (createInrolari/rezerva_loc_open au reușit). Semnalăm
       // imediat — chiar dacă o încasare/bonus de mai jos eșuează, omul e înrolat.
-      onEnrolled?.()
+      onEnrolled?.(Array.isArray(result) ? result : [])
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })

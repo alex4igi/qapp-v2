@@ -7,9 +7,11 @@ import {
   listSezoane,
   rezilizaInrolari,
   recalcUltimaLunaReziliere,
+  convertSedintaInAbonament,
   deleteInrolareDuplicat,
   endOfMonth,
 } from '@/features/plati/api'
+import type { Enrollment } from '@/types/db'
 import { reintegrateClientAsLead } from '@/features/leads/api'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
@@ -17,7 +19,7 @@ import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
 import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
 import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
 import { useAuth } from '@/hooks/useAuth'
-import { isManagerOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import { isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { waLink } from '@/lib/phone'
 import { ClientForm } from '../../ClientForm'
 import {
@@ -58,6 +60,10 @@ export function ClientProfilePage() {
   const [adjustEnrollmentId, setAdjustEnrollmentId] = useState<string | null>(null)
   const [moveEnrollmentId, setMoveEnrollmentId] = useState<string | null>(null)
   const [motivareEnrollmentId, setMotivareEnrollmentId] = useState<string | null>(null)
+  const [convertSedinta, setConvertSedinta] = useState<{
+    sedintaId: string
+    cursId: string
+  } | null>(null)
   const [deleteRow, setDeleteRow] = useState<ClientInrolareSezon | null>(null)
   const [motivStergere, setMotivStergere] = useState('')
 
@@ -223,6 +229,38 @@ export function ClientProfilePage() {
     setMotivStergere('')
   }
 
+  // Conversie ședință → abonament: abonamentul s-a creat deja (EnrollmentForm a
+  // întors rândurile); ținta = rândul cel mai timpuriu (luna curentă). RPC-ul mută
+  // eventuala încasare, zerează rezervarea OPEN și face void curat al ședinței.
+  const convertSedintaMut = useMutation({
+    mutationFn: (input: { sedintaId: string; targetEnrollmentId: string }) =>
+      convertSedintaInAbonament(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['client', id] })
+      void queryClient.invalidateQueries({ queryKey: ['plati'] })
+      void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
+      void queryClient.invalidateQueries({
+        queryKey: ['client-inrolari-sezon', id],
+      })
+      void queryClient.invalidateQueries({ queryKey: ['grupa-dashboard'] })
+      void queryClient.invalidateQueries({ queryKey: ['open-rezervari'] })
+    },
+  })
+
+  const handleConvertEnrolled = (rows: Enrollment[]) => {
+    if (!convertSedinta) return
+    const target = [...rows].sort((a, b) =>
+      (a.data_incepere ?? '').localeCompare(b.data_incepere ?? ''),
+    )[0]
+    // Rânduri goale = fluxul OPEN per ședință a fost ales din nou (nu e abonament);
+    // nu avem țintă de creditat, deci nu rezilim ședința.
+    if (!target) return
+    convertSedintaMut.mutate({
+      sedintaId: convertSedinta.sedintaId,
+      targetEnrollmentId: target.id,
+    })
+  }
+
   if (clientQuery.isLoading) return <Spinner />
   if (clientQuery.isError || !clientQuery.data) {
     return (
@@ -343,6 +381,13 @@ export function ClientProfilePage() {
               onMotiveaza={
                 canManagerActions ? (eId) => setMotivareEnrollmentId(eId) : undefined
               }
+              // Conversia ședință → abonament (campanie iulie) e permisă și front_desk.
+              // Butonul apare doar pe rândurile „Per sedinta" (vezi InrolariSezonTab).
+              onConvertToAbonament={
+                isFrontDeskOrHigher(role)
+                  ? (eId, cId) => setConvertSedinta({ sedintaId: eId, cursId: cId })
+                  : undefined
+              }
               // Ștergerea fizică a unei înrolări (duplicat din eroare) e doar manager+.
               onDelete={
                 canManagerActions
@@ -417,6 +462,16 @@ export function ClientProfilePage() {
           open
           enrollmentId={motivareEnrollmentId}
           onClose={() => setMotivareEnrollmentId(null)}
+        />
+      )}
+
+      {convertSedinta && (
+        <EnrollmentForm
+          open
+          defaultClientId={client.id}
+          defaultCursId={convertSedinta.cursId}
+          onEnrolled={handleConvertEnrolled}
+          onClose={() => setConvertSedinta(null)}
         />
       )}
 

@@ -7024,6 +7024,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      converteste_sedinta_in_abonament: {
+        Args: { p_motiv?: string; p_sedinta: string; p_target: string }
+        Returns: Json
+      }
       create_campanie_reinscriere: {
         Args: {
           p_data_final: string

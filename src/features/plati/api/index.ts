@@ -49,6 +49,7 @@ export {
 export {
   adjustEnrollmentPrice,
   moveEnrollmentToCurs,
+  convertSedintaInAbonament,
   deleteInrolareDuplicat,
   getReziliereRecalcPreview,
   recalcUltimaLunaReziliere,

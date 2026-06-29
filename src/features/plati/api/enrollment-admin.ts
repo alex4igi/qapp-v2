@@ -326,6 +326,23 @@ export async function deleteInrolareDuplicat(params: {
   })
 }
 
+// Convertește o ședință „Per sedinta" în abonament: abonamentul țintă e creat
+// separat (createInrolari), iar acest RPC mută eventuala încasare pe el, zerează
+// rezervarea OPEN și face void curat al ședinței (fără restanță). Idempotent.
+export async function convertSedintaInAbonament(params: {
+  sedintaId: string
+  targetEnrollmentId: string
+  motiv?: string
+}): Promise<{ already_converted?: boolean; converted?: boolean }> {
+  const { data, error } = await supabase.rpc('converteste_sedinta_in_abonament', {
+    p_sedinta: params.sedintaId,
+    p_target: params.targetEnrollmentId,
+    p_motiv: params.motiv?.trim() || undefined,
+  })
+  if (error) throw error
+  return (data ?? {}) as { already_converted?: boolean; converted?: boolean }
+}
+
 // Mută o înrolare la alt curs (păstrează plata curentă, fără prorata).
 // Auditată cu motiv.
 export async function moveEnrollmentToCurs(params: {
