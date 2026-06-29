@@ -93,6 +93,10 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
       void queryClient.invalidateQueries({ queryKey: ['client'] })
       void queryClient.invalidateQueries({ queryKey: ['plati-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['enrollment-current-info', enrollmentId] })
+      // Rosterele grupei vechi + noi folosesc alte chei → invalidate explicit,
+      // altfel cursantul mutat rămâne afișat din cache în grupa veche.
+      void queryClient.invalidateQueries({ queryKey: ['grupa-dashboard'] })
+      void queryClient.invalidateQueries({ queryKey: ['prezente'] })
       onClose()
     },
     onError: (e: unknown) =>
