@@ -150,6 +150,31 @@ export async function clientiByCurs(cursId: string): Promise<SelectOption[]> {
     client: { id: string; nume: string; prenume: string | null } | null
   }>
 
+  // Cursuri facultative: clienții cu rezervare OPEN pe o ședință din luna curentă
+  // au acces (ex. ședințe bonus din promo: înrolarea lor e pe altă lună) și trebuie
+  // să poată fi evaluați. Oglindește fetchOpenReservationClientsThisMonth din cursuri.
+  const { data: sesiuni, error: sErr } = await supabase
+    .from('open_sesiuni')
+    .select('id')
+    .eq('curs', cursId)
+    .gte('data', monthStart)
+    .lte('data', monthEnd)
+  if (sErr) throw sErr
+  const sesiuneIds = (sesiuni ?? []).map((s) => s.id)
+  if (sesiuneIds.length > 0) {
+    const { data: rez, error: rErr } = await supabase
+      .from('open_rezervari')
+      .select('client:clienti(id, nume, prenume)')
+      .in('sesiune', sesiuneIds)
+      .neq('status', 'anulat')
+    if (rErr) throw rErr
+    for (const r of (rez ?? []) as unknown as Array<{
+      client: { id: string; nume: string; prenume: string | null } | null
+    }>) {
+      rows.push({ client: r.client })
+    }
+  }
+
   // Dedup per client: un client poate avea mai multe rânduri care acoperă luna.
   const seen = new Set<string>()
   return rows

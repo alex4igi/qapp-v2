@@ -90,6 +90,38 @@ export async function getDashboardCourses(params: {
     }
     if (!enr || enr.length < 1000) break
   }
+  // Cursuri facultative: clienții cu rezervare OPEN ne-anulată pe ziua afișată au
+  // acces (ex. ședințe bonus din promo: înrolarea lor e pe altă lună). Îi adăugăm
+  // ca să rămână invariantul „count card == lungime roster grupă" (vezi grupa.ts).
+  const { data: sesiuni, error: sesErr } = await supabase
+    .from('open_sesiuni')
+    .select('id, curs')
+    .in('curs', cursIds)
+    .eq('data', params.date)
+  if (sesErr) throw sesErr
+  const cursBySesiune = new Map<string, string>()
+  for (const s of sesiuni ?? []) {
+    if (s.id && s.curs) cursBySesiune.set(s.id, s.curs)
+  }
+  if (cursBySesiune.size > 0) {
+    const { data: rez, error: rezErr } = await supabase
+      .from('open_rezervari')
+      .select('sesiune, client')
+      .in('sesiune', Array.from(cursBySesiune.keys()))
+      .neq('status', 'anulat')
+    if (rezErr) throw rezErr
+    for (const r of rez ?? []) {
+      const curs = r.sesiune ? cursBySesiune.get(r.sesiune) : null
+      if (!curs || !r.client) continue
+      let set = clientsByCurs.get(curs)
+      if (!set) {
+        set = new Set<string>()
+        clientsByCurs.set(curs, set)
+      }
+      set.add(r.client)
+    }
+  }
+
   const enrolledByCurs = new Map<string, number>()
   for (const [c, set] of clientsByCurs) enrolledByCurs.set(c, set.size)
 
