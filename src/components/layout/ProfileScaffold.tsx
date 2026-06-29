@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 type Props = {
   /** Eticheta secțiunii din breadcrumb (ex: „Clienți", „Studio"). */
   section?: string
-  /** Ținta butonului de back din breadcrumb. */
+  /** Fallback dacă pagina a fost deschisă direct (deep-link / refresh), fără istoric. */
   backTo: string
   title: string
   actions?: ReactNode
@@ -24,15 +24,22 @@ export function ProfileScaffold({
   sidebar,
   children,
 }: Props) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  // „Back" = pagina anterioară din istoric. Dacă fișa a fost deschisă direct
+  // (location.key === 'default' ⇒ fără istoric intern), cădem pe backTo.
+  const goBack = () =>
+    location.key === 'default' ? navigate(backTo) : navigate(-1)
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <Link
-          to={backTo}
+        <button
+          type="button"
+          onClick={goBack}
           className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line bg-card px-3 text-sm font-semibold text-ink transition-colors hover:bg-surface"
         >
           ‹ {section ?? 'Înapoi'}
-        </Link>
+        </button>
         <span className="text-line" aria-hidden>
           /
         </span>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Spinner, Tabs } from '@/components/ui'
 import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
@@ -44,9 +44,6 @@ type TabId = 'inrolari' | 'prezente' | 'date' | 'documente'
 export function ClientProfilePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
-  // Back-ul revine de unde am venit (ex: rosterul grupei), dacă pagina sursă a trimis state.
-  const backNav = location.state as { backTo?: string; backLabel?: string } | null
   const queryClient = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
   const [enrollOpen, setEnrollOpen] = useState(false)
@@ -288,8 +285,8 @@ export function ClientProfilePage() {
   return (
     <>
       <ProfileScaffold
-        section={backNav?.backLabel ?? 'Clienți'}
-        backTo={backNav?.backTo ?? '/clienti'}
+        section="Clienți"
+        backTo="/clienti"
         title={`${client.nume} ${client.prenume ?? ''}`.trim()}
         actions={
           <>
