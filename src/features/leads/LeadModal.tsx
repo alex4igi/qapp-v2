@@ -182,10 +182,24 @@ export function LeadModal({
     enabled: open && Boolean(form.data_programare),
   })
 
-  // Locația preferată (text din form) → uuid (programari_leads.locatie e FK).
+  // Locația preferată (text scurt din form, ex. „Ștefan cel Mare") → uuid
+  // (programari_leads.locatie e FK). Numele din tabela `locatii` diferă ca
+  // formă („Galeriile Stefan cel Mare", fără diacritice), așa că potrivim
+  // normalizat (fără diacritice) + pe substring, nu pe egalitate strictă.
   const leadLocatieId = useMemo(() => {
     if (!form.locatia) return null
-    return locatiiQ.data?.find((l) => l.label === form.locatia)?.value ?? null
+    const norm = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .trim()
+    const target = norm(form.locatia)
+    const match = locatiiQ.data?.find((l) => {
+      const n = norm(l.label)
+      return n === target || n.includes(target) || target.includes(n)
+    })
+    return match?.value ?? null
   }, [form.locatia, locatiiQ.data])
 
   const weekday = form.data_programare
