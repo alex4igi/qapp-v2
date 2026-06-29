@@ -423,6 +423,10 @@ verify_jwt = false
 [functions.intake-sheets-lead]
 verify_jwt = false
 
+# Poller Meta Lead Ads via Graph API (System User token, fără publish). Apelat de pg_cron.
+[functions.pull-meta-leads]
+verify_jwt = false
+
 # Portal membri — login propriu (director separat de auth.users). Endpoint public:
 # primește email+parolă (nu JWT), verifică în portal_accounts și emite tokenul portalului.
 [functions.portal-auth]
