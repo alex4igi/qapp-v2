@@ -55,6 +55,41 @@ async function fetchActiveEnrollmentsThisMonth(
   return (data ?? []) as unknown as ActiveEnrollmentRow[]
 }
 
+// Clienții cu rezervare OPEN ne-anulată pe o ședință din luna curentă (ex.
+// ședințele bonus din promo: acces 29-30 iun pe abonamentul de iulie). Înrolarea
+// lor nu acoperă luna curentă, deci nu ies din fetchActiveEnrollmentsThisMonth,
+// dar au totuși acces la curs în această lună → trebuie listați ca activi.
+async function fetchOpenReservationClientsThisMonth(
+  cursId: string,
+): Promise<ActiveEnrollmentRow[]> {
+  const { start, end } = monthBounds(todayIso())
+  const { data: sesiuni, error: sErr } = await supabase
+    .from('open_sesiuni')
+    .select('id')
+    .eq('curs', cursId)
+    .gte('data', start)
+    .lte('data', end)
+  if (sErr) throw sErr
+  const sesiuneIds = (sesiuni ?? []).map((s) => s.id)
+  if (sesiuneIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('open_rezervari')
+    .select(
+      'enrollment:enrollments(id, suma, data_incepere, data_final, client:clienti(id, nume, prenume))',
+    )
+    .in('sesiune', sesiuneIds)
+    .neq('status', 'anulat')
+  if (error) throw error
+  const rows: ActiveEnrollmentRow[] = []
+  for (const r of (data ?? []) as unknown as Array<{
+    enrollment: ActiveEnrollmentRow | null
+  }>) {
+    if (r.enrollment?.client) rows.push(r.enrollment)
+  }
+  return rows
+}
+
 // Ultima dată „Prezent" per client la un curs. Filtrăm prin JOIN pe `enrollments.cursul`
 // (nu `.in(enrollmentIds)`): cursurile facultative au sute de înrolări „Per ședință"
 // (data_final null = active la infinit) → un `.in()` cu sute de ID-uri sparge URL-ul.
@@ -160,7 +195,11 @@ export type CursClientActiv = {
 export async function getCursClientiActivi(
   cursId: string,
 ): Promise<CursClientActiv[]> {
-  const enrRows = await fetchActiveEnrollmentsThisMonth(cursId)
+  const [monthEnr, openEnr] = await Promise.all([
+    fetchActiveEnrollmentsThisMonth(cursId),
+    fetchOpenReservationClientsThisMonth(cursId),
+  ])
+  const enrRows = [...monthEnr, ...openEnr]
   if (enrRows.length === 0) return []
 
   const lastByClient = await fetchUltimaPrezentaByClient(cursId)
