@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PageHeader, Button } from '@/components/ui'
 import { LeadModal } from './LeadModal'
+import { LeadImportModal } from './LeadImportModal'
 import { KanbanBoard } from './KanbanBoard'
 import { LeadReports } from './LeadReports'
 import { NurtureView } from './NurtureView'
@@ -15,6 +16,7 @@ type View = (typeof VIEWS)[number]['key']
 
 export function LeadsPage() {
   const [addOpen, setAddOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [view, setView] = useState<View>('pipeline')
 
   return (
@@ -41,7 +43,12 @@ export function LeadsPage() {
               ))}
             </div>
             {view === 'pipeline' && (
-              <Button onClick={() => setAddOpen(true)}>+ Lead nou</Button>
+              <>
+                <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                  Import CSV
+                </Button>
+                <Button onClick={() => setAddOpen(true)}>+ Lead nou</Button>
+              </>
             )}
           </div>
         }
@@ -50,6 +57,9 @@ export function LeadsPage() {
       {view === 'rapoarte' && <LeadReports />}
       {view === 'nurture' && <NurtureView />}
       {addOpen && <LeadModal open onClose={() => setAddOpen(false)} />}
+      {importOpen && (
+        <LeadImportModal open onClose={() => setImportOpen(false)} />
+      )}
     </div>
   )
 }
