@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, TextInput } from '@/components/ui'
@@ -169,7 +170,7 @@ export function ObiectiveCard({ luna, locatie, rows }: Props) {
           {saveM.isError && (
             <p className="w-full text-sm text-red-600">
               Eroare la salvare:{' '}
-              {saveM.error instanceof Error ? saveM.error.message : ''}
+              {humanizeError(saveM.error)}
             </p>
           )}
         </div>

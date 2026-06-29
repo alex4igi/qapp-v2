@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Modal, Field, TextInput } from '@/components/ui'
@@ -71,7 +72,7 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
     },
     onError: (e: unknown) =>
       setActionError(
-        e instanceof Error ? e.message : 'Eroare la resetarea parolei.',
+        humanizeError(e, 'Eroare la resetarea parolei.'),
       ),
   })
 
@@ -85,7 +86,7 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
     },
     onError: (e: unknown) =>
       setActionError(
-        e instanceof Error ? e.message : 'Eroare la ștergerea contului.',
+        humanizeError(e, 'Eroare la ștergerea contului.'),
       ),
   })
 

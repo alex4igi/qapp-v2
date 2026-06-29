@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
@@ -151,7 +152,7 @@ export function SalariulMeuPage() {
       ) : salariiQ.isError ? (
         <p className="text-sm text-red-600">
           Eroare:{' '}
-          {salariiQ.error instanceof Error ? salariiQ.error.message : ''}
+          {humanizeError(salariiQ.error)}
         </p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-quasar-gray">Niciun salariu confirmat încă.</p>

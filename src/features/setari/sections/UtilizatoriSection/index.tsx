@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -78,7 +79,7 @@ export function UtilizatoriSection() {
       void invalidate()
     },
     onError: (e: unknown) =>
-      setActionError(e instanceof Error ? e.message : 'Eroare la ștergere.'),
+      setActionError(humanizeError(e, 'Eroare la ștergere.')),
   })
 
   const updateRole = useMutation({
@@ -91,7 +92,7 @@ export function UtilizatoriSection() {
     },
     onError: (e: unknown) =>
       setActionError(
-        e instanceof Error ? e.message : 'Eroare la schimbarea rolului.',
+        humanizeError(e, 'Eroare la schimbarea rolului.'),
       ),
   })
 
@@ -106,7 +107,7 @@ export function UtilizatoriSection() {
     },
     onError: (e: unknown) =>
       setActionError(
-        e instanceof Error ? e.message : 'Eroare la resetarea parolei.',
+        humanizeError(e, 'Eroare la resetarea parolei.'),
       ),
   })
 
@@ -219,7 +220,7 @@ export function UtilizatoriSection() {
       ) : usersQ.isError ? (
         <p className="text-sm text-red-600">
           Eroare la încărcare:{' '}
-          {usersQ.error instanceof Error ? usersQ.error.message : ''}
+          {humanizeError(usersQ.error)}
         </p>
       ) : (
         <DataTable

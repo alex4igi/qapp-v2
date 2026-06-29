@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Field, TextInput, Combobox, Button, Spinner } from '@/components/ui'
@@ -105,7 +106,7 @@ export function DatoriiTab({ onClose, defaultClientId }: Props) {
       handleClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   return (

@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, TextInput, Select, Button } from '@/components/ui'
@@ -55,7 +56,7 @@ export function TeacherAccountDialog({ open, teacher, onClose }: Props) {
       void queryClient.invalidateQueries({ queryKey: ['utilizatori'] })
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la creare cont.'),
+      setError(humanizeError(e, 'Eroare la creare cont.')),
   })
 
   const onSubmit = (e: FormEvent) => {

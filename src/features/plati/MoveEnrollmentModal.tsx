@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -95,7 +96,7 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la mutare.'),
+      setError(humanizeError(e, 'Eroare la mutare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {
@@ -144,7 +145,7 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
         <Spinner />
       ) : infoQ.isError ? (
         <p className="text-sm text-red-600">
-          {infoQ.error instanceof Error ? infoQ.error.message : 'Eroare la încărcare.'}
+          {humanizeError(infoQ.error, 'Eroare la încărcare.')}
         </p>
       ) : (
         <form id="move-enrollment-form" onSubmit={handleSubmit} className="space-y-3">

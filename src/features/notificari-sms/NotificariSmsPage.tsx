@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import {
   keepPreviousData,
@@ -71,9 +72,7 @@ export function NotificariSmsPage() {
       void queryClient.invalidateQueries({ queryKey: ['sms-queue'] })
     },
     onError: (e: unknown) =>
-      setProcessMsg(
-        e instanceof Error ? `Eroare: ${e.message}` : 'Eroare la procesare.',
-      ),
+      setProcessMsg(`Eroare: ${humanizeError(e, 'Eroare la procesare.')}`),
   })
 
   const columns: Column<SituatieSms>[] = [
@@ -185,7 +184,7 @@ export function NotificariSmsPage() {
         <Spinner />
       ) : isError ? (
         <p className="text-sm text-red-600">
-          Eroare la încărcare: {error instanceof Error ? error.message : ''}
+          Eroare la încărcare: {humanizeError(error)}
         </p>
       ) : (
         <>

@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, TextInput, TextArea, Select, Button } from '@/components/ui'
@@ -50,7 +51,7 @@ export function AppFeedbackModal({ open, onClose }: Props) {
       setSent(true)
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la trimitere.'),
+      setError(humanizeError(e, 'Eroare la trimitere.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

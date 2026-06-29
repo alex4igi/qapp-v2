@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
@@ -94,7 +95,7 @@ export function FeedbackListPage() {
         <Spinner />
       ) : isError ? (
         <p className="text-sm text-red-600">
-          Eroare la încărcare: {error instanceof Error ? error.message : ''}
+          Eroare la încărcare: {humanizeError(error)}
         </p>
       ) : (
         <>

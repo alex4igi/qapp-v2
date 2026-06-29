@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, DateInput, Field, Spinner, TextInput } from '@/components/ui'
@@ -53,7 +54,7 @@ export function VacanteTab({ sezonId }: Props) {
       void invalidate()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const remove = useMutation({

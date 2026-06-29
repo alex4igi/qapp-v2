@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -151,7 +152,7 @@ export function SmsComposer({ open, onClose }: Props) {
       void n
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la programare.'),
+      setError(humanizeError(e, 'Eroare la programare.')),
   })
 
   const handleSave = () => {

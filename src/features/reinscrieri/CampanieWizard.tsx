@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -120,7 +121,7 @@ export function CampanieWizard({ onClose, onCreated, defaultSezonId }: Props) {
       }),
     onSuccess: (id) => onCreated(id),
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la creare.'),
+      setError(humanizeError(e, 'Eroare la creare.')),
   })
 
   const next = () => {

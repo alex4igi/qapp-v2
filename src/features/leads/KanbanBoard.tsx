@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
@@ -135,7 +136,7 @@ export function KanbanBoard() {
     },
     onError: (e, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(['leads'], ctx.prev)
-      setDragError(e instanceof Error ? e.message : 'Eroare la mutare')
+      setDragError(humanizeError(e, 'Eroare la mutare'))
       setTimeout(() => setDragError(null), 5000)
     },
     onSettled: () => {
@@ -207,7 +208,7 @@ export function KanbanBoard() {
     return (
       <p className="text-sm text-red-600">
         Eroare la încărcarea lead-urilor:{' '}
-        {leadsQuery.error instanceof Error ? leadsQuery.error.message : ''}
+        {humanizeError(leadsQuery.error)}
       </p>
     )
   }

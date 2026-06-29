@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
@@ -51,7 +52,7 @@ export function CreateUserModal({ open, roleOptions, locatii, onClose, onSuccess
       onSuccess()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la creare.'),
+      setError(humanizeError(e, 'Eroare la creare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

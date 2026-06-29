@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, useEffect, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal, TextArea, Button } from '@/components/ui'
@@ -33,7 +34,7 @@ export function PierdutModal({ open, lead, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

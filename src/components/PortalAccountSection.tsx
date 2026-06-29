@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, TextInput } from '@/components/ui'
@@ -48,7 +49,7 @@ export function PortalAccountSection({
       await fn()
       refresh()
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e))
+      setErr(humanizeError(e, String(e)))
     } finally {
       setBusy(false)
     }

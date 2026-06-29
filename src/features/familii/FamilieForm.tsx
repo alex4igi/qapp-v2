@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -95,7 +96,7 @@ export function FamilieForm({ open, familie, onClose }: Props) {
             ? {}
             : { warning: `Cont portal creat, dar emailul nu a plecat — parolă: ${portalPwd}` }
         } catch (e) {
-          return { warning: `Familie salvată, dar contul de portal a eșuat: ${e instanceof Error ? e.message : ''}` }
+          return { warning: `Familie salvată, dar contul de portal a eșuat: ${humanizeError(e)}` }
         }
       }
       return {}
@@ -111,7 +112,7 @@ export function FamilieForm({ open, familie, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) => {
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.')
+      setError(humanizeError(e, 'Eroare la salvare.'))
     },
   })
 

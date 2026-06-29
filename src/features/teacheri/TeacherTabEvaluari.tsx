@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -143,7 +144,7 @@ function EvaluareTeacherForm({
       onClose()
     },
     onError: (e: unknown) => {
-      const msg = e instanceof Error ? e.message : 'Eroare la salvare.'
+      const msg = humanizeError(e, 'Eroare la salvare.')
       setError(
         /duplicate|unique/i.test(msg)
           ? 'Există deja o evaluare pentru luna selectată.'
@@ -159,7 +160,7 @@ function EvaluareTeacherForm({
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la ștergere.'),
+      setError(humanizeError(e, 'Eroare la ștergere.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

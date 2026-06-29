@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Field, Select, Button, Spinner } from '@/components/ui'
@@ -92,7 +93,7 @@ export function ScorecardLeadsTab({ luna }: { luna: string }) {
       ) : scorecardQ.isError ? (
         <p className="text-sm text-red-600">
           Eroare:{' '}
-          {scorecardQ.error instanceof Error ? scorecardQ.error.message : ''}
+          {humanizeError(scorecardQ.error)}
         </p>
       ) : (
         <ScorecardTable rows={rows} usersById={usersById} />

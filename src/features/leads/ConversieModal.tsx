@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, useEffect, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -96,7 +97,7 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
       onConverted(result)
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la conversie.'),
+      setError(humanizeError(e, 'Eroare la conversie.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

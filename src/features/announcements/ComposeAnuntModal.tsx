@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -89,7 +90,7 @@ export function ComposeAnuntModal({ open, onClose }: Props) {
       setSent(res.nr_destinatari)
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la trimitere.'),
+      setError(humanizeError(e, 'Eroare la trimitere.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

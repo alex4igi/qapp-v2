@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, Select, Button } from '@/components/ui'
@@ -46,7 +47,7 @@ export function LinkTeacherAccountDialog({ open, teacher, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la legare.'),
+      setError(humanizeError(e, 'Eroare la legare.')),
   })
 
   return (

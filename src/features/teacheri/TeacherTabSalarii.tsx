@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Spinner } from '@/components/ui'
@@ -330,7 +331,7 @@ export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
       {confirm.isError && (
         <p className="text-sm text-red-600">
           Eroare:{' '}
-          {confirm.error instanceof Error ? confirm.error.message : 'necunoscută'}
+          {humanizeError(confirm.error, 'necunoscută')}
         </p>
       )}
 

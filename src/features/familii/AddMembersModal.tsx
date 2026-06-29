@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -72,7 +73,7 @@ export function AddMembersModal({ open, familieId, familieNume, onClose }: Props
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la asociere.'),
+      setError(humanizeError(e, 'Eroare la asociere.')),
   })
 
   const handleConfirm = () => {

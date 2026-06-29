@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Spinner, Button, Field, TextInput, DateInput, Select } from '@/components/ui'
@@ -46,7 +47,7 @@ function AdaugaSesiuneForm({ cursId, capacitateImplicita }: { cursId: string; ca
       setCapacitate(String(capacitateImplicita))
       setError(null)
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Eroare la creare.'),
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la creare.')),
   })
 
   if (!open) {

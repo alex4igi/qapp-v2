@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
@@ -334,7 +335,7 @@ export function RaportZileTab({ privileged }: { privileged: boolean }) {
         <Spinner />
       ) : isError ? (
         <p className="text-sm text-red-600">
-          Eroare: {error instanceof Error ? error.message : ''}
+          Eroare: {humanizeError(error)}
         </p>
       ) : (
         <DataTable

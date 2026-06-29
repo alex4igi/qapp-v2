@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, Modal, Select, TextArea, Spinner } from '@/components/ui'
@@ -54,7 +55,7 @@ export function MotivareAbsentaModal({ enrollmentId, open, onClose }: Props) {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la aprobare.'),
+      setError(humanizeError(e, 'Eroare la aprobare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {
@@ -98,7 +99,7 @@ export function MotivareAbsentaModal({ enrollmentId, open, onClose }: Props) {
         <Spinner />
       ) : ctxQ.isError ? (
         <p className="text-sm text-red-600">
-          {ctxQ.error instanceof Error ? ctxQ.error.message : 'Eroare la încărcare.'}
+          {humanizeError(ctxQ.error, 'Eroare la încărcare.')}
         </p>
       ) : result ? (
         <div className="space-y-2 text-sm">

@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Modal, Spinner } from '@/components/ui'
@@ -174,7 +175,7 @@ export function CursForm({ open, curs, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) => {
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.')
+      setError(humanizeError(e, 'Eroare la salvare.'))
     },
   })
 

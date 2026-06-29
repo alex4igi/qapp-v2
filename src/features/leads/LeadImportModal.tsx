@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -118,7 +119,7 @@ export function LeadImportModal({ open, onClose }: Props) {
         : new Set<string>()
       setRows(markDuplicates(base, existing))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Eroare la verificarea duplicatelor.')
+      setError(humanizeError(e, 'Eroare la verificarea duplicatelor.'))
     } finally {
       setDeduping(false)
     }
@@ -142,7 +143,7 @@ export function LeadImportModal({ open, onClose }: Props) {
       setFileName(file.name)
       await applyMapping(t, m)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Nu am putut citi fișierul.')
+      setError(humanizeError(e, 'Nu am putut citi fișierul.'))
     } finally {
       setParsing(false)
     }
@@ -193,7 +194,7 @@ export function LeadImportModal({ open, onClose }: Props) {
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la import.'),
+      setError(humanizeError(e, 'Eroare la import.')),
   })
 
   const downloadTemplate = () =>

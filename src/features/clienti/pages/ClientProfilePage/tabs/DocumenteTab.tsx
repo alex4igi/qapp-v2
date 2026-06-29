@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Field, TextInput, DateInput, TextArea, Select, Button, Spinner } from '@/components/ui'
@@ -77,7 +78,7 @@ export function DocumenteTab({ client }: Props) {
       setError(null)
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const deleteM = useMutation({

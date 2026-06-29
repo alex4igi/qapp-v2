@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -371,7 +372,7 @@ export function EnrollmentForm({
           } catch (e) {
             setError(
               'Înrolarea s-a creat, dar încasarea a eșuat: ' +
-                (e instanceof Error ? e.message : 'eroare necunoscută') +
+                (humanizeError(e, 'eroare necunoscută')) +
                 '. Încaseaz-o din „Plată nouă → Abonament".',
             )
             return
@@ -397,7 +398,7 @@ export function EnrollmentForm({
         } catch (e) {
           setError(
             'Înrolarea s-a creat, dar rezervările bonus 29-30 iunie au eșuat: ' +
-              (e instanceof Error ? e.message : 'eroare necunoscută') +
+              (humanizeError(e, 'eroare necunoscută')) +
               '. Reîncearcă.',
           )
           return
@@ -406,7 +407,7 @@ export function EnrollmentForm({
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

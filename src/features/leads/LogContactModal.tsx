@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, TextArea, DateTimeInput, Button } from '@/components/ui'
@@ -59,7 +60,7 @@ export function LogContactModal({ open, lead, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la logare.'),
+      setError(humanizeError(e, 'Eroare la logare.')),
   })
 
   const fullName =

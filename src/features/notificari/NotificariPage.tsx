@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -329,7 +330,7 @@ export function NotificariPage() {
       ) : notificariQ.isError ? (
         <p className="text-sm text-red-600">
           Eroare:{' '}
-          {notificariQ.error instanceof Error ? notificariQ.error.message : ''}
+          {humanizeError(notificariQ.error)}
         </p>
       ) : visible.length === 0 ? (
         <p className="text-sm text-quasar-gray">

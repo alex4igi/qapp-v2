@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui'
@@ -79,7 +80,7 @@ export function CronJobsSection() {
         <Spinner />
       ) : isError ? (
         <p className="text-sm text-red-600">
-          Eroare: {error instanceof Error ? error.message : ''}
+          Eroare: {humanizeError(error)}
         </p>
       ) : byJob.length === 0 ? (
         <p className="text-sm text-quasar-gray">Niciun job programat.</p>

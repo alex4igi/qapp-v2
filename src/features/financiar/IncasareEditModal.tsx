@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -82,7 +83,7 @@ export function IncasareEditModal({ incasareId, open, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const remove = useMutation({
@@ -92,7 +93,7 @@ export function IncasareEditModal({ incasareId, open, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la ștergere.'),
+      setError(humanizeError(e, 'Eroare la ștergere.')),
   })
 
   const handleSubmit = (e: FormEvent) => {
@@ -167,7 +168,7 @@ export function IncasareEditModal({ incasareId, open, onClose }: Props) {
         <Spinner />
       ) : infoQ.isError ? (
         <p className="text-sm text-red-600">
-          {infoQ.error instanceof Error ? infoQ.error.message : 'Eroare la încărcare.'}
+          {humanizeError(infoQ.error, 'Eroare la încărcare.')}
         </p>
       ) : (
         <form id="incasare-edit-form" onSubmit={handleSubmit} className="space-y-3">

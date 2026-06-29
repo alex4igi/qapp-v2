@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -408,7 +409,7 @@ function CampanieCursModal({
       }),
     onSuccess: refresh,
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la taxă.'),
+      setError(humanizeError(e, 'Eroare la taxă.')),
   })
 
   const act = useMutation({
@@ -425,7 +426,7 @@ function CampanieCursModal({
       refresh()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la act adițional.'),
+      setError(humanizeError(e, 'Eroare la act adițional.')),
   })
 
   const approve = useMutation({
@@ -437,7 +438,7 @@ function CampanieCursModal({
       }),
     onSuccess: refresh,
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la aprobare.'),
+      setError(humanizeError(e, 'Eroare la aprobare.')),
   })
 
   const reject = useMutation({
@@ -449,7 +450,7 @@ function CampanieCursModal({
       }),
     onSuccess: refresh,
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la respingere.'),
+      setError(humanizeError(e, 'Eroare la respingere.')),
   })
 
   return (
@@ -780,7 +781,7 @@ function LegacyCursModal(props: {
       props.onChange()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la activare.'),
+      setError(humanizeError(e, 'Eroare la activare.')),
   })
 
   const activateBulk = useMutation({
@@ -795,7 +796,7 @@ function LegacyCursModal(props: {
       props.onChange()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la activare în bulk.'),
+      setError(humanizeError(e, 'Eroare la activare în bulk.')),
   })
 
   const ramasi = (clientiQ.data ?? []).filter((c) => !c.activata)

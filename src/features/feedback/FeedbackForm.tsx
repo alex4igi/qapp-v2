@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -93,7 +94,7 @@ export function FeedbackForm({ open, feedback, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la salvare.'),
+      setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const remove = useMutation({
@@ -103,7 +104,7 @@ export function FeedbackForm({ open, feedback, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la ștergere.'),
+      setError(humanizeError(e, 'Eroare la ștergere.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

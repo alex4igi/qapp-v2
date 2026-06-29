@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, TextArea, Button } from '@/components/ui'
@@ -50,7 +51,7 @@ export function LogReactivareModal({ open, client, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la logare.'),
+      setError(humanizeError(e, 'Eroare la logare.')),
   })
 
   const fullName = `${client.nume} ${client.prenume ?? ''}`.trim()

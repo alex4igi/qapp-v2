@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -312,7 +313,7 @@ export function AuditPage() {
       ) : auditQ.isError ? (
         <p className="text-sm text-red-600">
           Eroare:{' '}
-          {auditQ.error instanceof Error ? auditQ.error.message : ''}
+          {humanizeError(auditQ.error)}
         </p>
       ) : groupedByWeek.length === 0 ? (
         <p className="text-sm text-quasar-gray">Nicio acțiune înregistrată.</p>

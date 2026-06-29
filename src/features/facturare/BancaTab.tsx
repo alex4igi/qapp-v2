@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, DataTable, Spinner, type Column } from '@/components/ui'
@@ -62,7 +63,7 @@ export function BancaTab() {
       setError(null)
       void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Eroare la încărcare.'),
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la încărcare.')),
   })
 
   const onFile = async (file: File) => {
@@ -72,7 +73,7 @@ export function BancaTab() {
       const csv = await readCsv(file)
       ingest.mutate(csv)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Nu am putut citi fișierul.')
+      setError(humanizeError(e, 'Nu am putut citi fișierul.'))
     }
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -109,7 +110,7 @@ export function BancaTab() {
       setReport(res)
       void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Eroare la emitere.'),
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la emitere.')),
   })
 
   const ignora = useMutation({
@@ -118,7 +119,7 @@ export function BancaTab() {
       setReport(null)
       void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Eroare la ignorare.'),
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la ignorare.')),
   })
 
   const marcheaza = useMutation({
@@ -147,7 +148,7 @@ export function BancaTab() {
       setReport(res)
       void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Eroare la marcare.'),
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la marcare.')),
   })
 
   const totalSelected = selectedRows.reduce((s, r) => s + r.suma, 0)

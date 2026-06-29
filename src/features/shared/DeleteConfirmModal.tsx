@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Button, Modal } from '@/components/ui'
@@ -103,7 +104,7 @@ export function DeleteConfirmModal({
         )}
         {otherError && (
           <p className="text-sm text-red-600">
-            {run.error instanceof Error ? run.error.message : 'Eroare la ștergere.'}
+            {humanizeError(run.error, 'Eroare la ștergere.')}
           </p>
         )}
       </div>

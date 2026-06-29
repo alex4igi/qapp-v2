@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -207,7 +208,7 @@ export function PontajStaffPage() {
         <Spinner />
       ) : pontajQ.isError ? (
         <p className="text-sm text-red-600">
-          Eroare: {pontajQ.error instanceof Error ? pontajQ.error.message : ''}
+          Eroare: {humanizeError(pontajQ.error)}
         </p>
       ) : (
         <DataTable

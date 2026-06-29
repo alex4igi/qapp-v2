@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PageHeader, Field, Select, Spinner } from '@/components/ui'
@@ -93,7 +94,7 @@ export function RecuperarePage() {
       ) : worklistQ.isError ? (
         <p className="text-sm text-red-600">
           Eroare:{' '}
-          {worklistQ.error instanceof Error ? worklistQ.error.message : ''}
+          {humanizeError(worklistQ.error)}
         </p>
       ) : (
         <>

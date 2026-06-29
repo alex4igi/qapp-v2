@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -236,7 +237,7 @@ export function OptOutListPage() {
         <Spinner />
       ) : isError ? (
         <p className="text-sm text-red-600">
-          Eroare la încărcare: {error instanceof Error ? error.message : ''}
+          Eroare la încărcare: {humanizeError(error)}
         </p>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-quasar-gray shadow-sm">

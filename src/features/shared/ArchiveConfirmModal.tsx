@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Button, Field, Modal, TextArea } from '@/components/ui'
@@ -30,7 +31,7 @@ export function ArchiveConfirmModal({
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare.'),
+      setError(humanizeError(e, 'Eroare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {

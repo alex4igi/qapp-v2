@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Field, TextInput, DateInput, Select, Combobox, Button, Spinner } from '@/components/ui'
@@ -124,7 +125,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
       onClose()
     },
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la rezervare.'),
+      setError(humanizeError(e, 'Eroare la rezervare.')),
   })
 
   return (

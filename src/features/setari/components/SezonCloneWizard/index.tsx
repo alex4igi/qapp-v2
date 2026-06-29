@@ -1,3 +1,4 @@
+import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Button, Modal } from '@/components/ui'
@@ -139,7 +140,7 @@ export function SezonCloneWizard({ onClose, onCreated }: Props) {
     },
     onSuccess: (newId) => onCreated(newId),
     onError: (e: unknown) =>
-      setError(e instanceof Error ? e.message : 'Eroare la clonare.'),
+      setError(humanizeError(e, 'Eroare la clonare.')),
   })
 
   const next = () => {
