@@ -10,12 +10,19 @@ export async function triggerLeadSms(
 ): Promise<void> {
   if (!lead.telefon) return
 
+  // review = la conversie (lead → client), NU după prezența la demo. NU se trimite
+  // imediat: trece prin coada `confirmari_review_sms` cu delay de 5 min (fereastră
+  // de undo — dacă revii din conversie, SMS-ul nu mai pleacă), drenată de edge fn
+  // `process-review-sms`. La fel ca programarea (coada `confirmari_programare_sms`).
+  if (lead.status === 'convertit' && prev !== 'convertit') {
+    try {
+      await supabase.rpc('enqueue_confirmare_review', { p_lead: lead.id })
+    } catch (e) {
+      console.error('[triggerLeadSms] review enqueue', e)
+    }
+  }
+
   const tips: string[] = []
-  // NB: confirmarea de programare NU se trimite aici — trece prin coada
-  // `confirmari_programare_sms` cu delay de 2 min (fereastră de undo), drenată
-  // de edge fn `process-programare-sms`. Vezi enqueueConfirmareProgramare.
-  // review = la conversie (lead → client), NU după prezența la demo.
-  if (lead.status === 'convertit' && prev !== 'convertit') tips.push('review')
   if (lead.status === 'nu_a_venit' && prev !== 'nu_a_venit')
     tips.push('followup')
   if (lead.status === 'waiting_list' && prev !== 'waiting_list')

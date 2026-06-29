@@ -7013,6 +7013,10 @@ export type Database = {
         Args: { p_lead: string }
         Returns: undefined
       }
+      enqueue_confirmare_review: {
+        Args: { p_lead: string }
+        Returns: undefined
+      }
       evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
       expire_open_holds: { Args: never; Returns: number }
       get_absente_consecutive: {
