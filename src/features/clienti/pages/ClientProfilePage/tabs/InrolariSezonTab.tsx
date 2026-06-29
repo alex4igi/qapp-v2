@@ -1,4 +1,5 @@
-import { Button, Spinner } from '@/components/ui'
+import { Button, KebabMenu, Spinner } from '@/components/ui'
+import type { MenuItem } from '@/components/ui'
 import type { ClientInrolareSezon } from '../../../api'
 import { formatLuna } from '../helpers'
 
@@ -62,6 +63,46 @@ export function InrolariSezonTab({
                 const rest = r.rest ?? 0
                 const total = r.total_de_plata ?? 0
                 const achitat = rest <= 0
+                const actions: MenuItem[] = []
+                if (onAdjustPrice)
+                  actions.push({
+                    icon: '💰',
+                    label: 'Ajustează',
+                    title: 'Ajustează prețul înrolării (cu motiv + audit)',
+                    onClick: () => onAdjustPrice(r.id_enrollment),
+                  })
+                if (onMoveCurs)
+                  actions.push({
+                    icon: '📦',
+                    label: 'Mută',
+                    title: 'Mută înrolarea la alt curs (păstrează plata)',
+                    onClick: () => onMoveCurs(r.id_enrollment),
+                  })
+                if (onMotiveaza)
+                  actions.push({
+                    icon: '🩺',
+                    label: 'Motivează',
+                    title:
+                      'Motivează absențele lunii (adeverință medicală → eventual scutire)',
+                    onClick: () => onMotiveaza(r.id_enrollment),
+                  })
+                if (onConvertToAbonament && r.tip_plata === 'Per sedinta')
+                  actions.push({
+                    icon: '🎓',
+                    label: 'Abonează',
+                    title:
+                      'Convertește ședința în abonament (creează abonamentul, ședința rămâne gratuită)',
+                    onClick: () => onConvertToAbonament(r.id_enrollment, r.id_curs),
+                  })
+                if (onDelete)
+                  actions.push({
+                    icon: '🗑️',
+                    label: 'Șterge',
+                    title: 'Șterge înrolarea (duplicat creat din greșeală)',
+                    danger: true,
+                    separatorBefore: true,
+                    onClick: () => onDelete(r),
+                  })
                 return (
                   <li
                     key={r.id_enrollment}
@@ -84,51 +125,7 @@ export function InrolariSezonTab({
                         </span>
                       )}
                     </span>
-                    {onAdjustPrice && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => onAdjustPrice(r.id_enrollment)}
-                        title="Ajustează prețul înrolării (cu motiv + audit)"
-                      >
-                        💰 Ajustează
-                      </Button>
-                    )}
-                    {onMoveCurs && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => onMoveCurs(r.id_enrollment)}
-                        title="Mută înrolarea la alt curs (păstrează plata)"
-                      >
-                        📦 Mută
-                      </Button>
-                    )}
-                    {onMotiveaza && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => onMotiveaza(r.id_enrollment)}
-                        title="Motivează absențele lunii (adeverință medicală → eventual scutire)"
-                      >
-                        🩺 Motivează
-                      </Button>
-                    )}
-                    {onConvertToAbonament && r.tip_plata === 'Per sedinta' && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => onConvertToAbonament(r.id_enrollment, r.id_curs)}
-                        title="Convertește ședința în abonament (creează abonamentul, ședința rămâne gratuită)"
-                      >
-                        🎓 Abonează
-                      </Button>
-                    )}
-                    {onDelete && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => onDelete(r)}
-                        title="Șterge înrolarea (duplicat creat din greșeală)"
-                      >
-                        🗑️ Șterge
-                      </Button>
-                    )}
+                    <KebabMenu items={actions} ariaLabel="Acțiuni înrolare" />
                   </li>
                 )
               })}
