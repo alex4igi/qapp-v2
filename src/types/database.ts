@@ -808,6 +808,44 @@ export type Database = {
           },
         ]
       }
+      confirmari_review_sms: {
+        Row: {
+          created: string
+          error: string | null
+          id: string
+          lead_id: string
+          send_after: string
+          status: string
+          trimis_la: string | null
+        }
+        Insert: {
+          created?: string
+          error?: string | null
+          id?: string
+          lead_id: string
+          send_after?: string
+          status?: string
+          trimis_la?: string | null
+        }
+        Update: {
+          created?: string
+          error?: string | null
+          id?: string
+          lead_id?: string
+          send_after?: string
+          status?: string
+          trimis_la?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmari_review_sms_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cursuri: {
         Row: {
           capacitate_maxima: number | null
