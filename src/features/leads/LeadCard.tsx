@@ -73,6 +73,14 @@ export function LeadCard({
     Boolean(lead.id_client) &&
     lead.status !== 'convertit' &&
     !isEnrolled
+  // Lead contactat cu sub-status (de_revenit / nu_raspunde): pe card arătăm doar
+  // data de follow-up, nu data programării (care n-are sens pentru ele).
+  const isContactatSubStatus =
+    lead.status === 'contactat' && Boolean(lead.sub_status)
+  const followupOverdue =
+    isContactatSubStatus &&
+    Boolean(lead.data_callback_dorit) &&
+    new Date(lead.data_callback_dorit!).getTime() < Date.now()
 
   return (
     <div
@@ -199,16 +207,30 @@ export function LeadCard({
         </div>
       )}
 
-      {lead.data_programare && (
-        <div className="mt-1.5 flex items-center gap-1" {...listeners}>
-          <span
-            className="text-xs font-medium text-amber-700"
-            suppressHydrationWarning
-          >
-            🗓 {formatDate(lead.data_programare)}
-          </span>
-        </div>
-      )}
+      {isContactatSubStatus
+        ? lead.data_callback_dorit && (
+            <div className="mt-1.5 flex items-center gap-1" {...listeners}>
+              <span
+                className={`text-xs font-medium ${
+                  followupOverdue ? 'text-red-600' : 'text-amber-700'
+                }`}
+                suppressHydrationWarning
+              >
+                📞 {formatDate(lead.data_callback_dorit)}
+                {followupOverdue && ' (scadent)'}
+              </span>
+            </div>
+          )
+        : lead.data_programare && (
+            <div className="mt-1.5 flex items-center gap-1" {...listeners}>
+              <span
+                className="text-xs font-medium text-amber-700"
+                suppressHydrationWarning
+              >
+                🗓 {formatDate(lead.data_programare)}
+              </span>
+            </div>
+          )}
 
       {lead.status === 'pierdut' && lead.motiv_pierdut && (
         <div

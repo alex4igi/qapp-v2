@@ -5,6 +5,7 @@ import {
   Field,
   TextInput,
   DateInput,
+  DateTimeInput,
   TextArea,
   Select,
   Button,
@@ -379,6 +380,12 @@ export function LeadModal({
         return
       }
     }
+    // Contactat cu sub-status (de_revenit / nu_raspunde) → data de follow-up e
+    // obligatorie (paritate cu ContactareModal).
+    if (form.status === 'contactat' && form.sub_status && !form.data_callback_dorit) {
+      setError('Setează data de follow-up.')
+      return
+    }
     save.mutate()
   }
 
@@ -610,17 +617,29 @@ export function LeadModal({
               }
             />
           </Field>
-          <Field label="Data programare" htmlFor="data_programare">
-            <DateInput
-              id="data_programare"
-              value={form.data_programare}
-              onChange={(e) => {
-                set('data_programare', e.target.value)
-                // Date-driven: setarea datei marchează intenția de programare.
-                if (e.target.value) set('status', 'programat')
-              }}
-            />
-          </Field>
+          {form.status === 'contactat' ? (
+            // Pentru leadurile contactate data programării nu are sens — are sens
+            // data de follow-up (când revenim la client).
+            <Field label="Data follow-up" htmlFor="data_callback_dorit">
+              <DateTimeInput
+                id="data_callback_dorit"
+                value={form.data_callback_dorit}
+                onChange={(e) => set('data_callback_dorit', e.target.value)}
+              />
+            </Field>
+          ) : (
+            <Field label="Data programare" htmlFor="data_programare">
+              <DateInput
+                id="data_programare"
+                value={form.data_programare}
+                onChange={(e) => {
+                  set('data_programare', e.target.value)
+                  // Date-driven: setarea datei marchează intenția de programare.
+                  if (e.target.value) set('status', 'programat')
+                }}
+              />
+            </Field>
+          )}
         </div>
 
         {/* Programare la o grupă: aleg data → apar cursurile/evenimentele zilei.

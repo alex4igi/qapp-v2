@@ -50,7 +50,16 @@ function sortLeads(leads: Lead[], status: string): Lead[] {
     const bFlag = b.flag_reminder ? 0 : 1
     if (aFlag !== bFlag) return aFlag - bFlag
     if (status === 'contactat') {
-      return (a.sub_status ? 1 : 0) - (b.sub_status ? 1 : 0)
+      const aSub = a.sub_status ? 1 : 0
+      const bSub = b.sub_status ? 1 : 0
+      if (aSub !== bSub) return aSub - bSub
+      // Ambele cu sub-status: cel cu follow-up mai apropiat/scadent urcă.
+      if (a.sub_status && b.sub_status) {
+        const aCb = a.data_callback_dorit ? ts(a.data_callback_dorit) : Infinity
+        const bCb = b.data_callback_dorit ? ts(b.data_callback_dorit) : Infinity
+        return aCb - bCb
+      }
+      return 0
     }
     return 0
   })
