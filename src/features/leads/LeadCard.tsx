@@ -11,6 +11,8 @@ type Props = {
   onClick: (lead: Lead) => void
   campaniiById: Map<string, string>
   onLogContact?: (lead: Lead) => void
+  onEnroll?: (lead: Lead) => void
+  isEnrolled?: boolean
   isDragging?: boolean
 }
 
@@ -41,6 +43,8 @@ export function LeadCard({
   onClick,
   campaniiById,
   onLogContact,
+  onEnroll,
+  isEnrolled,
   isDragging,
 }: Props) {
   const {
@@ -62,6 +66,13 @@ export function LeadCard({
     [lead.prenume, lead.nume].filter(Boolean).join(' ') || lead.nume
   const age = calcAge(lead.data_nasterii)
   const sursaNume = lead.sursa ? (campaniiById.get(lead.sursa) ?? null) : null
+  // Client creat (din conversie) dar înrolarea nu e finalizată → lead-ul nu e
+  // încă „convertit". Oferim reluarea direct de pe card.
+  const needsEnrollment =
+    Boolean(onEnroll) &&
+    Boolean(lead.id_client) &&
+    lead.status !== 'convertit' &&
+    !isEnrolled
 
   return (
     <div
@@ -208,6 +219,21 @@ export function LeadCard({
             "{lead.motiv_pierdut}"
           </p>
         </div>
+      )}
+
+      {needsEnrollment && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onEnroll!(lead)
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="mt-2 w-full rounded-lg bg-quasar-yellow px-2 py-1.5 text-xs font-semibold text-quasar-black transition-colors hover:brightness-95"
+          title="Deschide formularul de înrolare pentru acest lead"
+        >
+          ▸ Finalizează înscrierea
+        </button>
       )}
 
       <p

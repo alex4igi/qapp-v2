@@ -11,8 +11,8 @@ import { LeadCard } from './LeadCard'
 import { exportLeadsCsv } from './leadExport'
 
 const PAGE_SIZE = 30
-// Lead-urile convertite mai vechi de 3 luni se arhivează (ascunse din coloană).
-const ARCHIVE_MS = 90 * 86_400_000
+// Lead-urile convertite mai vechi de 30 de zile se arhivează (ascunse din coloană).
+const ARCHIVE_MS = 30 * 86_400_000
 
 type Props = {
   column: PipelineColumn
@@ -21,6 +21,8 @@ type Props = {
   onLeadClick: (lead: Lead) => void
   onAddLead: (status: string) => void
   onLogContact: (lead: Lead) => void
+  onEnroll: (lead: Lead) => void
+  enrolledClientIds: Set<string>
 }
 
 const ts = (iso: string) => new Date(iso).getTime()
@@ -61,6 +63,8 @@ export function KanbanColumn({
   onLeadClick,
   onAddLead,
   onLogContact,
+  onEnroll,
+  enrolledClientIds,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: column.status })
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
@@ -177,6 +181,12 @@ export function KanbanColumn({
                 campaniiById={campaniiById}
                 onClick={onLeadClick}
                 onLogContact={onLogContact}
+                onEnroll={onEnroll}
+                isEnrolled={
+                  lead.id_client
+                    ? enrolledClientIds.has(lead.id_client)
+                    : false
+                }
               />
             </Fragment>
           ))}

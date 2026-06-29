@@ -14,11 +14,15 @@ import type { Lead, InsertDto } from '@/types/db'
 import { createClient } from '@/features/clienti/api'
 import {
   findMatchingClient,
-  linkLeadToClient,
+  attachClientToLead,
   getLatestProgramareCurs,
 } from './api'
 
-export type ConversieResult = { clientId: string; cursId: string | null }
+export type ConversieResult = {
+  clientId: string
+  cursId: string | null
+  leadId: string
+}
 
 type Props = {
   open: boolean
@@ -83,8 +87,8 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
         const client = await createClient(dto)
         clientId = client.id
       }
-      await linkLeadToClient(lead!.id, clientId)
-      return { clientId, cursId }
+      await attachClientToLead(lead!.id, clientId)
+      return { clientId, cursId, leadId: lead!.id }
     },
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ['leads'] })

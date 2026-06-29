@@ -413,16 +413,28 @@ export async function reintegrateClientAsLead(clientId: string): Promise<void> {
   if (error) throw error
 }
 
-// Leagă lead-ul de un client și îl marchează convertit.
-export async function linkLeadToClient(
+// Leagă lead-ul de un client FĂRĂ a-l marca convertit. Conversia e atomică cu
+// înrolarea: un lead devine `convertit` abia după ce înrolarea reușește
+// (vezi markLeadConvertit). Aici doar atașăm clientul creat/identificat, ca să
+// putem deschide formularul de înrolare precompletat.
+export async function attachClientToLead(
   leadId: string,
   clientId: string,
 ): Promise<void> {
   const { error } = await supabase
     .from('leads')
+    .update({ id_client: clientId })
+    .eq('id', leadId)
+  if (error) throw error
+}
+
+// Marchează lead-ul convertit — se apelează DOAR după ce înrolarea s-a creat cu
+// succes. Setează data_conversie și declanșează SMS-ul de review.
+export async function markLeadConvertit(leadId: string): Promise<void> {
+  const { error } = await supabase
+    .from('leads')
     .update({
       status: 'convertit',
-      id_client: clientId,
       data_conversie: new Date().toISOString(),
     })
     .eq('id', leadId)
@@ -434,8 +446,23 @@ export async function linkLeadToClient(
       body: { leadId, tip: 'review' },
     })
   } catch (e) {
-    console.error('[linkLeadToClient] review sms', e)
+    console.error('[markLeadConvertit] review sms', e)
   }
+}
+
+// Dintr-o listă de clienți, cei care au cel puțin o înrolare activă (ne-reziliată).
+// Folosit pe carduri ca să distingem „client creat, neînrolat" de „deja înrolat".
+export async function getEnrolledClientIds(
+  clientIds: string[],
+): Promise<string[]> {
+  if (clientIds.length === 0) return []
+  const { data, error } = await supabase
+    .from('enrollments')
+    .select('client')
+    .in('client', clientIds)
+    .eq('reziliat', false)
+  if (error) throw error
+  return [...new Set((data ?? []).map((r) => r.client as string))]
 }
 
 export type CursProgramabil = {

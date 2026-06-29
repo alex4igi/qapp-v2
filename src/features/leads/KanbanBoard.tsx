@@ -25,7 +25,14 @@ import { ConversieModal, type ConversieResult } from './ConversieModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { LeadFilters, type LeadFiltersValue } from './LeadFilters'
 import { TodayPanel } from './TodayPanel'
-import { listLeads, pruneExpiredLeads, updateLeadStatus } from './api'
+import {
+  getEnrolledClientIds,
+  getLatestProgramareCurs,
+  listLeads,
+  markLeadConvertit,
+  pruneExpiredLeads,
+  updateLeadStatus,
+} from './api'
 
 const EMPTY_FILTERS: LeadFiltersValue = {
   search: '',
@@ -73,6 +80,32 @@ export function KanbanBoard() {
   )
 
   const leads = leadsQuery.data ?? []
+
+  // Leads cu client creat dar neconvertiți = înscriere începută, neterminată.
+  // Verificăm care dintre clienții lor au deja o înrolare activă, ca să arătăm
+  // butonul „Finalizează înscrierea" doar celor care chiar n-au înrolare.
+  const pendingClientIds = useMemo(
+    () =>
+      leads
+        .filter((l) => l.id_client && l.status !== 'convertit')
+        .map((l) => l.id_client as string),
+    [leads],
+  )
+  const enrolledQuery = useQuery({
+    queryKey: ['leads', 'pending-enrolled', [...pendingClientIds].sort()],
+    queryFn: () => getEnrolledClientIds(pendingClientIds),
+    enabled: pendingClientIds.length > 0,
+  })
+  const enrolledClientIds = useMemo(
+    () => new Set(enrolledQuery.data ?? []),
+    [enrolledQuery.data],
+  )
+
+  async function handleEnroll(lead: Lead) {
+    if (!lead.id_client) return
+    const cursId = await getLatestProgramareCurs(lead.id)
+    setEnrollData({ clientId: lead.id_client, cursId, leadId: lead.id })
+  }
 
   const filtered = useMemo(() => {
     return leads.filter((lead) => {
@@ -214,6 +247,8 @@ export function KanbanBoard() {
               onLeadClick={(lead) => setEditingLead(lead)}
               onAddLead={(status) => setAddingToStatus(status)}
               onLogContact={(lead) => setLogContactLead(lead)}
+              onEnroll={handleEnroll}
+              enrolledClientIds={enrolledClientIds}
             />
           ))}
         </div>
@@ -294,6 +329,12 @@ export function KanbanBoard() {
           open
           defaultClientId={enrollData.clientId}
           defaultCursId={enrollData.cursId ?? undefined}
+          onEnrolled={() => {
+            // Înrolarea a reușit → abia acum lead-ul devine convertit.
+            void markLeadConvertit(enrollData.leadId).finally(() => {
+              void queryClient.invalidateQueries({ queryKey: ['leads'] })
+            })
+          }}
           onClose={() => setEnrollData(null)}
         />
       )}
