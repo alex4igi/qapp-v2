@@ -15,10 +15,15 @@ import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { clientiOptions, sezonActiv } from '@/lib/lookups'
-import type { Curs, Enums } from '@/types/db'
+import type { Curs, Enrollment, Enums } from '@/types/db'
 import { listAvailableVouchere } from '@/features/vouchere/api'
 import { getCursOcupare } from '@/features/cursuri/api/profile'
 import { EligibilityAlerts } from '@/features/vouchere/EligibilityAlerts'
+import {
+  MetodaPlataField,
+  resolveTenders,
+  type MetodaSel,
+} from '../../modals/PlataNouaModal/MetodaPlataField'
 import {
   createInrolari,
   getCursForInrolare,
@@ -26,6 +31,7 @@ import {
   listCursuriPentruInrolare,
   previewPoolDiscount,
   rezervaBonusOpen,
+  rezervaLocOpen,
   scheduleConfirmareInrolare,
 } from '../../api'
 import { PROMO_BONUS_IUNIE, PROMO_BONUS_IUNIE_PANA_LA } from '../../promo'
@@ -63,6 +69,11 @@ export function EnrollmentForm({
   const [voucherId, setVoucherId] = useState('')
   const [forceReinrolare, setForceReinrolare] = useState(false)
   const [includeBonusIunie, setIncludeBonusIunie] = useState(false)
+  // Plata pentru facultativ „Per ședință" (flux OPEN: rezervare + încasare).
+  const [metoda, setMetoda] = useState<MetodaSel>('Cash')
+  const [cash, setCash] = useState('')
+  const [card, setCard] = useState('')
+  const [overbook, setOverbook] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const clientiQ = useQuery({
@@ -228,12 +239,41 @@ export function EnrollmentForm({
     enabled: Boolean(clientId) && sumaSugerata != null && !voucherId,
     staleTime: 30_000,
   })
-  const policyPreview = voucherId ? null : (previewQ.data ?? null)
+  const policyPreview =
+    voucherId || isFacultativPerSedinta ? null : (previewQ.data ?? null)
 
   const submit = useMutation({
-    mutationFn: () => {
+    mutationFn: (): Promise<Enrollment[] | string> => {
       if (!tipInrolare) {
         throw new Error('Cursul selectat nu e încărcat. Reîncearcă.')
+      }
+      // Facultativ „Per ședință" = rezervare la o sesiune OPEN + încasare, atomic
+      // (același flux ca tab-ul Open class). Nu creăm un enrollment „sec".
+      if (isFacultativPerSedinta) {
+        if (!locatieId) {
+          throw new Error(
+            'Setează locația de lucru din bara de sus (📍 lângă dată).',
+          )
+        }
+        const total = sumaSugerata ?? 0
+        if (!(total > 0)) {
+          throw new Error('Cursul nu are preț pe ședință configurat.')
+        }
+        const tenders = resolveTenders({ metoda, total, cash, card })
+        const [t0, t1] = tenders
+        return rezervaLocOpen({
+          clientId,
+          suma: t0.suma,
+          metoda: t0.metoda,
+          metoda2: t1?.metoda ?? null,
+          suma2: t1?.suma ?? null,
+          locatieId,
+          sesiuneId: sesiuneQ.data?.sesiune?.id ?? null,
+          cursId,
+          data: dataIncepere,
+          instructorId: null,
+          permiteOverbook: overbook,
+        })
       }
       return createInrolari({
         client: clientId,
@@ -246,10 +286,21 @@ export function EnrollmentForm({
         voucherId: voucherId || null,
       })
     },
-    onSuccess: async (rows) => {
+    onSuccess: async (result) => {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      // Flux OPEN: rezervarea + încasarea sunt deja create în RPC. Reîmprospătăm
+      // ocuparea sesiunilor și rosterul grupei (cardul recepției).
+      if (isFacultativPerSedinta) {
+        void queryClient.invalidateQueries({ queryKey: ['open-sesiune'] })
+        void queryClient.invalidateQueries({ queryKey: ['open-sesiuni'] })
+        void queryClient.invalidateQueries({ queryKey: ['open-rezervari'] })
+        void queryClient.invalidateQueries({ queryKey: ['grupa-dashboard'] })
+        onClose()
+        return
+      }
+      const rows = result as Enrollment[]
       console.info(`[Înrolare] ${rows.length} rânduri create.`)
       // SMS de confirmare doar pentru recurent (grupă/trupă), cu fereastră de
       // undo de 5 min. Best-effort: o eroare aici nu blochează înrolarea.
@@ -346,9 +397,18 @@ export function EnrollmentForm({
           <Button
             type="submit"
             form="enrollment-form"
-            disabled={submit.isPending}
+            disabled={
+              submit.isPending ||
+              (isFacultativPerSedinta && sesiunePlina && !overbook)
+            }
           >
-            {submit.isPending ? 'Se creează…' : 'Creează înrolare'}
+            {submit.isPending
+              ? 'Se creează…'
+              : isFacultativPerSedinta
+                ? sesiunePlina && !overbook
+                  ? 'Sesiune completă'
+                  : 'Rezervă + încasează'
+                : 'Creează înrolare'}
           </Button>
         </>
       }
@@ -420,35 +480,38 @@ export function EnrollmentForm({
             </Field>
           </div>
 
-          <Field label="Voucher (opțional)" htmlFor="voucher">
-            <Select
-              id="voucher"
-              placeholder={
-                cursId
-                  ? vouchereQ.data && vouchereQ.data.length === 0
-                    ? '— niciun voucher aplicabil —'
-                    : '— fără voucher —'
-                  : '— alege întâi cursul —'
-              }
-              options={(vouchereQ.data ?? []).map((v) => ({
-                value: v.id,
-                label:
-                  v.tip === 'Procent'
-                    ? `${v.cod_voucher} — ${v.valoare}%`
-                    : v.tip === 'Valoare'
-                      ? `${v.cod_voucher} — ${v.valoare} RON`
-                      : v.cod_voucher,
-              }))}
-              value={voucherId}
-              onChange={(e) => setVoucherId(e.target.value)}
-              disabled={!cursId || (vouchereQ.data?.length ?? 0) === 0}
-            />
-            {voucherSelectat?.descriere && (
-              <p className="mt-1 text-xs text-quasar-gray">
-                {voucherSelectat.descriere}
-              </p>
-            )}
-          </Field>
+          {/* Voucherul nu se aplică pe fluxul OPEN (rezervare per ședință). */}
+          {!isFacultativPerSedinta && (
+            <Field label="Voucher (opțional)" htmlFor="voucher">
+              <Select
+                id="voucher"
+                placeholder={
+                  cursId
+                    ? vouchereQ.data && vouchereQ.data.length === 0
+                      ? '— niciun voucher aplicabil —'
+                      : '— fără voucher —'
+                    : '— alege întâi cursul —'
+                }
+                options={(vouchereQ.data ?? []).map((v) => ({
+                  value: v.id,
+                  label:
+                    v.tip === 'Procent'
+                      ? `${v.cod_voucher} — ${v.valoare}%`
+                      : v.tip === 'Valoare'
+                        ? `${v.cod_voucher} — ${v.valoare} RON`
+                        : v.cod_voucher,
+                }))}
+                value={voucherId}
+                onChange={(e) => setVoucherId(e.target.value)}
+                disabled={!cursId || (vouchereQ.data?.length ?? 0) === 0}
+              />
+              {voucherSelectat?.descriere && (
+                <p className="mt-1 text-xs text-quasar-gray">
+                  {voucherSelectat.descriere}
+                </p>
+              )}
+            </Field>
+          )}
 
           {cursSelectat && (
             <PriceSummary
@@ -457,6 +520,18 @@ export function EnrollmentForm({
               tipPlata={tipPlata}
               isFacultativ={isFacultativ}
               policyPreview={policyPreview}
+            />
+          )}
+
+          {isFacultativPerSedinta && cursSelectat && (
+            <MetodaPlataField
+              metoda={metoda}
+              onMetoda={setMetoda}
+              total={sumaSugerata ?? 0}
+              cash={cash}
+              card={card}
+              onCash={setCash}
+              onCard={setCard}
             />
           )}
 
@@ -508,6 +583,15 @@ export function EnrollmentForm({
               </strong>
               {sesiunePlina && ' — mai vrei să înscrii?'}
             </p>
+          )}
+
+          {isFacultativPerSedinta && sesiunePlina && (
+            <Checkbox
+              id="overbook"
+              label="Adaugă peste limită (walk-in la sală)"
+              checked={overbook}
+              onChange={(e) => setOverbook(e.target.checked)}
+            />
           )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}

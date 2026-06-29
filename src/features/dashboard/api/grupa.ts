@@ -83,7 +83,7 @@ export async function getGrupaDashboard(params: {
   const { data: enrData, error: enrErr } = await supabase
     .from('enrollments')
     .select(
-      'id, suma, client:clienti(id, nume, prenume, foto, data_nasterii, telefon)',
+      'id, suma, tip_plata, data_incepere, client:clienti(id, nume, prenume, foto, data_nasterii, telefon)',
     )
     .eq('cursul', params.cursId)
     .eq('reziliat', false)
@@ -93,6 +93,8 @@ export async function getGrupaDashboard(params: {
   const enrollments = (enrData ?? []) as unknown as Array<{
     id: string
     suma: number | null
+    tip_plata: Enums<'tip_plata'> | null
+    data_incepere: string | null
     client: {
       id: string
       nume: string
@@ -239,10 +241,19 @@ export async function getGrupaDashboard(params: {
   const byClient = new Map<string, GrupaRosterRow>()
   for (const e of enrollments) {
     if (!e.client) continue
+    // Facultativ „Per ședință": înrolarea acoperă O SINGURĂ ședință (data_incepere),
+    // nu toată luna. O includem doar pe ziua ei și o tratăm absent/prezent — niciodată
+    // `inactiv`. Altfel un rând cu `data_final=NULL` ar deveni fantomă inactivă în
+    // fiecare zi/lună ≥ data_incepere. Prezența reală vine via rezervarea OPEN a zilei.
+    const isPerSedintaFacultativ =
+      cursRow.facultativ && e.tip_plata === 'Per sedinta'
+    if (isPerSedintaFacultativ && e.data_incepere !== params.date) continue
+
     const s = statusToday.get(e.id)
     let status: RosterStatus
     if (s === 'Prezent') status = 'prezent'
     else if (s === 'Absent' || s === 'Motivat') status = 'absent'
+    else if (isPerSedintaFacultativ) status = 'absent'
     else if (!hasRecent.has(e.id)) status = 'inactiv'
     // Cursantii nebifati azi sunt implicit absenti (pana cineva ii marcheaza
     // prezent). Statusul `programat` (galben) e rezervat doar leads-urilor.
@@ -272,10 +283,24 @@ export async function getGrupaDashboard(params: {
   // Merge clienții cu rezervare OPEN pe această zi care NU au fost deja prinși
   // dintr-o înrolare ce acoperă luna (ex. bonus 29-30 iun pe abonamentul de iulie).
   for (const o of openEntries) {
-    if (byClient.has(o.client.id)) continue
     const s = statusToday.get(o.enrollmentId)
     const status: RosterStatus =
       s === 'Prezent' ? 'prezent' : s === 'Absent' || s === 'Motivat' ? 'absent' : 'absent'
+    const existing = byClient.get(o.client.id)
+    if (existing) {
+      // Rezervarea OPEN a zilei e autoritară: un client cu rezervare validă pe
+      // sesiunea de azi NU poate fi „inactiv". Promovăm statusul (și legăm prezența
+      // de enrollment-ul rezervării) dacă fusese clasat inactiv din altă înrolare.
+      if (existing.status === 'inactiv') {
+        byClient.set(o.client.id, {
+          ...existing,
+          rowId: o.enrollmentId,
+          enrollmentId: o.enrollmentId,
+          status,
+        })
+      }
+      continue
+    }
     byClient.set(o.client.id, {
       rowId: o.enrollmentId,
       kind: 'client',
