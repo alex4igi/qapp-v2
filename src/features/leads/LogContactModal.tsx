@@ -1,13 +1,16 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Modal, Field, TextArea, DateTimeInput, Button } from '@/components/ui'
+import { Modal, Field, TextArea, DateInput, Button } from '@/components/ui'
 import type { Lead } from '@/types/db'
+import { SUB_STATUS_OPTIONS, dataPesteZile } from './constants'
 import {
   logContact,
   type CanalContact,
   type RezultatContact,
 } from './api'
+
+type SubStatus = 'de_revenit' | 'nu_raspunde'
 
 type Props = {
   open: boolean
@@ -32,6 +35,7 @@ export function LogContactModal({ open, lead, onClose }: Props) {
   const queryClient = useQueryClient()
   const [canal, setCanal] = useState<CanalContact>('telefon')
   const [rezultat, setRezultat] = useState<RezultatContact>('reusit')
+  const [subStatus, setSubStatus] = useState<SubStatus>('de_revenit')
   const [observatii, setObservatii] = useState('')
   const [dataCallback, setDataCallback] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -40,6 +44,7 @@ export function LogContactModal({ open, lead, onClose }: Props) {
     if (!open) return
     setCanal('telefon')
     setRezultat('reusit')
+    setSubStatus('de_revenit')
     setObservatii('')
     setDataCallback('')
     setError(null)
@@ -52,6 +57,7 @@ export function LogContactModal({ open, lead, onClose }: Props) {
         canal,
         rezultat,
         observatii,
+        subStatus: rezultat === 'follow_up' ? subStatus : undefined,
         dataCallback: rezultat === 'follow_up' ? dataCallback : undefined,
       }),
     onSuccess: () => {
@@ -62,6 +68,16 @@ export function LogContactModal({ open, lead, onClose }: Props) {
     onError: (e: unknown) =>
       setError(humanizeError(e, 'Eroare la logare.')),
   })
+
+  const handleSave = () => {
+    // Follow-up cere o dată (paritate cu „Marchează contactarea").
+    if (rezultat === 'follow_up' && !dataCallback) {
+      setError('Setează data de follow-up.')
+      return
+    }
+    setError(null)
+    save.mutate()
+  }
 
   const fullName =
     [lead.prenume, lead.nume].filter(Boolean).join(' ') || lead.nume
@@ -76,7 +92,7 @@ export function LogContactModal({ open, lead, onClose }: Props) {
           <Button variant="secondary" onClick={onClose}>
             Anulează
           </Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+          <Button onClick={handleSave} disabled={save.isPending}>
             {save.isPending ? 'Se salvează…' : 'Salvează contactul'}
           </Button>
         </>
@@ -122,13 +138,49 @@ export function LogContactModal({ open, lead, onClose }: Props) {
         </Field>
 
         {rezultat === 'follow_up' && (
-          <Field label="Revenire la (callback)" htmlFor="lc-callback">
-            <DateTimeInput
-              id="lc-callback"
-              value={dataCallback}
-              onChange={(e) => setDataCallback(e.target.value)}
-            />
-          </Field>
+          <>
+            <Field label="Sub-status">
+              <div className="flex flex-wrap gap-1.5">
+                {SUB_STATUS_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => {
+                      setSubStatus(o.value)
+                      // „Nu răspunde" → follow-up implicit peste o săptămână
+                      // (editabil), ca în „Marchează contactarea".
+                      if (o.value === 'nu_raspunde' && !dataCallback)
+                        setDataCallback(dataPesteZile(7))
+                      setError(null)
+                    }}
+                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                      subStatus === o.value
+                        ? o.cls
+                        : 'border-quasar-gray-light bg-white text-quasar-gray hover:border-quasar-gray'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            <Field
+              label={
+                subStatus === 'nu_raspunde'
+                  ? 'Când re-încercăm?'
+                  : 'Revenire la (callback)'
+              }
+              required
+              htmlFor="lc-callback"
+            >
+              <DateInput
+                id="lc-callback"
+                value={dataCallback}
+                onChange={(e) => setDataCallback(e.target.value)}
+              />
+            </Field>
+          </>
         )}
 
         <Field label="Observații" htmlFor="lc-obs">

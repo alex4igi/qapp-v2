@@ -589,6 +589,9 @@ export type LogContactInput = {
   rezultat: RezultatContact
   observatii?: string
   dataCallback?: string // doar pentru follow_up (callback la o dată)
+  // Pentru follow_up: ce sub-status capătă leadul. Implicit 'de_revenit'
+  // (a răspuns, revine), dar poate fi 'nu_raspunde' (nu a răspuns, re-încercăm).
+  subStatus?: SubStatusLead
 }
 
 // Butonul hibrid „Loghează contact": (1) inserează un rând în lead_contacte
@@ -620,7 +623,9 @@ export async function logContact(input: LogContactInput): Promise<void> {
     input.rezultat === 'reusit'
       ? 'Contact reușit'
       : input.rezultat === 'follow_up'
-        ? 'Follow-up'
+        ? input.subStatus === 'nu_raspunde'
+          ? 'Nu răspunde'
+          : 'Follow-up'
         : 'Pierdut'
   if (input.observatii?.trim()) {
     patch.observatii = prependObservatie(
@@ -631,7 +636,7 @@ export async function logContact(input: LogContactInput): Promise<void> {
   }
 
   if (input.rezultat === 'follow_up') {
-    patch.sub_status = 'de_revenit'
+    patch.sub_status = input.subStatus ?? 'de_revenit'
     if (input.dataCallback) patch.data_callback_dorit = input.dataCallback
     if (current?.status === 'nou') patch.status = 'contactat'
   } else if (input.rezultat === 'pierdut') {
