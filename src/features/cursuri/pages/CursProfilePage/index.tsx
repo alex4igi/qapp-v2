@@ -164,6 +164,8 @@ export function CursProfilePage() {
 
   const curs = cursQuery.data
   const initials = getCursInitials(curs.numele)
+  // Trimis ca location.state când deschizi o fișă de client din roster, ca back-ul să revină aici.
+  const backToRoster = { backTo: `/cursuri/${curs.id}`, backLabel: curs.numele }
 
   return (
     <>
@@ -225,7 +227,7 @@ export function CursProfilePage() {
               loading={activiQuery.isLoading}
               rows={activiQuery.data ?? []}
               pretLunarPromo={curs.facultativ ? null : curs.pret_lunar_promo}
-              onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+              onRowClick={(cid) => navigate(`/clienti/${cid}`, { state: backToRoster })}
               onActivateReinscriere={(cid) =>
                 activeazaReinscriereMut.mutate(cid)
               }
@@ -241,7 +243,7 @@ export function CursProfilePage() {
             <AbsentiTab
               loading={absentiQuery.isLoading}
               rows={absentiQuery.data ?? []}
-              onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+              onRowClick={(cid) => navigate(`/clienti/${cid}`, { state: backToRoster })}
             />
           )}
 
@@ -249,7 +251,7 @@ export function CursProfilePage() {
             <RestantieriTab
               loading={restantieriQuery.isLoading}
               rows={restantieriQuery.data ?? []}
-              onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+              onRowClick={(cid) => navigate(`/clienti/${cid}`, { state: backToRoster })}
               onPayClick={(cid) => setPayClientId(cid)}
             />
           )}
@@ -258,7 +260,7 @@ export function CursProfilePage() {
             <ClientiInactiviTab
               loading={inactiviQuery.isLoading}
               rows={inactiviQuery.data ?? []}
-              onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+              onRowClick={(cid) => navigate(`/clienti/${cid}`, { state: backToRoster })}
             />
           )}
 
