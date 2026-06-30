@@ -15,6 +15,25 @@ export async function createDatorie(
   return data
 }
 
+export type ClientRestanteRow = {
+  sezon_id: string | null
+  sezon_nume: string | null
+  sursa: string // 'abonament' | 'oneoff'
+  rest: number
+}
+
+// Restanțele ne-prescrise ale unui client (abonamente + one-off), defalcate pe sezon.
+// Alimentează flag-ul de avertizare la înrolare.
+export async function getClientRestante(
+  clientId: string,
+): Promise<ClientRestanteRow[]> {
+  const { data, error } = await supabase.rpc('get_client_restante', {
+    p_client: clientId,
+  })
+  if (error) throw error
+  return (data ?? []) as ClientRestanteRow[]
+}
+
 // Datoriile one-off neachitate ale unui client (rest > 0), vechi → nou.
 export async function listDatoriiClient(
   clientId: string,

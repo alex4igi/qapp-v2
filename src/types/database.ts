@@ -7037,6 +7037,10 @@ export type Database = {
         Args: { p_campanie_id: string }
         Returns: undefined
       }
+      close_season_open_enrollments: {
+        Args: { p_sezon: string }
+        Returns: number
+      }
       confirm_netopia_payment: {
         Args: {
           p_amount: number
@@ -7166,6 +7170,15 @@ export type Database = {
           taxa_done: number
           total_eligibili: number
           varsta: Database["public"]["Enums"]["varsta_curs"]
+        }[]
+      }
+      get_client_restante: {
+        Args: { p_client: string }
+        Returns: {
+          rest: number
+          sezon_id: string
+          sezon_nume: string
+          sursa: string
         }[]
       }
       get_clienti_activi: {

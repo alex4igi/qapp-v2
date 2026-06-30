@@ -23,6 +23,7 @@ import { listAvailableVouchere } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
 import { getCursOcupare } from '@/features/cursuri/api/profile'
 import { EligibilityAlerts } from '@/features/vouchere/EligibilityAlerts'
+import { ClientDebtAlert } from '../ClientDebtAlert'
 import {
   MetodaPlataField,
   resolveTenders,
@@ -515,6 +516,8 @@ export function EnrollmentForm({
             tipPlata={tipPlata}
             isFacultativ={isFacultativ}
           />
+
+          <ClientDebtAlert clientId={clientId} />
 
           <Field label="Curs" required htmlFor="curs">
             <Combobox
