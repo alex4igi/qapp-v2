@@ -207,6 +207,7 @@ export function LeadModal({
   const [enrollData, setEnrollData] = useState<ConversieResult | null>(null)
   // Selecția cursului/evenimentului pentru programare: `curs:<id>` / `ev:<id>`.
   const [selectie, setSelectie] = useState('')
+  const [ignoreVarsta, setIgnoreVarsta] = useState(false)
   // Valorile programării la deschidere — ca să nu re-creăm o programare la edituri
   // care nu schimbă data/cursul.
   const [initial, setInitial] = useState<{ data: string; selectie: string }>({
@@ -254,6 +255,7 @@ export function LeadModal({
     setConfirmDelete(false)
     setTab('detalii')
     setSelectie('')
+    setIgnoreVarsta(false)
     setInitial({ data: lead?.data_programare?.slice(0, 10) ?? '', selectie: '' })
   }, [open, lead, defaultStatus, startScheduling])
 
@@ -324,9 +326,10 @@ export function LeadModal({
     const byLocatie = leadLocatieId
       ? all.filter((c) => !c.locatie || c.locatie === leadLocatieId)
       : all
-    const varstaCurs = form.grupa_varsta
-      ? GRUPA_TO_VARSTA_CURS[form.grupa_varsta as GrupaLead]
-      : null
+    const varstaCurs =
+      form.grupa_varsta && !ignoreVarsta
+        ? GRUPA_TO_VARSTA_CURS[form.grupa_varsta as GrupaLead]
+        : null
     // Grupa + ziua sunt filtre SOFT: dacă golesc lista, revenim la toate
     // cursurile din locația aleasă (nu din toate locațiile).
     const filtered = byLocatie.filter((c) => {
@@ -348,7 +351,7 @@ export function LeadModal({
         value: `ev:${e.id}`,
       })),
     ]
-  }, [cursuriQ.data, form.grupa_varsta, weekday, leadLocatieId, evenimenteQ.data])
+  }, [cursuriQ.data, form.grupa_varsta, weekday, leadLocatieId, evenimenteQ.data, ignoreVarsta])
 
   // Rezolvă curs/eveniment + oră din selecția curentă.
   const resolveSelectie = () => {
@@ -811,6 +814,33 @@ export function LeadModal({
                           </select>
                         </div>
                       </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '11px', fontSize: '12px', color: '#1F6FB2', cursor: 'pointer', userSelect: 'none' }}>
+                        <input
+                          type="checkbox"
+                          checked={ignoreVarsta}
+                          onChange={(e) => {
+                            const on = e.target.checked
+                            setIgnoreVarsta(on)
+                            // La dezactivare, golim selecția dacă cursul ales nu mai trece de filtrul de vârstă.
+                            if (!on && selectie.startsWith('curs:')) {
+                              const curs = cursuriQ.data?.find((c) => c.id === selectie.slice(5))
+                              const varstaCurs = form.grupa_varsta
+                                ? GRUPA_TO_VARSTA_CURS[form.grupa_varsta as GrupaLead]
+                                : null
+                              if (
+                                curs &&
+                                varstaCurs &&
+                                curs.varsta &&
+                                curs.varsta !== varstaCurs &&
+                                curs.varsta !== 'Mixt'
+                              )
+                                setSelectie('')
+                            }
+                          }}
+                          style={{ width: '15px', height: '15px', accentColor: '#1F6FB2', cursor: 'pointer' }}
+                        />
+                        Programează la altă grupă de vârstă (excepție)
+                      </label>
                       <div style={{ display: 'flex', gap: '9px', marginTop: '12px', fontSize: '11.5px', color: '#3F6488', lineHeight: 1.45 }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3F6488" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }}><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
                         <span>La salvare leadul apare în rosterul grupei din acea zi. Confirmarea SMS pleacă după 2 minute (fereastră de corecții). Data nașterii nu e obligatorie.</span>
