@@ -306,9 +306,14 @@ export function LeadModal({
         .normalize('NFD')
         .replace(/[̀-ͯ]/g, '')
         .trim()
+    // Studio-ul de copii apare în DB fie ca „Quasar 4 Kids", fie ca „Quasar for
+    // Kids" — match-ul substring nu le leagă (4 ⊄ for), așa că le tratăm ca
+    // sinonime: orice „quasar … kids" potrivește orice locație ce conține „kids".
+    const isKids = (s: string) => s.includes('quasar') && s.includes('kids')
     const target = norm(form.locatia)
     const match = locatiiQ.data?.find((l) => {
       const n = norm(l.label)
+      if (isKids(target)) return isKids(n)
       return n === target || n.includes(target) || target.includes(n)
     })
     return match?.value ?? null

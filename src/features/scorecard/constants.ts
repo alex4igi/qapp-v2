@@ -5,7 +5,7 @@ export const DATA_LANSARE_SCORECARD = '2026-06-09'
 
 // Locațiile pentru filtrul de scorecard. leads.locatia e TEXT label (nu uuid),
 // deci aici trimitem LABEL-ul, identic cu LOCATII din features/leads/constants.
-export const LOCATII_SCORECARD = ['Ștefan cel Mare', 'Nicolina'] as const
+export const LOCATII_SCORECARD = ['Ștefan cel Mare', 'Nicolina', 'Quasar 4 Kids'] as const
 
 export type Clasa = 'sub' | 'standard' | 'peste' | null
 

@@ -95,7 +95,7 @@ export const GRUPA_LABELS: Record<GrupaLead, string> = {
 }
 
 // Locațiile relevante pentru lead-uri (folosite și de logica SMS — adresă/review link).
-export const LOCATII = ['Ștefan cel Mare', 'Nicolina'] as const
+export const LOCATII = ['Ștefan cel Mare', 'Nicolina', 'Quasar 4 Kids'] as const
 
 export const MOTIVE_PIERDUT_RAPIDE = [
   'Programul nu coincide',
