@@ -7,6 +7,7 @@
 // Apelata de pg_cron la ~1 min. Delay-ul de 2 min vine din send_after.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms } from '../_shared/sms.ts'
+import { getProgramareSms } from '../_shared/leadLocatie.ts'
 import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
 
 Deno.serve(async (req) => {
@@ -92,21 +93,20 @@ Deno.serve(async (req) => {
       continue
     }
 
-    // Ora din ultima programare (rezolvată din curs/eveniment la programare).
-    const { data: programare } = await supabase
-      .from('programari_leads')
-      .select('ora')
-      .eq('lead', lead.id)
-      .order('data_programarii', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    // Ora + locația din ultima programare (rezolvate din curs/eveniment la
+    // programare). Locația programării e sursa de adevăr pentru adresă —
+    // lead.locatia (câmp liber al recepției) e doar fallback când lipsește.
+    const { ora, locatie } = await getProgramareSms(
+      supabase,
+      lead.id,
+      lead.locatia,
+    )
 
     const mesaj = buildSms('confirmare', {
       prenume: lead.prenume || lead.nume,
-      locatie: lead.locatia,
-      grupa: lead.grupa_varsta,
+      locatie,
       dataProgramare: lead.data_programare,
-      ora: programare?.ora ?? null,
+      ora,
     })
 
     const result = await sendSms(lead.telefon, mesaj)

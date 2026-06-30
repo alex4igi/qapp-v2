@@ -33,27 +33,37 @@ const TELEFOANE: Record<string, string> = {
 }
 const TELEFON_DEFAULT = '0730 534 172'
 
-// Nicolina + grupă Tiny (sau necunoscută) → adresa/review Quasar 4 Kids
-function isQuasar4Kids(locatie: string | null, grupa: string | null): boolean {
-  return locatie === 'Nicolina' && (grupa === 'Tiny' || grupa === null)
+// Cheia hardcodată folosită ca ultim resort când locația nu se poate canoniza.
+const LOCATIE_DEFAULT = 'Ștefan cel Mare'
+
+// Locația poate veni fie din câmpul liber al leadului, fie din numele DB al
+// locației programării ("Galeriile Stefan cel Mare", "Quasar 4 Kids" etc). Cheile
+// ADRESE/REVIEW/TELEFOANE sunt scurte ("Ștefan cel Mare"), deci normalizăm +
+// potrivim prin substring/sinonim ca să legăm ambele forme la aceeași cheie.
+function canonLocatie(locatie: string | null): keyof typeof ADRESE | null {
+  if (!locatie) return null
+  const n = locatie.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  // "Quasar 4 Kids" și "Quasar for Kids" sunt sinonime (4 ⊄ for) — vezi LeadModal.
+  if (n.includes('quasar') && n.includes('kids')) return 'Quasar 4 Kids'
+  if (n.includes('nicolina')) return 'Nicolina'
+  if (n.includes('stefan') || n.includes('galeriile')) return 'Ștefan cel Mare'
+  return null
 }
 
-function getAdresa(locatie: string | null, grupa: string | null): string {
-  if (isQuasar4Kids(locatie, grupa)) return ADRESE['Quasar 4 Kids']
-  return ADRESE[locatie ?? 'Ștefan cel Mare'] ?? ADRESE['Ștefan cel Mare']
+// Cele 3 locații au adrese distincte; maparea se face strict pe numele locației
+// (din programare). Fallback explicit la sediul central DOAR când locația e
+// necunoscută/lipsă — callerul ar trebui să paseze locația programării, nu null.
+function getAdresa(locatie: string | null): string {
+  return ADRESE[canonLocatie(locatie) ?? LOCATIE_DEFAULT]
 }
 
-function getReviewLink(locatie: string | null, grupa: string | null): string {
-  if (isQuasar4Kids(locatie, grupa)) return REVIEW_LINKS['Quasar 4 Kids']
-  return (
-    REVIEW_LINKS[locatie ?? 'Ștefan cel Mare'] ??
-    REVIEW_LINKS['Ștefan cel Mare']
-  )
+function getReviewLink(locatie: string | null): string {
+  return REVIEW_LINKS[canonLocatie(locatie) ?? LOCATIE_DEFAULT]
 }
 
-function getTelefon(locatie: string | null, grupa: string | null): string {
-  if (isQuasar4Kids(locatie, grupa)) return TELEFOANE['Quasar 4 Kids']
-  return TELEFOANE[locatie ?? ''] ?? TELEFON_DEFAULT
+function getTelefon(locatie: string | null): string {
+  const key = canonLocatie(locatie)
+  return key ? TELEFOANE[key] : TELEFON_DEFAULT
 }
 
 const MONTHS = [
@@ -83,7 +93,6 @@ export type SmsTip =
 export type SmsParams = {
   prenume?: string | null
   locatie?: string | null
-  grupa?: string | null
   dataProgramare?: string | null
   // Ora ședinței, rezolvată din curs/eveniment la programare (HH:MM). Opțională.
   ora?: string | null
@@ -93,9 +102,9 @@ export type SmsParams = {
 
 export function buildSms(tip: SmsTip, params: SmsParams): string {
   const nume = params.prenume || 'bun venit'
-  const adresa = getAdresa(params.locatie ?? null, params.grupa ?? null)
-  const reviewLink = getReviewLink(params.locatie ?? null, params.grupa ?? null)
-  const telefon = getTelefon(params.locatie ?? null, params.grupa ?? null)
+  const adresa = getAdresa(params.locatie ?? null)
+  const reviewLink = getReviewLink(params.locatie ?? null)
+  const telefon = getTelefon(params.locatie ?? null)
   const data = params.dataProgramare
     ? formatDataProgramare(params.dataProgramare)
     : ''

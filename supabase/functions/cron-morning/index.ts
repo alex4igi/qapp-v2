@@ -11,6 +11,7 @@ import {
   buildSms,
   sendSms,
 } from '../_shared/sms.ts'
+import { getProgramareSms } from '../_shared/leadLocatie.ts'
 
 function startOfDay(date: Date) {
   const d = new Date(date)
@@ -101,21 +102,19 @@ Deno.serve(async (req) => {
         .maybeSingle()
       if (existing) continue
 
-      // Ora ședinței din ultima programare (rezolvată din curs/eveniment).
-      const { data: programare } = await supabase
-        .from('programari_leads')
-        .select('ora')
-        .eq('lead', lead.id)
-        .order('data_programarii', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      // Ora + locația din ultima programare (rezolvate din curs/eveniment);
+      // lead.locatia e doar fallback.
+      const { ora, locatie } = await getProgramareSms(
+        supabase,
+        lead.id,
+        lead.locatia,
+      )
 
       const mesaj = buildSms('reminder', {
         prenume: lead.prenume || lead.nume,
-        locatie: lead.locatia,
-        grupa: lead.grupa_varsta,
+        locatie,
         dataProgramare: lead.data_programare,
-        ora: programare?.ora ?? null,
+        ora,
         cand: t.cand,
       })
 

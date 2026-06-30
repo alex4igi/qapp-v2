@@ -8,6 +8,7 @@
 // de undo: daca recepatia anuleaza/revine din conversie, SMS-ul nu mai pleaca.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms } from '../_shared/sms.ts'
+import { getProgramareSms } from '../_shared/leadLocatie.ts'
 import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
 
 Deno.serve(async (req) => {
@@ -91,10 +92,13 @@ Deno.serve(async (req) => {
       continue
     }
 
+    // Link-ul de review e pe locația programării (3 locații Google distincte);
+    // lead.locatia e doar fallback.
+    const { locatie } = await getProgramareSms(supabase, lead.id, lead.locatia)
+
     const mesaj = buildSms('review', {
       prenume: lead.prenume || lead.nume,
-      locatie: lead.locatia,
-      grupa: lead.grupa_varsta,
+      locatie,
     })
 
     const result = await sendSms(lead.telefon, mesaj)

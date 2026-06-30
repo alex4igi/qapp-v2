@@ -2,6 +2,7 @@
 // Apelată din client după schimbările de status. Dedup prin tabelul sms_logs.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms, type SmsTip } from '../_shared/sms.ts'
+import { getProgramareSms } from '../_shared/leadLocatie.ts'
 import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
 
 const corsHeaders = {
@@ -62,21 +63,15 @@ Deno.serve(async (req) => {
       return json({ skipped: true, reason: 'deja trimis' })
     }
 
-    // Ora ședinței vine din ultima programare (rezolvată din curs/eveniment).
-    const { data: programare } = await supabase
-      .from('programari_leads')
-      .select('ora')
-      .eq('lead', leadId)
-      .order('data_programarii', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    // Ora + locația vin din ultima programare (rezolvate din curs/eveniment);
+    // lead.locatia e doar fallback.
+    const { ora, locatie } = await getProgramareSms(supabase, leadId, lead.locatia)
 
     const mesaj = buildSms(tip, {
       prenume: lead.prenume || lead.nume,
-      locatie: lead.locatia,
-      grupa: lead.grupa_varsta,
+      locatie,
       dataProgramare: lead.data_programare,
-      ora: programare?.ora ?? null,
+      ora,
     })
 
     // Zonă interzisă: nu trimitem acum — punem mesajul (deja compus) în coada
