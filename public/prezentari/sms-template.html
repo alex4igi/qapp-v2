@@ -91,6 +91,10 @@
       <div class="grp">Reguli</div>
       <a href="#reguli">Reguli de aur</a>
 
+      <div class="grp">Automatizări</div>
+      <a href="#intervale">Intervale (cron)</a>
+      <a href="#exceptii">Excepții</a>
+
       <div class="grp">Automate · Leads</div>
       <a href="#confirmare">Confirmare programare</a>
       <a href="#reminder">Reamintire (dimineața)</a>
@@ -134,6 +138,40 @@
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
+    <!-- ============ INTERVALE & CRON ============ -->
+    <section class="block" id="intervale">
+      <div class="eyebrow">Automatizări</div>
+      <h2><span class="ic">⏱️</span>Când pleacă fiecare (intervale)</h2>
+      <p class="intro">Aplicația verifică non-stop ce e de trimis. Unele mesaje pleacă imediat, altele cu o mică întârziere (fereastră de corecție) sau la o oră fixă dimineața.</p>
+      <table class="t">
+        <tr><th>Mesaj</th><th>Declanșator</th><th>Când pleacă efectiv</th></tr>
+        <tr><td><b>confirmare</b></td><td>lead → „Programat"</td><td>după <b>~5 min</b> (fereastră de corecție / undo)</td></tr>
+        <tr><td><b>waiting_list</b></td><td>lead → „Waiting List"</td><td><b>imediat</b></td></tr>
+        <tr><td><b>followup</b></td><td>lead → „Nu a venit" (manual)</td><td><b>imediat</b></td></tr>
+        <tr><td><b>review</b></td><td>lead → „Convertit"</td><td>după <b>~5 min</b> (fereastră de corecție / undo)</td></tr>
+        <tr><td><b>reminder</b></td><td>are probă azi/mâine</td><td>dimineața, <b>~ora 10</b></td></tr>
+        <tr><td><b>confirmare_inrolare</b></td><td>înrolare nouă (grupă/trupă)</td><td><b>a doua zi ~ora 10</b> (fereastră de anulare)</td></tr>
+        <tr><td colspan="2"><b>reminder_plata · notificare_restante · avertisment_loc · mesaj_liber</b></td><td><b>manual</b>, când managerul apasă „Trimite"</td></tr>
+      </table>
+      <div class="note"><span class="lbl">Pe scurt</span>„Imediat" = în câteva secunde. „~5 min" = timp în care poți anula greșeala (muți lead-ul înapoi și SMS-ul nu mai pleacă). „~ora 10" = o singură dată dimineața, automat. Mesajele în masă pleacă doar când le trimite managerul.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ============ EXCEPTII ============ -->
+    <section class="block" id="exceptii">
+      <div class="eyebrow">Automatizări</div>
+      <h2><span class="ic">🚧</span>Excepții — când NU pleacă (sau se amână)</h2>
+      <ul class="big">
+        <li><span class="b">🌙</span><span><b>Zonă interzisă (liniște) 19:30–10:00.</b> În acest interval nu se trimite niciun SMS — mesajele scadente se <b>amână automat spre dimineață</b> (în jur de ora 10) și pleacă atunci. Intervalul e <b>editabil din Setări</b>.</span></li>
+        <li><span class="b">🚫</span><span><b>Fără duplicate.</b> Același tip de mesaj nu pleacă de două ori către același lead — aplicația ține evidența și sare peste.</span></li>
+        <li><span class="b">🙅</span><span><b>Opt-out.</b> Clienții care au cerut să nu fie contactați nu primesc SMS, indiferent de declanșator.</span></li>
+        <li><span class="b">↩️</span><span><b>Anulare în fereastră.</b> Dacă în cele ~5 minute (confirmare / review) sau până a doua zi (înrolare) muți lead-ul înapoi ori ștergi înrolarea, mesajul se anulează singur și NU mai pleacă.</span></li>
+        <li><span class="b">🌃</span><span><b>Trecerea automată de seara nu trimite SMS.</b> Seara aplicația mută programările expirate în „Nu a venit", pune flaguri de prioritate și trece inactivii în Nurture — dar <b>fără niciun SMS</b>. Follow-up-ul pleacă doar când muți tu manual lead-ul în „Nu a venit".</span></li>
+        <li><span class="b">📵</span><span><b>Fără număr de telefon.</b> Dacă lead-ul nu are telefon valid, mesajul e marcat eșuat și nu se trimite.</span></li>
+      </ul>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
     <!-- ============ AUTOMATE LEADS ============ -->
     <section class="block" id="confirmare">
       <div class="eyebrow">Automate · Leads</div>
@@ -142,7 +180,7 @@
         <div class="head"><span class="name">confirmare</span><span class="chip auto">automat</span></div>
         <div class="txt">Buna {nume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}, ora {ora}. Va asteptam cu drag la {adresa}!</div>
         <span class="ph"><b>{data}</b> = ziua programării (ex. „12 iunie") · <b>{ora}</b> = ora cursului ales (se omite dacă nu există) · <b>{adresa}</b> = adresa scurtă a locației.</span>
-        <div class="meta-row"><span><b>Când:</b> lead-ul ajunge în coloana „Programat"</span><span><b>Întârziere:</b> ~2 minute (fereastră de corecție)</span></div>
+        <div class="meta-row"><span><b>Când:</b> lead-ul ajunge în coloana „Programat"</span><span><b>Întârziere:</b> ~5 minute (fereastră de corecție)</span></div>
       </div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
@@ -177,7 +215,7 @@
         <div class="head"><span class="name">followup</span><span class="chip auto">automat</span></div>
         <div class="txt">Buna {nume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la {telefon locatie}!</div>
         <span class="ph"><b>{telefon locatie}</b> = numărul locației lead-ului.</span>
-        <div class="meta-row"><span><b>Când:</b> lead-ul ajunge în „Nu a venit" (manual sau automat, seara)</span></div>
+        <div class="meta-row"><span><b>Când:</b> imediat ce muți manual lead-ul în „Nu a venit"</span><span><b>Excepție:</b> trecerea automată de seara NU trimite acest SMS</span></div>
       </div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
@@ -189,7 +227,7 @@
         <div class="head"><span class="name">review</span><span class="chip auto">automat</span></div>
         <div class="txt">Buna {nume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: {link} Multumim!</div>
         <span class="ph"><b>{link}</b> = linkul de recenzie Google al locației.</span>
-        <div class="meta-row"><span><b>Când:</b> lead-ul devine client (coloana „Convertit") — NU la proba gratuită</span></div>
+        <div class="meta-row"><span><b>Când:</b> lead-ul devine client (coloana „Convertit") — NU la proba gratuită</span><span><b>Întârziere:</b> ~5 minute (fereastră de corecție)</span></div>
       </div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
@@ -267,7 +305,7 @@
         <tr><td><b>Nicolina</b></td><td>Str. Izvor 14</td><td>0770 227 580</td></tr>
         <tr><td><b>Quasar 4 Kids</b></td><td>Str. Clopotari 24 (intrarea din spate, usa mov)</td><td>0745 371 200</td></tr>
       </table>
-      <div class="note"><span class="lbl">Excepție</span>Lead-urile de la <b>Nicolina</b> din grupa <b>Tiny</b> (sau fără grupă) primesc adresa și linkul de review de la <b>Quasar 4 Kids</b> (acolo au cei mici cursurile). <br><b>IBAN</b> pentru transfer: RO85 INGB 0000 9999 1498 9082.</div>
+      <div class="note"><span class="lbl">Cum se alege locația</span>Adresa, telefonul și linkul de review se iau din <b>locația cursului (sau evenimentului) la care e programat</b> lead-ul, nu din câmpul „locație" de pe fișă. Așa, un copil programat la <b>Quasar 4 Kids</b> primește adresa din Clopotari chiar dacă pe fișă scria „Nicolina". Dacă locația nu se poate determina, se folosește sediul Ștefan cel Mare. <br><b>IBAN</b> pentru transfer: RO85 INGB 0000 9999 1498 9082.</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
