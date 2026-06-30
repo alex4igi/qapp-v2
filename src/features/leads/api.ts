@@ -407,7 +407,7 @@ export async function getLatestProgramare(
   }
 }
 
-// Programează (cu delay de 2 min) SMS-ul de confirmare a programării prin RPC —
+// Programează (cu delay de 5 min) SMS-ul de confirmare a programării prin RPC —
 // upsert în coada `confirmari_programare_sms` cu send_after = now()+2min (resetat
 // la re-editare în fereastră). Drenarea o face edge fn `process-programare-sms`.
 export async function enqueueConfirmareProgramare(

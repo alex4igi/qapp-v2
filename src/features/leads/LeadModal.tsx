@@ -435,7 +435,7 @@ export function LeadModal({
           data_programarii: form.data_programare.slice(0, 10),
           ora: sel.ora,
         })
-        // Confirmarea SMS pleacă după 2 min (fereastră de undo).
+        // Confirmarea SMS pleacă după 5 min (fereastră de undo).
         await enqueueConfirmareProgramare(leadId)
       }
     },
@@ -848,7 +848,7 @@ export function LeadModal({
                       </label>
                       <div style={{ display: 'flex', gap: '9px', marginTop: '12px', fontSize: '11.5px', color: '#3F6488', lineHeight: 1.45 }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3F6488" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }}><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
-                        <span>La salvare leadul apare în rosterul grupei din acea zi. Confirmarea SMS pleacă după 2 minute (fereastră de corecții). Data nașterii nu e obligatorie.</span>
+                        <span>La salvare leadul apare în rosterul grupei din acea zi. Confirmarea SMS pleacă după 5 minute (fereastră de corecții). Data nașterii nu e obligatorie.</span>
                       </div>
                     </div>
                   )}

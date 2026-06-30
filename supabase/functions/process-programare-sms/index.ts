@@ -4,7 +4,7 @@
 //   - daca leadul nu mai e 'programat' → marcheaza 'anulat' (fara SMS),
 //   - altfel compune confirmarea (data + ora + adresa) si o trimite,
 //   - dedup prin sms_logs (lead_id + tip='confirmare').
-// Apelata de pg_cron la ~1 min. Delay-ul de 2 min vine din send_after.
+// Apelata de pg_cron la ~1 min. Delay-ul de 5 min vine din send_after.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms } from '../_shared/sms.ts'
 import { getProgramareSms } from '../_shared/leadLocatie.ts'
