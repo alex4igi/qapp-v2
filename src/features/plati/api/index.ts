@@ -66,6 +66,8 @@ export {
   adjustEnrollmentPrice,
   moveEnrollmentToCurs,
   convertSedintaInAbonament,
+  getAbonamentToSedintePreview,
+  convertAbonamentInSedinte,
   deleteInrolareDuplicat,
   getReziliereRecalcPreview,
   recalcUltimaLunaReziliere,
@@ -74,6 +76,7 @@ export {
 } from './enrollment-admin'
 export type {
   ReziliereRecalcPreview,
+  AbonamentToSedintePreview,
   MotivareAbsentaContext,
   MotivareAbsentaResult,
 } from './enrollment-admin'

@@ -13,6 +13,8 @@ type Props = {
   onMoveCurs?: (enrollmentId: string) => void
   onMotiveaza?: (enrollmentId: string) => void
   onConvertToAbonament?: (enrollmentId: string, cursId: string) => void
+  onConvertToSedinte?: (enrollmentId: string) => void
+  facultativCursIds?: Set<string>
   onDelete?: (row: ClientInrolareSezon) => void
 }
 
@@ -26,6 +28,8 @@ export function InrolariSezonTab({
   onMoveCurs,
   onMotiveaza,
   onConvertToAbonament,
+  onConvertToSedinte,
+  facultativCursIds,
   onDelete,
 }: Props) {
   if (loading) return <Spinner />
@@ -93,6 +97,18 @@ export function InrolariSezonTab({
                     title:
                       'Convertește ședința în abonament (creează abonamentul, ședința rămâne gratuită)',
                     onClick: () => onConvertToAbonament(r.id_enrollment, r.id_curs),
+                  })
+                if (
+                  onConvertToSedinte &&
+                  r.tip_plata === 'Per luna' &&
+                  facultativCursIds?.has(r.id_curs)
+                )
+                  actions.push({
+                    icon: '🎫',
+                    label: 'Treci pe ședințe',
+                    title:
+                      'Convertește abonamentul în ședințe (încasează doar ședințele prezente; restul rămâne credit)',
+                    onClick: () => onConvertToSedinte(r.id_enrollment),
                   })
                 if (onDelete)
                   actions.push({

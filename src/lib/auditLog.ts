@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 export type AuditAction =
   | 'price_override'
   | 'enrollment_moved'
+  | 'abonament_to_sedinte'
   | 'enrollment_reziliata'
   | 'enrollment_deleted'
   | 'incasare_modified'

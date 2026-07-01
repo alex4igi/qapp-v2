@@ -7393,6 +7393,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      converteste_abonament_in_sedinte: {
+        Args: { p_abonament: string; p_motiv?: string }
+        Returns: Json
+      }
       converteste_sedinta_in_abonament: {
         Args: { p_motiv?: string; p_sedinta: string; p_target: string }
         Returns: Json

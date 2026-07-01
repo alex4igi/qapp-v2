@@ -18,6 +18,7 @@ import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
 import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
 import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
+import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentSedinteModal'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { waLink } from '@/lib/phone'
@@ -64,6 +65,7 @@ export function ClientProfilePage() {
     sedintaId: string
     cursId: string
   } | null>(null)
+  const [convertAbonamentId, setConvertAbonamentId] = useState<string | null>(null)
   const [deleteRow, setDeleteRow] = useState<ClientInrolareSezon | null>(null)
   const [motivStergere, setMotivStergere] = useState('')
 
@@ -163,6 +165,14 @@ export function ClientProfilePage() {
     }
     return map
   }, [enrollmentsQuery.data, monthEnd])
+
+  const facultativCursIds = useMemo(() => {
+    const set = new Set<string>()
+    for (const e of enrollmentsQuery.data ?? []) {
+      if (e.cursul?.facultativ) set.add(e.cursul.id)
+    }
+    return set
+  }, [enrollmentsQuery.data])
 
   const rezilia = useMutation({
     mutationFn: async (input: {
@@ -388,6 +398,14 @@ export function ClientProfilePage() {
                   ? (eId, cId) => setConvertSedinta({ sedintaId: eId, cursId: cId })
                   : undefined
               }
+              // Conversia inversă abonament facultativ „Per luna" → ședințe (front_desk+).
+              // Butonul apare doar pe rândurile „Per luna" ale cursurilor facultative.
+              onConvertToSedinte={
+                isFrontDeskOrHigher(role)
+                  ? (eId) => setConvertAbonamentId(eId)
+                  : undefined
+              }
+              facultativCursIds={facultativCursIds}
               // Ștergerea fizică a unei înrolări (duplicat din eroare) e doar manager+.
               onDelete={
                 canManagerActions
@@ -472,6 +490,14 @@ export function ClientProfilePage() {
           defaultCursId={convertSedinta.cursId}
           onEnrolled={handleConvertEnrolled}
           onClose={() => setConvertSedinta(null)}
+        />
+      )}
+
+      {convertAbonamentId && (
+        <ConvertAbonamentSedinteModal
+          open
+          enrollmentId={convertAbonamentId}
+          onClose={() => setConvertAbonamentId(null)}
         />
       )}
 

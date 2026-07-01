@@ -343,6 +343,152 @@ export async function convertSedintaInAbonament(params: {
   return (data ?? {}) as { already_converted?: boolean; converted?: boolean }
 }
 
+// ── Conversie abonament „Per luna" (facultativ) → ședințe ────────────────────
+// Invers față de convertSedintaInAbonament. Se încasează DOAR ședințele deja
+// prezente în luna curentă; surplusul de bani rămâne credit. Vezi RPC
+// converteste_abonament_in_sedinte.
+export type AbonamentToSedintePreview = {
+  applicable: boolean
+  reason?: string
+  enrollmentId?: string
+  luna?: string // YYYY-MM-01
+  sedinte?: number
+  dates?: string[]
+  pretSedinta?: number
+  total?: number
+  platit?: number
+  credit?: number
+  datorie?: number
+}
+
+async function loadAbonamentToSedinte(
+  enrollmentId: string,
+): Promise<AbonamentToSedintePreview> {
+  const { data: enr, error: eErr } = await supabase
+    .from('enrollments')
+    .select('id, tip_plata, data_incepere, cursul, reziliat')
+    .eq('id', enrollmentId)
+    .single()
+  if (eErr) throw eErr
+  if (enr.reziliat) {
+    return { applicable: false, reason: 'Înrolarea e deja reziliată.' }
+  }
+  if (enr.tip_plata !== 'Per luna') {
+    return {
+      applicable: false,
+      reason: 'Doar abonamentele „Per luna" se pot converti în ședințe.',
+    }
+  }
+  if (!enr.data_incepere) {
+    return { applicable: false, reason: 'Abonamentul nu are lună (data_incepere).' }
+  }
+  if (!enr.cursul) {
+    return { applicable: false, reason: 'Înrolarea nu are curs asociat.' }
+  }
+
+  const { data: curs, error: cErr } = await supabase
+    .from('cursuri')
+    .select('facultativ, pret_sedinta')
+    .eq('id', enr.cursul)
+    .single()
+  if (cErr) throw cErr
+  if (!curs?.facultativ) {
+    return {
+      applicable: false,
+      reason: 'Conversia în ședințe e disponibilă doar pentru cursuri facultative.',
+    }
+  }
+  const pret = curs.pret_sedinta
+  if (pret == null || pret <= 0) {
+    return { applicable: false, reason: 'Cursul nu are „Preț ședință" setat.' }
+  }
+
+  const luna = `${enr.data_incepere.slice(0, 7)}-01`
+  const lunaEnd = endOfMonth(luna)
+
+  const { data: prez, error: pErr } = await supabase
+    .from('prezente')
+    .select('data')
+    .eq('enrollment', enrollmentId)
+    .eq('status', 'Prezent')
+    .gte('data', luna)
+    .lte('data', lunaEnd)
+    .order('data', { ascending: true })
+  if (pErr) throw pErr
+  const dates = (prez ?? []).map((r) => r.data as string)
+
+  const incasari = await getEnrollmentIncasari(enrollmentId)
+  const platit = incasari.reduce((a, i) => a + (i.suma ?? 0), 0)
+  const total = dates.length * pret
+
+  return {
+    applicable: true,
+    enrollmentId,
+    luna,
+    sedinte: dates.length,
+    dates,
+    pretSedinta: pret,
+    total,
+    platit,
+    credit: Math.max(platit - total, 0),
+    datorie: Math.max(total - platit, 0),
+  }
+}
+
+export async function getAbonamentToSedintePreview(params: {
+  enrollmentId: string
+}): Promise<AbonamentToSedintePreview> {
+  return loadAbonamentToSedinte(params.enrollmentId)
+}
+
+export async function convertAbonamentInSedinte(params: {
+  enrollmentId: string
+  motiv?: string
+}): Promise<{
+  already_converted?: boolean
+  converted?: boolean
+  sedinte?: number
+  credit?: number
+  datorie?: number
+}> {
+  const { data: cur } = await supabase
+    .from('enrollments')
+    .select('cursul, suma, tip_plata')
+    .eq('id', params.enrollmentId)
+    .single()
+  const locatieId = await getLocatieFromCurs(cur?.cursul ?? null)
+
+  const { data, error } = await supabase.rpc('converteste_abonament_in_sedinte', {
+    p_abonament: params.enrollmentId,
+    p_motiv: params.motiv?.trim() || undefined,
+  })
+  if (error) throw error
+  const result = (data ?? {}) as {
+    already_converted?: boolean
+    converted?: boolean
+    sedinte?: number
+    credit?: number
+    datorie?: number
+  }
+
+  if (result.converted) {
+    await recordAuditLog({
+      action: 'abonament_to_sedinte',
+      entityType: 'enrollment',
+      entityId: params.enrollmentId,
+      oldValue: { tip_plata: cur?.tip_plata, suma: cur?.suma },
+      newValue: {
+        sedinte: result.sedinte,
+        credit: result.credit,
+        datorie: result.datorie,
+      },
+      reason: params.motiv?.trim() || 'Conversie abonament → ședințe',
+      locatieId,
+    })
+  }
+  return result
+}
+
 // Mută o înrolare la alt curs (păstrează plata curentă, fără prorata).
 // Auditată cu motiv.
 export async function moveEnrollmentToCurs(params: {
