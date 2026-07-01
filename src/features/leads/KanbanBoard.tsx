@@ -25,6 +25,7 @@ import { WaitingListModal } from './WaitingListModal'
 import { ConversieModal, type ConversieResult } from './ConversieModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { LeadFilters, type LeadFiltersValue } from './LeadFilters'
+import { NurtureMatchBanner } from './NurtureMatchBanner'
 import { TodayPanel } from './TodayPanel'
 import {
   getEnrolledClientIds,
@@ -222,6 +223,8 @@ export function KanbanBoard() {
           onChange={setFilters}
         />
       </div>
+
+      <NurtureMatchBanner search={filters.search} />
 
       {/* Pe lista nefiltrată — „de lucrat azi" nu depinde de filtrele kanban. */}
       <TodayPanel

@@ -250,11 +250,16 @@ export async function getGrupaDashboard(params: {
     if (isPerSedintaFacultativ && e.data_incepere !== params.date) continue
 
     const s = statusToday.get(e.id)
+    // O înrolare abia începută (data_incepere în fereastra de 21 zile) NU e
+    // „inactiv": cursantul tocmai a fost înrolat pe grupa asta (ex. trecerea în
+    // sezonul nou/vară) și n-a avut încă ocazia să vină. Altfel cardul lui apare
+    // inactiv și — pe facultativ — oferă „Înrolare nouă" deși e deja înrolat.
+    const inrolareRecenta = Boolean(e.data_incepere && e.data_incepere >= cutoff)
     let status: RosterStatus
     if (s === 'Prezent') status = 'prezent'
     else if (s === 'Absent' || s === 'Motivat') status = 'absent'
     else if (isPerSedintaFacultativ) status = 'absent'
-    else if (!hasRecent.has(e.id)) status = 'inactiv'
+    else if (!hasRecent.has(e.id) && !inrolareRecenta) status = 'inactiv'
     // Cursantii nebifati azi sunt implicit absenti (pana cineva ii marcheaza
     // prezent). Statusul `programat` (galben) e rezervat doar leads-urilor.
     else status = 'absent'

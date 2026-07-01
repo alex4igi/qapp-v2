@@ -33,6 +33,7 @@ import {
   updateLeadStatus,
   deleteLead,
   checkDuplicateTelefon,
+  reactivateFromNurture,
   listCursuriProgramabile,
   listEvenimenteProgramabile,
   createProgramareLead,
@@ -198,7 +199,9 @@ export function LeadModal({
   const isEdit = Boolean(lead)
   const [form, setForm] = useState<LeadForm>(EMPTY)
   const [error, setError] = useState<string | null>(null)
-  const [dupWarning, setDupWarning] = useState<string | null>(null)
+  const [dupHit, setDupHit] = useState<
+    { id: string; name: string; isNurture: boolean } | null
+  >(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'detalii' | 'istoric'>('detalii')
   const [showLogContact, setShowLogContact] = useState(false)
@@ -251,7 +254,7 @@ export function LeadModal({
       startScheduling ? { ...base, status: 'programat' } : base,
     )
     setError(null)
-    setDupWarning(null)
+    setDupHit(null)
     setConfirmDelete(false)
     setTab('detalii')
     setSelectie('')
@@ -393,7 +396,11 @@ export function LeadModal({
         const name = [res.lead.prenume, res.lead.nume]
           .filter(Boolean)
           .join(' ')
-        setDupWarning(`Telefon existent: ${name}`)
+        setDupHit({
+          id: res.lead.id,
+          name,
+          isNurture: res.lead.status === 'nurture',
+        })
       }
     },
     [lead?.id],
@@ -401,6 +408,16 @@ export function LeadModal({
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['leads'] })
+
+  // Din dedup: leadul cu acest telefon e în Nurture → reactivare directă în „Nou"
+  // (în loc să creăm un duplicat sau să căutăm manual în tab-ul Nurture).
+  const reactivate = useMutation({
+    mutationFn: (id: string) => reactivateFromNurture(id),
+    onSuccess: () => {
+      void invalidate()
+      onClose()
+    },
+  })
 
   // Programarea se aplică doar dacă data + curs/eveniment sunt setate ȘI ceva
   // s-a schimbat (dată sau selecție) sau leadul nu era deja programat.
@@ -912,8 +929,17 @@ export function LeadModal({
                     </div>
                     <div>
                       <L req>Telefon</L>
-                      <input className="qf" value={form.telefon} onChange={(e) => { set('telefon', e.target.value); setDupWarning(null) }} onBlur={(e) => void checkDup(e.target.value)} style={inputStyle} />
-                      {dupWarning && <div style={{ fontSize: '11.5px', color: '#C2403F', marginTop: '5px' }}>{dupWarning}</div>}
+                      <input className="qf" value={form.telefon} onChange={(e) => { set('telefon', e.target.value); setDupHit(null) }} onBlur={(e) => void checkDup(e.target.value)} style={inputStyle} />
+                      {dupHit && (dupHit.isNurture ? (
+                        <div style={{ fontSize: '11.5px', color: '#15803D', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span>Există în Nurture: {dupHit.name}</span>
+                          <button type="button" onClick={() => reactivate.mutate(dupHit.id)} disabled={reactivate.isPending} style={{ fontSize: '11px', fontWeight: 600, color: '#166534', background: '#DCFCE7', border: '1px solid #86EFAC', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer' }}>
+                            🌱 Reactivează în pipeline
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '11.5px', color: '#C2403F', marginTop: '5px' }}>Telefon existent: {dupHit.name}</div>
+                      ))}
                     </div>
                     <div>
                       <L>Email</L>

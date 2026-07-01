@@ -138,17 +138,53 @@ export async function pruneExpiredLeads(): Promise<void> {
 export async function checkDuplicateTelefon(
   telefon: string,
   excludeId?: string,
-): Promise<{ duplicate: boolean; lead: Pick<Lead, 'id' | 'prenume' | 'nume'> | null }> {
+): Promise<{
+  duplicate: boolean
+  lead: Pick<Lead, 'id' | 'prenume' | 'nume' | 'status'> | null
+}> {
   const term = telefon.trim() ? normalizeTelefon(telefon) : ''
   if (!term) return { duplicate: false, lead: null }
   let query = supabase
     .from('leads')
-    .select('id, prenume, nume')
+    .select('id, prenume, nume, status')
     .eq('telefon', term)
   if (excludeId) query = query.neq('id', excludeId)
   const { data, error } = await query.limit(1).maybeSingle()
   if (error) throw error
   return { duplicate: Boolean(data), lead: data ?? null }
+}
+
+// Readuce un lead din pool-ul Nurture în coloana „Nou". Resetează contorul de
+// contactări ca să nu recadă imediat în Nurture (cronul auto-Nurture la >=4).
+// Fără SMS de bun-venit — leadul e existent, nu nou.
+export async function reactivateFromNurture(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('leads')
+    .update({
+      status: 'nou',
+      sub_status: null,
+      nr_contactari: 0,
+      flag_reminder: false,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// Căutare server-side ușoară în pool-ul Nurture (5k+ rânduri) — doar când există
+// un termen. NU reutilizăm listNurtureLeads, care aduce tot pool-ul.
+export async function searchNurtureByTerm(
+  term: string,
+): Promise<Pick<Lead, 'id' | 'prenume' | 'nume' | 'telefon'>[]> {
+  const t = term.trim()
+  if (t.length < 2) return []
+  const { data, error } = await supabase
+    .from('leads')
+    .select('id, prenume, nume, telefon')
+    .eq('status', 'nurture')
+    .or(`prenume.ilike.%${t}%,nume.ilike.%${t}%,telefon.ilike.%${t}%`)
+    .limit(25)
+  if (error) throw error
+  return data ?? []
 }
 
 export async function createLead(form: LeadForm): Promise<Lead> {
