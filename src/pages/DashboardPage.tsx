@@ -18,6 +18,7 @@ import { EventDashboardCard } from '@/features/dashboard/EventDashboardCard'
 import { DashboardChart } from '@/features/dashboard/DashboardChart'
 import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
 import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
+import { InchirieriAziCard } from '@/features/dashboard/InchirieriAziCard'
 
 export function DashboardPage() {
   const { role } = useAuth()
@@ -143,6 +144,10 @@ export function DashboardPage() {
             : `Niciun curs programat în ziua selectată${salaId ? ' pentru această sală' : ''}.`
         }
       />
+
+      {!teacherMode && (
+        <InchirieriAziCard locatieId={locatieId ?? null} salaId={salaId} />
+      )}
 
       {!teacherMode && (
         <>

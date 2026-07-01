@@ -10,8 +10,9 @@ import {
   Combobox,
   Button,
 } from '@/components/ui'
-import { clientiOptions, locatiiOptions, saliOptions, teacheriOptions } from '@/lib/lookups'
+import { clientiOptions, locatiiOptions, saliOptions } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { formatRON } from '@/lib/format'
 import { computePret, computeOraFinal, type TarifBracket } from '@/lib/inchirieriPricing'
 import type { Enums } from '@/types/db'
@@ -79,7 +80,7 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
     queryFn: () => saliOptions(locatie),
     enabled: Boolean(locatie),
   })
-  const teacheriQ = useQuery({ queryKey: ['lookup', 'teacheri'], queryFn: () => teacheriOptions() })
+  const teacheriQ = useTeacheriOptions()
   const clientiQ = useQuery({ queryKey: ['lookup', 'clienti'], queryFn: clientiOptions })
   const tarifeQ = useQuery({ queryKey: ['tarife-inchiriere'], queryFn: listTarifeInchiriere })
 
