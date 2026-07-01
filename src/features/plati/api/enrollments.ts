@@ -63,6 +63,25 @@ export async function getInrolariClientSezon(params: {
   return data ?? []
 }
 
+// Restanțele de abonament dintr-un sezon ANTERIOR celui selectat (data_incepere <
+// sezonStart) care au rest > 0. Informativ + încasabil în modalul Plată nouă;
+// reziliatele (suma=0 ⇒ rest<=0) sunt excluse natural de filtrul rest>0.
+export async function getInrolariRestanteAnterioare(params: {
+  clientId: string
+  sezonStart: string | null
+}): Promise<VPlatiInrolari[]> {
+  if (!params.sezonStart) return []
+  const { data, error } = await supabase
+    .from('plati_inrolari')
+    .select('*')
+    .eq('id_cursant', params.clientId)
+    .lt('data_incepere', params.sezonStart)
+    .gt('rest', 0)
+    .order('data_incepere', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
 // Aduce metadatele cursului relevante pentru calculul prețurilor.
 export async function getCursForInrolare(id: string): Promise<Curs> {
   const { data, error } = await supabase

@@ -53,6 +53,7 @@ export {
   createEnrollment,
   updateEnrollment,
   getInrolariClientSezon,
+  getInrolariRestanteAnterioare,
   getCursForInrolare,
   listCursuriPentruInrolare,
   createInrolari,

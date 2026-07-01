@@ -8,6 +8,7 @@ import { formatRON } from '@/lib/format'
 import type { Enums, VDatoriiRest, VPlatiInrolari } from '@/types/db'
 import {
   getInrolariClientSezon,
+  getInrolariRestanteAnterioare,
   listDatoriiClient,
   listSezoane,
   registerPlataDatoriiFifo,
@@ -94,13 +95,31 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
     enabled: Boolean(clientId && sezon),
   })
 
+  // Restanțe de abonament din sezoanele anterioare (informativ + încasabil opțional).
+  const inrolariAntQ = useQuery({
+    queryKey: ['plata-noua-inrolari-ant', clientId, sezon?.data_incepere ?? ''],
+    queryFn: () =>
+      getInrolariRestanteAnterioare({
+        clientId,
+        sezonStart: sezon?.data_incepere ?? null,
+      }),
+    enabled: Boolean(clientId && sezon?.data_incepere),
+  })
+
   const datoriiQ = useQuery({
     queryKey: ['datorii', clientId],
     queryFn: () => listDatoriiClient(clientId),
     enabled: Boolean(clientId),
   })
 
-  const enrollRows = useMemo(() => inrolariQ.data ?? [], [inrolariQ.data])
+  const curentRows = useMemo(() => inrolariQ.data ?? [], [inrolariQ.data])
+  const anteriorRows = useMemo(() => inrolariAntQ.data ?? [], [inrolariAntQ.data])
+  // Sursă unică pentru FIFO/totaluri/plată: anterioare + curente (curs distinct ⇒
+  // gruparea FIFO pe curs rămâne independentă).
+  const enrollRows = useMemo(
+    () => [...anteriorRows, ...curentRows],
+    [anteriorRows, curentRows],
+  )
   const datRows = useMemo(() => datoriiQ.data ?? [], [datoriiQ.data])
 
   // canCheck: pentru un rând de înrolare, toate rândurile anterioare de același curs
@@ -258,6 +277,7 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
+      void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari-ant'] })
       void queryClient.invalidateQueries({ queryKey: ['datorii'] })
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -266,7 +286,7 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
-  const loading = inrolariQ.isLoading || datoriiQ.isLoading
+  const loading = inrolariQ.isLoading || inrolariAntQ.isLoading || datoriiQ.isLoading
   const nimic = clientId && !loading && enrollRows.length === 0 && datRows.length === 0
 
   return (
@@ -323,7 +343,7 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
                 </Button>
               )}
             </div>
-            {enrollRows.length === 0 ? (
+            {curentRows.length === 0 ? (
               <p className="rounded-md border border-quasar-gray-light bg-quasar-gray-light/10 p-3 text-sm text-quasar-gray">
                 Nicio înrolare în acest sezon.
               </p>
@@ -341,7 +361,7 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
                     </tr>
                   </thead>
                   <tbody>
-                    {enrollRows.map((r) => {
+                    {curentRows.map((r) => {
                       const key = String(r.id_enrollment)
                       const isChecked = checkedEnroll.has(key)
                       const allowed = canCheck.get(key) ?? false
@@ -384,6 +404,71 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
               </div>
             )}
           </div>
+
+          {/* Restanțe abonamente din sezoane anterioare (informativ + încasabil opțional) */}
+          {anteriorRows.length > 0 && (
+            <div>
+              <h3 className="mb-1 text-sm font-semibold text-amber-700">
+                Restanțe din sezoane anterioare (neachitate)
+              </h3>
+              <p className="mb-2 text-xs text-quasar-gray">
+                Opțional — poți încasa aceste restanțe acum, dar nu blochează plata sezonului curent.
+              </p>
+              <div className="overflow-hidden rounded-md border border-amber-300">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-amber-300 bg-amber-100/60">
+                      <th className="w-10 px-3 py-2"></th>
+                      <th className="px-3 py-2 text-left font-medium text-quasar-black">Curs</th>
+                      <th className="px-3 py-2 text-left font-medium text-quasar-black">Începere</th>
+                      <th className="px-3 py-2 text-left font-medium text-quasar-black">Tip</th>
+                      <th className="px-3 py-2 text-right font-medium text-quasar-black">Achitat</th>
+                      <th className="px-3 py-2 text-right font-medium text-quasar-black">Datorat</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {anteriorRows.map((r) => {
+                      const key = String(r.id_enrollment)
+                      const isChecked = checkedEnroll.has(key)
+                      const allowed = canCheck.get(key) ?? false
+                      const rest = Number(r.rest ?? 0)
+                      return (
+                        <tr
+                          key={key}
+                          className={[
+                            'border-b border-amber-200/70 last:border-b-0',
+                            isChecked ? 'bg-quasar-yellow/30' : 'bg-amber-50/40',
+                          ].join(' ')}
+                        >
+                          <td className="px-3 py-2">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded accent-quasar-yellow"
+                              checked={isChecked}
+                              onChange={() => toggleEnroll(r)}
+                              disabled={!isChecked && !allowed}
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            {r.nume_curs ?? '—'}
+                            {r.cod_voucher && (
+                              <span className="ml-2 inline-block rounded bg-quasar-yellow/40 px-1.5 py-0.5 text-xs font-medium text-quasar-black">
+                                {r.cod_voucher}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">{fmtDate(r.data_incepere)}</td>
+                          <td className="px-3 py-2">{r.tip_plata ?? '—'}</td>
+                          <td className="px-3 py-2 text-right">{Number(r.platit ?? 0)}</td>
+                          <td className="px-3 py-2 text-right font-medium">{rest}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Datorii one-off */}
           <div>
