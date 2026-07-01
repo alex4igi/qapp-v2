@@ -23,7 +23,14 @@ function buildSmsText(prenumeCopil: string | null, link: string, zile: number): 
   return `Quasar Dance: contractul${cine} este pregatit de semnare. Deschide linkul, verifica datele si semneaza: ${link} (valabil ${zile} zile)`
 }
 
-type Target = { familieId: string; clientId?: string | null; gateId?: string | null }
+type Target = {
+  familieId: string
+  clientId?: string | null
+  gateId?: string | null
+  // pentru actul adițional de reînscriere: leagă contractul de poarta campaniei
+  campanieId?: string | null
+  cursTintaId?: string | null
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -90,14 +97,15 @@ Deno.serve(async (req) => {
       }
 
       // gard dublură: nu retrimitem dacă există deja un contract activ pe același
-      // template + familie (trimis/deschis/semnat/finalizat)
-      const { data: dup } = await admin
+      // template + familie (+ copil, dacă e per-copil, ex. act adițional per gate)
+      let dupQuery = admin
         .from('contracte')
         .select('id, status')
         .eq('template_id', templateId)
         .eq('familie_id', t.familieId)
         .in('status', ['trimis', 'deschis', 'semnat', 'finalizat'])
-        .limit(1)
+      if (t.clientId) dupQuery = dupQuery.eq('client_id', t.clientId)
+      const { data: dup } = await dupQuery.limit(1)
       if (dup && dup.length > 0) {
         results.push({
           familieId: t.familieId, ok: false,
@@ -105,6 +113,43 @@ Deno.serve(async (req) => {
           contractId: dup[0].id,
         })
         continue
+      }
+
+      // poarta de reînscriere: upsert gate + marchează 'trimis' (canal app);
+      // nu retrogradăm un act deja de_verificat/verificat/semnat
+      let gateId = t.gateId ?? null
+      if (t.campanieId && t.cursTintaId && t.clientId) {
+        const { data: g } = await admin
+          .from('reinscrieri_gate')
+          .select('id, act_status, activat_la')
+          .eq('campanie_id', t.campanieId)
+          .eq('client_id', t.clientId)
+          .eq('curs_tinta_id', t.cursTintaId)
+          .maybeSingle()
+        if (g) {
+          gateId = g.id
+          const canMark = !g.activat_la &&
+            ['nesemnat', 'trimis', 'expirat', 'anulat'].includes(g.act_status ?? 'nesemnat')
+          if (canMark) {
+            await admin
+              .from('reinscrieri_gate')
+              .update({ act_status: 'trimis', act_canal: 'app', updated: new Date().toISOString() })
+              .eq('id', g.id)
+          }
+        } else {
+          const { data: ng } = await admin
+            .from('reinscrieri_gate')
+            .insert({
+              campanie_id: t.campanieId,
+              client_id: t.clientId,
+              curs_tinta_id: t.cursTintaId,
+              act_status: 'trimis',
+              act_canal: 'app',
+            })
+            .select('id')
+            .single()
+          gateId = ng?.id ?? null
+        }
       }
 
       const token = randomToken()
@@ -117,7 +162,8 @@ Deno.serve(async (req) => {
           template_id: templateId,
           familie_id: t.familieId,
           client_id: t.clientId ?? null,
-          gate_id: t.gateId ?? null,
+          gate_id: gateId,
+          campanie_id: t.campanieId ?? null,
           status: 'trimis',
           token_hash: tokenHash,
           token_expira_la: expiraLa,

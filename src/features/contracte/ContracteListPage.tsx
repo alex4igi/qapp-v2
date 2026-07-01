@@ -20,6 +20,7 @@ import {
 } from './api'
 import { CONTRACT_STATUS_LABEL, CONTRACT_TIP_LABEL } from './constants'
 import { TrimiteContractModal } from './TrimiteContractModal'
+import { TrimiteBulkModal } from './TrimiteBulkModal'
 
 const EVENT_LABEL: Record<string, string> = {
   creat: 'Creat',
@@ -32,6 +33,7 @@ const EVENT_LABEL: Record<string, string> = {
   pdf_generat: 'PDF generat',
   sigilat: 'Sigilat',
   drive_upload: 'Urcat pe Drive',
+  gate_semnat: 'Act marcat semnat în reînscrieri',
   reminder: 'Reminder',
   expirat: 'Expirat',
   respins: 'Respins',
@@ -73,6 +75,7 @@ export function ContracteListPage() {
   const [status, setStatus] = useState('')
   const [tip, setTip] = useState('')
   const [sendOpen, setSendOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [eventsFor, setEventsFor] = useState<ContractRow | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
@@ -197,7 +200,10 @@ export function ContracteListPage() {
           options={Object.entries(CONTRACT_TIP_LABEL).map(([value, label]) => ({ value, label }))}
           className="w-52"
         />
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <Button variant="secondary" onClick={() => setBulkOpen(true)}>
+            Bulk campanie
+          </Button>
           <Button onClick={() => setSendOpen(true)}>Trimite contract</Button>
         </div>
       </div>
@@ -216,6 +222,7 @@ export function ContracteListPage() {
       )}
 
       {sendOpen && <TrimiteContractModal open onClose={() => setSendOpen(false)} />}
+      {bulkOpen && <TrimiteBulkModal open onClose={() => setBulkOpen(false)} />}
       {eventsFor && <EventsModal contract={eventsFor} onClose={() => setEventsFor(null)} />}
     </div>
   )

@@ -43,14 +43,57 @@ export async function listContracte(params: ContracteListParams): Promise<Contra
   return rows
 }
 
+export type SendTarget = {
+  familieId: string
+  clientId?: string | null
+  campanieId?: string | null
+  cursTintaId?: string | null
+}
+
 export async function sendContracte(params: {
   templateId: string
-  targets: Array<{ familieId: string; clientId?: string | null }>
+  targets: SendTarget[]
 }): Promise<Array<{ familieId: string; ok: boolean; error?: string; contractId?: string }>> {
   const { data, error } = await supabase.functions.invoke('contract-send', { body: params })
   if (error) throw error
   if (data?.error) throw new Error(data.error)
   return data.results
+}
+
+// ============================================================
+// Bulk pe campanie de reînscriere
+// ============================================================
+
+export type CampanieOption = { id: string; nume: string }
+
+export async function listCampaniiDeschise(): Promise<CampanieOption[]> {
+  const { data, error } = await supabase
+    .from('campanii_reinscriere')
+    .select('id, nume')
+    .is('inchisa_la', null)
+    .order('created', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export type CampanieTarget = {
+  client_id: string
+  client_nume: string
+  familie_id: string | null
+  familie_nume: string | null
+  telefon: string | null
+  curs_tinta_id: string
+  curs_nume: string
+  act_status: string
+  are_contract: boolean
+}
+
+export async function listTargetsCampanie(campanieId: string): Promise<CampanieTarget[]> {
+  const { data, error } = await supabase.rpc('list_targets_campanie', {
+    p_campanie_id: campanieId,
+  })
+  if (error) throw error
+  return (data ?? []) as CampanieTarget[]
 }
 
 export async function anuleazaContract(id: string): Promise<void> {

@@ -8568,6 +8568,20 @@ export type Database = {
           telefon: string
         }[]
       }
+      list_targets_campanie: {
+        Args: { p_campanie_id: string }
+        Returns: {
+          act_status: string
+          are_contract: boolean
+          client_id: string
+          client_nume: string
+          curs_nume: string
+          curs_tinta_id: string
+          familie_id: string
+          familie_nume: string
+          telefon: string
+        }[]
+      }
       mark_anunt_read: { Args: { p_anunt_id: string }; Returns: undefined }
       mark_anunturi_citite: { Args: never; Returns: undefined }
       mark_bank_factura: {

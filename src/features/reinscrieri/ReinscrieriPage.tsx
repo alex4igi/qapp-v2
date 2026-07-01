@@ -472,7 +472,9 @@ function CampanieCursModal({
           {(clientiQ.data ?? []).map((c) => {
             const taxaDone = Boolean(c.taxa_platita_la)
             const actVerificat = c.act_status === 'verificat'
-            const actDeVerificat = c.act_status === 'de_verificat'
+            // semnat electronic în app = intră tot la verificare admin
+            const semnatInApp = c.act_status === 'semnat' && c.act_canal === 'app'
+            const actDeVerificat = c.act_status === 'de_verificat' || semnatInApp
             const reinscris = Boolean(c.activat_la)
             return (
               <li key={c.client_id} className="py-2 text-sm">
@@ -518,6 +520,11 @@ function CampanieCursModal({
                       )
                     ) : actDeVerificat ? (
                       <div className="flex items-center gap-1">
+                        {semnatInApp && (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-800">
+                            Semnat în app
+                          </span>
+                        )}
                         {c.document_link && (
                           <a
                             href={c.document_link}

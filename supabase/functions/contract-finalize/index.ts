@@ -366,7 +366,26 @@ Deno.serve(async (req) => {
       if (dc && !docClientId) docClientId = dc.id
     }
 
-    // 8) finalizat
+    // 8) poarta de reînscriere: actul semnat intră în verificarea admin existentă
+    if (contract.gate_id) {
+      const { data: gUpd } = await admin
+        .from('reinscrieri_gate')
+        .update({
+          act_status: 'semnat',
+          act_canal: 'app',
+          document_link: link,
+          act_semnat_la: contract.semnat_la ?? new Date().toISOString(),
+          updated: new Date().toISOString(),
+        })
+        .eq('id', contract.gate_id)
+        .is('activat_la', null)
+        .select('id')
+      if (gUpd && gUpd.length > 0) {
+        await logEvent(admin, contractId, 'gate_semnat', { gate_id: contract.gate_id })
+      }
+    }
+
+    // 9) finalizat
     await admin
       .from('contracte')
       .update({

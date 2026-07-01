@@ -464,6 +464,10 @@ verify_jwt = false
 verify_jwt = false
 static_files = ["./functions/contract-finalize/NotoSans-Regular.ttf"]
 
+# Cron zilnic: remindere contracte nesemnate (3/7 zile) + expirare linkuri.
+[functions.process-contract-reminders]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
