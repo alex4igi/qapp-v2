@@ -18,6 +18,7 @@ import {
 } from '../../api'
 import {
   initialState,
+  parseOra,
   toNum,
   type FormState,
   type SetField,
@@ -116,17 +117,22 @@ export function CursForm({ open, curs, onClose }: Props) {
       const nivelFinal = isTrupa ? 'Trupa' : form.nivelul || null
       // Orar diferit pe zile: păstrează doar zilele selectate cu oră completată.
       // `ora` rămâne populat (cu prima zi) ca fallback pentru căile vechi.
+      // Orele sunt normalizate la "HH:MM" (validate deja în handleSubmit).
+      const normOra = (raw: string) => {
+        const p = parseOra(raw)
+        return p.ok ? p.value : raw.trim() || null
+      }
       const orePeZi = form.orarDiferit
         ? Object.fromEntries(
             form.zile
               .filter((z) => form.orePeZi[z]?.trim())
-              .map((z) => [z, form.orePeZi[z].trim()]),
+              .map((z) => [z, normOra(form.orePeZi[z])]),
           )
         : null
       const orePeZiFinal = orePeZi && Object.keys(orePeZi).length ? orePeZi : null
       const oraFinal = orePeZiFinal
         ? Object.values(orePeZiFinal)[0]
-        : form.ora.trim() || null
+        : normOra(form.ora)
       const payload = {
         numele: form.numele.trim(),
         stil: form.stil.trim() || null,
@@ -184,6 +190,19 @@ export function CursForm({ open, curs, onClose }: Props) {
     setError(null)
     if (!form.numele.trim()) {
       setError('Numele cursului este obligatoriu.')
+      return
+    }
+    // Format oră: HH:MM (ex. 17:00). O oră fără minute strica calendarul.
+    if (form.orarDiferit) {
+      for (const zi of form.zile) {
+        const v = form.orePeZi[zi]
+        if (v?.trim() && !parseOra(v).ok) {
+          setError(`Ora pentru ${zi} trebuie în format HH:MM (ex. 17:00).`)
+          return
+        }
+      }
+    } else if (!parseOra(form.ora).ok) {
+      setError('Ora trebuie în format HH:MM (ex. 17:00).')
       return
     }
     // Toate sumele sunt obligatorii (>0), mai puțin prețul anual la facultativ.

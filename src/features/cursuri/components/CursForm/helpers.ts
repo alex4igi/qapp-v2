@@ -86,4 +86,22 @@ export function initialState(curs?: Curs | null): FormState {
 
 export const toNum = (s: string) => (s.trim() ? Number(s) : null)
 
+// Normalizează o oră liberă la "HH:MM" (zero-padded). Acceptă "19", "9:5",
+// "17:30", "17:30:00". Gol → null (fără oră). Invalid → { ok: false }.
+// Gard la sursă: o oră fără minute („19") strica proiecția în calendar.
+export type OraParse = { ok: true; value: string | null } | { ok: false }
+export function parseOra(raw: string): OraParse {
+  const t = raw.trim()
+  if (!t) return { ok: true, value: null }
+  const m = /^(\d{1,2})(?::(\d{1,2}))?(?::\d{1,2})?$/.exec(t)
+  if (!m) return { ok: false }
+  const h = Number(m[1])
+  const min = m[2] != null ? Number(m[2]) : 0
+  if (h > 23 || min > 59) return { ok: false }
+  return {
+    ok: true,
+    value: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`,
+  }
+}
+
 export type SetField = <K extends keyof FormState>(key: K, value: FormState[K]) => void

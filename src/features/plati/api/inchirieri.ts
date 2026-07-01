@@ -6,6 +6,7 @@ import {
   timeToMinutes,
 } from '@/lib/inchirieriPricing'
 import { ZI_TO_JS, getOrePeZi } from '@/features/cursuri/program'
+import { sezonActivId } from '@/lib/lookups'
 import type { Enums, Inchiriere, InsertDto, TarifInchiriere } from '@/types/db'
 import { createDatorie } from './datorii'
 import { createIncasari, type Tender } from './incasari'
@@ -63,12 +64,18 @@ export async function checkInchiriereConflict(params: {
     }
   }
 
-  // (b) cursuri recurente care rulează în ziua săptămânii a datei, în acea sală
+  // (b) cursuri recurente care rulează în ziua săptămânii a datei, în acea sală.
+  // DOAR sezonul activ: fără filtru, cursurile din sezoanele arhivate (ex. orarul
+  // de weekend din sezonul trecut) ar genera conflicte fantomă la rezervare.
+  const sezon = await sezonActivId()
+  if (!sezon) return null
   const weekday = new Date(`${params.data}T00:00:00`).getDay()
   const { data: cursuri, error: cErr } = await supabase
     .from('cursuri')
     .select('numele, zile, ora, ore_pe_zi, durata_cursului')
     .eq('sala', params.sala)
+    .eq('sezon', sezon)
+    .eq('suspendat', false)
   if (cErr) throw cErr
   for (const c of cursuri ?? []) {
     const zile = c.zile ?? []

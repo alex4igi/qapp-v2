@@ -41,12 +41,14 @@ export function computePret(
 // ---- Helpers timp (HH:MM / HH:MM:SS) ----
 
 // "HH:MM[:SS]" → minute de la miezul nopții. null dacă invalid.
+// Toleranță pentru date murdare: ora fără minute ("19") e tratată ca "19:00",
+// altfel cursul ar dispărea tăcut din calendar/verificarea de conflict.
 export function timeToMinutes(t: string | null | undefined): number | null {
   if (!t) return null
-  const m = /^(\d{1,2}):(\d{2})/.exec(t)
+  const m = /^(\d{1,2})(?::(\d{2}))?/.exec(t)
   if (!m) return null
   const h = Number(m[1])
-  const min = Number(m[2])
+  const min = m[2] != null ? Number(m[2]) : 0
   if (h < 0 || h > 23 || min < 0 || min > 59) return null
   return h * 60 + min
 }

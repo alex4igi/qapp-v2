@@ -21,12 +21,15 @@ export async function listCursuriForCalendar(
   locatieId?: string | null,
 ): Promise<CursCalendar[]> {
   const sezon = await sezonActivId()
+  // Fail-closed: fără sezon activ nu proiectăm nimic (altfel ar apărea cursuri
+  // din TOATE sezoanele, inclusiv orare arhivate).
+  if (!sezon) return []
   let q = supabase
     .from('cursuri')
     .select('id, numele, sala, zile, ora, ore_pe_zi, durata_cursului')
     .not('sala', 'is', null)
+    .eq('sezon', sezon)
   if (locatieId) q = q.eq('locatie', locatieId)
-  if (sezon) q = q.eq('sezon', sezon)
   const { data, error } = await q
   if (error) throw error
   return (data ?? []) as CursCalendar[]

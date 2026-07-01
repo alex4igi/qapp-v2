@@ -666,13 +666,15 @@ export type CursProgramabil = {
 export async function listCursuriProgramabile(
   sezonId?: string | null,
 ): Promise<CursProgramabil[]> {
-  let query = supabase
+  // Fail-closed: fără sezon nu întoarcem cursuri din toate sezoanele (ar apărea
+  // orare arhivate în dropdown-ul de programare).
+  if (!sezonId) return []
+  const { data, error } = await supabase
     .from('cursuri')
     .select('id, numele, varsta, zile, locatie, ora, ore_pe_zi')
     .eq('suspendat', false)
+    .eq('sezon', sezonId)
     .order('numele', { ascending: true })
-  if (sezonId) query = query.eq('sezon', sezonId)
-  const { data, error } = await query
   if (error) throw error
   return (data ?? []) as CursProgramabil[]
 }

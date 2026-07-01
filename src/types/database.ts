@@ -8274,6 +8274,7 @@ export type Database = {
         Args: { p_end: string; p_start: string }
         Returns: number
       }
+      ore_pe_zi_valid: { Args: { m: Json }; Returns: boolean }
       pontaj_auto_close_open_sessions: { Args: never; Returns: number }
       pontaj_close_session: {
         Args: { p_source?: string }
