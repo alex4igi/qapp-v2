@@ -66,18 +66,14 @@ function ClientCard({
   row,
   onPay,
   onTogglePrezenta,
-  onReactivateRecurent,
-  onReactivateFacultativ,
+  onReactivate,
   togglePending,
-  facultativ,
 }: {
   row: GrupaRosterRow
   onPay: (clientId: string) => void
   onTogglePrezenta: (row: GrupaRosterRow) => void
-  onReactivateRecurent: (row: GrupaRosterRow) => void
-  onReactivateFacultativ: (row: GrupaRosterRow) => void
+  onReactivate: (row: GrupaRosterRow) => void
   togglePending: boolean
-  facultativ: boolean
 }) {
   const navigate = useNavigate()
   const name = [row.nume, row.prenume].filter(Boolean).join(', ')
@@ -86,19 +82,13 @@ function ClientCard({
   // Reactivarea „inactiv" se aplică doar cursanților — leads nu pot fi „inactivi"
   const isInactiv = !isLead && row.status === 'inactiv'
   const nextLabel = isInactiv
-    ? facultativ
-      ? 'Înrolare nouă'
-      : 'Reactivează'
+    ? 'Reactivează'
     : row.status === 'prezent'
       ? 'Marchează absent'
       : 'Marchează prezent'
   const handlePhotoClick = () => {
-    if (isInactiv) {
-      if (facultativ) onReactivateFacultativ(row)
-      else onReactivateRecurent(row)
-    } else {
-      onTogglePrezenta(row)
-    }
+    if (isInactiv) onReactivate(row)
+    else onTogglePrezenta(row)
   }
   const navTarget = isLead ? '/leads' : `/clienti/${row.refId}`
   // Contact părinte pe WhatsApp — doar cursanți cu telefon mobil valid.
@@ -335,7 +325,6 @@ export function GrupaDashboardPage() {
   const { date } = useWorkingDate()
   const queryClient = useQueryClient()
   const [payClientId, setPayClientId] = useState<string | null>(null)
-  const [enrollClientId, setEnrollClientId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [tab, setTab] = useState<'roster' | 'restantieri'>('roster')
   const [rosterView, setRosterView] = useState<RosterView>(() => {
@@ -464,16 +453,16 @@ export function GrupaDashboardPage() {
     data.counters.prezenti + data.counters.absenti + data.counters.programati
   const occPct = enrolled > 0 ? Math.min(100, Math.round((present / enrolled) * 100)) : 0
 
+  // Click pe un cursant „inactiv" = revine la grupă → îl marcăm Prezent azi.
+  // (Cardul e mereu un cursant deja înrolat care acoperă luna — de aia e în
+  // roster; nu are nevoie de o înrolare nouă, doar de bifă.) Facultativ și
+  // recurent la fel; per-ședință facultativ nu ajunge niciodată „inactiv".
   const handleMemberClick = (row: GrupaRosterRow) => {
     const isInactiv = row.kind !== 'lead' && row.status === 'inactiv'
     if (isInactiv) {
-      if (data.facultativ) {
-        setEnrollClientId(row.refId)
-      } else {
-        const name = [row.nume, row.prenume].filter(Boolean).join(' ')
-        if (window.confirm(`${name} revine la grupă? Va fi marcat Prezent azi.`)) {
-          toggleMut.mutate(row)
-        }
+      const name = [row.nume, row.prenume].filter(Boolean).join(' ')
+      if (window.confirm(`${name} revine la grupă? Va fi marcat Prezent azi.`)) {
+        toggleMut.mutate(row)
       }
     } else {
       toggleMut.mutate(row)
@@ -585,10 +574,9 @@ export function GrupaDashboardPage() {
                 <ClientCard
                   key={r.rowId}
                   row={r}
-                  facultativ={data.facultativ}
                   onPay={(id) => setPayClientId(id)}
                   onTogglePrezenta={(row) => toggleMut.mutate(row)}
-                  onReactivateRecurent={(row) => {
+                  onReactivate={(row) => {
                     const name = [row.nume, row.prenume].filter(Boolean).join(' ')
                     if (
                       window.confirm(`${name} revine la grupă? Va fi marcat Prezent azi.`)
@@ -596,7 +584,6 @@ export function GrupaDashboardPage() {
                       toggleMut.mutate(row)
                     }
                   }}
-                  onReactivateFacultativ={(row) => setEnrollClientId(row.refId)}
                   togglePending={
                     toggleMut.isPending && toggleMut.variables?.rowId === r.rowId
                   }
@@ -630,19 +617,6 @@ export function GrupaDashboardPage() {
           open
           defaultClientId={payClientId}
           onClose={() => setPayClientId(null)}
-        />
-      )}
-      {enrollClientId && (
-        <EnrollmentForm
-          open
-          defaultClientId={enrollClientId}
-          defaultCursId={cursId}
-          onClose={() => {
-            setEnrollClientId(null)
-            void queryClient.invalidateQueries({
-              queryKey: ['grupa-dashboard', cursId, date],
-            })
-          }}
         />
       )}
       {addOpen && (
