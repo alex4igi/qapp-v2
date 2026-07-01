@@ -55,6 +55,8 @@ export type TarifPublic = Tables<'tarife_publice'>
 export type ProdusPublic = Views<'produse_publice'>
 // bilete_publice e un VIEW peste evenimente (vezi migrația 20260621100000) → Views, nu Tables.
 export type BiletPublic = Views<'bilete_publice'>
+export type Inchiriere = Tables<'inchirieri'>
+export type TarifInchiriere = Tables<'tarife_inchiriere'>
 
 // Enums folosite în UI
 export type StatusPrezenta = Enums<'status_prezenta'>

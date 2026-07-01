@@ -17,6 +17,7 @@ import { CursuriListPage } from '@/features/cursuri/CursuriListPage'
 import { CursProfilePage } from '@/features/cursuri/CursProfilePage'
 import { PlatiListPage } from '@/features/plati/PlatiListPage'
 import { PrezentePage } from '@/features/prezente/PrezentePage'
+import { CalendarPage as InchirieriCalendarPage } from '@/features/inchirieri/pages/CalendarPage'
 import { LeadsPage } from '@/features/leads/LeadsPage'
 import { NotificariSmsPage } from '@/features/notificari-sms/NotificariSmsPage'
 import { FeedbackListPage } from '@/features/feedback/FeedbackListPage'
@@ -118,6 +119,7 @@ function App() {
               <Route path="cursuri" element={<CursuriListPage />} />
               <Route path="cursuri/:id" element={<CursProfilePage />} />
               <Route path="prezente" element={<PrezentePage />} />
+              <Route path="inchirieri" element={<InchirieriCalendarPage />} />
               <Route path="grupa/:cursId" element={<GrupaDashboardPage />} />
               <Route path="clienti/:id" element={<ClientProfilePage />} />
             </Route>

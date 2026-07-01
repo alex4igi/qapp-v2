@@ -45,6 +45,7 @@ export const navSections: NavSection[] = [
     label: 'Studio',
     items: [
       { label: 'Cursuri',     path: '/cursuri' },
+      { label: 'Închirieri',  path: '/inchirieri' },
       { label: 'Teacheri',    path: '/teacheri' },
       { label: 'Feedback',    path: '/feedback' },
       { label: 'Vouchere',    path: '/vouchere' },

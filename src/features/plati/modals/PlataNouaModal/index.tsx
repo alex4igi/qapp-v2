@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Modal } from '@/components/ui'
 import { SimpleIncasareForm } from '../../SimpleIncasareForm'
-import { AbonamentTab } from './AbonamentTab'
+import { DatoriiUnificateTab } from './DatoriiUnificateTab'
 import { OpenClassTab } from './OpenClassTab'
-import { DatoriiTab } from './DatoriiTab'
+import { InchiriereTab, type DefaultInchiriere } from './InchiriereTab'
 import { TipSelector } from './TipSelector'
 import type { TipPlata } from './helpers'
 
@@ -14,6 +14,7 @@ type Props = {
   defaultClientId?: string
   defaultTip?: TipPlata
   defaultBiletId?: string
+  defaultInchiriere?: DefaultInchiriere
 }
 
 export function PlataNouaModal({
@@ -23,6 +24,7 @@ export function PlataNouaModal({
   defaultClientId,
   defaultTip,
   defaultBiletId,
+  defaultInchiriere,
 }: Props) {
   const [tip, setTip] = useState<TipPlata>(defaultTip ?? 'Abonament')
 
@@ -36,15 +38,15 @@ export function PlataNouaModal({
     >
       <TipSelector value={tip} onChange={setTip} />
       {tip === 'Abonament' ? (
-        <AbonamentTab
+        <DatoriiUnificateTab
           onClose={onClose}
           onAddInrolare={onAddInrolare}
           defaultClientId={defaultClientId}
         />
       ) : tip === 'Open' ? (
         <OpenClassTab onClose={onClose} defaultClientId={defaultClientId} />
-      ) : tip === 'Datorii' ? (
-        <DatoriiTab onClose={onClose} defaultClientId={defaultClientId} />
+      ) : tip === 'Inchiriere' ? (
+        <InchiriereTab onClose={onClose} defaultInchiriere={defaultInchiriere} />
       ) : (
         <SimpleIncasareForm
           key={tip}

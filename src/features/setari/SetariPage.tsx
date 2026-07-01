@@ -3,6 +3,7 @@ import { PageHeader, Button } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isOwner, ROLE_LABEL } from '@/lib/rolesMatrix'
 import { SaliSection } from './SaliSection'
+import { TarifeInchiriereSection } from './TarifeInchiriereSection'
 import { SezoaneSection } from './SezoaneSection'
 import { UtilizatoriSection } from './UtilizatoriSection'
 import { SmsQuietHoursSection } from './SmsQuietHoursSection'
@@ -25,6 +26,7 @@ export function SetariPage() {
       />
       <div className="space-y-8">
         <SaliSection />
+        <TarifeInchiriereSection />
         <SezoaneSection />
         <SmsQuietHoursSection />
         <UtilizatoriSection />

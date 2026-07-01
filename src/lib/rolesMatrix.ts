@@ -23,6 +23,9 @@ export const ROUTE_ACCESS = {
   '/cursuri': WITH_TEACHER,
   '/teacheri': ALL_STAFF,
   '/prezente': WITH_TEACHER,
+  // Calendar închirieri săli: front_desk+ rezervă plătit; teacher își vede/rezervă
+  // propria practică gratis. Gating de acțiune (tarif) în tab-ul de rezervare.
+  '/inchirieri': WITH_TEACHER,
   '/plati': ALL_STAFF,
   // Facturare FGO: recepția lucrează lista; upload-ul extrasului e gardat la admin/owner
   // în pagină + în edge function (acțiunea `ingest`).

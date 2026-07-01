@@ -1,4 +1,17 @@
-import type { Curs } from '@/types/db'
+import type { Curs, Enums } from '@/types/db'
+
+// zi_saptamana → index JS getDay() (Duminica=0 … Sambata=6). Folosit pentru a
+// proiecta cursurile recurente pe o săptămână calendaristică (calendar închirieri +
+// verificare de conflict la rezervare).
+export const ZI_TO_JS: Record<Enums<'zi_saptamana'>, number> = {
+  Duminica: 0,
+  Luni: 1,
+  Marti: 2,
+  Miercuri: 3,
+  Joi: 4,
+  Vineri: 5,
+  Sambata: 6,
+}
 
 // Orar diferit pe zile: map zi -> ora "HH:MM". Vezi migrația cursuri_ore_pe_zi.
 export type OrePeZi = Record<string, string>

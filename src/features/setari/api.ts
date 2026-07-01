@@ -4,6 +4,7 @@ import type {
   Sala,
   Sezon,
   Vacanta,
+  TarifInchiriere,
   InsertDto,
   UpdateDto,
 } from '@/types/db'
@@ -86,6 +87,25 @@ export async function updateSala(
 export async function deleteSala(id: string): Promise<void> {
   const { error } = await supabase.from('sali').delete().eq('id', id)
   if (error) throw error
+}
+
+// ---------- Tarife închiriere săli ----------
+export async function listTarifeInchiriere(): Promise<TarifInchiriere[]> {
+  const { data, error } = await supabase.from('tarife_inchiriere').select('*')
+  if (error) throw error
+  return data ?? []
+}
+
+export async function upsertTarifInchiriere(
+  dto: InsertDto<'tarife_inchiriere'>,
+): Promise<TarifInchiriere> {
+  const { data, error } = await supabase
+    .from('tarife_inchiriere')
+    .upsert({ ...dto, updated: new Date().toISOString() }, { onConflict: 'sala,tier' })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
 }
 
 // ---------- Sezoane ----------

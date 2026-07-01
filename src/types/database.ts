@@ -2946,6 +2946,255 @@ export type Database = {
           },
         ]
       }
+      inchirieri: {
+        Row: {
+          client: string | null
+          created: string
+          created_by: string | null
+          data: string
+          datorie: string | null
+          durata_min: number
+          guest_nume: string | null
+          guest_tel: string | null
+          id: string
+          locatie: string | null
+          observatii: string | null
+          ora_final: string
+          ora_start: string
+          pret: number
+          sala: string
+          status_plata: Database["public"]["Enums"]["status_plata_inchiriere"]
+          teacher: string | null
+          tier: Database["public"]["Enums"]["tier_inchiriere"]
+          updated: string
+        }
+        Insert: {
+          client?: string | null
+          created?: string
+          created_by?: string | null
+          data: string
+          datorie?: string | null
+          durata_min: number
+          guest_nume?: string | null
+          guest_tel?: string | null
+          id?: string
+          locatie?: string | null
+          observatii?: string | null
+          ora_final: string
+          ora_start: string
+          pret?: number
+          sala: string
+          status_plata?: Database["public"]["Enums"]["status_plata_inchiriere"]
+          teacher?: string | null
+          tier: Database["public"]["Enums"]["tier_inchiriere"]
+          updated?: string
+        }
+        Update: {
+          client?: string | null
+          created?: string
+          created_by?: string | null
+          data?: string
+          datorie?: string | null
+          durata_min?: number
+          guest_nume?: string | null
+          guest_tel?: string | null
+          id?: string
+          locatie?: string | null
+          observatii?: string | null
+          ora_final?: string
+          ora_start?: string
+          pret?: number
+          sala?: string
+          status_plata?: Database["public"]["Enums"]["status_plata_inchiriere"]
+          teacher?: string | null
+          tier?: Database["public"]["Enums"]["tier_inchiriere"]
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inchirieri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inchirieri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inchirieri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "inchirieri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "inchirieri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inchirieri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "inchirieri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "inchirieri_datorie_fkey"
+            columns: ["datorie"]
+            isOneToOne: false
+            referencedRelation: "datorii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inchirieri_datorie_fkey"
+            columns: ["datorie"]
+            isOneToOne: false
+            referencedRelation: "datorii_rest"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inchirieri_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "inchirieri_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inchirieri_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "inchirieri_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "inchirieri_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "inchirieri_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "inchirieri_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "incasari_sala_luna"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "inchirieri_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "inchirieri_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "inchirieri_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "restante_sala_luna"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "inchirieri_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "sali"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inchirieri_teacher_fkey"
+            columns: ["teacher"]
+            isOneToOne: false
+            referencedRelation: "incasari_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "inchirieri_teacher_fkey"
+            columns: ["teacher"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "inchirieri_teacher_fkey"
+            columns: ["teacher"]
+            isOneToOne: false
+            referencedRelation: "profil_teacher"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inchirieri_teacher_fkey"
+            columns: ["teacher"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "inchirieri_teacher_fkey"
+            columns: ["teacher"]
+            isOneToOne: false
+            referencedRelation: "restante_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "inchirieri_teacher_fkey"
+            columns: ["teacher"]
+            isOneToOne: false
+            referencedRelation: "teacheri"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventar: {
         Row: {
           articol: string
@@ -5240,6 +5489,75 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
+          },
+        ]
+      }
+      tarife_inchiriere: {
+        Row: {
+          id: string
+          increment_30: number | null
+          pret_120: number | null
+          pret_60: number | null
+          pret_90: number | null
+          sala: string
+          tier: Database["public"]["Enums"]["tier_inchiriere"]
+          updated: string
+        }
+        Insert: {
+          id?: string
+          increment_30?: number | null
+          pret_120?: number | null
+          pret_60?: number | null
+          pret_90?: number | null
+          sala: string
+          tier: Database["public"]["Enums"]["tier_inchiriere"]
+          updated?: string
+        }
+        Update: {
+          id?: string
+          increment_30?: number | null
+          pret_120?: number | null
+          pret_60?: number | null
+          pret_90?: number | null
+          sala?: string
+          tier?: Database["public"]["Enums"]["tier_inchiriere"]
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarife_inchiriere_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "incasari_sala_luna"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "tarife_inchiriere_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "tarife_inchiriere_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "tarife_inchiriere_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "restante_sala_luna"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "tarife_inchiriere_sala_fkey"
+            columns: ["sala"]
+            isOneToOne: false
+            referencedRelation: "sali"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -8207,6 +8525,7 @@ export type Database = {
         | "Taxa"
         | "Workshop"
         | "Auditie"
+        | "Inchiriere"
       categorie_inventar:
         | "Haine"
         | "Accesorii"
@@ -8275,6 +8594,7 @@ export type Database = {
         | "convertit"
         | "pierdut"
         | "nurture"
+      status_plata_inchiriere: "achitat" | "partial" | "neachitat"
       status_prezenta: "Prezent" | "Absent" | "Motivat"
       status_prospect:
         | "Nou"
@@ -8296,6 +8616,7 @@ export type Database = {
         | "Events"
         | "Website"
         | "Organic"
+      tier_inchiriere: "staff" | "client"
       tip_document:
         | "Contract"
         | "Anexa"
@@ -8472,6 +8793,7 @@ export const Constants = {
         "Taxa",
         "Workshop",
         "Auditie",
+        "Inchiriere",
       ],
       categorie_inventar: [
         "Haine",
@@ -8541,6 +8863,7 @@ export const Constants = {
         "pierdut",
         "nurture",
       ],
+      status_plata_inchiriere: ["achitat", "partial", "neachitat"],
       status_prezenta: ["Prezent", "Absent", "Motivat"],
       status_prospect: [
         "Nou",
@@ -8565,6 +8888,7 @@ export const Constants = {
         "Website",
         "Organic",
       ],
+      tier_inchiriere: ["staff", "client"],
       tip_document: [
         "Contract",
         "Anexa",

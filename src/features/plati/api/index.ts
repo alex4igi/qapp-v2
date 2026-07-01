@@ -30,6 +30,21 @@ export {
   registerPlataDatoriiFifo,
 } from './datorii'
 
+export type {
+  ConflictHit,
+  InchiriereRenter,
+  CreateInchiriereParams,
+  InchiriereDetail,
+} from './inchirieri'
+export {
+  listTarifeInchiriere,
+  checkInchiriereConflict,
+  createInchiriere,
+  updateInchiriere,
+  cancelInchiriere,
+  getInchiriereDetail,
+} from './inchirieri'
+
 export type { BiletSursaOption, InventarOptionRow } from './sources'
 export { listBiletSurse, listInventarOptiuni } from './sources'
 

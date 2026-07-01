@@ -1,14 +1,16 @@
 import type { SimpleTip } from '../../SimpleIncasareForm'
 
-export type TipPlata = 'Abonament' | 'Open' | 'Datorii' | SimpleTip
+// 'Abonament' rămâne id-ul primului tab (colectare unificată datorii — înrolări +
+// one-off), pentru compatibilitate cu apelanții care nu pasează defaultTip.
+export type TipPlata = 'Abonament' | 'Open' | 'Inchiriere' | SimpleTip
 
 export const tipTabs: { id: TipPlata; label: string }[] = [
-  { id: 'Abonament', label: 'Abonament' },
-  { id: 'Open',      label: 'Open class' },
-  { id: 'Bilet',     label: 'Bilet' },
-  { id: 'Merch',     label: 'Merch' },
-  { id: 'Taxa',      label: 'Taxă' },
-  { id: 'Datorii',   label: 'Datorii' },
+  { id: 'Abonament',  label: 'Datorii' },
+  { id: 'Open',       label: 'Open class' },
+  { id: 'Inchiriere', label: 'Închiriere' },
+  { id: 'Bilet',      label: 'Bilet' },
+  { id: 'Merch',      label: 'Merch' },
+  { id: 'Taxa',       label: 'Taxă' },
 ]
 
 export function todayIso(): string {
