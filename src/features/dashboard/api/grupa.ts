@@ -328,12 +328,13 @@ export async function getGrupaDashboard(params: {
   const { data: programariRows, error: pgErr } = await supabase
     .from('programari_leads')
     .select(
-      'lead:leads(id, nume, prenume, status, data_nasterii, id_client)',
+      'prezenta, lead:leads(id, nume, prenume, status, data_nasterii, id_client)',
     )
     .eq('cursul_programat', params.cursId)
     .eq('data_programarii', params.date)
   if (pgErr) throw pgErr
   const programari = (programariRows ?? []) as unknown as Array<{
+    prezenta: string | null
     lead: {
       id: string
       nume: string
@@ -350,20 +351,25 @@ export async function getGrupaDashboard(params: {
     if (seenLeadIds.has(p.lead.id)) continue
     // Lead convertit (id_client setat) al cărui client apare deja ca înrolat pe
     // această grupă: nu-l mai afișăm și ca lead — evită dublura lead+client.
-    // Statusul lead-ului poate rămâne 'a_venit' după conversie, deci filtrul pe
-    // status='convertit' (mai jos) nu prinde cazul; `id_client` e semnalul corect.
     if (p.lead.id_client && byClient.has(p.lead.id_client)) continue
-    seenLeadIds.add(p.lead.id)
-    let status: RosterStatus
-    if (p.lead.status === 'a_venit') status = 'prezent'
-    else if (p.lead.status === 'nu_a_venit') status = 'absent'
-    else if (
-      p.lead.status === 'nou' ||
-      p.lead.status === 'contactat' ||
-      p.lead.status === 'programat'
+    // Lead-uri „moarte" (n-au ajuns nicăieri) nu apar în roster. Cele convertite
+    // rămân vizibile: pe ziua respectivă chiar au fost prezente — e istoric real.
+    if (
+      p.lead.status === 'pierdut' ||
+      p.lead.status === 'nurture' ||
+      p.lead.status === 'waiting_list'
     )
-      status = 'programat'
-    else continue // convertit / pierdut / nurture / waiting_list — nu apar
+      continue
+    seenLeadIds.add(p.lead.id)
+    // Statusul afișat vine din prezența per-zi (programari_leads.prezenta), nu din
+    // statusul global al lead-ului — acesta se schimbă în timp (ex. → convertit) și
+    // ar pierde ce s-a întâmplat efectiv în ziua programării.
+    const status: RosterStatus =
+      p.prezenta === 'prezent'
+        ? 'prezent'
+        : p.prezenta === 'absent'
+          ? 'absent'
+          : 'programat'
     leadRows.push({
       rowId: p.lead.id,
       kind: 'lead',
