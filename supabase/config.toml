@@ -449,6 +449,21 @@ verify_jwt = false
 [functions.autofgo]
 verify_jwt = true
 
+# Modul Contracte — semnare electronică.
+# contract-send: apelată din staff app (rol owner/admin/manager verificat în funcție).
+[functions.contract-send]
+verify_jwt = true
+
+# Pagina publică de semnare (token opac propriu; stocăm doar sha256 în DB).
+[functions.contract-public]
+verify_jwt = false
+
+# Finalizare internă (protejată prin header x-contract-secret = CONTRACT_INTERNAL_SECRET).
+# static_files: fontul TTF cu diacritice românești pentru overlay-ul pdf-lib.
+[functions.contract-finalize]
+verify_jwt = false
+static_files = ["./functions/contract-finalize/NotoSans-Regular.ttf"]
+
 [analytics]
 enabled = true
 port = 54327

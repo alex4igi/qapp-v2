@@ -44,6 +44,7 @@ import { EvenimenteListPage } from '@/features/evenimente/EvenimenteListPage'
 import { EvenimentRosterPage } from '@/features/evenimente/EvenimentRosterPage'
 import { ConcursuriListPage } from '@/features/concursuri/ConcursuriListPage'
 import { CampaniiListPage } from '@/features/campanii/CampaniiListPage'
+import { ContracteListPage } from '@/features/contracte/ContracteListPage'
 import { ReinscrieriPage } from '@/features/reinscrieri/ReinscrieriPage'
 import { SetariPage } from '@/features/setari/SetariPage'
 import { OfertaPublicaPage } from '@/features/oferta-publica/OfertaPublicaPage'
@@ -153,6 +154,12 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/campanii']} />}>
             <Route element={<AppLayout />}>
               <Route path="campanii" element={<CampaniiListPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/contracte']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="contracte" element={<ContracteListPage />} />
             </Route>
           </Route>
 

@@ -60,6 +60,7 @@ export const ROUTE_ACCESS = {
   '/concursuri': PRIVILEGED,
   '/campanii': ALL_STAFF,
   '/reinscrieri': PRIVILEGED,
+  '/contracte': PRIVILEGED,
   '/oferta-publica': PRIVILEGED,
   '/setari': PRIVILEGED,
   '/opt-out': PRIVILEGED,

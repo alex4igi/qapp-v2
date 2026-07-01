@@ -846,6 +846,293 @@ export type Database = {
           },
         ]
       }
+      contract_events: {
+        Row: {
+          contract_id: string
+          created: string
+          id: number
+          meta: Json | null
+          tip: string
+        }
+        Insert: {
+          contract_id: string
+          created?: string
+          id?: never
+          meta?: Json | null
+          tip: string
+        }
+        Update: {
+          contract_id?: string
+          created?: string
+          id?: never
+          meta?: Json | null
+          tip?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_events_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_templates: {
+        Row: {
+          activ: boolean
+          created: string
+          created_by: string | null
+          fields: Json
+          id: string
+          locked_at: string | null
+          nume: string
+          pdf_storage_path: string
+          sezon: string | null
+          tip: string
+          updated: string
+          valabilitate_zile: number
+          versiune: number
+        }
+        Insert: {
+          activ?: boolean
+          created?: string
+          created_by?: string | null
+          fields?: Json
+          id?: string
+          locked_at?: string | null
+          nume: string
+          pdf_storage_path: string
+          sezon?: string | null
+          tip: string
+          updated?: string
+          valabilitate_zile?: number
+          versiune?: number
+        }
+        Update: {
+          activ?: boolean
+          created?: string
+          created_by?: string | null
+          fields?: Json
+          id?: string
+          locked_at?: string | null
+          nume?: string
+          pdf_storage_path?: string
+          sezon?: string | null
+          tip?: string
+          updated?: string
+          valabilitate_zile?: number
+          versiune?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_templates_sezon_fkey"
+            columns: ["sezon"]
+            isOneToOne: false
+            referencedRelation: "sezoane"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracte: {
+        Row: {
+          campanie_id: string | null
+          client_id: string | null
+          consimtamant_esign_la: string | null
+          created: string
+          created_by: string | null
+          deschis_prima_data_la: string | null
+          documente_client_id: string | null
+          familie_id: string
+          finalizat_la: string | null
+          gate_id: string | null
+          id: string
+          last_reminder_la: string | null
+          marketing_optin: boolean | null
+          motiv_respingere: string | null
+          pdf_drive_link: string | null
+          pdf_hash_final: string | null
+          pdf_hash_pre: string | null
+          pdf_storage_path: string | null
+          reminder_count: number
+          semnat_la: string | null
+          semnatura_path: string | null
+          status: string
+          template_id: string
+          token_expira_la: string | null
+          token_hash: string | null
+          trimis_la: string | null
+          updated: string
+          valori: Json | null
+        }
+        Insert: {
+          campanie_id?: string | null
+          client_id?: string | null
+          consimtamant_esign_la?: string | null
+          created?: string
+          created_by?: string | null
+          deschis_prima_data_la?: string | null
+          documente_client_id?: string | null
+          familie_id: string
+          finalizat_la?: string | null
+          gate_id?: string | null
+          id?: string
+          last_reminder_la?: string | null
+          marketing_optin?: boolean | null
+          motiv_respingere?: string | null
+          pdf_drive_link?: string | null
+          pdf_hash_final?: string | null
+          pdf_hash_pre?: string | null
+          pdf_storage_path?: string | null
+          reminder_count?: number
+          semnat_la?: string | null
+          semnatura_path?: string | null
+          status?: string
+          template_id: string
+          token_expira_la?: string | null
+          token_hash?: string | null
+          trimis_la?: string | null
+          updated?: string
+          valori?: Json | null
+        }
+        Update: {
+          campanie_id?: string | null
+          client_id?: string | null
+          consimtamant_esign_la?: string | null
+          created?: string
+          created_by?: string | null
+          deschis_prima_data_la?: string | null
+          documente_client_id?: string | null
+          familie_id?: string
+          finalizat_la?: string | null
+          gate_id?: string | null
+          id?: string
+          last_reminder_la?: string | null
+          marketing_optin?: boolean | null
+          motiv_respingere?: string | null
+          pdf_drive_link?: string | null
+          pdf_hash_final?: string | null
+          pdf_hash_pre?: string | null
+          pdf_storage_path?: string | null
+          reminder_count?: number
+          semnat_la?: string | null
+          semnatura_path?: string | null
+          status?: string
+          template_id?: string
+          token_expira_la?: string | null
+          token_hash?: string | null
+          trimis_la?: string | null
+          updated?: string
+          valori?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracte_campanie_id_fkey"
+            columns: ["campanie_id"]
+            isOneToOne: false
+            referencedRelation: "campanii_reinscriere"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "contracte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "contracte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "contracte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "contracte_documente_client_id_fkey"
+            columns: ["documente_client_id"]
+            isOneToOne: false
+            referencedRelation: "documente_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracte_familie_id_fkey"
+            columns: ["familie_id"]
+            isOneToOne: false
+            referencedRelation: "familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracte_familie_id_fkey"
+            columns: ["familie_id"]
+            isOneToOne: false
+            referencedRelation: "lista_familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracte_familie_id_fkey"
+            columns: ["familie_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "contracte_familie_id_fkey"
+            columns: ["familie_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "contracte_gate_id_fkey"
+            columns: ["gate_id"]
+            isOneToOne: false
+            referencedRelation: "reinscrieri_gate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracte_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cursuri: {
         Row: {
           capacitate_maxima: number | null
@@ -2515,6 +2802,71 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "portal_accounts"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      familii_date_semnatar: {
+        Row: {
+          actualizat_la: string
+          actualizat_sursa: string | null
+          adresa: string | null
+          ci_eliberat_de: string | null
+          ci_eliberat_la: string | null
+          ci_numar: string | null
+          ci_serie: string | null
+          cnp: string | null
+          familie_id: string
+        }
+        Insert: {
+          actualizat_la?: string
+          actualizat_sursa?: string | null
+          adresa?: string | null
+          ci_eliberat_de?: string | null
+          ci_eliberat_la?: string | null
+          ci_numar?: string | null
+          ci_serie?: string | null
+          cnp?: string | null
+          familie_id: string
+        }
+        Update: {
+          actualizat_la?: string
+          actualizat_sursa?: string | null
+          adresa?: string | null
+          ci_eliberat_de?: string | null
+          ci_eliberat_la?: string | null
+          ci_numar?: string | null
+          ci_serie?: string | null
+          cnp?: string | null
+          familie_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "familii_date_semnatar_familie_id_fkey"
+            columns: ["familie_id"]
+            isOneToOne: true
+            referencedRelation: "familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "familii_date_semnatar_familie_id_fkey"
+            columns: ["familie_id"]
+            isOneToOne: true
+            referencedRelation: "lista_familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "familii_date_semnatar_familie_id_fkey"
+            columns: ["familie_id"]
+            isOneToOne: true
+            referencedRelation: "profil_client"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "familii_date_semnatar_familie_id_fkey"
+            columns: ["familie_id"]
+            isOneToOne: true
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_familie"]
           },
         ]
       }
