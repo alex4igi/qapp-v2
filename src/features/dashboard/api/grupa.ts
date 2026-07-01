@@ -328,7 +328,7 @@ export async function getGrupaDashboard(params: {
   const { data: programariRows, error: pgErr } = await supabase
     .from('programari_leads')
     .select(
-      'lead:leads(id, nume, prenume, status, data_nasterii)',
+      'lead:leads(id, nume, prenume, status, data_nasterii, id_client)',
     )
     .eq('cursul_programat', params.cursId)
     .eq('data_programarii', params.date)
@@ -340,6 +340,7 @@ export async function getGrupaDashboard(params: {
       prenume: string | null
       status: string | null
       data_nasterii: string | null
+      id_client: string | null
     } | null
   }>
   const seenLeadIds = new Set<string>()
@@ -347,6 +348,11 @@ export async function getGrupaDashboard(params: {
   for (const p of programari) {
     if (!p.lead) continue
     if (seenLeadIds.has(p.lead.id)) continue
+    // Lead convertit (id_client setat) al cărui client apare deja ca înrolat pe
+    // această grupă: nu-l mai afișăm și ca lead — evită dublura lead+client.
+    // Statusul lead-ului poate rămâne 'a_venit' după conversie, deci filtrul pe
+    // status='convertit' (mai jos) nu prinde cazul; `id_client` e semnalul corect.
+    if (p.lead.id_client && byClient.has(p.lead.id_client)) continue
     seenLeadIds.add(p.lead.id)
     let status: RosterStatus
     if (p.lead.status === 'a_venit') status = 'prezent'
