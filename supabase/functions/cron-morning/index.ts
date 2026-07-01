@@ -136,7 +136,55 @@ Deno.serve(async (req) => {
   // review-ul se cere DOAR după conversie (lead mutat în client) — de implementat
   // separat (vezi scripts/sms/templates.md → De implementat #1).
 
-  // --- 2. Confirmări înrolare recurentă (a doua zi) ---
+  // --- 2. Follow-up pentru no-show mutați automat ---
+  // La marcarea MANUALĂ „nu a venit" followup-ul pleacă pe loc (triggerLeadSms).
+  // Dar cron-evening / prune_expired_leads mută programat → nu_a_venit fără SMS.
+  // Aici, a doua zi, trimitem followup celor mutați recent. Fereastra de 2 zile
+  // rezistă la o rulare ratată a cronului; dedup pe sms_logs (tip='followup',
+  // lifetime) sare peste cei deja notificați manual sau într-o rulare anterioară.
+  // Decizie 2026-07-01: trimitem și celor auto-mutați (anula respingerea 2026-06-10).
+  let followupSent = 0
+  const cutoffFollowup = new Date(now.getTime() - 2 * 86_400_000).toISOString()
+  const { data: noShows } = await supabase
+    .from('leads')
+    .select('id, prenume, nume, telefon, locatia, data_programare, nr_neprezentari')
+    .eq('status', 'nu_a_venit')
+    .gte('updated', cutoffFollowup)
+
+  for (const lead of noShows ?? []) {
+    if (!lead.telefon) continue
+    // A 2-a neprezentare nu primește followup (e rutată în nurture oricum).
+    if ((lead.nr_neprezentari ?? 0) >= 2) continue
+
+    const { data: existing } = await supabase
+      .from('sms_logs')
+      .select('id')
+      .eq('lead_id', lead.id)
+      .eq('tip', 'followup')
+      .maybeSingle()
+    if (existing) continue
+
+    const { locatie } = await getProgramareSms(supabase, lead.id, lead.locatia)
+    const mesaj = buildSms('followup', {
+      prenume: lead.prenume || lead.nume,
+      locatie,
+    })
+
+    const result = await sendSms(lead.telefon, mesaj)
+    if (result.ok) {
+      await supabase.from('sms_logs').insert({
+        lead_id: lead.id,
+        tip: 'followup',
+        telefon: lead.telefon,
+        mesaj,
+      })
+      followupSent++
+    } else {
+      errors.push(`${lead.nume} (followup): ${result.error}`)
+    }
+  }
+
+  // --- 3. Confirmări înrolare recurentă (a doua zi) ---
   // Coada `confirmari_inrolare_sms` e alimentată la crearea înrolării; aici, la
   // cronul de dimineață, trimitem rândurile scadente (send_after <= acum) dacă
   // înrolarea e încă activă. Ștearsă în interval (greșeală) → rândul a dispărut
@@ -235,10 +283,11 @@ Deno.serve(async (req) => {
   }
 
   console.log(
-    `[cron/morning] remindere: ${sent.length}, confirmari: ${confirmariSent}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, followup: ${followupSent}, confirmari: ${confirmariSent}, erori: ${errors.length}`,
   )
   return Response.json({
     sent,
+    followup: followupSent,
     confirmari: confirmariSent,
     errors,
     rulatLa: now.toISOString(),

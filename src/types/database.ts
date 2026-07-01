@@ -3386,6 +3386,7 @@ export type Database = {
           locatia: string | null
           motiv_pierdut: string | null
           nr_contactari: number
+          nr_neprezentari: number
           nume: string
           nume_parinte: string | null
           observatii: string | null
@@ -3426,6 +3427,7 @@ export type Database = {
           locatia?: string | null
           motiv_pierdut?: string | null
           nr_contactari?: number
+          nr_neprezentari?: number
           nume: string
           nume_parinte?: string | null
           observatii?: string | null
@@ -3466,6 +3468,7 @@ export type Database = {
           locatia?: string | null
           motiv_pierdut?: string | null
           nr_contactari?: number
+          nr_neprezentari?: number
           nume?: string
           nume_parinte?: string | null
           observatii?: string | null

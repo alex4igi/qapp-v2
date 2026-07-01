@@ -199,6 +199,12 @@ export function LeadCard({
         {lead.grupa_varsta && <GrupaBadge grupa={lead.grupa_varsta} />}
         {sursaNume && <SursaBadge sursa={sursaNume} />}
         {lead.sub_status && <SubStatusBadge subStatus={lead.sub_status} />}
+        {(lead.nr_neprezentari ?? 0) >= 1 && (
+          <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
+            ❌ {lead.nr_neprezentari}{' '}
+            {lead.nr_neprezentari === 1 ? 'neprezentare' : 'neprezentări'}
+          </span>
+        )}
       </div>
 
       {lead.locatia && (

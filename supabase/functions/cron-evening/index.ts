@@ -1,11 +1,12 @@
 // Edge Function cron — seară (programată ~23:30 ora României / 21:30 UTC).
 // 0. tranziții sezoane: arhivează sezoane active expirate + activează sezoane planificate eligibile
-// 1. programat → nu_a_venit pentru programări expirate (+ marcaj absent în roster)
+// 1. programat → neprezentare pentru programări expirate (+ marcaj absent în roster).
+//    A 1-a neprezentare → nu_a_venit; a 2-a (nr_neprezentari>=2) → direct nurture.
+// 1b. nu_a_venit rămâne în listă 10 zile, apoi → nurture.
 // 2. flaguri de prioritate recurente, cu flag_streak:
 //    - nou > 24h
 //    - contactat/nu_raspunde fără contactare de > 2 zile
 //    - contactat/de_revenit cu data_callback_dorit trecută
-//    - nu_a_venit > 72h
 //    - a_venit > 5 zile fără conversie
 //    La al 2-lea flag ignorat (flag_streak >= 2) → auto-Nurture.
 // 3. auto-Nurture plasă de siguranță: nr_contactari >= 4
@@ -50,17 +51,45 @@ Deno.serve(async (req) => {
 
   const expirateIds = (expirate ?? []).map((l) => l.id)
   let autoNeprezenti = 0
+  let autoNurtureNoShow = 0
   if (expirateIds.length) {
-    await supabase
-      .from('leads')
-      .update({ status: 'nu_a_venit' })
-      .in('id', expirateIds)
+    // Întâi marcăm programările absente — triggerul recalculează nr_neprezentari.
     await supabase
       .from('programari_leads')
       .update({ prezenta: 'absent' })
       .in('lead', expirateIds)
       .eq('prezenta', 'programat')
-    autoNeprezenti = expirateIds.length
+    // Apoi împărțim: a 2-a neprezentare (>=2) merge direct în nurture, restul în nu_a_venit.
+    const { data: dupaAbsent } = await supabase
+      .from('leads')
+      .select('id, nr_neprezentari')
+      .in('id', expirateIds)
+    const nurtureIds = (dupaAbsent ?? [])
+      .filter((l) => (l.nr_neprezentari ?? 0) >= 2)
+      .map((l) => l.id)
+    const naVenitIds = (dupaAbsent ?? [])
+      .filter((l) => (l.nr_neprezentari ?? 0) < 2)
+      .map((l) => l.id)
+    if (nurtureIds.length) {
+      await supabase
+        .from('leads')
+        .update({
+          status: 'nurture',
+          sub_status: null,
+          flag_reminder: false,
+          flag_streak: 0,
+          flag_reminder_at: null,
+        })
+        .in('id', nurtureIds)
+      autoNurtureNoShow = nurtureIds.length
+    }
+    if (naVenitIds.length) {
+      await supabase
+        .from('leads')
+        .update({ status: 'nu_a_venit' })
+        .in('id', naVenitIds)
+    }
+    autoNeprezenti = naVenitIds.length
   }
 
   // Helper — aplică flag / escaladare streak / auto-Nurture pe o listă.
@@ -116,8 +145,8 @@ Deno.serve(async (req) => {
 
   const SEL = 'id, flag_reminder, flag_streak, flag_reminder_at'
   const cutoff24 = new Date(now.getTime() - DAY).toISOString()
-  const cutoff72 = new Date(now.getTime() - 3 * DAY).toISOString()
   const cutoff5d = new Date(now.getTime() - 5 * DAY).toISOString()
+  const cutoff10d = new Date(now.getTime() - 10 * DAY).toISOString()
 
   const { data: nouVechi } = await supabase
     .from('leads')
@@ -139,11 +168,13 @@ Deno.serve(async (req) => {
     .eq('sub_status', 'de_revenit')
     .lte('data_callback_dorit', nowIso)
 
+  // nu_a_venit rămâne în listă 10 zile, apoi trece automat în nurture
+  // (decizie 2026-07-01). Nu mai folosim flag/escaladare pentru această coloană.
   const { data: navVechi } = await supabase
     .from('leads')
-    .select(SEL)
+    .select('id')
     .eq('status', 'nu_a_venit')
-    .lt('updated', cutoff72)
+    .lt('updated', cutoff10d)
 
   const { data: avVechi } = await supabase
     .from('leads')
@@ -151,10 +182,25 @@ Deno.serve(async (req) => {
     .eq('status', 'a_venit')
     .lt('updated', cutoff5d)
 
+  const navVechiIds = (navVechi ?? []).map((l) => l.id)
+  let nuAVenitNurtured = 0
+  if (navVechiIds.length) {
+    await supabase
+      .from('leads')
+      .update({
+        status: 'nurture',
+        sub_status: null,
+        flag_reminder: false,
+        flag_streak: 0,
+        flag_reminder_at: null,
+      })
+      .in('id', navVechiIds)
+    nuAVenitNurtured = navVechiIds.length
+  }
+
   const rNou = await processStale(nouVechi ?? [])
   const rNuRasp = await processStale(cNuRasp ?? [])
   const rDeRev = await processStale(cDeRev ?? [])
-  const rNaV = await processStale(navVechi ?? [])
   const rAV = await processStale(avVechi ?? [])
 
   // 3. auto-Nurture plasă de siguranță — nr_contactari >= 4
@@ -177,10 +223,11 @@ Deno.serve(async (req) => {
   report.sumar = {
     sezoane: sezoneSumar,
     autoNeprezenti,
+    autoNurtureNoShow,
+    nuAVenitNurtured,
     nou: rNou,
     contactatNuRaspunde: rNuRasp,
     contactatDeRevenit: rDeRev,
-    nuAVenit: rNaV,
     aVenit: rAV,
     autoNurture,
   }

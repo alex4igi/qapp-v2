@@ -23,7 +23,12 @@ export async function triggerLeadSms(
   }
 
   const tips: string[] = []
-  if (lead.status === 'nu_a_venit' && prev !== 'nu_a_venit')
+  // followup DOAR la 1-a neprezentare; a 2-a e rutată în nurture (fără SMS).
+  if (
+    lead.status === 'nu_a_venit' &&
+    prev !== 'nu_a_venit' &&
+    (lead.nr_neprezentari ?? 0) < 2
+  )
     tips.push('followup')
   if (lead.status === 'waiting_list' && prev !== 'waiting_list')
     tips.push('waiting_list')

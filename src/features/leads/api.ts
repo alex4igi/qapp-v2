@@ -93,6 +93,19 @@ async function syncProgramarePrezenta(
   }
 }
 
+// Când un lead devine nu_a_venit: marchează programarea absent (triggerul DB
+// recalculează nr_neprezentari), apoi decide statusul efectiv — a 2-a
+// neprezentare merge direct în nurture (fără SMS). Întoarce statusul de scris.
+async function resolveNoShow(leadId: string): Promise<StatusLead> {
+  await syncProgramarePrezenta(leadId, 'nu_a_venit')
+  const { data } = await supabase
+    .from('leads')
+    .select('nr_neprezentari')
+    .eq('id', leadId)
+    .single()
+  return (data?.nr_neprezentari ?? 0) >= 2 ? 'nurture' : 'nu_a_venit'
+}
+
 // PostgREST returnează max 1000 rânduri/request.
 const PAGE = 1000
 
@@ -315,6 +328,19 @@ export async function updateLead(
     payload.data_conversie = new Date().toISOString()
   }
 
+  // A 2-a neprezentare → nurture direct (fără SMS). resolveNoShow marchează deja
+  // programarea absent și recalculează nr_neprezentari.
+  if (payload.status === 'nu_a_venit' && current.status !== 'nu_a_venit') {
+    const effective = await resolveNoShow(id)
+    payload.status = effective
+    if (effective === 'nurture') {
+      payload.sub_status = null
+      payload.flag_reminder = false
+      payload.flag_streak = 0
+      payload.flag_reminder_at = null
+    }
+  }
+
   // Flagul de prioritate se curăță la prima schimbare de status (primul drag).
   const statusChanging =
     payload.status != null && payload.status !== current.status
@@ -357,18 +383,22 @@ export async function updateLeadStatus(
     .single()
   if (fetchError) throw fetchError
 
-  const updates: UpdateDto<'leads'> = { status }
-  if (status === 'convertit') {
+  // A 2-a neprezentare → nurture direct (fără SMS). resolveNoShow marchează deja
+  // programarea absent, deci nu mai apelăm syncProgramarePrezenta pe această cale.
+  const effective = status === 'nu_a_venit' ? await resolveNoShow(id) : status
+
+  const updates: UpdateDto<'leads'> = { status: effective }
+  if (effective === 'convertit') {
     updates.data_conversie = new Date().toISOString()
   }
   // Flagul de prioritate se curăță la primul drag către altă coloană.
-  if (current.flag_reminder) {
+  if (current.flag_reminder || effective === 'nurture') {
     updates.flag_reminder = false
     updates.flag_reminder_at = null
     updates.flag_streak = 0
   }
   // sub_status are sens doar în 'contactat' — se golește la ieșire.
-  if (status !== 'contactat') {
+  if (effective !== 'contactat') {
     updates.sub_status = null
   }
   const { data, error } = await supabase
@@ -379,7 +409,7 @@ export async function updateLeadStatus(
     .single()
   if (error) throw error
 
-  await syncProgramarePrezenta(id, status)
+  if (status !== 'nu_a_venit') await syncProgramarePrezenta(id, effective)
   await triggerLeadSms(current.status, data)
   return data
 }
