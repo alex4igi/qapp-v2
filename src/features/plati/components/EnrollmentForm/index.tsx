@@ -33,6 +33,7 @@ import {
   createInrolari,
   getCursForInrolare,
   getOpenSesiuneByDate,
+  hasActiveEnrollmentOnCurs,
   listCursuriPentruInrolare,
   previewPoolDiscount,
   registerPlataFifo,
@@ -250,14 +251,39 @@ export function EnrollmentForm({
   // Preview al discountului automat de politică (cross-sell/family). Voucherul
   // manual și politica sunt mutual exclusive → nu-l interogăm dacă e voucher ales.
   const previewQ = useQuery({
-    queryKey: ['preview-pool-discount', clientId, tipPlata, sumaSugerata],
+    queryKey: ['preview-pool-discount', clientId, cursId, tipPlata, sumaSugerata],
     queryFn: () =>
-      previewPoolDiscount({ client: clientId, tipPlata, sumaBaza: sumaSugerata! }),
+      previewPoolDiscount({
+        client: clientId,
+        cursId: cursId || null,
+        tipPlata,
+        sumaBaza: sumaSugerata!,
+      }),
     enabled: Boolean(clientId) && sumaSugerata != null && !voucherId,
     staleTime: 30_000,
   })
   const policyPreview =
     voucherId || isFacultativPerSedinta ? null : (previewQ.data ?? null)
+
+  // Gard anti-dublură (oglindește createInrolari): dacă are deja o înrolare
+  // activă ne-Per-ședință pe acest curs care acoperă data începerii sau mai
+  // departe, avertizează și blochează submit-ul. Per ședință = sesiuni multiple ok.
+  const dejaInrolatQ = useQuery({
+    queryKey: ['deja-inrolat-curs', clientId, cursId, dataIncepere],
+    queryFn: () =>
+      hasActiveEnrollmentOnCurs({
+        client: clientId,
+        cursId,
+        fromDate: dataIncepere,
+      }),
+    enabled:
+      Boolean(clientId) &&
+      Boolean(cursId) &&
+      !isFacultativPerSedinta &&
+      Boolean(dataIncepere),
+    staleTime: 30_000,
+  })
+  const dejaInrolat = !isFacultativPerSedinta && dejaInrolatQ.data === true
 
   // Prețul final afișat (după voucher / politică). Pentru recurent „Per lună"
   // = rata lunară; pentru OPEN/facultativ = prețul ședinței/lunii.
@@ -420,6 +446,11 @@ export function EnrollmentForm({
     if (dataIncepere < todayIso()) {
       return setError('Data nu poate fi în trecut.')
     }
+    if (dejaInrolat) {
+      return setError(
+        'Clientul e deja înrolat la acest curs în această perioadă.',
+      )
+    }
     submit.mutate()
   }
 
@@ -478,6 +509,7 @@ export function EnrollmentForm({
             form="enrollment-form"
             disabled={
               submit.isPending ||
+              dejaInrolat ||
               (isFacultativPerSedinta && sesiunePlina && !overbook)
             }
           >
@@ -536,6 +568,13 @@ export function EnrollmentForm({
               )}
             </p>
           </Field>
+
+          {dejaInrolat && (
+            <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+              ⚠️ Clientul e deja înrolat la acest curs în această perioadă.
+              Verifică înrolările existente în profil înainte de a crea alta.
+            </p>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Tip plată" required htmlFor="tip_plata">

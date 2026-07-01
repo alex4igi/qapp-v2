@@ -134,9 +134,11 @@ export async function previewPoolDiscount(p: {
   client: string
   tipPlata: Enums<'tip_plata'>
   sumaBaza: number
+  cursId?: string | null // exclude cursul țintă din pool (dublură ≠ cross-sell)
 }): Promise<{ politica_discount: number; suma_finala: number } | null> {
   const { data, error } = await supabase.rpc('preview_pool_discount', {
     p_client: p.client,
+    p_curs: p.cursId ?? undefined,
     p_tip_plata: p.tipPlata,
     p_suma_baza: p.sumaBaza,
   })
@@ -174,6 +176,59 @@ async function hasRezilizareInSezon(params: {
     .limit(1)
   if (error) throw error
   return (data?.length ?? 0) > 0
+}
+
+// Pentru UI: clientul are deja o înrolare activă (ne-Per-ședință) pe acest curs
+// care acoperă `fromDate` sau mai departe? Oglindește gardul din createInrolari.
+export async function hasActiveEnrollmentOnCurs(params: {
+  client: string
+  cursId: string
+  fromDate: string
+}): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('enrollments')
+    .select('id')
+    .eq('client', params.client)
+    .eq('cursul', params.cursId)
+    .eq('activ', true)
+    .eq('reziliat', false)
+    .neq('tip_plata', 'Per sedinta')
+    .or(`data_final.is.null,data_final.gte.${params.fromDate}`)
+    .limit(1)
+  if (error) throw error
+  return (data?.length ?? 0) > 0
+}
+
+// Verifică dacă clientul are deja o înrolare activă (ne-Per-ședință) pe același
+// curs cu interval care se suprapune peste una din perioadele noii înrolări.
+// Per ședință e exclus intenționat: sesiunile drop-in multiple sunt legitime.
+async function hasOverlappingActiveEnrollment(params: {
+  client: string
+  cursId: string
+  periods: { start: string; end: string | null }[]
+}): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('enrollments')
+    .select('data_incepere, data_final')
+    .eq('client', params.client)
+    .eq('cursul', params.cursId)
+    .eq('activ', true)
+    .eq('reziliat', false)
+    .neq('tip_plata', 'Per sedinta')
+  if (error) throw error
+  const overlaps = (
+    aStart: string,
+    aEnd: string | null,
+    bStart: string,
+    bEnd: string | null,
+  ) => aStart <= (bEnd ?? '9999-12-31') && bStart <= (aEnd ?? '9999-12-31')
+  return (data ?? []).some(
+    (e) =>
+      e.data_incepere != null &&
+      params.periods.some((p) =>
+        overlaps(p.start, p.end, e.data_incepere!, e.data_final),
+      ),
+  )
 }
 
 // --- Strategii build (1 înrolare sau N pentru recurent-per-lună) ---
@@ -415,6 +470,26 @@ export async function createInrolari(
       params.tipPlata === 'Per an'
         ? buildRecurentPerAn(params, curs, voucher, sezon)
         : buildRecurentPerLuna(params, curs, voucher, sezon)
+  }
+
+  // Gard anti-dublură: blochează o a doua înrolare (ne-Per-ședință) pe același
+  // curs cu interval suprapus. Bypass cu forceReinrolare (admin).
+  if (params.tipPlata !== 'Per sedinta' && !params.forceReinrolare) {
+    const dup = await hasOverlappingActiveEnrollment({
+      client: params.client,
+      cursId: params.cursId,
+      periods: inserts
+        .filter((i) => i.data_incepere != null)
+        .map((i) => ({
+          start: i.data_incepere as string,
+          end: i.data_final ?? null,
+        })),
+    })
+    if (dup) {
+      throw new Error(
+        'Clientul e deja înrolat la acest curs în această perioadă. Verifică înrolările existente înainte de a crea alta.',
+      )
+    }
   }
 
   const { data, error } = await supabase

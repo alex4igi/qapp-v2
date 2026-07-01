@@ -8017,6 +8017,7 @@ export type Database = {
       preview_pool_discount: {
         Args: {
           p_client: string
+          p_curs?: string
           p_suma_baza: number
           p_tip_plata: Database["public"]["Enums"]["tip_plata"]
         }

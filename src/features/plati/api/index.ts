@@ -44,6 +44,7 @@ export {
   rezilizaInrolari,
   scheduleConfirmareInrolare,
   previewPoolDiscount,
+  hasActiveEnrollmentOnCurs,
 } from './enrollments'
 
 export {
