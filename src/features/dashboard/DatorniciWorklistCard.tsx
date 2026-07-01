@@ -65,7 +65,28 @@ export function DatorniciWorklistCard({
             </Link>
             <span className="shrink-0 text-xs text-muted">
               {r.nr_rate_neachitate} rate
-              {r.zile_depasire != null && ` · ${r.zile_depasire}z`}
+              {r.zile_depasire != null && (
+                <>
+                  {' · '}
+                  <span
+                    className={
+                      r.zile_depasire > 50
+                        ? 'font-semibold text-red-600'
+                        : r.zile_depasire > 14
+                          ? 'font-medium text-amber-600'
+                          : ''
+                    }
+                    title={
+                      r.zile_depasire > 50
+                        ? 'Risc de pierdere a locului în grupă (>50 zile)'
+                        : undefined
+                    }
+                  >
+                    {r.zile_depasire > 50 && '🚨 '}
+                    {r.zile_depasire}z
+                  </span>
+                </>
+              )}
             </span>
             <span className="w-24 shrink-0 text-right font-semibold text-red-600">
               {formatRON(r.rest_total)}
