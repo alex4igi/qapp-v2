@@ -90,7 +90,7 @@ function ClientCard({
     if (isInactiv) onReactivate(row)
     else onTogglePrezenta(row)
   }
-  const navTarget = isLead ? '/leads' : `/clienti/${row.refId}`
+  const navTarget = isLead ? `/leads?lead=${row.refId}` : `/clienti/${row.refId}`
   // Contact părinte pe WhatsApp — doar cursanți cu telefon mobil valid.
   const waHref = isLead
     ? null

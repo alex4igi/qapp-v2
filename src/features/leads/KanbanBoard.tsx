@@ -1,5 +1,6 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   DndContext,
   DragOverlay,
@@ -45,6 +46,7 @@ const EMPTY_FILTERS: LeadFiltersValue = {
 
 export function KanbanBoard() {
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState<LeadFiltersValue>(EMPTY_FILTERS)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
@@ -82,6 +84,20 @@ export function KanbanBoard() {
   )
 
   const leads = leadsQuery.data ?? []
+
+  // Deschidere directă a fișei unui lead via ?lead=<id> (ex: din rosterul grupei).
+  // Așteptăm ca lista să fie încărcată, apoi curățăm param-ul din URL.
+  const leadParam = searchParams.get('lead')
+  useEffect(() => {
+    if (!leadParam) return
+    const lead = leads.find((l) => l.id === leadParam)
+    if (lead) {
+      setEditingLead(lead)
+      const next = new URLSearchParams(searchParams)
+      next.delete('lead')
+      setSearchParams(next, { replace: true })
+    }
+  }, [leadParam, leads, searchParams, setSearchParams])
 
   // Leads cu client creat dar neconvertiți = înscriere începută, neterminată.
   // Verificăm care dintre clienții lor au deja o înrolare activă, ca să arătăm
