@@ -38,7 +38,7 @@ export function BreakEvenTable({ rows }: { rows: RentabilitateGrupaRow[] }) {
         <thead className="sticky top-0 bg-white">
           <tr className="border-b border-quasar-gray-light text-left text-xs uppercase tracking-wide text-quasar-gray">
             <th className="px-3 py-2 font-medium">Grupă</th>
-            <th className="px-3 py-2 text-right font-medium">Activi</th>
+            <th className="px-3 py-2 text-right font-medium">Activi acum</th>
             <th className="px-3 py-2 text-right font-medium">Preț/client/lună</th>
             <th className="px-3 py-2 text-right font-medium">Cost lunar</th>
             <th className="px-3 py-2 text-right font-medium">Prag (clienți)</th>

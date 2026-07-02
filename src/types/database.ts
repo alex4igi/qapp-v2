@@ -7884,7 +7884,7 @@ export type Database = {
         }[]
       }
       get_colectare_dso: {
-        Args: { p_from: string; p_to: string }
+        Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
           dso_zile: number
           facturat: number
@@ -7894,7 +7894,7 @@ export type Database = {
         }[]
       }
       get_conversie_leads: {
-        Args: { p_luni?: number }
+        Args: { p_locatie?: string; p_luni?: number }
         Returns: {
           convertiti: number
           procent: number
@@ -7963,7 +7963,8 @@ export type Database = {
         Args: { p_locatie?: string }
         Returns: {
           durata_medie_luni: number
-          ltv_mediu: number
+          ltv_recurent: number
+          ltv_total: number
         }[]
       }
       get_evaluari_client: {
@@ -8065,7 +8066,7 @@ export type Database = {
         }[]
       }
       get_kpis_financiar: {
-        Args: { p_from: string; p_to: string }
+        Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
           cheltuieli: number
           incasari: number
@@ -8111,32 +8112,34 @@ export type Database = {
         }[]
       }
       get_mix_categorii_incasari: {
-        Args: { p_from: string; p_to: string }
+        Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
           categorie: string
           total: number
         }[]
       }
       get_mix_metode: {
-        Args: { p_from: string; p_to: string }
+        Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
           metoda: string
           total: number
         }[]
       }
       get_mix_recurent_oneoff: {
-        Args: { p_from: string; p_to: string }
+        Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
           tip: string
           total: number
         }[]
       }
       get_mrr_trend: {
-        Args: { p_locatie?: string; p_luni?: number }
+        Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
-          enrolari: number
+          enrolari_facultativ: number
+          enrolari_recurent: number
           luna: string
-          mrr: number
+          mrr_facultativ: number
+          mrr_recurent: number
         }[]
       }
       get_ocupare_prime_time: {
@@ -8297,7 +8300,7 @@ export type Database = {
         }[]
       }
       get_rentabilitate_grupa: {
-        Args: { p_luni?: number }
+        Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
           activi: number
           curs_id: string
@@ -8341,7 +8344,7 @@ export type Database = {
         }[]
       }
       get_retentie_cohorte: {
-        Args: { p_sezon?: string }
+        Args: { p_locatie?: string; p_sezon?: string }
         Returns: {
           cohorta_luna: string
           luni_de_la_start: number
@@ -8351,7 +8354,7 @@ export type Database = {
         }[]
       }
       get_retentie_membri: {
-        Args: never
+        Args: { p_locatie?: string }
         Returns: {
           baza_prev: number
           pierduti: number

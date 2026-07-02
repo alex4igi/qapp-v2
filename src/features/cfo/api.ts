@@ -12,23 +12,33 @@ function intervalToDateRange(i: Interval): { from: string; to: string } {
   return { from: bounds(f, false), to: bounds(t, true) }
 }
 
-// ── MRR trend (venit recurent lunar) ─────────────────────────────────────────
-export type MrrRow = { luna: string; mrr: number; enrolari: number }
+// ── MRR trend (venit recurent lunar), split recurent/facultativ ──────────────
+export type MrrRow = {
+  luna: string
+  mrr_recurent: number
+  mrr_facultativ: number
+  enrolari_recurent: number
+  enrolari_facultativ: number
+}
 
-export async function getMrrTrend(luni = 12, locatieId: string | null = null): Promise<MrrRow[]> {
+export async function getMrrTrend(i: Interval, locatieId: string | null = null): Promise<MrrRow[]> {
+  const { from, to } = intervalToDateRange(i)
   const { data, error } = await supabase.rpc('get_mrr_trend', {
-    p_luni: luni,
+    p_from: from,
+    p_to: to,
     ...(locatieId ? { p_locatie: locatieId } : {}),
   })
   if (error) throw error
   return ((data ?? []) as MrrRow[]).map((r) => ({
     luna: r.luna,
-    mrr: Number(r.mrr ?? 0),
-    enrolari: Number(r.enrolari ?? 0),
+    mrr_recurent: Number(r.mrr_recurent ?? 0),
+    mrr_facultativ: Number(r.mrr_facultativ ?? 0),
+    enrolari_recurent: Number(r.enrolari_recurent ?? 0),
+    enrolari_facultativ: Number(r.enrolari_facultativ ?? 0),
   }))
 }
 
-// ── Rata de încasare + DSO ───────────────────────────────────────────────────
+// ── Rata de încasare + DSO (cohortă facturată în interval) ───────────────────
 export type ColectareDso = {
   facturat: number
   incasat: number
@@ -37,9 +47,13 @@ export type ColectareDso = {
   dso_zile: number | null
 }
 
-export async function getColectareDso(i: Interval): Promise<ColectareDso> {
+export async function getColectareDso(i: Interval, locatieId: string | null = null): Promise<ColectareDso> {
   const { from, to } = intervalToDateRange(i)
-  const { data, error } = await supabase.rpc('get_colectare_dso', { p_from: from, p_to: to })
+  const { data, error } = await supabase.rpc('get_colectare_dso', {
+    p_from: from,
+    p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
   if (error) throw error
   const row = (data ?? [])[0]
   return {

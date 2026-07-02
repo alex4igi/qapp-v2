@@ -27,12 +27,12 @@ export function CfoPage() {
   const scope = locatieId || null
   const locatiiQ = useQuery({ queryKey: ['lookup', 'locatii'], queryFn: locatiiOptions })
 
-  const mrrQ = useQuery({ queryKey: ['cfo', 'mrr', scope], queryFn: () => getMrrTrend(12, scope) })
-  const colectareQ = useQuery({ queryKey: ['cfo', 'colectare', interval], queryFn: () => getColectareDso(interval) })
+  const mrrQ = useQuery({ queryKey: ['cfo', 'mrr', interval, scope], queryFn: () => getMrrTrend(interval, scope) })
+  const colectareQ = useQuery({ queryKey: ['cfo', 'colectare', interval, scope], queryFn: () => getColectareDso(interval, scope) })
   const ltvQ = useQuery({ queryKey: ['cfo', 'ltv', scope], queryFn: () => getDurataMedieLtv(scope) })
-  const rentabQ = useQuery({ queryKey: ['cfo', 'rentab-grupa'], queryFn: () => getRentabilitateGrupa(12) })
+  const rentabQ = useQuery({ queryKey: ['cfo', 'rentab-grupa', interval, scope], queryFn: () => getRentabilitateGrupa(interval, scope) })
 
-  const mrrCurent = mrrQ.data?.length ? mrrQ.data[mrrQ.data.length - 1].mrr : null
+  const mrrCurent = mrrQ.data?.length ? mrrQ.data[mrrQ.data.length - 1].mrr_recurent : null
 
   return (
     <div>
@@ -96,7 +96,7 @@ export function CfoPage() {
             </h2>
             <span className="text-2xl font-bold text-green-700">
               {mrrCurent != null ? formatRON(Math.round(mrrCurent)) : '—'}
-              <span className="ml-1 text-xs font-normal text-quasar-gray">luna curentă</span>
+              <span className="ml-1 text-xs font-normal text-quasar-gray">ultima lună din interval</span>
             </span>
           </div>
           {mrrQ.isLoading ? <Spinner /> : <MrrTrendChart rows={mrrQ.data ?? []} />}
@@ -123,14 +123,19 @@ export function CfoPage() {
               hint="cât ai emis de încasat"
             />
             <KpiCard
-              label="LTV mediu"
-              value={ltvQ.data?.ltv_mediu != null ? formatRON(ltvQ.data.ltv_mediu) : '—'}
+              label="LTV total"
+              value={ltvQ.data?.ltv_total != null ? formatRON(ltvQ.data.ltv_total) : '—'}
               tone="positive"
               hint={
                 ltvQ.data?.durata_medie_luni != null
-                  ? `cât aduce un client în total (~${ltvQ.data.durata_medie_luni} luni)`
-                  : 'cât aduce un client în total'
+                  ? `tot ce aduce un client, pe tot istoricul (~${ltvQ.data.durata_medie_luni} luni)`
+                  : 'tot ce aduce un client, pe tot istoricul'
               }
+            />
+            <KpiCard
+              label="LTV recurent"
+              value={ltvQ.data?.ltv_recurent != null ? formatRON(ltvQ.data.ltv_recurent) : '—'}
+              hint="doar din abonamente (coerent cu durata)"
             />
             <KpiCard label="LTV : CAC" value="—" hint="costul de achiziție vine cu modulul de marketing" />
           </div>
