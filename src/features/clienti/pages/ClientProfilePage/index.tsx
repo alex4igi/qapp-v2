@@ -9,6 +9,7 @@ import {
   recalcUltimaLunaReziliere,
   convertSedintaInAbonament,
   deleteInrolareDuplicat,
+  getClientCredit,
   endOfMonth,
 } from '@/features/plati/api'
 import type { Enrollment } from '@/types/db'
@@ -16,6 +17,7 @@ import { reintegrateClientAsLead } from '@/features/leads/api'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
+import { UseCreditModal } from '@/features/plati/UseCreditModal'
 import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
 import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
 import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentSedinteModal'
@@ -59,6 +61,7 @@ export function ClientProfilePage() {
   const [tab, setTab] = useState<TabId>(teacherMode ? 'prezente' : 'inrolari')
   const [sezonId, setSezonId] = useState<string>('')
   const [adjustEnrollmentId, setAdjustEnrollmentId] = useState<string | null>(null)
+  const [useCreditOpen, setUseCreditOpen] = useState(false)
   const [moveEnrollmentId, setMoveEnrollmentId] = useState<string | null>(null)
   const [motivareEnrollmentId, setMotivareEnrollmentId] = useState<string | null>(null)
   const [convertSedinta, setConvertSedinta] = useState<{
@@ -117,6 +120,12 @@ export function ClientProfilePage() {
     enabled: Boolean(
       id && sezonSelectat?.data_incepere && sezonSelectat?.data_final,
     ),
+  })
+
+  const creditQuery = useQuery({
+    queryKey: ['client-credit', id],
+    queryFn: () => getClientCredit(id!),
+    enabled: Boolean(id),
   })
 
   const prezenteQuery = useQuery({
@@ -375,6 +384,10 @@ export function ClientProfilePage() {
               rows={inrolariSezonQuery.data ?? []}
               cursuri={cursuriSezon}
               reziliereByCurs={reziliereByCurs}
+              creditTotal={creditQuery.data ?? 0}
+              onUseCredit={
+                canManagerActions ? () => setUseCreditOpen(true) : undefined
+              }
               onAskRezilia={(cId) => {
                 setConfirmCursId(cId)
                 setReintegrateAsLead(false)
@@ -464,6 +477,15 @@ export function ClientProfilePage() {
           open
           enrollmentId={adjustEnrollmentId}
           onClose={() => setAdjustEnrollmentId(null)}
+        />
+      )}
+
+      {useCreditOpen && (
+        <UseCreditModal
+          open
+          clientId={client.id}
+          clientNume={`${client.nume ?? ''} ${client.prenume ?? ''}`.trim()}
+          onClose={() => setUseCreditOpen(false)}
         />
       )}
 

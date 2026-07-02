@@ -23,15 +23,36 @@ async function getLocatieFromCurs(cursId: string | null): Promise<string | null>
   return (sala as { locatie?: string } | null)?.locatie ?? null
 }
 
-// Override preț pe înrolare. Salvează vechiul preț, scrie audit_log cu motiv.
-// Nu modifică plăți existente — efectul e pe plățile viitoare ale înrolării
-// (sau pe restul curent).
+// Cum se tratează surplusul (plătit − suma nouă) la reducerea unei înrolări plătite.
+export type SurplusAction = 'none' | 'allocate' | 'credit' | 'refund'
+
+export type AdjustPriceResult = {
+  old_suma: number | null
+  new_suma: number
+  paid: number
+  surplus: number
+  action: string
+  moved: number
+  refunded: number
+  credit_left: number
+}
+
+// Override preț pe înrolare, prin RPC atomic adjust_enrollment_price:
+//   • aliniază suma + suma_baza (repară invariantul suma_baza → fără „reducere" fantomă).
+//   • dacă rezultă surplus pe un rând plătit, îl tratează după `surplusAction`:
+//       'allocate' → mută min(surplus, rest țintă) pe altă datorie (înrolare/one-off).
+//       'refund'   → încasare negativă (banii ies).
+//       'credit'   → surplusul rămâne credit vizibil pe profil.
+// Auditul + notificarea rămân aici (best-effort, după mutarea atomică de bani).
 export async function adjustEnrollmentPrice(params: {
   enrollmentId: string
   newSuma: number
   motiv: string
   context?: 'ajustare' | 'reziliere'
-}): Promise<void> {
+  surplusAction?: SurplusAction
+  targetType?: 'enrollment' | 'datorie' | null
+  targetId?: string | null
+}): Promise<AdjustPriceResult> {
   const motiv = params.motiv.trim()
   if (!motiv) throw new Error('Motivul e obligatoriu.')
   if (!Number.isFinite(params.newSuma) || params.newSuma < 0) {
@@ -47,18 +68,30 @@ export async function adjustEnrollmentPrice(params: {
 
   const locatieId = await getLocatieFromCurs(cur.cursul)
 
-  const { error: uErr } = await supabase
-    .from('enrollments')
-    .update({ suma: params.newSuma, updated: new Date().toISOString() })
-    .eq('id', params.enrollmentId)
-  if (uErr) throw uErr
+  const { data, error: rErr } = await supabase.rpc('adjust_enrollment_price', {
+    p_enrollment: params.enrollmentId,
+    p_new_suma: params.newSuma,
+    p_motiv: motiv,
+    p_surplus_action: params.surplusAction ?? 'none',
+    p_target_type: params.targetType ?? undefined,
+    p_target_id: params.targetId ?? undefined,
+  })
+  if (rErr) throw rErr
+  const result = (data ?? {}) as AdjustPriceResult
 
   await recordAuditLog({
     action: 'price_override',
     entityType: 'enrollment',
     entityId: params.enrollmentId,
     oldValue: { suma: cur.suma },
-    newValue: { suma: params.newSuma },
+    newValue: {
+      suma: params.newSuma,
+      surplus: result.surplus,
+      surplus_action: result.action,
+      moved: result.moved,
+      refunded: result.refunded,
+      credit_left: result.credit_left,
+    },
     reason: motiv,
     locatieId,
   })
@@ -75,6 +108,124 @@ export async function adjustEnrollmentPrice(params: {
     })
     if (nErr) console.error('notify_price_change failed:', nErr.message)
   }
+
+  return result
+}
+
+// Total încasat pe o înrolare (pentru a detecta surplusul în modalul de ajustare).
+export async function getEnrollmentPaid(enrollmentId: string): Promise<number> {
+  const incasari = await getEnrollmentIncasari(enrollmentId)
+  return incasari.reduce((a, i) => a + (i.suma ?? 0), 0)
+}
+
+// Ținte pentru alocarea surplusului: orice datorie neachitată a clientului —
+// înrolare SAU one-off (bilet/merch/taxă). Cele mai noi primele.
+export type SurplusTarget = {
+  type: 'enrollment' | 'datorie'
+  id: string
+  label: string
+  rest: number
+}
+
+export async function getClientOutstandingCharges(params: {
+  clientId: string
+  excludeEnrollmentId?: string
+}): Promise<SurplusTarget[]> {
+  const [{ data: enr, error: eErr }, { data: dat, error: dErr }] = await Promise.all([
+    supabase
+      .from('plati_inrolari')
+      .select('id_enrollment, data_incepere, nume_curs, rest')
+      .eq('id_cursant', params.clientId)
+      .gt('rest', 0)
+      .order('data_incepere', { ascending: false }),
+    supabase
+      .from('datorii_rest')
+      .select('id, categorie, descriere, rest, created')
+      .eq('client', params.clientId)
+      .gt('rest', 0)
+      .order('created', { ascending: false }),
+  ])
+  if (eErr) throw eErr
+  if (dErr) throw dErr
+
+  const targets: SurplusTarget[] = []
+  for (const r of enr ?? []) {
+    if (r.id_enrollment === params.excludeEnrollmentId) continue
+    const luna = (r.data_incepere as string | null)?.slice(0, 7) ?? '—'
+    targets.push({
+      type: 'enrollment',
+      id: r.id_enrollment as string,
+      label: `${luna} · ${r.nume_curs ?? 'curs'} — rest ${r.rest} lei`,
+      rest: Number(r.rest),
+    })
+  }
+  for (const d of dat ?? []) {
+    const desc = d.descriere ? ` · ${d.descriere}` : ''
+    targets.push({
+      type: 'datorie',
+      id: d.id as string,
+      label: `${d.categorie}${desc} — rest ${d.rest} lei`,
+      rest: Number(d.rest),
+    })
+  }
+  return targets
+}
+
+// Credit total în favoarea clientului = |suma resturilor negative| pe înrolări +
+// datorii one-off (bani plătiți în plus, disponibili pentru alocare).
+export async function getClientCredit(clientId: string): Promise<number> {
+  const [{ data: enr }, { data: dat }] = await Promise.all([
+    supabase.from('plati_inrolari').select('rest').eq('id_cursant', clientId).lt('rest', 0),
+    supabase.from('datorii_rest').select('rest').eq('client', clientId).lt('rest', 0),
+  ])
+  const sum = [...(enr ?? []), ...(dat ?? [])].reduce((a, r) => a + Number(r.rest), 0)
+  return Math.abs(Math.min(sum, 0))
+}
+
+export type UseCreditResult = {
+  used: number
+  action: string
+  target_type: string | null
+  target_id: string | null
+  available: number
+  remaining_credit: number
+}
+
+// Folosește creditul existent al clientului: îl alocă pe o datorie (înrolare/one-off)
+// sau îl restituie. Consumă rândurile cu rest negativ vechi→nou, prin RPC atomic.
+export async function useClientCredit(params: {
+  clientId: string
+  amount: number
+  action: 'allocate' | 'refund'
+  targetType?: 'enrollment' | 'datorie' | null
+  targetId?: string | null
+  motiv?: string | null
+}): Promise<UseCreditResult> {
+  const { data, error } = await supabase.rpc('use_client_credit', {
+    p_client: params.clientId,
+    p_amount: params.amount,
+    p_action: params.action,
+    p_target_type: params.targetType ?? undefined,
+    p_target_id: params.targetId ?? undefined,
+    p_motiv: params.motiv?.trim() || undefined,
+  })
+  if (error) throw error
+  const result = (data ?? {}) as UseCreditResult
+
+  await recordAuditLog({
+    action: 'incasare_modified',
+    entityType: 'client',
+    entityId: params.clientId,
+    newValue: {
+      used: result.used,
+      action: result.action,
+      target_type: result.target_type,
+      target_id: result.target_id,
+    },
+    reason: params.motiv?.trim() || `Folosire credit (${params.action})`,
+  })
+
+  return result
 }
 
 // Previzualizare recalcul „ultima lună" la reziliere mid-lună: prețul de

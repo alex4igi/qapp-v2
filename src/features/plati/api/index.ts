@@ -65,6 +65,10 @@ export {
 
 export {
   adjustEnrollmentPrice,
+  getEnrollmentPaid,
+  getClientOutstandingCharges,
+  getClientCredit,
+  useClientCredit,
   moveEnrollmentToCurs,
   convertSedintaInAbonament,
   getAbonamentToSedintePreview,
@@ -76,6 +80,10 @@ export {
   aprobaMotivareAbsenta,
 } from './enrollment-admin'
 export type {
+  SurplusAction,
+  AdjustPriceResult,
+  SurplusTarget,
+  UseCreditResult,
   ReziliereRecalcPreview,
   AbonamentToSedintePreview,
   MotivareAbsentaContext,

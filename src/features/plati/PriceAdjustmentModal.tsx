@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, Modal, TextArea, TextInput, Spinner } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
-import { adjustEnrollmentPrice } from './api'
+import { adjustEnrollmentPrice, getEnrollmentPaid, type SurplusAction } from './api'
 
 type Props = {
   enrollmentId: string
@@ -18,6 +18,7 @@ type EnrollmentInfo = {
   tip_plata: string | null
   nume_curs: string | null
   nume_client: string | null
+  paid: number
 }
 
 async function fetchEnrollmentInfo(id: string): Promise<EnrollmentInfo> {
@@ -37,6 +38,7 @@ async function fetchEnrollmentInfo(id: string): Promise<EnrollmentInfo> {
     cursul: { numele: string | null } | null
     client: { nume: string | null; prenume: string | null } | null
   }
+  const paid = await getEnrollmentPaid(id)
   return {
     id: row.id,
     suma: row.suma,
@@ -46,14 +48,20 @@ async function fetchEnrollmentInfo(id: string): Promise<EnrollmentInfo> {
     nume_client: row.client
       ? `${row.client.nume ?? ''} ${row.client.prenume ?? ''}`.trim()
       : null,
+    paid,
   }
 }
+
+const round2 = (n: number) => Math.round(n * 100) / 100
 
 export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
   const queryClient = useQueryClient()
   const [newSuma, setNewSuma] = useState('')
   const [motiv, setMotiv] = useState('')
   const [error, setError] = useState<string | null>(null)
+  // La surplus, implicit lăsăm creditul în cont; alocarea la altă datorie se face
+  // ulterior din profil („Folosește credit"). Aici doar credit vs restituire.
+  const [surplusAction, setSurplusAction] = useState<SurplusAction>('credit')
 
   const infoQ = useQuery({
     queryKey: ['enrollment-info', enrollmentId],
@@ -61,14 +69,18 @@ export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
     enabled: open,
   })
 
+  const paid = infoQ.data?.paid ?? 0
+  const n = Number(newSuma)
+  const surplus = Number.isFinite(n) && n >= 0 ? round2(paid - n) : 0
+  const hasSurplus = surplus > 0.004
+
   useEffect(() => {
-    if (open && infoQ.data) {
-      setNewSuma(String(infoQ.data.suma ?? ''))
-    }
+    if (open && infoQ.data) setNewSuma(String(infoQ.data.suma ?? ''))
     if (!open) {
       setNewSuma('')
       setMotiv('')
       setError(null)
+      setSurplusAction('credit')
     }
   }, [open, infoQ.data])
 
@@ -76,23 +88,27 @@ export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
     mutationFn: () =>
       adjustEnrollmentPrice({
         enrollmentId,
-        newSuma: Number(newSuma),
+        newSuma: n,
         motiv,
+        surplusAction: hasSurplus ? surplusAction : 'none',
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['client'] })
+      void queryClient.invalidateQueries({ queryKey: ['client-inrolari-sezon'] })
+      void queryClient.invalidateQueries({ queryKey: ['client-credit'] })
       void queryClient.invalidateQueries({ queryKey: ['plati-inrolari'] })
-      void queryClient.invalidateQueries({ queryKey: ['enrollment-info', enrollmentId] })
+      void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
+      void queryClient.invalidateQueries({
+        queryKey: ['enrollment-info', enrollmentId],
+      })
       onClose()
     },
-    onError: (e: unknown) =>
-      setError(humanizeError(e, 'Eroare la salvare.')),
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
   })
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     setError(null)
-    const n = Number(newSuma)
     if (!Number.isFinite(n) || n < 0) {
       setError('Sumă invalidă.')
       return
@@ -103,6 +119,14 @@ export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
     }
     save.mutate()
   }
+
+  const radio = (value: SurplusAction) => ({
+    type: 'radio' as const,
+    name: 'surplus-action',
+    checked: surplusAction === value,
+    onChange: () => setSurplusAction(value),
+    className: 'mt-0.5',
+  })
 
   return (
     <Modal
@@ -153,7 +177,9 @@ export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
               <span className="text-quasar-gray">Sumă actuală:</span>{' '}
               <strong className="text-quasar-black">
                 {infoQ.data?.suma ?? 0} RON
-              </strong>
+              </strong>{' '}
+              <span className="text-quasar-gray">· încasat:</span>{' '}
+              <strong className="text-quasar-black">{paid} RON</strong>
             </p>
           </div>
 
@@ -178,9 +204,43 @@ export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
             />
           </Field>
 
+          {hasSurplus && (
+            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm font-medium text-amber-800">
+                Rezultă un surplus de {surplus} RON
+              </p>
+              <p className="text-xs text-quasar-gray">
+                S-au încasat {paid} RON, iar suma nouă e {n} RON. Ce faci cu
+                surplusul?
+              </p>
+
+              <label className="flex items-start gap-2 text-sm">
+                <input {...radio('credit')} />
+                <span className="flex-1 font-medium text-quasar-black">
+                  Lasă drept credit în cont ({surplus} RON)
+                  <span className="block text-xs font-normal text-quasar-gray">
+                    Rămâne credit în favoarea clientului, vizibil pe profil. Îl
+                    poți aloca ulterior la o plată/datorie („Folosește credit").
+                  </span>
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2 text-sm">
+                <input {...radio('refund')} />
+                <span className="flex-1 font-medium text-quasar-black">
+                  Restituie banii ({surplus} RON)
+                  <span className="block text-xs font-normal text-quasar-gray">
+                    Se înregistrează o restituire; restul devine 0.
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
+
           <p className="text-xs text-quasar-gray">
             Modificarea se înregistrează în jurnalul de audit (cine, când, de ce).
-            Suma se aplică pe înrolare; plățile deja înregistrate rămân neschimbate.
+            {!hasSurplus &&
+              ' Suma se aplică pe înrolare; plățile deja înregistrate rămân neschimbate.'}
           </p>
 
           {error && <p className="text-sm text-red-600">{error}</p>}

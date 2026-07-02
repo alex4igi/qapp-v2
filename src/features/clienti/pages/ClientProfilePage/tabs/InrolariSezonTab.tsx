@@ -8,6 +8,8 @@ type Props = {
   rows: ClientInrolareSezon[]
   cursuri: { id: string; nume: string }[]
   reziliereByCurs: Map<string, number>
+  creditTotal?: number
+  onUseCredit?: () => void
   onAskRezilia: (id: string) => void
   onAdjustPrice?: (enrollmentId: string) => void
   onMoveCurs?: (enrollmentId: string) => void
@@ -23,6 +25,8 @@ export function InrolariSezonTab({
   rows,
   cursuri,
   reziliereByCurs,
+  creditTotal = 0,
+  onUseCredit,
   onAskRezilia,
   onAdjustPrice,
   onMoveCurs,
@@ -32,9 +36,33 @@ export function InrolariSezonTab({
   facultativCursIds,
   onDelete,
 }: Props) {
+  // Creditul e la nivel de client (poate proveni din alt sezon), deci se afișează
+  // și când sezonul curent n-are înrolări.
+  const creditBanner = creditTotal > 0.004 && (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-800">
+      <span className="flex items-center gap-2">
+        <span aria-hidden>💳</span>
+        <span>
+          <strong>Credit în favoare: {creditTotal} RON</strong> — se poate aloca
+          la o plată/datorie sau restitui.
+        </span>
+      </span>
+      {onUseCredit && (
+        <Button variant="ghost" onClick={onUseCredit}>
+          Folosește credit
+        </Button>
+      )}
+    </div>
+  )
+
   if (loading) return <Spinner />
   if (rows.length === 0) {
-    return <p className="text-sm text-quasar-gray">Nicio înrolare în acest sezon.</p>
+    return (
+      <div className="space-y-4">
+        {creditBanner}
+        <p className="text-sm text-quasar-gray">Nicio înrolare în acest sezon.</p>
+      </div>
+    )
   }
 
   const byCurs = new Map<string, ClientInrolareSezon[]>()
@@ -46,6 +74,7 @@ export function InrolariSezonTab({
 
   return (
     <div className="space-y-6">
+      {creditBanner}
       {cursuri.map((c) => {
         const list = byCurs.get(c.id) ?? []
         const reziliereCount = reziliereByCurs.get(c.id) ?? 0
@@ -67,6 +96,7 @@ export function InrolariSezonTab({
                 const rest = r.rest ?? 0
                 const total = r.total_de_plata ?? 0
                 const achitat = rest <= 0
+                const credit = rest < 0 ? -rest : 0
                 const actions: MenuItem[] = []
                 if (onAdjustPrice)
                   actions.push({
@@ -132,8 +162,15 @@ export function InrolariSezonTab({
                     </span>
                     <span className="flex-1 text-right">
                       {achitat ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                          Achitat ({total} RON)
+                        <span className="inline-flex flex-wrap items-center justify-end gap-1">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                            Achitat ({total} RON)
+                          </span>
+                          {credit > 0.004 && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                              Credit {credit} RON
+                            </span>
+                          )}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">

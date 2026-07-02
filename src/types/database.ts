@@ -7601,6 +7601,17 @@ export type Database = {
         Args: { p_client: string; p_eveniment: string }
         Returns: undefined
       }
+      adjust_enrollment_price: {
+        Args: {
+          p_enrollment: string
+          p_motiv: string
+          p_new_suma: number
+          p_surplus_action?: string
+          p_target_id?: string
+          p_target_type?: string
+        }
+        Returns: Json
+      }
       anuleaza_rezervare_open: {
         Args: { p_motiv?: string; p_rezervare: string }
         Returns: undefined
@@ -8582,6 +8593,7 @@ export type Database = {
       list_open_sesiuni_client: {
         Args: { p_locatie?: string }
         Returns: {
+          capacitate: number
           curs_id: string
           curs_nume: string
           data: string
@@ -8891,6 +8903,17 @@ export type Database = {
           p_telefon_2?: string
         }
         Returns: undefined
+      }
+      use_client_credit: {
+        Args: {
+          p_action: string
+          p_amount: number
+          p_client: string
+          p_motiv?: string
+          p_target_id?: string
+          p_target_type?: string
+        }
+        Returns: Json
       }
       user_locatie_id: { Args: never; Returns: string }
       validate_voucher_code: {
