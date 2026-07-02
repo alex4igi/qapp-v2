@@ -11,10 +11,15 @@ export type DashboardKpis = {
 // totale curente, număr de programări lead pe data X.
 // Restanțele vin din get_restante_totale (aceeași bază ca /financiar și /statistici):
 // net recuperabil + prescris separat, ca toate suprafețele să arate aceeași cifră.
-export async function getDashboardKpis(date: string): Promise<DashboardKpis> {
+export async function getDashboardKpis(
+  date: string,
+  locatieId?: string | null,
+): Promise<DashboardKpis> {
+  let incQ = supabase.from('incasari').select('suma').eq('data', date)
+  if (locatieId) incQ = incQ.eq('locatie', locatieId)
   const [inc, restante, prog] = await Promise.all([
-    supabase.from('incasari').select('suma').eq('data', date),
-    supabase.rpc('get_restante_totale'),
+    incQ,
+    supabase.rpc('get_restante_totale', { p_locatie: locatieId ?? undefined }),
     supabase
       .from('programari_leads')
       .select('*', { count: 'exact', head: true })

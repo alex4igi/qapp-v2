@@ -17,12 +17,16 @@ export type IncasareAziRow = {
 }
 
 // Plăți de azi: cine · cât · cum.
-export async function getIncasariAzi(date: string): Promise<IncasareAziRow[]> {
-  const { data, error } = await supabase
+export async function getIncasariAzi(
+  date: string,
+  locatieId?: string | null,
+): Promise<IncasareAziRow[]> {
+  let q = supabase
     .from('incasari')
     .select('id, suma, metoda, clienti(nume, prenume)')
     .eq('data', date)
-    .order('suma', { ascending: false })
+  if (locatieId) q = q.eq('locatie', locatieId)
+  const { data, error } = await q.order('suma', { ascending: false })
   if (error) throw error
   return (data ?? []).map((r) => {
     const row = r as unknown as {

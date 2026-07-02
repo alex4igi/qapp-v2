@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Spinner, Badge } from '@/components/ui'
 import { formatRON } from '@/lib/format'
+import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { listSezoane } from '@/features/plati/api'
 import {
   getDashboardKpis,
@@ -98,9 +99,11 @@ export function DashboardKpis({
   const [open, setOpen] = useState<Panel | null>(null)
   const toggle = (p: Panel) => setOpen((cur) => (cur === p ? null : p))
 
+  const { locatieId } = useWorkingLocatie()
+
   const kpisQ = useQuery({
-    queryKey: ['dashboard', 'kpis', date],
-    queryFn: () => getDashboardKpis(date),
+    queryKey: ['dashboard', 'kpis', date, locatieId ?? 'all'],
+    queryFn: () => getDashboardKpis(date, locatieId),
   })
 
   const sezoaneQ = useQuery({ queryKey: ['sezoane-list'], queryFn: listSezoane })
@@ -131,8 +134,8 @@ export function DashboardKpis({
   const restanteTotal = (restanteQ.data ?? []).reduce((a, r) => a + r.rest, 0)
 
   const incasariQ = useQuery({
-    queryKey: ['preview', 'incasari', date],
-    queryFn: () => getIncasariAzi(date),
+    queryKey: ['preview', 'incasari', date, locatieId ?? 'all'],
+    queryFn: () => getIncasariAzi(date, locatieId),
     enabled: open === 'incasari',
   })
   const programariQ = useQuery({
