@@ -84,10 +84,16 @@ export function DashboardPage() {
     [coursesQ.data],
   )
 
-  // Chart doar pentru staff
+  // Chart doar pentru staff — pe luna curentă (YYYY-MM)
+  const lunaCurenta = date.slice(0, 7)
   const chartQ = useQuery({
-    queryKey: ['dashboard', 'chart', courseRefs.map((c) => c.id).join(',')],
-    queryFn: () => getDashboardChart(courseRefs),
+    queryKey: [
+      'dashboard',
+      'chart',
+      lunaCurenta,
+      courseRefs.map((c) => c.id).join(','),
+    ],
+    queryFn: () => getDashboardChart(courseRefs, lunaCurenta),
     enabled: !teacherMode && courseRefs.length > 0,
   })
 

@@ -6,9 +6,12 @@ export type DashboardChartRow = {
   restante: number
 }
 
-// Bar chart pe dashboard: Incasări vs Restanțe per curs (cumulativ).
+// Bar chart pe dashboard: Incasări vs Restanțe per curs, pe luna curentă
+// (`luna` = YYYY-MM). Filtrarea pe lună exclude implicit datoriile prescrise
+// (>2 ani), care cad în luni dinaintea ferestrei curente.
 export async function getDashboardChart(
   cursuri: Array<{ id: string; numele: string }>,
+  luna: string,
 ): Promise<DashboardChartRow[]> {
   if (cursuri.length === 0) return []
   const cursIds = cursuri.map((c) => c.id)
@@ -16,6 +19,7 @@ export async function getDashboardChart(
     .from('restante_curs_luna')
     .select('id_curs, total_de_incasat, total_incasat')
     .in('id_curs', cursIds)
+    .eq('luna', luna)
   if (error) throw error
   // Inițializăm fiecare curs din cards cu 0/0 — astfel chart-ul are
   // 1 bară per card, chiar dacă cursul n-are înrolări sau plăți.

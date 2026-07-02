@@ -337,6 +337,7 @@ export async function getCursDatorii(params: {
     .from('plati_inrolari')
     .select('id_cursant, nume_client, prenume_client, rest')
     .eq('id_curs', params.cursId)
+    .eq('prescris', false)
     .gte('data_incepere', params.sezonStart)
     .lte('data_incepere', params.sezonEnd)
   if (error) throw error

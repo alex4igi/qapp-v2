@@ -3,9 +3,6 @@
 export type { ZiSaptamana } from './helpers'
 export { dayOfWeekRO, todayIso, isoDaysAgo } from './helpers'
 
-export type { DashboardStats } from './stats'
-export { getDashboardStats } from './stats'
-
 export type { DashboardKpis } from './kpi'
 export { getDashboardKpis } from './kpi'
 

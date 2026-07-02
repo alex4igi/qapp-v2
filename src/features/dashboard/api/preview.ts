@@ -51,11 +51,16 @@ export type ProgramareAziRow = {
 }
 
 // Programări lead de azi: cine · grupă.
-export async function getProgramariAzi(date: string): Promise<ProgramareAziRow[]> {
-  const { data, error } = await supabase
+export async function getProgramariAzi(
+  date: string,
+  locatieId?: string | null,
+): Promise<ProgramareAziRow[]> {
+  let q = supabase
     .from('programari_leads')
     .select('id, cursul_programat, lead:leads(nume, prenume)')
     .eq('data_programarii', date)
+  if (locatieId) q = q.eq('locatie', locatieId)
+  const { data, error } = await q
   if (error) throw error
   const rows = (data ?? []) as unknown as Array<{
     id: string

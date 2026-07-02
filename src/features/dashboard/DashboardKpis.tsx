@@ -139,8 +139,8 @@ export function DashboardKpis({
     enabled: open === 'incasari',
   })
   const programariQ = useQuery({
-    queryKey: ['preview', 'programari', date],
-    queryFn: () => getProgramariAzi(date),
+    queryKey: ['preview', 'programari', date, locatieId ?? 'all'],
+    queryFn: () => getProgramariAzi(date, locatieId),
     enabled: open === 'programari',
   })
 
