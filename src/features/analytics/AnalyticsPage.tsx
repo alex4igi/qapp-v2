@@ -6,16 +6,15 @@ import { formatRON } from '@/lib/format'
 import { locatiiOptions } from '@/lib/lookups'
 import {
   getKpis,
-  getRataPrezentaLuna,
   getSezonActiv,
   lunaCurenta,
   lunaCuOffset,
   type Interval,
 } from '@/features/statistici/api'
-import { getConversieLeads, getClientiActivi } from '@/features/ansamblu/api'
+import { getConversieLeads } from '@/features/ansamblu/api'
 import { KpiCard } from '@/features/statistici/KpiCard'
-import { getRestanteTotale } from './api'
 import { ANALYTICS_QO, LazySection } from './sections/shared'
+import { Section0PachetLuni } from './sections/Section0PachetLuni'
 import { Section1Retentie } from './sections/Section1Retentie'
 import { Section2Achizitie } from './sections/Section2Achizitie'
 import { Section3Risc } from './sections/Section3Risc'
@@ -45,14 +44,9 @@ export function AnalyticsPage() {
   )
   const scope = locatieId || null
 
-  // ── KPI band (above the fold — pornește imediat) ────────────────────────────
+  // ── Above the fold: pachetul de luni + KPI financiare pe interval ───────────
   const kpisQ = useQuery({ queryKey: ['an', 'kpis', interval], queryFn: () => getKpis(interval), ...ANALYTICS_QO })
-  const activiQ = useQuery({ queryKey: ['an', 'activi'], queryFn: getClientiActivi, ...ANALYTICS_QO })
-  const restanteQ = useQuery({ queryKey: ['an', 'restante', scope], queryFn: () => getRestanteTotale(scope), ...ANALYTICS_QO })
-  const prezLunaQ = useQuery({ queryKey: ['an', 'rata-prezenta'], queryFn: getRataPrezentaLuna, ...ANALYTICS_QO })
   const conversieQ = useQuery({ queryKey: ['an', 'conversie'], queryFn: () => getConversieLeads(12), ...ANALYTICS_QO })
-
-  const activiTotal = activiQ.data?.find((r) => r.locatie_id === null)?.activi ?? 0
 
   return (
     <div>
@@ -104,33 +98,21 @@ export function AnalyticsPage() {
         }
       />
 
-      {/* ── KPI band ── */}
-      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-        <KpiCard label="Clienți activi" value={activiQ.isLoading ? '—' : activiTotal} hint="status Activ acum" />
-        <KpiCard label="Încasări (interval)" value={kpisQ.data ? formatRON(kpisQ.data.incasari) : '—'} tone="positive" />
-        <KpiCard
-          label="Profit (interval)"
-          value={kpisQ.data ? formatRON(kpisQ.data.profit) : '—'}
-          tone={kpisQ.data && kpisQ.data.profit < 0 ? 'negative' : 'positive'}
-          hint="încasări − cheltuieli"
-        />
-        <KpiCard
-          label="Restanțe net"
-          value={restanteQ.data ? formatRON(restanteQ.data.rest_net) : '—'}
-          tone="warning"
-          hint={restanteQ.data ? `+${formatRON(restanteQ.data.rest_prescris)} prescrise` : undefined}
-        />
-        <KpiCard label="Rată prezență" value={prezLunaQ.data ? `${prezLunaQ.data.global.rata}%` : '—'} hint="luna curentă" />
-        <KpiCard
-          label="Conversie leads"
-          value={conversieQ.data ? `${conversieQ.data.procent}%` : '—'}
-          tone="positive"
-          hint="ultimele 12 luni"
-        />
-      </div>
-
       <div className="flex flex-col gap-10">
-        {/* Secțiunea 1 — above the fold, eager */}
+        {/* Secțiunea 0 — pachetul de luni (eager) */}
+        <Section0PachetLuni />
+
+        {/* KPI financiare pe intervalul din header */}
+        <div className="grid grid-cols-2 gap-3">
+          <KpiCard label="Încasări (interval)" value={kpisQ.data ? formatRON(kpisQ.data.incasari) : '—'} tone="positive" />
+          <KpiCard
+            label="Profit (interval)"
+            value={kpisQ.data ? formatRON(kpisQ.data.profit) : '—'}
+            tone={kpisQ.data && kpisQ.data.profit < 0 ? 'negative' : 'positive'}
+            hint="încasări − cheltuieli"
+          />
+        </div>
+
         <Section1Retentie scope={scope} />
 
         {/* Secțiunile 2–7 — pornesc query-urile abia la scroll */}
@@ -144,7 +126,9 @@ export function AnalyticsPage() {
           />
         </LazySection>
         <LazySection>
-          <Section3Risc scope={scope} />
+          <div id="sec-risc">
+            <Section3Risc scope={scope} />
+          </div>
         </LazySection>
         <LazySection>
           <Section4Economie scope={scope} />

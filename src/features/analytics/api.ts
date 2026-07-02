@@ -13,6 +13,90 @@ function intervalToDateRange(i: Interval): { from: string; to: string } {
   return { from: bounds(f, false), to: bounds(t, true) }
 }
 
+// ── Pachetul de luni — cele 10 cifre de luni dimineața (Secțiunea 0) ─────────
+export type Triplet = { curent: number | null; prev: number | null; yoy: number | null }
+
+export type PachetLuni = {
+  saptamana: { start: string; end: string }
+  activi: Triplet
+  crestere_neta: Triplet & { intrati: number | null; iesiti: number | null }
+  leads_noi: Triplet
+  inscrieri_noi: Triplet
+  conversie_30z: Triplet & { leads: number | null; convertiti: number | null }
+  risc: { elevi: number | null }
+  prezenta: Triplet & { prezenti: number | null; posibile: number | null }
+  churn: { luna: string | null; rata: number | null; pierduti: number | null; baza: number | null; prev: number | null; yoy: number | null }
+  umplere: { media: number | null; prev: number | null; yoy: number | null; sub_prag: number | null }
+  restante: { suma: number; familii: number; procent_facturare: number | null; prev: number; yoy: number | null }
+}
+
+function num(v: unknown): number | null {
+  return v == null ? null : Number(v)
+}
+
+export async function getPachetLuni(): Promise<PachetLuni | null> {
+  const { data, error } = await supabase.rpc('get_pachet_luni')
+  if (error) throw error
+  if (data == null) return null
+  const j = data as Record<string, Record<string, unknown>>
+  const triplet = (k: string): Triplet => ({
+    curent: num(j[k]?.curent),
+    prev: num(j[k]?.prev),
+    yoy: num(j[k]?.yoy),
+  })
+  return {
+    saptamana: {
+      start: String(j.saptamana?.start ?? ''),
+      end: String(j.saptamana?.end ?? ''),
+    },
+    activi: triplet('activi'),
+    crestere_neta: { ...triplet('crestere_neta'), intrati: num(j.crestere_neta?.intrati), iesiti: num(j.crestere_neta?.iesiti) },
+    leads_noi: triplet('leads_noi'),
+    inscrieri_noi: triplet('inscrieri_noi'),
+    conversie_30z: { ...triplet('conversie_30z'), leads: num(j.conversie_30z?.leads), convertiti: num(j.conversie_30z?.convertiti) },
+    risc: { elevi: num(j.risc?.elevi) },
+    prezenta: { ...triplet('prezenta'), prezenti: num(j.prezenta?.prezenti), posibile: num(j.prezenta?.posibile) },
+    churn: {
+      luna: j.churn?.luna != null ? String(j.churn.luna) : null,
+      rata: num(j.churn?.rata),
+      pierduti: num(j.churn?.pierduti),
+      baza: num(j.churn?.baza),
+      prev: num(j.churn?.prev),
+      yoy: num(j.churn?.yoy),
+    },
+    umplere: { media: num(j.umplere?.media), prev: num(j.umplere?.prev), yoy: num(j.umplere?.yoy), sub_prag: num(j.umplere?.sub_prag) },
+    restante: {
+      suma: Number(j.restante?.suma ?? 0),
+      familii: Number(j.restante?.familii ?? 0),
+      procent_facturare: num(j.restante?.procent_facturare),
+      prev: Number(j.restante?.prev ?? 0),
+      yoy: num(j.restante?.yoy),
+    },
+  }
+}
+
+export type PrezentaGrupaRow = {
+  curs_id: string
+  curs_nume: string
+  locatie_nume: string | null
+  prezenti: number
+  posibile: number
+  rata: number | null
+}
+
+export async function getPrezentaSaptamanaGrupe(): Promise<PrezentaGrupaRow[]> {
+  const { data, error } = await supabase.rpc('get_prezenta_saptamana_grupe')
+  if (error) throw error
+  return ((data ?? []) as PrezentaGrupaRow[]).map((r) => ({
+    curs_id: String(r.curs_id),
+    curs_nume: r.curs_nume ?? '',
+    locatie_nume: r.locatie_nume ?? null,
+    prezenti: Number(r.prezenti ?? 0),
+    posibile: Number(r.posibile ?? 0),
+    rata: r.rata != null ? Number(r.rata) : null,
+  }))
+}
+
 // ── Restanțe totale (net + prescris) — partajat cu dashboard/statistici ──────
 export type RestanteTotale = { rest_net: number; rest_prescris: number; rest_total: number }
 

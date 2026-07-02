@@ -71,7 +71,7 @@ export function AnsambluPage() {
     <div>
       <PageHeader
         title="Overview"
-        subtitle="Client activ = înrolat la curs recurent luna asta, sau prezent în ultimele 21 zile la un curs facultativ."
+        subtitle="Client activ = înrolare valabilă azi (ne-reziliată), sau prezent în ultimele 21 zile."
       />
 
       <div className="flex flex-col gap-8">

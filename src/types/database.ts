@@ -7692,6 +7692,12 @@ export type Database = {
       }
       client_in_trupa: { Args: { p_client: string }; Returns: boolean }
       client_member_ids: { Args: never; Returns: string[] }
+      clienti_activi_la: {
+        Args: { p_data?: string }
+        Returns: {
+          client: string
+        }[]
+      }
       clone_sezon: {
         Args: {
           p_cursuri?: Json
@@ -8132,6 +8138,7 @@ export type Database = {
           slot: string
         }[]
       }
+      get_pachet_luni: { Args: never; Returns: Json }
       get_participari_client: {
         Args: { p_client: string }
         Returns: {
@@ -8155,6 +8162,17 @@ export type Database = {
           sezon_nume: string
           tip_plata: Database["public"]["Enums"]["tip_plata"]
           total_de_plata: number
+        }[]
+      }
+      get_prezenta_saptamana_grupe: {
+        Args: never
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          locatie_nume: string
+          posibile: number
+          prezenti: number
+          rata: number
         }[]
       }
       get_prezente_client: {
@@ -8521,6 +8539,22 @@ export type Database = {
       hold_loc_open: {
         Args: { p_client: string; p_sesiune: string }
         Returns: Json
+      }
+      inrolari_active_la: {
+        Args: { p_data?: string }
+        Returns: {
+          client: string
+          cursul: string
+          enrollment_id: string
+        }[]
+      }
+      inrolari_active_luna: {
+        Args: { p_luna: string }
+        Returns: {
+          client: string
+          cursul: string
+          enrollment_id: string
+        }[]
       }
       is_admin: { Args: never; Returns: boolean }
       is_front_desk: { Args: never; Returns: boolean }
