@@ -21,9 +21,9 @@ const CATEG_INCASARI_PALETTE: Record<string, string> = {
 
 export function Section5Venituri({ interval, scope }: { interval: Interval; scope: string | null }) {
   const arpuQ = useQuery({ queryKey: ['an', 'arpu', interval, scope], queryFn: () => getArpuTrend(interval, scope), ...ANALYTICS_QO })
-  const recurentQ = useQuery({ queryKey: ['an', 'recurent', interval], queryFn: () => getMixRecurentOneoff(interval), ...ANALYTICS_QO })
-  const metodeQ = useQuery({ queryKey: ['an', 'metode', interval], queryFn: () => getMixMetode(interval), ...ANALYTICS_QO })
-  const categIncQ = useQuery({ queryKey: ['an', 'categ-inc', interval], queryFn: () => getMixCategoriiIncasari(interval), ...ANALYTICS_QO })
+  const recurentQ = useQuery({ queryKey: ['an', 'recurent', interval, scope], queryFn: () => getMixRecurentOneoff(interval, scope), ...ANALYTICS_QO })
+  const metodeQ = useQuery({ queryKey: ['an', 'metode', interval, scope], queryFn: () => getMixMetode(interval, scope), ...ANALYTICS_QO })
+  const categIncQ = useQuery({ queryKey: ['an', 'categ-inc', interval, scope], queryFn: () => getMixCategoriiIncasari(interval, scope), ...ANALYTICS_QO })
 
   const recurentSlices = useMemo(() => {
     const rows = recurentQ.data ?? []

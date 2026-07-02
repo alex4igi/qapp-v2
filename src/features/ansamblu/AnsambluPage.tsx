@@ -39,7 +39,7 @@ export function AnsambluPage() {
   })
   const retentieQ = useQuery({
     queryKey: ['ansamblu', 'retentie'],
-    queryFn: getRetentieLuna,
+    queryFn: () => getRetentieLuna(),
   })
 
   const { total, perLocatie } = useMemo(() => {

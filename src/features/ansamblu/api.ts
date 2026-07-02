@@ -44,9 +44,14 @@ export type ConversieLeadsRow = {
   zile_medii: number | null
 }
 
-export async function getConversieLeads(luni = 12): Promise<ConversieLeadsRow> {
+export async function getConversieLeads(
+  luni = 12,
+  locatieLabel: string | null = null,
+): Promise<ConversieLeadsRow> {
   const { data, error } = await supabase.rpc('get_conversie_leads', {
     p_luni: luni,
+    // RPC filtrează pe leads.locatia (TEXT label), nu pe uuid
+    ...(locatieLabel ? { p_locatie: locatieLabel } : {}),
   })
   if (error) throw error
   const row = (data ?? [])[0]

@@ -45,8 +45,12 @@ export function AnalyticsPage() {
   const scope = locatieId || null
 
   // ── Above the fold: pachetul de luni + KPI financiare pe interval ───────────
-  const kpisQ = useQuery({ queryKey: ['an', 'kpis', interval], queryFn: () => getKpis(interval), ...ANALYTICS_QO })
-  const conversieQ = useQuery({ queryKey: ['an', 'conversie'], queryFn: () => getConversieLeads(12), ...ANALYTICS_QO })
+  // Încasări respectă locația; Profit rămâne global (cheltuielile nu au dimensiune
+  // de locație → un profit „pe locație" ar fi înșelător). Când scope=null, cele
+  // două query-uri au aceeași cheie și React Query le deduplică.
+  const kpisQ = useQuery({ queryKey: ['an', 'kpis', interval, scope], queryFn: () => getKpis(interval, scope), ...ANALYTICS_QO })
+  const kpisGlobalQ = useQuery({ queryKey: ['an', 'kpis', interval, null], queryFn: () => getKpis(interval, null), ...ANALYTICS_QO })
+  const conversieQ = useQuery({ queryKey: ['an', 'conversie', locatieLabel], queryFn: () => getConversieLeads(12, locatieLabel), ...ANALYTICS_QO })
 
   return (
     <div>
@@ -100,16 +104,16 @@ export function AnalyticsPage() {
 
       <div className="flex flex-col gap-10">
         {/* Secțiunea 0 — pachetul de luni (eager) */}
-        <Section0PachetLuni />
+        <Section0PachetLuni scoped={!!scope} />
 
         {/* KPI financiare pe intervalul din header */}
         <div className="grid grid-cols-2 gap-3">
           <KpiCard label="Încasări (interval)" value={kpisQ.data ? formatRON(kpisQ.data.incasari) : '—'} tone="positive" />
           <KpiCard
-            label="Profit (interval)"
-            value={kpisQ.data ? formatRON(kpisQ.data.profit) : '—'}
-            tone={kpisQ.data && kpisQ.data.profit < 0 ? 'negative' : 'positive'}
-            hint="încasări − cheltuieli"
+            label={scope ? 'Profit (interval) · tot clubul' : 'Profit (interval)'}
+            value={kpisGlobalQ.data ? formatRON(kpisGlobalQ.data.profit) : '—'}
+            tone={kpisGlobalQ.data && kpisGlobalQ.data.profit < 0 ? 'negative' : 'positive'}
+            hint={scope ? 'încasări − cheltuieli · cheltuielile nu se împart pe locație' : 'încasări − cheltuieli'}
           />
         </div>
 
@@ -137,7 +141,7 @@ export function AnalyticsPage() {
           <Section5Venituri interval={interval} scope={scope} />
         </LazySection>
         <LazySection>
-          <Section6Oameni />
+          <Section6Oameni scoped={!!scope} />
         </LazySection>
         <LazySection>
           <Section7Scoala scope={scope} yoyMetrica={yoyMetrica} setYoyMetrica={setYoyMetrica} anCurent={anCurent} />

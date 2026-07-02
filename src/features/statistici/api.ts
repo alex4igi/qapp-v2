@@ -84,14 +84,16 @@ function intervalToDateRange(i: Interval): { from: string; to: string } {
   }
 }
 
-export async function getKpis(i: Interval): Promise<Kpis> {
+export async function getKpis(i: Interval, locatieId: string | null = null): Promise<Kpis> {
   const { from, to } = intervalToDateRange(i)
 
   // Agregare server-side (SUM în SQL) — altfel PostgREST plafonează la 1000 rânduri
   // și KPI-urile sunt subevaluate. Restanțele sunt pe interval + neprescrise.
+  // Cheltuielile nu au dimensiune de locație → rămân globale chiar cu p_locatie.
   const { data, error } = await supabase.rpc('get_kpis_financiar', {
     p_from: from,
     p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
   })
   if (error) throw error
 
@@ -174,11 +176,13 @@ export type CategoriePunct = { categorie: string; total: number }
 
 export async function getMixCategoriiIncasari(
   i: Interval,
+  locatieId: string | null = null,
 ): Promise<CategoriePunct[]> {
   const { from, to } = intervalToDateRange(i)
   const { data, error } = await supabase.rpc('get_mix_categorii_incasari', {
     p_from: from,
     p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
   })
   if (error) throw error
   return ((data ?? []) as Array<{ categorie: string; total: number }>).map(
@@ -357,8 +361,10 @@ export type RetentieLuna = {
 // prezenți luna trecută (ambele luni încheiate). Înrolarea nu poate măsura churn
 // aici — recurentele „Per luna" au data_final NULL, deci acoperă orice lună la
 // nesfârșit (rata ar fi ~100% mereu). Vezi RPC get_retentie_membri.
-export async function getRetentieLuna(): Promise<RetentieLuna> {
-  const { data, error } = await supabase.rpc('get_retentie_membri')
+export async function getRetentieLuna(locatieId: string | null = null): Promise<RetentieLuna> {
+  const { data, error } = await supabase.rpc('get_retentie_membri', {
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
   if (error) throw error
   const row = (data ?? [])[0]
   const bazaPrev = Number(row?.baza_prev ?? 0)
@@ -454,11 +460,15 @@ export async function getVenitLunaCurenta(): Promise<number> {
   return Number((data ?? [])[0]?.incasari ?? 0)
 }
 
-export async function getMixMetode(i: Interval): Promise<MetodaPunct[]> {
+export async function getMixMetode(
+  i: Interval,
+  locatieId: string | null = null,
+): Promise<MetodaPunct[]> {
   const { from, to } = intervalToDateRange(i)
   const { data, error } = await supabase.rpc('get_mix_metode', {
     p_from: from,
     p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
   })
   if (error) throw error
   return ((data ?? []) as Array<{ metoda: string; total: number }>).map((r) => ({

@@ -4,7 +4,7 @@ import { formatRON } from '@/lib/format'
 import { getGradOcupare } from '@/features/ansamblu/api'
 import { getPachetLuni, getPrezentaSaptamanaGrupe } from '../api'
 import { DeltaKpiCard } from '../DeltaKpiCard'
-import { ANALYTICS_QO, SectionTitle } from './shared'
+import { ANALYTICS_QO, SectionTitle, TotClubulBadge } from './shared'
 
 const PRAG_RENTABILITATE = 7
 
@@ -22,7 +22,7 @@ function GrupTitlu({ children }: { children: string }) {
   return <div className="mb-2 mt-4 text-xs font-bold uppercase tracking-wide text-quasar-gray first:mt-0">{children}</div>
 }
 
-export function Section0PachetLuni() {
+export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
   const pachetQ = useQuery({ queryKey: ['an', 'pachet-luni'], queryFn: getPachetLuni, ...ANALYTICS_QO })
   const grupeQ = useQuery({ queryKey: ['an', 'prezenta-grupe'], queryFn: getPrezentaSaptamanaGrupe, ...ANALYTICS_QO })
   const ocupareQ = useQuery({ queryKey: ['an', 'ocupare', null], queryFn: () => getGradOcupare(null), ...ANALYTICS_QO })
@@ -37,6 +37,7 @@ export function Section0PachetLuni() {
   return (
     <section>
       <SectionTitle
+        badge={scoped ? <TotClubulBadge /> : undefined}
         sub={
           p
             ? `Săptămâna încheiată ${dataScurta(p.saptamana.start)} – ${dataScurta(p.saptamana.end)} · fiecare cifră vs. săptămâna trecută și vs. anul trecut`

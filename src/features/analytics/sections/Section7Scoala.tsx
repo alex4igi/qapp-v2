@@ -6,7 +6,7 @@ import { OverviewDonut } from '@/features/statistici/OverviewDonut'
 import { IncasariSezonChart } from '@/features/statistici/IncasariSezonChart'
 import { getYoYAceeasiLuna, getCursantiMultiStil, getFamiliiFrati } from '../api'
 import { YoYChart } from '../YoYChart'
-import { ANALYTICS_QO, SectionTitle } from './shared'
+import { ANALYTICS_QO, SectionTitle, TotClubulBadge } from './shared'
 
 type Props = {
   scope: string | null
@@ -41,7 +41,11 @@ export function Section7Scoala({ scope, yoyMetrica, setYoyMetrica, anCurent }: P
       </div>
       {yoyQ.isLoading ? <Spinner /> : <YoYChart rows={yoyQ.data ?? []} metrica={yoyMetrica} anCurent={anCurent} />}
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="mb-2 mt-4 flex items-center">
+        <h3 className="text-sm font-semibold text-quasar-black">Multi-stil &amp; familii cu frați</h3>
+        {scope ? <TotClubulBadge /> : null}
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {multiStilQ.isLoading ? (
           <Spinner />
         ) : (

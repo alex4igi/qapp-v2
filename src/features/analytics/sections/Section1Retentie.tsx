@@ -13,8 +13,8 @@ import { ANALYTICS_QO, SectionTitle } from './shared'
 
 export function Section1Retentie({ scope }: { scope: string | null }) {
   const crestereQ = useQuery({ queryKey: ['an', 'crestere', scope], queryFn: () => getCrestereNeta(scope, 12), ...ANALYTICS_QO })
-  const retentieQ = useQuery({ queryKey: ['an', 'retentie'], queryFn: getRetentieLuna, ...ANALYTICS_QO })
-  const cohorteQ = useQuery({ queryKey: ['an', 'cohorte'], queryFn: () => getRetentieCohorte(null), ...ANALYTICS_QO })
+  const retentieQ = useQuery({ queryKey: ['an', 'retentie', scope], queryFn: () => getRetentieLuna(scope), ...ANALYTICS_QO })
+  const cohorteQ = useQuery({ queryKey: ['an', 'cohorte', scope], queryFn: () => getRetentieCohorte(null, scope), ...ANALYTICS_QO })
   const ltvQ = useQuery({ queryKey: ['an', 'ltv', scope], queryFn: () => getDurataMedieLtv(scope), ...ANALYTICS_QO })
 
   const crestereUltima = crestereQ.data?.[crestereQ.data.length - 1]
@@ -35,7 +35,7 @@ export function Section1Retentie({ scope }: { scope: string | null }) {
         <KpiCard
           label="Durată medie înscriere"
           value={ltvQ.data?.durata_medie_luni != null ? `${ltvQ.data.durata_medie_luni} luni` : '—'}
-          hint={ltvQ.data?.ltv_mediu != null ? `LTV ~${formatRON(ltvQ.data.ltv_mediu)}` : undefined}
+          hint={ltvQ.data?.ltv_total != null ? `LTV ~${formatRON(ltvQ.data.ltv_total)}` : undefined}
         />
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

@@ -122,9 +122,13 @@ export type CohortaRow = {
   procent: number
 }
 
-export async function getRetentieCohorte(sezonId: string | null = null): Promise<CohortaRow[]> {
+export async function getRetentieCohorte(
+  sezonId: string | null = null,
+  locatieId: string | null = null,
+): Promise<CohortaRow[]> {
   const { data, error } = await supabase.rpc('get_retentie_cohorte', {
     p_sezon: sezonId ?? undefined,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
   })
   if (error) throw error
   return ((data ?? []) as CohortaRow[]).map((r) => ({
@@ -136,8 +140,12 @@ export async function getRetentieCohorte(sezonId: string | null = null): Promise
   }))
 }
 
-// ── 2. Durată medie înscriere + LTV ─────────────────────────────────────────
-export type DurataLtv = { durata_medie_luni: number | null; ltv_mediu: number | null }
+// ── 2. Durată medie înscriere + LTV (total ȘI recurent) ─────────────────────
+export type DurataLtv = {
+  durata_medie_luni: number | null
+  ltv_total: number | null
+  ltv_recurent: number | null
+}
 
 export async function getDurataMedieLtv(locatieId: string | null): Promise<DurataLtv> {
   const { data, error } = await supabase.rpc('get_durata_medie_ltv', {
@@ -147,7 +155,8 @@ export async function getDurataMedieLtv(locatieId: string | null): Promise<Durat
   const row = (data ?? [])[0]
   return {
     durata_medie_luni: row?.durata_medie_luni != null ? Number(row.durata_medie_luni) : null,
-    ltv_mediu: row?.ltv_mediu != null ? Number(row.ltv_mediu) : null,
+    ltv_total: row?.ltv_total != null ? Number(row.ltv_total) : null,
+    ltv_recurent: row?.ltv_recurent != null ? Number(row.ltv_recurent) : null,
   }
 }
 
@@ -247,8 +256,16 @@ export type RentabilitateGrupaRow = {
   activi: number
 }
 
-export async function getRentabilitateGrupa(luni = 12): Promise<RentabilitateGrupaRow[]> {
-  const { data, error } = await supabase.rpc('get_rentabilitate_grupa', { p_luni: luni })
+export async function getRentabilitateGrupa(
+  i: Interval,
+  locatieId: string | null = null,
+): Promise<RentabilitateGrupaRow[]> {
+  const { from, to } = intervalToDateRange(i)
+  const { data, error } = await supabase.rpc('get_rentabilitate_grupa', {
+    p_from: from,
+    p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
   if (error) throw error
   return ((data ?? []) as RentabilitateGrupaRow[]).map((r) => ({
     curs_id: String(r.curs_id),
@@ -283,9 +300,16 @@ export async function getArpuTrend(i: Interval, locatieId: string | null): Promi
 // ── 9. Mix recurent vs one-off ───────────────────────────────────────────────
 export type RecurentOneoffRow = { tip: string; total: number }
 
-export async function getMixRecurentOneoff(i: Interval): Promise<RecurentOneoffRow[]> {
+export async function getMixRecurentOneoff(
+  i: Interval,
+  locatieId: string | null = null,
+): Promise<RecurentOneoffRow[]> {
   const { from, to } = intervalToDateRange(i)
-  const { data, error } = await supabase.rpc('get_mix_recurent_oneoff', { p_from: from, p_to: to })
+  const { data, error } = await supabase.rpc('get_mix_recurent_oneoff', {
+    p_from: from,
+    p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
   if (error) throw error
   return ((data ?? []) as RecurentOneoffRow[]).map((r) => ({
     tip: r.tip,
