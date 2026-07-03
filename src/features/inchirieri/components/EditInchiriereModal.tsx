@@ -1,13 +1,15 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, DateInput, TextInput, Select, Button, Spinner } from '@/components/ui'
 import { formatRON } from '@/lib/format'
-import { computeOraFinal } from '@/lib/inchirieriPricing'
+import { computeOraFinal, computePret, type TarifBracket } from '@/lib/inchirieriPricing'
 import {
+  adjustInchirierePrice,
   cancelInchiriere,
   checkInchiriereConflict,
   getInchiriereDetail,
+  listTarifeInchiriere,
   updateInchiriere,
 } from '@/features/plati/api'
 
@@ -55,6 +57,18 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
   })
   const conflict = conflictQ.data ?? null
 
+  // Recalcul preț: durata schimbă treapta de tarif. Închirierile gratis (pret 0 —
+  // antrenament staff) rămân gratis. tier + sala sunt fixe (nu se editează aici).
+  const tarifeQ = useQuery({ queryKey: ['tarife-inchiriere'], queryFn: listTarifeInchiriere })
+  const isFree = !d?.pret
+  const tarif = useMemo<TarifBracket | null>(
+    () => tarifeQ.data?.find((t) => t.sala === d?.sala && t.tier === d?.tier) ?? null,
+    [tarifeQ.data, d?.sala, d?.tier],
+  )
+  const newPret = isFree ? 0 : computePret(tarif, durataMin)
+  const pretLipsa = !isFree && newPret == null // treaptă neconfigurată pt noua durată
+  const priceChanged = !isFree && newPret != null && newPret !== d?.pret
+
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['inchirieri'] })
     void queryClient.invalidateQueries({ queryKey: ['plati'] })
@@ -64,10 +78,24 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
   const move = useMutation({
     mutationFn: async () => {
       if (conflict) throw new Error('Interval ocupat — alege alt slot.')
+      if (pretLipsa) throw new Error('Tarif neconfigurat pentru această durată.')
       await updateInchiriere(inchiriereId, { data, oraStart, durataMin })
+      if (priceChanged && newPret != null) {
+        return await adjustInchirierePrice(inchiriereId, newPret)
+      }
+      return null
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       invalidate()
+      // Teacher/guest n-au cont → diferența de bani se reglează manual din Plăți.
+      if (res && !res.has_account && Math.abs(res.rest) > 0.004) {
+        const dif = formatRON(Math.abs(res.rest))
+        alert(
+          res.rest > 0
+            ? `Prețul a crescut. Chiriașul (fără cont) mai are de plată ${dif} — încaseaz-o din Plăți.`
+            : `Prețul a scăzut. Chiriașul (fără cont) a plătit ${dif} în plus — fă restituirea din Plăți.`,
+        )
+      }
       onClose()
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
@@ -110,7 +138,10 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
           <Button variant="secondary" onClick={onClose}>
             Închide
           </Button>
-          <Button onClick={() => move.mutate()} disabled={move.isPending || Boolean(conflict)}>
+          <Button
+            onClick={() => move.mutate()}
+            disabled={move.isPending || Boolean(conflict) || pretLipsa}
+          >
             {move.isPending ? 'Se salvează…' : 'Salvează mutarea'}
           </Button>
         </>
@@ -161,6 +192,24 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
               )}
             </div>
           </Field>
+
+          {priceChanged && newPret != null && (
+            <p className="rounded-md border border-warn/40 bg-warn/10 p-2 text-sm text-ink">
+              Preț recalculat: <span className="font-semibold">{formatRON(newPret)}</span>{' '}
+              <span className="text-muted">(era {formatRON(d.pret ?? 0)})</span>
+              {d.client && (
+                <span className="text-muted">
+                  {' '}· diferența se reglează automat pe contul clientului
+                </span>
+              )}
+            </p>
+          )}
+
+          {pretLipsa && (
+            <p className="rounded-md border border-danger/40 bg-danger/10 p-2 text-sm font-medium text-danger">
+              Tarif neconfigurat pentru {durataMin} min pe această sală — nu pot recalcula prețul.
+            </p>
+          )}
 
           {conflict && (
             <p className="rounded-md border border-danger/40 bg-danger/10 p-2 text-sm font-medium text-danger">

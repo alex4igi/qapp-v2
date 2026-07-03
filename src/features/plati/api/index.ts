@@ -35,12 +35,14 @@ export type {
   InchiriereRenter,
   CreateInchiriereParams,
   InchiriereDetail,
+  AdjustInchiriereResult,
 } from './inchirieri'
 export {
   listTarifeInchiriere,
   checkInchiriereConflict,
   createInchiriere,
   updateInchiriere,
+  adjustInchirierePrice,
   cancelInchiriere,
   getInchiriereDetail,
 } from './inchirieri'

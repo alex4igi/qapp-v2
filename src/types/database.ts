@@ -2575,6 +2575,8 @@ export type Database = {
           familia_id: string | null
           firma_cui: string
           incasare_id: string | null
+          linii: Json | null
+          platit_la: string | null
           ref: string
           status: Database["public"]["Enums"]["factura_fgo_status"]
           suma: number
@@ -2595,6 +2597,8 @@ export type Database = {
           familia_id?: string | null
           firma_cui: string
           incasare_id?: string | null
+          linii?: Json | null
+          platit_la?: string | null
           ref: string
           status?: Database["public"]["Enums"]["factura_fgo_status"]
           suma: number
@@ -2615,6 +2619,8 @@ export type Database = {
           familia_id?: string | null
           firma_cui?: string
           incasare_id?: string | null
+          linii?: Json | null
+          platit_la?: string | null
           ref?: string
           status?: Database["public"]["Enums"]["factura_fgo_status"]
           suma?: number
@@ -3070,6 +3076,7 @@ export type Database = {
           data: string | null
           datorie: string | null
           id: string
+          inchiriere: string | null
           inregistrare: string | null
           lead: string | null
           locatie: string | null
@@ -3090,6 +3097,7 @@ export type Database = {
           data?: string | null
           datorie?: string | null
           id?: string
+          inchiriere?: string | null
           inregistrare?: string | null
           lead?: string | null
           locatie?: string | null
@@ -3110,6 +3118,7 @@ export type Database = {
           data?: string | null
           datorie?: string | null
           id?: string
+          inchiriere?: string | null
           inregistrare?: string | null
           lead?: string | null
           locatie?: string | null
@@ -3287,6 +3296,13 @@ export type Database = {
             columns: ["datorie"]
             isOneToOne: false
             referencedRelation: "datorii_rest"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incasari_inchiriere_fkey"
+            columns: ["inchiriere"]
+            isOneToOne: false
+            referencedRelation: "inchirieri"
             referencedColumns: ["id"]
           },
           {
@@ -7610,6 +7626,10 @@ export type Database = {
           p_target_id?: string
           p_target_type?: string
         }
+        Returns: Json
+      }
+      adjust_inchiriere_price: {
+        Args: { p_inchiriere: string; p_new_pret: number }
         Returns: Json
       }
       anuleaza_rezervare_open: {

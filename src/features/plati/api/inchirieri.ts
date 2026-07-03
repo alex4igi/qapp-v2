@@ -242,6 +242,7 @@ export async function createInchiriere(
       locatie: params.locatieId,
       observatii: params.descriere,
       datorie: datorieId,
+      inchiriere: inchiriere.id,
     }))
     await createIncasari(payloads)
   }
@@ -250,6 +251,8 @@ export async function createInchiriere(
 }
 
 // Mutare/editare interval (dată/oră/durată) — recalculează ora_final.
+// NB: prețul NU se atinge aici; recalculul + reconcilierea banilor se fac separat
+// prin adjustInchirierePrice (durata schimbă treapta de tarif).
 export async function updateInchiriere(
   id: string,
   patch: { data: string; oraStart: string; durataMin: number },
@@ -267,6 +270,30 @@ export async function updateInchiriere(
     })
     .eq('id', id)
   if (error) throw error
+}
+
+// Ajustare preț la editare, cu reconciliere automată a banilor (datorie/credit).
+// Vezi migrația 20260703200000: pentru un client, diferența devine datorie sau
+// credit; pentru teacher/guest se reglează manual din Plăți (has_account=false).
+export type AdjustInchiriereResult = {
+  old_pret: number | null
+  new_pret: number
+  paid: number
+  rest: number
+  status: Enums<'status_plata_inchiriere'>
+  has_account: boolean
+}
+
+export async function adjustInchirierePrice(
+  id: string,
+  newPret: number,
+): Promise<AdjustInchiriereResult> {
+  const { data, error } = await supabase.rpc('adjust_inchiriere_price', {
+    p_inchiriere: id,
+    p_new_pret: round2(newPret),
+  })
+  if (error) throw error
+  return data as AdjustInchiriereResult
 }
 
 // Anulare închiriere: șterge rândul (eliberează slotul). Dacă avea o datorie fără
