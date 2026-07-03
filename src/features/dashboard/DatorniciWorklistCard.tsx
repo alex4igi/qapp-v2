@@ -21,6 +21,7 @@ export function DatorniciWorklistCard({
   locatieId: string | null
 }) {
   const [target, setTarget] = useState<RecuperareTarget | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   const sezonActivQ = useQuery({
     queryKey: ['lookup', 'sezon-activ'],
@@ -41,16 +42,29 @@ export function DatorniciWorklistCard({
   return (
     <div className="mb-6 overflow-hidden rounded-2xl border border-danger/30 bg-card shadow-sm">
       <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-3">
-        <h2 className="text-sm font-semibold text-red-800">
-          📞 Datornici de sunat ({rows.length})
-        </h2>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          aria-expanded={expanded}
+        >
+          <span
+            className={`text-xs text-red-700 transition-transform ${expanded ? 'rotate-90' : ''}`}
+          >
+            ▶
+          </span>
+          <h2 className="text-sm font-semibold text-red-800">
+            📞 Datornici de sunat ({rows.length})
+          </h2>
+        </button>
         <Link
           to="/recuperare"
-          className="text-xs font-medium text-red-700 hover:underline"
+          className="shrink-0 text-xs font-medium text-red-700 hover:underline"
         >
           Vezi toți →
         </Link>
       </div>
+      {expanded && (
       <ul className="divide-y divide-quasar-gray-light">
         {top.map((r: WorklistRow) => (
           <li
@@ -108,6 +122,7 @@ export function DatorniciWorklistCard({
           </li>
         ))}
       </ul>
+      )}
 
       {target && (
         <LogRecuperareModal
