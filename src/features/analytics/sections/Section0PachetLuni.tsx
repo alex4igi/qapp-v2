@@ -24,7 +24,7 @@ function GrupTitlu({ children }: { children: string }) {
 
 export function Section0PachetLuni({ scope }: { scope?: string | null }) {
   const pachetQ = useQuery({ queryKey: ['an', 'pachet-luni', scope], queryFn: () => getPachetLuni(scope), ...ANALYTICS_QO })
-  const grupeQ = useQuery({ queryKey: ['an', 'prezenta-grupe'], queryFn: getPrezentaSaptamanaGrupe, ...ANALYTICS_QO })
+  const grupeQ = useQuery({ queryKey: ['an', 'prezenta-grupe', scope], queryFn: () => getPrezentaSaptamanaGrupe(scope), ...ANALYTICS_QO })
   const ocupareQ = useQuery({ queryKey: ['an', 'ocupare', scope], queryFn: () => getGradOcupare(scope ?? null), ...ANALYTICS_QO })
 
   const p = pachetQ.data

@@ -8179,7 +8179,7 @@ export type Database = {
         }[]
       }
       get_prezenta_saptamana_grupe: {
-        Args: never
+        Args: { p_locatie?: string }
         Returns: {
           curs_id: string
           curs_nume: string
@@ -8771,6 +8771,22 @@ export type Database = {
       recalculate_pool_discount: {
         Args: { p_client: string }
         Returns: undefined
+      }
+      record_bank_factura: {
+        Args: {
+          p_client_id: string
+          p_client_nume: string
+          p_data: string
+          p_descriere: string
+          p_factura: string
+          p_factura_link: string
+          p_familia_id: string
+          p_firma_cui: string
+          p_ref: string
+          p_suma: number
+          p_sursa: string
+        }
+        Returns: Json
       }
       record_bank_incasare: {
         Args: {

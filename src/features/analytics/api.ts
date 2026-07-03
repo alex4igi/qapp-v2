@@ -84,8 +84,8 @@ export type PrezentaGrupaRow = {
   rata: number | null
 }
 
-export async function getPrezentaSaptamanaGrupe(): Promise<PrezentaGrupaRow[]> {
-  const { data, error } = await supabase.rpc('get_prezenta_saptamana_grupe')
+export async function getPrezentaSaptamanaGrupe(locatieId?: string | null): Promise<PrezentaGrupaRow[]> {
+  const { data, error } = await supabase.rpc('get_prezenta_saptamana_grupe', { p_locatie: locatieId ?? undefined })
   if (error) throw error
   return ((data ?? []) as PrezentaGrupaRow[]).map((r) => ({
     curs_id: String(r.curs_id),

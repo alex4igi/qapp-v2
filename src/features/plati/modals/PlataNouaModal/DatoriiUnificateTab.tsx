@@ -13,6 +13,8 @@ import {
   listSezoane,
   registerPlataDatoriiFifo,
   registerPlataFifo,
+  getClientCredit,
+  useClientCredit,
 } from '../../api'
 import { fmtDate, todayIso } from './helpers'
 import {
@@ -65,6 +67,8 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
   const [metoda, setMetoda] = useState<MetodaSel>('Cash')
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
+  const [useCreditOn, setUseCreditOn] = useState(false)
+  const [useCreditAmt, setUseCreditAmt] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const clientiQ = useQuery({ queryKey: ['lookup', 'clienti'], queryFn: clientiOptions })
@@ -111,6 +115,13 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
     queryFn: () => listDatoriiClient(clientId),
     enabled: Boolean(clientId),
   })
+
+  const creditQ = useQuery({
+    queryKey: ['client-credit', clientId],
+    queryFn: () => getClientCredit(clientId),
+    enabled: Boolean(clientId),
+  })
+  const credit = creditQ.data ?? 0
 
   const curentRows = useMemo(() => inrolariQ.data ?? [], [inrolariQ.data])
   const anteriorRows = useMemo(() => inrolariAntQ.data ?? [], [inrolariAntQ.data])
@@ -163,6 +174,14 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
   )
   const total = round2(totalEnroll + totalDat)
 
+  // Credit: câți lei din creditul clientului acoperă selecția (întâi înrolări).
+  // creditApplied e mereu clampat la min(dorit, disponibil, pool) → sigur chiar
+  // dacă inputul e stale. cashPool = restul de încasat Cash/Card.
+  const poolDisplay = partial.trim() ? Number(partial) || 0 : total
+  const creditWanted = useCreditOn ? Number(useCreditAmt) || 0 : 0
+  const creditApplied = round2(Math.min(creditWanted, credit, Math.max(poolDisplay, 0)))
+  const cashPool = round2(Math.max(poolDisplay - creditApplied, 0))
+
   const toggleEnroll = (r: VPlatiInrolari) => {
     if (!r.id_enrollment) return
     const key = String(r.id_enrollment)
@@ -207,6 +226,8 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
     setMetoda('Cash')
     setCash('')
     setCard('')
+    setUseCreditOn(false)
+    setUseCreditAmt('')
     setError(null)
   }
   const handleClose = () => {
@@ -230,48 +251,109 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
         if (partialNum > total) throw new Error('Suma parțială depășește totalul.')
       }
       const pool = partialNum != null ? partialNum : total
-      const tenders = resolveTenders({ metoda, total: pool, cash, card })
 
-      // Plătim ÎNTÂI înrolările (obligația recurentă), apoi datoriile one-off.
-      const enrollmentPay = round2(Math.min(pool, totalEnroll))
-      const datoriiPay = round2(pool - enrollmentPay)
-      const [enrollTenders, datTenders] = splitTenders(tenders, enrollmentPay)
+      // Împart pool-ul: întâi din credit (dacă activ), apoi Cash/Card. Ambele
+      // acoperă întâi înrolările, apoi datoriile one-off.
+      const creditUse = useCreditOn ? Number(useCreditAmt) || 0 : 0
+      const creditApply = round2(Math.min(creditUse, credit, pool))
+      const cashAmt = round2(pool - creditApply)
+      const creditEnroll = round2(Math.min(creditApply, totalEnroll))
+      const creditDat = round2(creditApply - creditEnroll)
 
-      if (enrollmentPay > 0.004 && checkedEnrollOrdered.length) {
-        await registerPlataFifo({
-          clientId,
-          enrollmentIds: checkedEnrollOrdered.map((r) => String(r.id_enrollment)),
-          remaining: checkedEnrollOrdered.map((r) => Number(r.rest ?? 0)),
-          partialAmount: enrollmentPay,
-          metoda: enrollTenders[0].metoda,
-          tenders: enrollTenders,
-          data: todayIso(),
-          locatieId,
-        })
+      // Cât credit alocăm pe fiecare rând bifat (FIFO), reținut pentru a reduce
+      // rest-ul trecut motorului Cash/Card.
+      const creditByEnroll = new Map<string, number>()
+      let remCredE = creditEnroll
+      for (const r of checkedEnrollOrdered) {
+        if (remCredE <= 0.004) break
+        const take = round2(Math.min(remCredE, Number(r.rest ?? 0)))
+        if (take <= 0.004) continue
+        creditByEnroll.set(String(r.id_enrollment), take)
+        remCredE = round2(remCredE - take)
+      }
+      const creditByDat = new Map<string, number>()
+      let remCredD = creditDat
+      for (const r of checkedDatRows) {
+        if (remCredD <= 0.004) break
+        const take = round2(Math.min(remCredD, Number(r.rest ?? 0)))
+        if (take <= 0.004) continue
+        creditByDat.set(String(r.id), take)
+        remCredD = round2(remCredD - take)
       }
 
-      if (datoriiPay > 0.004 && checkedDatRows.length) {
-        try {
-          await registerPlataDatoriiFifo({
+      // Faza 1 — alocă creditul pe fiecare țintă (RPC-ul acceptă o țintă/apel).
+      // Doar mută bani existenți: dacă Cash-ul de mai jos eșuează, ce s-a alocat
+      // aici rămâne valid (a redus datoria real).
+      for (const r of checkedEnrollOrdered) {
+        const amt = creditByEnroll.get(String(r.id_enrollment)) ?? 0
+        if (amt > 0.004) {
+          await useClientCredit({
             clientId,
-            datorii: checkedDatRows.map((r) => ({
-              id: String(r.id),
-              rest: Number(r.rest ?? 0),
-              categorie: (r.categorie ?? 'Taxa') as Enums<'categorie_incasare'>,
-              locatie: r.locatie ?? null,
-            })),
-            partialAmount: datoriiPay,
-            tenders: datTenders,
+            amount: amt,
+            action: 'allocate',
+            targetType: 'enrollment',
+            targetId: String(r.id_enrollment),
+          })
+        }
+      }
+      for (const r of checkedDatRows) {
+        const amt = creditByDat.get(String(r.id)) ?? 0
+        if (amt > 0.004) {
+          await useClientCredit({
+            clientId,
+            amount: amt,
+            action: 'allocate',
+            targetType: 'datorie',
+            targetId: String(r.id),
+          })
+        }
+      }
+
+      // Faza 2 — Cash/Card pe restul, cu rest-ul redus post-credit.
+      if (cashAmt > 0.004) {
+        const tenders = resolveTenders({ metoda, total: cashAmt, cash, card })
+        const enrollmentPay = round2(Math.min(cashAmt, round2(totalEnroll - creditEnroll)))
+        const datoriiPay = round2(cashAmt - enrollmentPay)
+        const [enrollTenders, datTenders] = splitTenders(tenders, enrollmentPay)
+
+        if (enrollmentPay > 0.004 && checkedEnrollOrdered.length) {
+          await registerPlataFifo({
+            clientId,
+            enrollmentIds: checkedEnrollOrdered.map((r) => String(r.id_enrollment)),
+            remaining: checkedEnrollOrdered.map((r) =>
+              round2(Number(r.rest ?? 0) - (creditByEnroll.get(String(r.id_enrollment)) ?? 0)),
+            ),
+            partialAmount: enrollmentPay,
+            metoda: enrollTenders[0].metoda,
+            tenders: enrollTenders,
             data: todayIso(),
             locatieId,
           })
-        } catch (e) {
-          if (enrollmentPay > 0.004) {
-            throw new Error(
-              'Abonamentele au fost încasate, dar datoriile NU — reîncearcă doar datoriile.',
-            )
+        }
+
+        if (datoriiPay > 0.004 && checkedDatRows.length) {
+          try {
+            await registerPlataDatoriiFifo({
+              clientId,
+              datorii: checkedDatRows.map((r) => ({
+                id: String(r.id),
+                rest: round2(Number(r.rest ?? 0) - (creditByDat.get(String(r.id)) ?? 0)),
+                categorie: (r.categorie ?? 'Taxa') as Enums<'categorie_incasare'>,
+                locatie: r.locatie ?? null,
+              })),
+              partialAmount: datoriiPay,
+              tenders: datTenders,
+              data: todayIso(),
+              locatieId,
+            })
+          } catch (e) {
+            if (enrollmentPay > 0.004 || creditApply > 0.004) {
+              throw new Error(
+                'Abonamentele/creditul au fost aplicate, dar datoriile NU — reîncearcă doar datoriile.',
+              )
+            }
+            throw e
           }
-          throw e
         }
       }
     },
@@ -281,6 +363,10 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
       void queryClient.invalidateQueries({ queryKey: ['datorii'] })
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      void queryClient.invalidateQueries({ queryKey: ['client-credit'] })
+      void queryClient.invalidateQueries({ queryKey: ['surplus-targets'] })
+      void queryClient.invalidateQueries({ queryKey: ['plati-inrolari'] })
+      void queryClient.invalidateQueries({ queryKey: ['client-inrolari-sezon'] })
       handleClose()
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
@@ -527,6 +613,43 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
               </div>
             )}
           </div>
+
+          {/* Credit în favoarea clientului — acoperă (parțial/total) selecția */}
+          {credit > 0 && (
+            <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900">
+              <label className="flex items-center gap-2 font-medium">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded accent-blue-600"
+                  checked={useCreditOn}
+                  onChange={(e) => {
+                    setUseCreditOn(e.target.checked)
+                    if (e.target.checked && !useCreditAmt) {
+                      setUseCreditAmt(String(round2(Math.min(credit, poolDisplay))))
+                    }
+                  }}
+                />
+                💳 Folosește din credit — disponibil {formatRON(credit)}
+              </label>
+              {useCreditOn && (
+                <div className="flex flex-wrap items-center gap-3 pl-6">
+                  <div className="w-40">
+                    <TextInput
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={useCreditAmt}
+                      onChange={(e) => setUseCreditAmt(e.target.value)}
+                    />
+                  </div>
+                  <span className="text-xs text-blue-800">
+                    Se acoperă {formatRON(creditApplied)} din credit; rest de încasat{' '}
+                    {formatRON(cashPool)}.
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -545,7 +668,7 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
         <MetodaPlataField
           metoda={metoda}
           onMetoda={setMetoda}
-          total={partial.trim() ? Number(partial) || 0 : total}
+          total={cashPool}
           cash={cash}
           card={card}
           onCash={setCash}
@@ -556,14 +679,24 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex items-center justify-end gap-2 border-t border-quasar-gray-light pt-3">
-        <div className="mr-auto flex items-center gap-3 text-sm">
-          <span className="text-quasar-gray">Total de plată:</span>
-          <span className="text-base font-bold text-quasar-black">{formatRON(total)}</span>
+        <div className="mr-auto flex flex-col gap-0.5 text-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-quasar-gray">Total de plată:</span>
+            <span className="text-base font-bold text-quasar-black">{formatRON(total)}</span>
+          </div>
+          {creditApplied > 0.004 && (
+            <span className="text-xs text-blue-800">
+              Din credit: {formatRON(creditApplied)} · De încasat: {formatRON(cashPool)}
+            </span>
+          )}
         </div>
         <Button variant="secondary" onClick={handleClose}>
           Anulează
         </Button>
-        <Button onClick={() => submit.mutate()} disabled={submit.isPending || total <= 0}>
+        <Button
+          onClick={() => submit.mutate()}
+          disabled={submit.isPending || (creditApplied <= 0.004 && cashPool <= 0.004)}
+        >
           {submit.isPending ? 'Se înregistrează…' : 'Înregistrează plată'}
         </Button>
       </div>
