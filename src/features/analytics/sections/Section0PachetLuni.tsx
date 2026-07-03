@@ -25,11 +25,11 @@ function GrupTitlu({ children }: { children: string }) {
 export function Section0PachetLuni({ scope }: { scope?: string | null }) {
   const pachetQ = useQuery({ queryKey: ['an', 'pachet-luni', scope], queryFn: () => getPachetLuni(scope), ...ANALYTICS_QO })
   const grupeQ = useQuery({ queryKey: ['an', 'prezenta-grupe'], queryFn: getPrezentaSaptamanaGrupe, ...ANALYTICS_QO })
-  const ocupareQ = useQuery({ queryKey: ['an', 'ocupare', null], queryFn: () => getGradOcupare(null), ...ANALYTICS_QO })
+  const ocupareQ = useQuery({ queryKey: ['an', 'ocupare', scope], queryFn: () => getGradOcupare(scope ?? null), ...ANALYTICS_QO })
 
   const p = pachetQ.data
-  // #9 Elevi activi și #1 Creștere netă respectă locația; restul cifrelor pachetului rămân „tot clubul".
-  const totClub = scope ? ' · tot clubul' : ''
+  // Cifrele pe leads (leads.locatia e text liber, ~93% null) afișează un caveat când se filtrează.
+  const leadNote = scope ? ' · doar leads cu locația setată' : ''
 
   const subPrag = (ocupareQ.data ?? []).filter((r) => !r.facultativ && r.activi < PRAG_RENTABILITATE)
   const lunaChurn = p?.churn.luna
@@ -90,7 +90,7 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
               deltaYoy={delta(p.churn.rata, p.churn.yoy)}
               deltaSuffix="pp"
               polaritateInversa
-              hint={`fără plată la 30 zile după scadență · țintă sub 4%${totClub}`}
+              hint="fără plată la 30 zile după scadență · țintă sub 4%"
             />
           </div>
 
@@ -101,14 +101,14 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
               value={p.leads_noi.curent ?? '—'}
               deltaPrev={delta(p.leads_noi.curent, p.leads_noi.prev)}
               deltaYoy={delta(p.leads_noi.curent, p.leads_noi.yoy)}
-              hint={`țintă 20-25/săpt${totClub}`}
+              hint={`țintă 20-25/săpt${leadNote}`}
             />
             <DeltaKpiCard
               label="Înscrieri noi (săpt.)"
               value={p.inscrieri_noi.curent ?? '—'}
               deltaPrev={delta(p.inscrieri_noi.curent, p.inscrieri_noi.prev)}
               deltaYoy={delta(p.inscrieri_noi.curent, p.inscrieri_noi.yoy)}
-              hint={`prima plată de abonament — bani intrați · țintă 6-7/săpt${totClub}`}
+              hint="prima plată de abonament — bani intrați · țintă 6-7/săpt"
             />
             <DeltaKpiCard
               label="Conversie lead→înscris"
@@ -121,7 +121,7 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
               deltaPrev={delta(p.conversie_30z.curent, p.conversie_30z.prev)}
               deltaYoy={delta(p.conversie_30z.curent, p.conversie_30z.yoy)}
               deltaSuffix="pp"
-              hint={`fereastră rulantă 30 zile · țintă 30-35%${totClub}`}
+              hint={`fereastră rulantă 30 zile · țintă 30-35%${leadNote}`}
             />
           </div>
 
@@ -137,7 +137,7 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
                 deltaPrev={delta(p.prezenta.curent, p.prezenta.prev)}
                 deltaYoy={delta(p.prezenta.curent, p.prezenta.yoy)}
                 deltaSuffix="pp"
-                hint={`țintă peste 80% · scade cu 3-6 săpt. înaintea retragerii${totClub}`}
+                hint="țintă peste 80% · scade cu 3-6 săpt. înaintea retragerii"
               />
               <details className="mt-1.5">
                 <summary className="cursor-pointer text-xs text-quasar-gray hover:text-quasar-black">
@@ -167,7 +167,7 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
                 label="Elevi în risc"
                 value={p.risc.elevi ?? '—'}
                 polaritateInversa
-                hint={`2+ absențe consecutive neanunțate · de contactat în 48h${totClub}`}
+                hint="2+ absențe consecutive neanunțate · de contactat în 48h"
               />
               <a href="#sec-risc" className="mt-1.5 inline-block text-xs text-quasar-gray underline hover:text-quasar-black">
                 Vezi lista în secțiunea 3 ↓
@@ -184,7 +184,7 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
               deltaPrev={delta(p.restante.suma, p.restante.prev)}
               deltaYoy={delta(p.restante.suma, p.restante.yoy)}
               polaritateInversa
-              hint={`țintă sub 5% din facturarea lunii${totClub}`}
+              hint="țintă sub 5% din facturarea lunii"
             />
             <div>
               <DeltaKpiCard
@@ -198,7 +198,7 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
                 deltaPrev={delta(p.umplere.media, p.umplere.prev)}
                 deltaYoy={null}
                 deltaSuffix="pp"
-                hint={`țintă 75%+ la orele de vârf${totClub}`}
+                hint="țintă 75%+ la orele de vârf"
               />
               {subPrag.length > 0 && (
                 <details className="mt-1.5">
