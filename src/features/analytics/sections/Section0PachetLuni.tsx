@@ -4,7 +4,7 @@ import { formatRON } from '@/lib/format'
 import { getGradOcupare } from '@/features/ansamblu/api'
 import { getPachetLuni, getPrezentaSaptamanaGrupe } from '../api'
 import { DeltaKpiCard } from '../DeltaKpiCard'
-import { ANALYTICS_QO, SectionTitle, TotClubulBadge } from './shared'
+import { ANALYTICS_QO, SectionTitle } from './shared'
 
 const PRAG_RENTABILITATE = 7
 
@@ -22,12 +22,14 @@ function GrupTitlu({ children }: { children: string }) {
   return <div className="mb-2 mt-4 text-xs font-bold uppercase tracking-wide text-quasar-gray first:mt-0">{children}</div>
 }
 
-export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
-  const pachetQ = useQuery({ queryKey: ['an', 'pachet-luni'], queryFn: getPachetLuni, ...ANALYTICS_QO })
+export function Section0PachetLuni({ scope }: { scope?: string | null }) {
+  const pachetQ = useQuery({ queryKey: ['an', 'pachet-luni', scope], queryFn: () => getPachetLuni(scope), ...ANALYTICS_QO })
   const grupeQ = useQuery({ queryKey: ['an', 'prezenta-grupe'], queryFn: getPrezentaSaptamanaGrupe, ...ANALYTICS_QO })
   const ocupareQ = useQuery({ queryKey: ['an', 'ocupare', null], queryFn: () => getGradOcupare(null), ...ANALYTICS_QO })
 
   const p = pachetQ.data
+  // #9 Elevi activi și #1 Creștere netă respectă locația; restul cifrelor pachetului rămân „tot clubul".
+  const totClub = scope ? ' · tot clubul' : ''
 
   const subPrag = (ocupareQ.data ?? []).filter((r) => !r.facultativ && r.activi < PRAG_RENTABILITATE)
   const lunaChurn = p?.churn.luna
@@ -37,7 +39,6 @@ export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
   return (
     <section>
       <SectionTitle
-        badge={scoped ? <TotClubulBadge /> : undefined}
         sub={
           p
             ? `Săptămâna încheiată ${dataScurta(p.saptamana.start)} – ${dataScurta(p.saptamana.end)} · fiecare cifră vs. săptămâna trecută și vs. anul trecut`
@@ -89,7 +90,7 @@ export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
               deltaYoy={delta(p.churn.rata, p.churn.yoy)}
               deltaSuffix="pp"
               polaritateInversa
-              hint="fără plată la 30 zile după scadență · țintă sub 4%"
+              hint={`fără plată la 30 zile după scadență · țintă sub 4%${totClub}`}
             />
           </div>
 
@@ -100,14 +101,14 @@ export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
               value={p.leads_noi.curent ?? '—'}
               deltaPrev={delta(p.leads_noi.curent, p.leads_noi.prev)}
               deltaYoy={delta(p.leads_noi.curent, p.leads_noi.yoy)}
-              hint="țintă 20-25/săpt"
+              hint={`țintă 20-25/săpt${totClub}`}
             />
             <DeltaKpiCard
               label="Înscrieri noi (săpt.)"
               value={p.inscrieri_noi.curent ?? '—'}
               deltaPrev={delta(p.inscrieri_noi.curent, p.inscrieri_noi.prev)}
               deltaYoy={delta(p.inscrieri_noi.curent, p.inscrieri_noi.yoy)}
-              hint="prima plată de abonament — bani intrați · țintă 6-7/săpt"
+              hint={`prima plată de abonament — bani intrați · țintă 6-7/săpt${totClub}`}
             />
             <DeltaKpiCard
               label="Conversie lead→înscris"
@@ -120,7 +121,7 @@ export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
               deltaPrev={delta(p.conversie_30z.curent, p.conversie_30z.prev)}
               deltaYoy={delta(p.conversie_30z.curent, p.conversie_30z.yoy)}
               deltaSuffix="pp"
-              hint="fereastră rulantă 30 zile · țintă 30-35%"
+              hint={`fereastră rulantă 30 zile · țintă 30-35%${totClub}`}
             />
           </div>
 
@@ -136,7 +137,7 @@ export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
                 deltaPrev={delta(p.prezenta.curent, p.prezenta.prev)}
                 deltaYoy={delta(p.prezenta.curent, p.prezenta.yoy)}
                 deltaSuffix="pp"
-                hint="țintă peste 80% · scade cu 3-6 săpt. înaintea retragerii"
+                hint={`țintă peste 80% · scade cu 3-6 săpt. înaintea retragerii${totClub}`}
               />
               <details className="mt-1.5">
                 <summary className="cursor-pointer text-xs text-quasar-gray hover:text-quasar-black">
@@ -166,7 +167,7 @@ export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
                 label="Elevi în risc"
                 value={p.risc.elevi ?? '—'}
                 polaritateInversa
-                hint="2+ absențe consecutive neanunțate · de contactat în 48h"
+                hint={`2+ absențe consecutive neanunțate · de contactat în 48h${totClub}`}
               />
               <a href="#sec-risc" className="mt-1.5 inline-block text-xs text-quasar-gray underline hover:text-quasar-black">
                 Vezi lista în secțiunea 3 ↓
@@ -183,7 +184,7 @@ export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
               deltaPrev={delta(p.restante.suma, p.restante.prev)}
               deltaYoy={delta(p.restante.suma, p.restante.yoy)}
               polaritateInversa
-              hint="țintă sub 5% din facturarea lunii"
+              hint={`țintă sub 5% din facturarea lunii${totClub}`}
             />
             <div>
               <DeltaKpiCard
@@ -197,7 +198,7 @@ export function Section0PachetLuni({ scoped = false }: { scoped?: boolean }) {
                 deltaPrev={delta(p.umplere.media, p.umplere.prev)}
                 deltaYoy={null}
                 deltaSuffix="pp"
-                hint="țintă 75%+ la orele de vârf"
+                hint={`țintă 75%+ la orele de vârf${totClub}`}
               />
               {subPrag.length > 0 && (
                 <details className="mt-1.5">

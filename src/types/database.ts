@@ -7704,7 +7704,7 @@ export type Database = {
       client_in_trupa: { Args: { p_client: string }; Returns: boolean }
       client_member_ids: { Args: never; Returns: string[] }
       clienti_activi_la: {
-        Args: { p_data?: string }
+        Args: { p_data?: string; p_locatie?: string }
         Returns: {
           client: string
         }[]
@@ -8152,7 +8152,7 @@ export type Database = {
           slot: string
         }[]
       }
-      get_pachet_luni: { Args: never; Returns: Json }
+      get_pachet_luni: { Args: { p_locatie?: string }; Returns: Json }
       get_participari_client: {
         Args: { p_client: string }
         Returns: {

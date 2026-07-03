@@ -34,8 +34,8 @@ function num(v: unknown): number | null {
   return v == null ? null : Number(v)
 }
 
-export async function getPachetLuni(): Promise<PachetLuni | null> {
-  const { data, error } = await supabase.rpc('get_pachet_luni')
+export async function getPachetLuni(locatieId?: string | null): Promise<PachetLuni | null> {
+  const { data, error } = await supabase.rpc('get_pachet_luni', { p_locatie: locatieId ?? undefined })
   if (error) throw error
   if (data == null) return null
   const j = data as Record<string, Record<string, unknown>>

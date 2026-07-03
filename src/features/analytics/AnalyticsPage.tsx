@@ -104,7 +104,7 @@ export function AnalyticsPage() {
 
       <div className="flex flex-col gap-10">
         {/* Secțiunea 0 — pachetul de luni (eager) */}
-        <Section0PachetLuni scoped={!!scope} />
+        <Section0PachetLuni scope={scope} />
 
         {/* KPI financiare pe intervalul din header */}
         <div className="grid grid-cols-2 gap-3">
