@@ -66,6 +66,8 @@ export async function getInrolariClientSezon(params: {
 // Restanțele de abonament dintr-un sezon ANTERIOR celui selectat (data_incepere <
 // sezonStart) care au rest > 0. Informativ + încasabil în modalul Plată nouă;
 // reziliatele (suma=0 ⇒ rest<=0) sunt excluse natural de filtrul rest>0.
+// Prescrisele (data_incepere > 2 ani) sunt excluse — context de colectare, ca în
+// worklist/SMS: nu le mai propunem la încasare.
 export async function getInrolariRestanteAnterioare(params: {
   clientId: string
   sezonStart: string | null
@@ -77,6 +79,7 @@ export async function getInrolariRestanteAnterioare(params: {
     .eq('id_cursant', params.clientId)
     .lt('data_incepere', params.sezonStart)
     .gt('rest', 0)
+    .eq('prescris', false)
     .order('data_incepere', { ascending: true })
   if (error) throw error
   return data ?? []
