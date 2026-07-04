@@ -61,6 +61,9 @@ export const ROUTE_ACCESS = {
   '/campanii': ALL_STAFF,
   '/reinscrieri': PRIVILEGED,
   '/contracte': PRIVILEGED,
+  // Editor vizual de template-uri — modifică structura legală a contractelor,
+  // mai restrâns decât trimiterea din /contracte (care include manager).
+  '/contracte/sabloane': ADMIN_OR_OWNER,
   '/oferta-publica': PRIVILEGED,
   '/setari': PRIVILEGED,
   '/opt-out': PRIVILEGED,

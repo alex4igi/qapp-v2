@@ -38,6 +38,10 @@ const StatisticiPage = lazy(() =>
 const AnsambluPage = lazy(() =>
   import('@/features/ansamblu/AnsambluPage').then((m) => ({ default: m.AnsambluPage })),
 )
+// Editorul de template-uri trage pdfjs-dist — code-split, nu intră în bundle-ul inițial.
+const TemplateEditorPage = lazy(() =>
+  import('@/features/contracte/TemplateEditorPage').then((m) => ({ default: m.TemplateEditorPage })),
+)
 import { VouchereListPage } from '@/features/vouchere/VouchereListPage'
 import { InventarListPage } from '@/features/inventar/InventarListPage'
 import { EvenimenteListPage } from '@/features/evenimente/EvenimenteListPage'
@@ -160,6 +164,16 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/contracte']} />}>
             <Route element={<AppLayout />}>
               <Route path="contracte" element={<ContracteListPage />} />
+              {/* Tab „Șabloane" trăiește în ContracteListPage; ruta separată există doar
+                  ca intrare directă (bookmark) — se auto-selectează tab-ul potrivit. */}
+              <Route path="contracte/sabloane" element={<ContracteListPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/contracte/sabloane']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="contracte/sabloane/nou" element={<TemplateEditorPage />} />
+              <Route path="contracte/sabloane/:id" element={<TemplateEditorPage />} />
             </Route>
           </Route>
 

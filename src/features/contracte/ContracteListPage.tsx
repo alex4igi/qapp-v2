@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Badge,
@@ -8,19 +9,24 @@ import {
   PageHeader,
   Select,
   Spinner,
+  Tabs,
   type Column,
 } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
+import { useAuth } from '@/hooks/useAuth'
+import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import {
   anuleazaContract,
   getContractEvents,
   getPdfSignedUrl,
   listContracte,
+  listDistinctTipuri,
   type ContractRow,
 } from './api'
 import { CONTRACT_STATUS_LABEL, CONTRACT_TIP_LABEL } from './constants'
 import { TrimiteContractModal } from './TrimiteContractModal'
 import { TrimiteBulkModal } from './TrimiteBulkModal'
+import { SabloaneTab } from './SabloaneTab'
 
 const EVENT_LABEL: Record<string, string> = {
   creat: 'Creat',
@@ -71,6 +77,13 @@ function EventsModal({ contract, onClose }: { contract: ContractRow; onClose: ()
 }
 
 export function ContracteListPage() {
+  const { role } = useAuth()
+  const canEditSabloane = isAdminOrHigher(role)
+  const location = useLocation()
+  const [activeTab, setActiveTab] = useState<'contracte' | 'sabloane'>(
+    location.pathname.startsWith('/contracte/sabloane') ? 'sabloane' : 'contracte',
+  )
+
   const queryClient = useQueryClient()
   const [status, setStatus] = useState('')
   const [tip, setTip] = useState('')
@@ -79,9 +92,15 @@ export function ContracteListPage() {
   const [eventsFor, setEventsFor] = useState<ContractRow | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
+  const { data: tipuriExistente = [] } = useQuery({
+    queryKey: ['contract-templates-tipuri'],
+    queryFn: listDistinctTipuri,
+  })
+
   const { data: rows, isLoading } = useQuery({
     queryKey: ['contracte', status, tip],
     queryFn: () => listContracte({ status: status || undefined, tip: tip || undefined }),
+    enabled: activeTab === 'contracte',
   })
 
   const anuleaza = useMutation({
@@ -182,43 +201,63 @@ export function ContracteListPage() {
         subtitle="Semnare electronică — trimitere, statusuri, arhivă"
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          placeholder="Toate statusurile"
-          options={Object.entries(CONTRACT_STATUS_LABEL).map(([value, v]) => ({
-            value,
-            label: v.label,
-          }))}
-          className="w-44"
+      {canEditSabloane && (
+        <Tabs
+          tabs={[
+            { id: 'contracte', label: 'Contracte' },
+            { id: 'sabloane', label: 'Șabloane' },
+          ]}
+          active={activeTab}
+          onChange={(id) => setActiveTab(id as 'contracte' | 'sabloane')}
         />
-        <Select
-          value={tip}
-          onChange={(e) => setTip(e.target.value)}
-          placeholder="Toate tipurile"
-          options={Object.entries(CONTRACT_TIP_LABEL).map(([value, label]) => ({ value, label }))}
-          className="w-52"
-        />
-        <div className="ml-auto flex gap-2">
-          <Button variant="secondary" onClick={() => setBulkOpen(true)}>
-            Bulk campanie
-          </Button>
-          <Button onClick={() => setSendOpen(true)}>Trimite contract</Button>
-        </div>
-      </div>
+      )}
 
-      {err && <p className="text-sm text-red-600">{err}</p>}
-
-      {isLoading ? (
-        <Spinner />
+      {activeTab === 'sabloane' && canEditSabloane ? (
+        <SabloaneTab />
       ) : (
-        <DataTable
-          columns={columns}
-          rows={rows ?? []}
-          rowKey={(r) => r.id}
-          emptyMessage="Niciun contract încă. Trimite primul cu butonul de mai sus."
-        />
+        <>
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              placeholder="Toate statusurile"
+              options={Object.entries(CONTRACT_STATUS_LABEL).map(([value, v]) => ({
+                value,
+                label: v.label,
+              }))}
+              className="w-44"
+            />
+            <Select
+              value={tip}
+              onChange={(e) => setTip(e.target.value)}
+              placeholder="Toate tipurile"
+              options={tipuriExistente.map((value) => ({
+                value,
+                label: CONTRACT_TIP_LABEL[value] ?? value,
+              }))}
+              className="w-52"
+            />
+            <div className="ml-auto flex gap-2">
+              <Button variant="secondary" onClick={() => setBulkOpen(true)}>
+                Bulk campanie
+              </Button>
+              <Button onClick={() => setSendOpen(true)}>Trimite contract</Button>
+            </div>
+          </div>
+
+          {err && <p className="text-sm text-red-600">{err}</p>}
+
+          {isLoading ? (
+            <Spinner />
+          ) : (
+            <DataTable
+              columns={columns}
+              rows={rows ?? []}
+              rowKey={(r) => r.id}
+              emptyMessage="Niciun contract încă. Trimite primul cu butonul de mai sus."
+            />
+          )}
+        </>
       )}
 
       {sendOpen && <TrimiteContractModal open onClose={() => setSendOpen(false)} />}

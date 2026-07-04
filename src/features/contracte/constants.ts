@@ -17,3 +17,23 @@ export const CONTRACT_TIP_LABEL: Record<string, string> = {
   tabara: 'Tabără',
   trupa: 'Trupă',
 }
+
+export const FIELD_TYPE_LABEL: Record<string, string> = {
+  text: 'Text',
+  date: 'Dată',
+  checkbox: 'Bifă',
+  signature: 'Semnătură',
+  copii_table: 'Tabel copii',
+}
+
+export const FIELD_SOURCE_LABEL: Record<string, string> = {
+  manual: 'Manual',
+  azi: 'Data de azi',
+  'familie.reprezentant': 'Nume reprezentant',
+  'familie.cnp': 'CNP reprezentant',
+  'familie.adresa': 'Adresă',
+  'familie.ci': 'Serie/nr. CI',
+  'familie.telefon': 'Telefon',
+  'familie.email': 'Email',
+  'copil.nume': 'Nume copil',
+}

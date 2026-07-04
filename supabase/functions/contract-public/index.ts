@@ -208,6 +208,14 @@ Deno.serve(async (req) => {
       for (const f of fields) {
         if (f.type === 'signature' || f.type === 'copii_table') continue
         const val = valori[f.key]
+        // checkbox: „obligatoriu" înseamnă bifat (=== true), nu doar „nu e gol" —
+        // altfel valoarea booleană `false` (nebifat) ar trece ca prezentă.
+        if (f.type === 'checkbox') {
+          if (f.required && val !== true) {
+            return json({ error: `Câmpul „${f.label}" trebuie bifat.` }, 400)
+          }
+          continue
+        }
         if (f.required && (val === undefined || val === null || String(val).trim() === '')) {
           return json({ error: `Câmpul „${f.label}" este obligatoriu.` }, 400)
         }

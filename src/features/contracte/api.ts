@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Tables } from '@/types/db'
+import type { Json } from '@/types/database'
+import type { TemplateField } from './types'
 
 export type ContractTemplate = Tables<'contract_templates'>
 export type Contract = Tables<'contracte'>
@@ -125,4 +127,179 @@ export async function getContractEvents(
 export async function getPdfSignedUrl(storagePath: string): Promise<string | null> {
   const { data } = await supabase.storage.from('contracte').createSignedUrl(storagePath, 300)
   return data?.signedUrl ?? null
+}
+
+// ============================================================
+// Editor vizual de template (Faza 3)
+// ============================================================
+
+export type TemplateWithSezon = ContractTemplate & {
+  sezoane: { numele_sezonului: string } | null
+}
+
+// Spre deosebire de listTemplates() (folosit de selectorul de trimitere,
+// doar activ=true), aici vrem TOATE — inclusiv drafturi/versiuni superseded.
+export async function listAllTemplatesForEditor(): Promise<TemplateWithSezon[]> {
+  const { data, error } = await supabase
+    .from('contract_templates')
+    .select('*, sezoane(numele_sezonului)')
+    .order('tip', { ascending: true })
+    .order('sezon', { ascending: true })
+    .order('versiune', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as unknown as TemplateWithSezon[]
+}
+
+// Tipurile existente în DB — nu mai e un enum fix, userul poate adăuga oricâte
+// vrea; le oferim ca sugestii (datalist) în loc de dropdown închis.
+export async function listDistinctTipuri(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('contract_templates')
+    .select('tip')
+    .order('tip', { ascending: true })
+  if (error) throw error
+  return Array.from(new Set((data ?? []).map((r) => r.tip)))
+}
+
+export async function getTemplate(id: string): Promise<TemplateWithSezon | null> {
+  const { data, error } = await supabase
+    .from('contract_templates')
+    .select('*, sezoane(numele_sezonului)')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return data as unknown as TemplateWithSezon | null
+}
+
+// Prima versiune liberă pentru o combinație tip+sezon. `sezonId` null trebuie
+// interogat cu `.is()`, nu `.eq()` — Postgres tratează NULL distinct în unique().
+export async function suggestNextVersiune(tip: string, sezonId: string | null): Promise<number> {
+  let q = supabase.from('contract_templates').select('versiune').eq('tip', tip)
+  q = sezonId ? q.eq('sezon', sezonId) : q.is('sezon', null)
+  const { data, error } = await q.order('versiune', { ascending: false }).limit(1)
+  if (error) throw error
+  return (data?.[0]?.versiune ?? 0) + 1
+}
+
+export type CreateTemplateDto = {
+  tip: string
+  sezon: string | null
+  nume: string
+  versiune: number
+  pdf_storage_path: string
+  fields: TemplateField[]
+  valabilitate_zile: number
+}
+
+export async function createTemplate(dto: CreateTemplateDto): Promise<string> {
+  const { data, error } = await supabase
+    .from('contract_templates')
+    .insert({ ...dto, fields: dto.fields as unknown as Json, activ: false })
+    .select('id')
+    .single()
+  if (error) throw error
+  return data.id
+}
+
+export async function updateTemplateFields(
+  id: string,
+  patch: { fields: TemplateField[]; pdf_storage_path?: string },
+): Promise<void> {
+  const { error } = await supabase
+    .from('contract_templates')
+    .update({ ...patch, fields: patch.fields as unknown as Json })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function updateTemplateMeta(
+  id: string,
+  patch: { nume?: string; valabilitate_zile?: number },
+): Promise<void> {
+  const { error } = await supabase.from('contract_templates').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function setTemplateActiv(id: string, activ: boolean): Promise<void> {
+  const { error } = await supabase.from('contract_templates').update({ activ }).eq('id', id)
+  if (error) throw error
+}
+
+// Clonează un template blocat într-un draft nou (versiune+1, inactiv, editabil)
+// și dezactivează sursa — altfel ar apărea dublu în selectorul de trimitere.
+export async function cloneTemplateToNewVersion(source: TemplateWithSezon): Promise<string> {
+  const nextVersiune = await suggestNextVersiune(source.tip, source.sezon)
+  const slug = source.sezoane?.numele_sezonului ?? null
+  const tip = source.tip
+  const toPath = `${tip}/${slug ? slugifyClientSide(slug) : 'fara-sezon'}-v${nextVersiune}.pdf`
+  await invokeTemplateStorage({ action: 'copy', fromPath: source.pdf_storage_path, toPath })
+  const { data, error } = await supabase
+    .from('contract_templates')
+    .insert({
+      tip,
+      sezon: source.sezon,
+      nume: source.nume,
+      versiune: nextVersiune,
+      pdf_storage_path: toPath,
+      fields: source.fields,
+      activ: false,
+      valabilitate_zile: source.valabilitate_zile,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+  await setTemplateActiv(source.id, false)
+  return data.id
+}
+
+// Slug identic cu cel din edge function (pentru a calcula path-ul de destinație
+// al clonării fără un round-trip suplimentar doar pentru asta).
+function slugifyClientSide(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+async function invokeTemplateStorage<T = unknown>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('contract-template-storage', { body })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return data as T
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      resolve(result.slice(result.indexOf(',') + 1))
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+export async function uploadTemplatePdf(params: {
+  tip: string
+  sezonNume: string | null
+  versiune: number
+  file: File
+}): Promise<string> {
+  const fileBase64 = await fileToBase64(params.file)
+  const { path } = await invokeTemplateStorage<{ path: string }>({
+    action: 'upload',
+    tip: params.tip,
+    sezonNume: params.sezonNume,
+    versiune: params.versiune,
+    fileBase64,
+  })
+  return path
+}
+
+export async function getTemplateFileSignedUrl(path: string): Promise<string> {
+  const { url } = await invokeTemplateStorage<{ url: string }>({ action: 'read-url', path })
+  return url
 }
