@@ -12,7 +12,9 @@ import {
 } from '@/components/ui'
 import { sexOptions } from '@/lib/enums'
 import type { Lead, InsertDto } from '@/types/db'
-import { createClient } from '@/features/clienti/api'
+import { createClient, updateClient, getClientFamilia } from '@/features/clienti/api'
+import { createFamilie } from '@/features/familii/api'
+import { TrimiteContractModal } from '@/features/contracte/TrimiteContractModal'
 import {
   findMatchingClient,
   attachClientToLead,
@@ -32,7 +34,12 @@ type Props = {
   onConverted: (result: ConversieResult) => void
 }
 
-type MatchedClient = { id: string; nume: string; prenume: string | null }
+type MatchedClient = {
+  id: string
+  nume: string
+  prenume: string | null
+  familia: string | null
+}
 
 export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
   const queryClient = useQueryClient()
@@ -48,6 +55,15 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
   const [cursId, setCursId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Pasul 2 (după ce clientul a fost creat/legat): ce facem cu contractul.
+  const [conversionResult, setConversionResult] = useState<ConversieResult | null>(null)
+  const [showManualLink, setShowManualLink] = useState(false)
+  const [manualLink, setManualLink] = useState('')
+  const [preparingContract, setPreparingContract] = useState(false)
+  const [contractFamilie, setContractFamilie] = useState<{ id: string; nume: string } | null>(
+    null,
+  )
+
   useEffect(() => {
     if (!open || !lead) return
     setNume(lead.nume)
@@ -61,6 +77,11 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     setUseMerge(false)
     setCursId(null)
     setError(null)
+    setConversionResult(null)
+    setShowManualLink(false)
+    setManualLink('')
+    setPreparingContract(false)
+    setContractFamilie(null)
     // detecție duplicat + cursul programat
     void findMatchingClient(lead.telefon, lead.email).then((m) => {
       setMatched(m)
@@ -94,11 +115,61 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
       void queryClient.invalidateQueries({ queryKey: ['lookup', 'clienti'] })
-      onConverted(result)
+      setConversionResult(result)
+      setManualLink(linkContract)
     },
     onError: (e: unknown) =>
       setError(humanizeError(e, 'Eroare la conversie.')),
   })
+
+  const saveLinkMut = useMutation({
+    mutationFn: async () => {
+      if (!conversionResult) return
+      const trimmed = manualLink.trim()
+      if (trimmed) await updateClient(conversionResult.clientId, { link_contract: trimmed })
+    },
+    onSuccess: finish,
+    onError: (e: unknown) => setError(humanizeError(e, 'Nu am putut salva linkul.')),
+  })
+
+  function finish() {
+    if (!conversionResult) return
+    onConverted(conversionResult)
+    onClose()
+  }
+
+  async function handleTrimiteContract() {
+    if (!conversionResult) return
+    setError(null)
+    setPreparingContract(true)
+    try {
+      let familie: { id: string; nume: string }
+      if (useMerge && matched?.familia) {
+        const fam = await getClientFamilia(matched.familia)
+        if (!fam) throw new Error('Familia clientului nu a putut fi găsită.')
+        familie = { id: fam.id, nume: fam.nume_familie }
+      } else {
+        const displayNume = useMerge && matched ? matched.nume : nume.trim()
+        const displayPrenume = useMerge && matched ? (matched.prenume ?? '') : prenume.trim()
+        const fam = await createFamilie({
+          nume_familie: `${displayPrenume} ${displayNume}`.trim(),
+          nume_reprezentant: displayNume || null,
+          prenume_reprezentant: displayPrenume || null,
+          telefon: telefon.trim() || null,
+          email: email.trim() || null,
+        })
+        await updateClient(conversionResult.clientId, { familia: fam.id })
+        void queryClient.invalidateQueries({ queryKey: ['lookup', 'familii'] })
+        void queryClient.invalidateQueries({ queryKey: ['familii'] })
+        familie = { id: fam.id, nume: fam.nume_familie }
+      }
+      setContractFamilie(familie)
+    } catch (e) {
+      setError(humanizeError(e, 'Nu am putut pregăti familia pentru contract.'))
+    } finally {
+      setPreparingContract(false)
+    }
+  }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -111,119 +182,178 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
   }
 
   return (
-    <Modal
-      open={open}
-      title="Finalizare înscriere"
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Anulează
-          </Button>
-          <Button
-            type="submit"
-            form="conversie-form"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending
-              ? 'Se salvează…'
-              : useMerge
-                ? 'Leagă și continuă la înrolare'
-                : 'Creează client și continuă'}
-          </Button>
-        </>
-      }
-    >
-      <form id="conversie-form" onSubmit={handleSubmit} className="space-y-3">
-        {matched && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            <p>
-              Există deja un client cu acest telefon/email:{' '}
-              <strong>
-                {[matched.prenume, matched.nume].filter(Boolean).join(' ')}
-              </strong>
-              .
+    <>
+      <Modal
+        open={open}
+        title={conversionResult ? 'Client salvat — contract' : 'Finalizare înscriere'}
+        onClose={onClose}
+        footer={
+          conversionResult ? (
+            <Button variant="ghost" onClick={finish}>
+              Sări peste
+            </Button>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={onClose}>
+                Anulează
+              </Button>
+              <Button
+                type="submit"
+                form="conversie-form"
+                disabled={mutation.isPending}
+              >
+                {mutation.isPending
+                  ? 'Se salvează…'
+                  : useMerge
+                    ? 'Leagă și continuă la înrolare'
+                    : 'Creează client și continuă'}
+              </Button>
+            </>
+          )
+        }
+      >
+        {conversionResult ? (
+          <div className="space-y-3">
+            <p className="text-sm text-quasar-gray">
+              Clientul a fost salvat. Vrei să trimiți acum un contract la semnat?
             </p>
-            <Checkbox
-              id="conv-merge"
-              label="Leagă lead-ul de clientul existent (nu crea unul nou)"
-              checked={useMerge}
-              onChange={(e) => setUseMerge(e.target.checked)}
-            />
+
+            <div className="flex flex-col gap-2">
+              <Button onClick={handleTrimiteContract} disabled={preparingContract}>
+                {preparingContract ? 'Se pregătește…' : 'Trimite contract prin Contracte'}
+              </Button>
+
+              {!showManualLink ? (
+                <Button variant="secondary" onClick={() => setShowManualLink(true)}>
+                  Am deja un link (adaugă manual)
+                </Button>
+              ) : (
+                <div className="space-y-2 rounded-md border border-quasar-gray/30 p-3">
+                  <Field label="Link contract" htmlFor="conv-manual-link">
+                    <TextInput
+                      id="conv-manual-link"
+                      value={manualLink}
+                      onChange={(e) => setManualLink(e.target.value)}
+                      placeholder="Link esemneaza.ro / drive…"
+                    />
+                  </Field>
+                  <Button
+                    onClick={() => saveLinkMut.mutate()}
+                    disabled={saveLinkMut.isPending}
+                  >
+                    {saveLinkMut.isPending ? 'Se salvează…' : 'Salvează și continuă'}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
           </div>
+        ) : (
+          <form id="conversie-form" onSubmit={handleSubmit} className="space-y-3">
+            {matched && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <p>
+                  Există deja un client cu acest telefon/email:{' '}
+                  <strong>
+                    {[matched.prenume, matched.nume].filter(Boolean).join(' ')}
+                  </strong>
+                  .
+                </p>
+                <Checkbox
+                  id="conv-merge"
+                  label="Leagă lead-ul de clientul existent (nu crea unul nou)"
+                  checked={useMerge}
+                  onChange={(e) => setUseMerge(e.target.checked)}
+                />
+              </div>
+            )}
+
+            {!useMerge && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Prenume" htmlFor="conv-prenume">
+                    <TextInput
+                      id="conv-prenume"
+                      value={prenume}
+                      onChange={(e) => setPrenume(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Nume" required htmlFor="conv-nume">
+                    <TextInput
+                      id="conv-nume"
+                      value={nume}
+                      onChange={(e) => setNume(e.target.value)}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Telefon" htmlFor="conv-telefon">
+                    <TextInput
+                      id="conv-telefon"
+                      value={telefon}
+                      onChange={(e) => setTelefon(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Email" htmlFor="conv-email">
+                    <TextInput
+                      id="conv-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Data nașterii" htmlFor="conv-nastere">
+                    <DateInput
+                      id="conv-nastere"
+                      value={dataNasterii}
+                      onChange={(e) => setDataNasterii(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Sex" htmlFor="conv-sex">
+                    <Select
+                      id="conv-sex"
+                      placeholder="— selectează —"
+                      options={sexOptions}
+                      value={sexul}
+                      onChange={(e) => setSexul(e.target.value)}
+                    />
+                  </Field>
+                </div>
+                <Field label="Link contract" htmlFor="conv-contract">
+                  <TextInput
+                    id="conv-contract"
+                    value={linkContract}
+                    onChange={(e) => setLinkContract(e.target.value)}
+                    placeholder="Link esemneaza.ro / drive…"
+                  />
+                </Field>
+              </>
+            )}
+
+            <p className="text-xs text-quasar-gray">
+              După salvare se deschide automat formularul de înrolare
+              {cursId ? ', precompletat cu cursul programat' : ''}.
+            </p>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+          </form>
         )}
+      </Modal>
 
-        {!useMerge && (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Prenume" htmlFor="conv-prenume">
-                <TextInput
-                  id="conv-prenume"
-                  value={prenume}
-                  onChange={(e) => setPrenume(e.target.value)}
-                />
-              </Field>
-              <Field label="Nume" required htmlFor="conv-nume">
-                <TextInput
-                  id="conv-nume"
-                  value={nume}
-                  onChange={(e) => setNume(e.target.value)}
-                />
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Telefon" htmlFor="conv-telefon">
-                <TextInput
-                  id="conv-telefon"
-                  value={telefon}
-                  onChange={(e) => setTelefon(e.target.value)}
-                />
-              </Field>
-              <Field label="Email" htmlFor="conv-email">
-                <TextInput
-                  id="conv-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Data nașterii" htmlFor="conv-nastere">
-                <DateInput
-                  id="conv-nastere"
-                  value={dataNasterii}
-                  onChange={(e) => setDataNasterii(e.target.value)}
-                />
-              </Field>
-              <Field label="Sex" htmlFor="conv-sex">
-                <Select
-                  id="conv-sex"
-                  placeholder="— selectează —"
-                  options={sexOptions}
-                  value={sexul}
-                  onChange={(e) => setSexul(e.target.value)}
-                />
-              </Field>
-            </div>
-            <Field label="Link contract" htmlFor="conv-contract">
-              <TextInput
-                id="conv-contract"
-                value={linkContract}
-                onChange={(e) => setLinkContract(e.target.value)}
-                placeholder="Link esemneaza.ro / drive…"
-              />
-            </Field>
-          </>
-        )}
-
-        <p className="text-xs text-quasar-gray">
-          După salvare se deschide automat formularul de înrolare
-          {cursId ? ', precompletat cu cursul programat' : ''}.
-        </p>
-
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </form>
-    </Modal>
+      {contractFamilie && (
+        <TrimiteContractModal
+          open
+          familieId={contractFamilie.id}
+          familieNume={contractFamilie.nume}
+          onClose={() => {
+            setContractFamilie(null)
+            finish()
+          }}
+        />
+      )}
+    </>
   )
 }

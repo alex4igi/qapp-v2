@@ -489,14 +489,19 @@ export async function enqueueConfirmareProgramare(
 export async function findMatchingClient(
   telefon: string | null,
   email: string | null,
-): Promise<{ id: string; nume: string; prenume: string | null } | null> {
+): Promise<{
+  id: string
+  nume: string
+  prenume: string | null
+  familia: string | null
+} | null> {
   const filters: string[] = []
   if (telefon?.trim()) filters.push(`telefon.eq.${normalizeTelefon(telefon)}`)
   if (email?.trim()) filters.push(`email.eq.${email.trim()}`)
   if (!filters.length) return null
   const { data, error } = await supabase
     .from('clienti')
-    .select('id, nume, prenume')
+    .select('id, nume, prenume, familia')
     .or(filters.join(','))
     .limit(1)
     .maybeSingle()
