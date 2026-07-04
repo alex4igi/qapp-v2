@@ -66,7 +66,17 @@ export function ConcursuriListPage() {
         title="Concursuri"
         subtitle={data ? `${data.total} concursuri` : undefined}
         actions={
-          <Button onClick={() => setFormOpen(true)}>+ Concurs nou</Button>
+          <div className="flex gap-2">
+            <a
+              href="https://alex4igi.github.io/QDF/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-[10px] border border-line bg-card px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface"
+            >
+              🏆 Platformă jurizare ↗
+            </a>
+            <Button onClick={() => setFormOpen(true)}>+ Concurs nou</Button>
+          </div>
         }
       />
 
