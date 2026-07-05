@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
+import { fetchAllRows } from '@/lib/fetchAll'
 
 export type DashboardEvent = {
   id: string
@@ -30,15 +31,18 @@ export async function getDashboardEvents(
   if (events.length === 0) return []
 
   const ids = events.map((e) => e.id)
-  const { data: incRows, error: incErr } = await supabase
-    .from('incasari')
-    .select('bilet, client, lead')
-    .in('bilet', ids)
-  if (incErr) throw incErr
+  // Paginat: evenimente cu multe bilete ar trunchia numărătoarea de persoane.
+  const incRows = await fetchAllRows(() =>
+    supabase
+      .from('incasari')
+      .select('bilet, client, lead, id')
+      .in('bilet', ids)
+      .order('id', { ascending: true }),
+  )
 
   // Persoane distincte per eveniment din încasări (client sau lead).
   const buyersByEvent = new Map<string, Set<string>>()
-  for (const r of incRows ?? []) {
+  for (const r of incRows) {
     if (!r.bilet) continue
     const key = r.client ?? r.lead
     if (!key) continue

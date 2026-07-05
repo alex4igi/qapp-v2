@@ -16,6 +16,7 @@ import { downloadCsv } from '@/lib/csv'
 import { categorieCheltuialaOptions } from '@/lib/enums'
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
+import { fetchAllRows } from '@/lib/fetchAll'
 import type { Cheltuiala } from '@/types/db'
 import { CheltuialaForm } from '@/features/cheltuieli/CheltuialaForm'
 
@@ -61,16 +62,12 @@ async function listCheltuieliExt(f: Filtre): Promise<{
   const { data, error, count } = await paginated
   if (error) throw error
 
-  // Sume agregate pe tot filtrul (separate query)
-  const { data: aggRows, error: aggErr } = await build().select(
-    'valoare, achitat',
+  // Sume agregate pe tot filtrul (paginat — peste max_rows sumele ar fi trunchiate)
+  const aggRows = await fetchAllRows(() =>
+    build().select('valoare, achitat, id').order('id', { ascending: true }),
   )
-  if (aggErr) throw aggErr
-  const sumTotal = (aggRows ?? []).reduce(
-    (a, r) => a + Number(r.valoare ?? 0),
-    0,
-  )
-  const sumAchitat = (aggRows ?? [])
+  const sumTotal = aggRows.reduce((a, r) => a + Number(r.valoare ?? 0), 0)
+  const sumAchitat = aggRows
     .filter((r) => r.achitat)
     .reduce((a, r) => a + Number(r.valoare ?? 0), 0)
   const sumNeachitat = sumTotal - sumAchitat
@@ -86,20 +83,19 @@ async function listCheltuieliExt(f: Filtre): Promise<{
 
 // Export: toate cheltuielile filtrate (fără paginare) pentru CSV cu total real.
 async function exportCheltuieli(f: Omit<Filtre, 'page'>): Promise<Cheltuiala[]> {
-  let q = supabase.from('cheltuieli').select('*')
-  q = applyWordSearch(q, f.search, ['nume', 'descriere'])
-  if (f.from) q = q.gte('data', f.from)
-  if (f.to) q = q.lte('data', f.to)
-  if (f.categorie)
-    q = q.eq('categorie', f.categorie as 'Administrativa' | 'Salariala' | 'Alta')
-  if (f.achitat === 'da') q = q.eq('achitat', true)
-  if (f.achitat === 'nu') q = q.eq('achitat', false)
-  const { data, error } = await q.order('data', {
-    ascending: false,
-    nullsFirst: false,
+  return fetchAllRows(() => {
+    let q = supabase.from('cheltuieli').select('*')
+    q = applyWordSearch(q, f.search, ['nume', 'descriere'])
+    if (f.from) q = q.gte('data', f.from)
+    if (f.to) q = q.lte('data', f.to)
+    if (f.categorie)
+      q = q.eq('categorie', f.categorie as 'Administrativa' | 'Salariala' | 'Alta')
+    if (f.achitat === 'da') q = q.eq('achitat', true)
+    if (f.achitat === 'nu') q = q.eq('achitat', false)
+    return q
+      .order('data', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: true })
   })
-  if (error) throw error
-  return data ?? []
 }
 
 const columns: Column<Cheltuiala>[] = [

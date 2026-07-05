@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
 import type { Eveniment, InsertDto, UpdateDto } from '@/types/db'
+import { fetchAllRows } from '@/lib/fetchAll'
 
 export const PAGE_SIZE = 25
 
@@ -151,16 +152,19 @@ export async function getEvenimentRoster(
   if (evRes.error) throw evRes.error
   const ev = evRes.data
 
-  const incRes = await supabase
-    .from('incasari')
-    .select('client, lead, suma')
-    .eq('bilet', evenimentId)
-  if (incRes.error) throw incRes.error
+  // Paginat: un eveniment mare (1000+ încasări de bilete) ar trunchia lista.
+  const incRows = await fetchAllRows(() =>
+    supabase
+      .from('incasari')
+      .select('client, lead, suma, id')
+      .eq('bilet', evenimentId)
+      .order('id', { ascending: true }),
+  )
 
   // Sumă plătită per persoană (client sau lead).
   const platitByPerson = new Map<string, number>()
   const leadIds = new Set<string>()
-  for (const r of incRes.data ?? []) {
+  for (const r of incRows) {
     const key = r.client ?? r.lead
     if (!key) continue
     if (r.lead && !r.client) leadIds.add(r.lead)
@@ -168,7 +172,7 @@ export async function getEvenimentRoster(
   }
 
   const clientIds = new Set<string>(ev.participant ?? [])
-  for (const r of incRes.data ?? []) {
+  for (const r of incRows) {
     if (r.client) clientIds.add(r.client)
   }
 

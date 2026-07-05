@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 
 export type OptOutEntity = 'client' | 'lead' | 'familie'
 
@@ -37,10 +38,14 @@ export type OptOutListRow = {
 }
 
 export async function fetchOptOutList(): Promise<OptOutListRow[]> {
-  const { data, error } = await supabase
-    .from('opt_out_list')
-    .select('entity, id, nume_complet, email, telefon, motiv, opt_out_la')
-    .order('opt_out_la', { ascending: false })
-  if (error) throw error
-  return (data ?? []) as OptOutListRow[]
+  // Paginat: view-ul crește nelimitat (clienți + leaduri); fără paginare lista
+  // s-ar opri silențios la 1000.
+  const data = await fetchAllRows(() =>
+    supabase
+      .from('opt_out_list')
+      .select('entity, id, nume_complet, email, telefon, motiv, opt_out_la')
+      .order('opt_out_la', { ascending: false })
+      .order('id', { ascending: true }),
+  )
+  return data as OptOutListRow[]
 }

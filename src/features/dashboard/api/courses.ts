@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { endOfMonth } from '@/features/plati/api/calendar'
 import { sezonActivId } from '@/lib/lookups'
 import { dayOfWeekRO } from './helpers'
+import { fetchAllRows } from '@/lib/fetchAll'
 
 export type DashboardCourse = {
   id: string
@@ -126,13 +127,16 @@ export async function getDashboardCourses(params: {
   for (const [c, set] of clientsByCurs) enrolledByCurs.set(c, set.size)
 
   // Prezenti azi per course (join through enrollments → cursul)
-  const { data: prez, error: prezErr } = await supabase
-    .from('prezente')
-    .select('enrollment:enrollments(cursul)')
-    .eq('data', params.date)
-    .eq('status', 'Prezent')
-  if (prezErr) throw prezErr
-  const prezRows = (prez ?? []) as unknown as Array<{
+  // Paginat: peste 1000 de prezențe într-o zi (toate cursurile) ar strica numărătoarea.
+  const prez = await fetchAllRows(() =>
+    supabase
+      .from('prezente')
+      .select('enrollment:enrollments(cursul), id')
+      .eq('data', params.date)
+      .eq('status', 'Prezent')
+      .order('id', { ascending: true }),
+  )
+  const prezRows = prez as unknown as Array<{
     enrollment: { cursul: string } | null
   }>
   const prezByCurs = new Map<string, number>()
