@@ -6,6 +6,8 @@ import { OpenClassTab } from './OpenClassTab'
 import { InchiriereTab, type DefaultInchiriere } from './InchiriereTab'
 import { TipSelector } from './TipSelector'
 import type { TipPlata } from './helpers'
+import type { MetodaSel } from './MetodaPlataField'
+import type { FacturaLinie } from '@/features/facturare/types'
 
 type Props = {
   open: boolean
@@ -15,6 +17,9 @@ type Props = {
   defaultTip?: TipPlata
   defaultBiletId?: string
   defaultInchiriere?: DefaultInchiriere
+  defaultSuma?: number
+  defaultMetoda?: MetodaSel
+  onRecorded?: (linii: FacturaLinie[]) => void
 }
 
 export function PlataNouaModal({
@@ -25,6 +30,9 @@ export function PlataNouaModal({
   defaultTip,
   defaultBiletId,
   defaultInchiriere,
+  defaultSuma,
+  defaultMetoda,
+  onRecorded,
 }: Props) {
   const [tip, setTip] = useState<TipPlata>(defaultTip ?? 'Abonament')
 
@@ -42,6 +50,9 @@ export function PlataNouaModal({
           onClose={onClose}
           onAddInrolare={onAddInrolare}
           defaultClientId={defaultClientId}
+          defaultSuma={defaultSuma}
+          defaultMetoda={defaultMetoda}
+          onRecorded={onRecorded}
         />
       ) : tip === 'Open' ? (
         <OpenClassTab onClose={onClose} defaultClientId={defaultClientId} />

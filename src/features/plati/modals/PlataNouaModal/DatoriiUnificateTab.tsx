@@ -23,11 +23,16 @@ import {
   type MetodaSel,
   type Tender,
 } from './MetodaPlataField'
+import { articolDatorie, articolInrolare } from '@/features/facturare/articolResolver'
+import type { FacturaLinie } from '@/features/facturare/types'
 
 type Props = {
   onClose: () => void
   onAddInrolare?: (clientId: string) => void
   defaultClientId?: string
+  defaultSuma?: number
+  defaultMetoda?: MetodaSel
+  onRecorded?: (linii: FacturaLinie[]) => void
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
@@ -56,15 +61,22 @@ function splitTenders(tenders: Tender[], firstAmount: number): [Tender[], Tender
 // Tab unificat de colectare a datoriilor: la selectarea clientului arată TOT ce are
 // de plată — rate înrolări (FIFO pe curs, pe sezon) + datorii one-off (bilet / merch /
 // taxă / închiriere). Bifezi din ambele, opțional parțial, o singură încasare.
-export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }: Props) {
+export function DatoriiUnificateTab({
+  onClose,
+  onAddInrolare,
+  defaultClientId,
+  defaultSuma,
+  defaultMetoda,
+  onRecorded,
+}: Props) {
   const queryClient = useQueryClient()
   const { locatieId, locatieNume } = useWorkingLocatie()
   const [clientId, setClientId] = useState(defaultClientId ?? '')
   const [sezonId, setSezonId] = useState('')
   const [checkedEnroll, setCheckedEnroll] = useState<Set<string>>(new Set())
   const [checkedDat, setCheckedDat] = useState<Set<string>>(new Set())
-  const [partial, setPartial] = useState('')
-  const [metoda, setMetoda] = useState<MetodaSel>('Cash')
+  const [partial, setPartial] = useState(defaultSuma ? String(defaultSuma) : '')
+  const [metoda, setMetoda] = useState<MetodaSel>(defaultMetoda ?? 'Cash')
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
   const [useCreditOn, setUseCreditOn] = useState(false)
@@ -252,6 +264,25 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
       }
       const pool = partialNum != null ? partialNum : total
 
+      // Linii pentru factură (FGO): alocarea pool-ului pe itemele bifate, în ordine
+      // FIFO (întâi înrolări, apoi datorii), fiecare → { articol derivat, suma alocată }.
+      const linii: FacturaLinie[] = []
+      let remLine = pool
+      for (const r of checkedEnrollOrdered) {
+        if (remLine <= 0.004) break
+        const s = round2(Math.min(Number(r.rest ?? 0), remLine))
+        if (s <= 0.004) continue
+        linii.push({ articol: articolInrolare(r), suma: s })
+        remLine = round2(remLine - s)
+      }
+      for (const r of checkedDatRows) {
+        if (remLine <= 0.004) break
+        const s = round2(Math.min(Number(r.rest ?? 0), remLine))
+        if (s <= 0.004) continue
+        linii.push({ articol: articolDatorie(r), suma: s })
+        remLine = round2(remLine - s)
+      }
+
       // Împart pool-ul: întâi din credit (dacă activ), apoi Cash/Card. Ambele
       // acoperă întâi înrolările, apoi datoriile one-off.
       const creditUse = useCreditOn ? Number(useCreditAmt) || 0 : 0
@@ -356,8 +387,10 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
           }
         }
       }
+
+      return { linii }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari-ant'] })
       void queryClient.invalidateQueries({ queryKey: ['datorii'] })
@@ -367,6 +400,7 @@ export function DatoriiUnificateTab({ onClose, onAddInrolare, defaultClientId }:
       void queryClient.invalidateQueries({ queryKey: ['surplus-targets'] })
       void queryClient.invalidateQueries({ queryKey: ['plati-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['client-inrolari-sezon'] })
+      onRecorded?.(data.linii)
       handleClose()
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),

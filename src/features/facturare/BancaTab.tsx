@@ -4,22 +4,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, DataTable, Spinner, type Column } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
+import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { ClientMatcher } from './ClientMatcher'
+import { FacturaDialog } from './FacturaDialog'
 import {
-  emiteFacturi,
   ignoraFacturi,
   ingestExtras,
-  listFacturi,
+  listBancaIstoric,
+  listBancaWorklist,
   marcheazaFacturi,
-  type EmitItem,
-  type MarkItem,
+  salveazaPlataBanca,
 } from './api'
-import type { EmitResult, FacturaRow, MatchSuggestion } from './types'
+import type { FacturaLinie, FacturaRow, MatchSuggestion } from './types'
 
 const fmt = (n: number) =>
   n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-type RowState = { selected: boolean; descriere: string; match: MatchSuggestion | null }
+const isFacturat = (r: FacturaRow) => r.status === 'Emisa' || r.status === 'Marcata'
 
 async function readCsv(file: File): Promise<string> {
   const buf = await file.arrayBuffer()
@@ -34,41 +35,41 @@ export function BancaTab() {
   const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const [rowState, setRowState] = useState<Record<string, RowState>>({})
+  const [matches, setMatches] = useState<Record<string, MatchSuggestion | null>>({})
   const [error, setError] = useState<string | null>(null)
-  const [report, setReport] = useState<EmitResult[] | null>(null)
+  const [plataFor, setPlataFor] = useState<{ ref: string; clientId?: string; suma: number } | null>(
+    null,
+  )
+  const [facturaFor, setFacturaFor] = useState<{ row: FacturaRow; match: MatchSuggestion | null } | null>(
+    null,
+  )
 
   const pending = useQuery({
-    queryKey: ['facturi-fgo', 'banca', 'pending'],
-    queryFn: () => listFacturi('banca', ['Pending']),
+    queryKey: ['facturi-fgo', 'banca', 'worklist'],
+    queryFn: () => listBancaWorklist(),
   })
   const recent = useQuery({
-    queryKey: ['facturi-fgo', 'banca', 'recent'],
-    queryFn: () => listFacturi('banca', ['Emisa', 'Marcata', 'Eroare', 'Ignorata']),
+    queryKey: ['facturi-fgo', 'banca', 'istoric'],
+    queryFn: () => listBancaIstoric(),
   })
 
   const rows = pending.data ?? []
-  const st = (r: FacturaRow): RowState =>
-    rowState[r.ref] ?? { selected: !r.client_id, descriere: r.descriere ?? '', match: null }
+  const matchOf = (r: FacturaRow): MatchSuggestion | null => matches[r.ref] ?? null
 
-  const patch = (ref: string, p: Partial<RowState>) =>
-    setRowState((prev) => ({
-      ...prev,
-      [ref]: { ...(prev[ref] ?? { selected: true, descriere: '', match: null }), ...p },
-    }))
+  const invalidate = () =>
+    void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
 
   const ingest = useMutation({
     mutationFn: async (csv: string) => ingestExtras(csv),
     onSuccess: () => {
       setError(null)
-      void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
+      invalidate()
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la încărcare.')),
   })
 
   const onFile = async (file: File) => {
     setError(null)
-    setReport(null)
     try {
       const csv = await readCsv(file)
       ingest.mutate(csv)
@@ -78,94 +79,36 @@ export function BancaTab() {
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const selectedRows = rows.filter((r) => st(r).selected)
-
-  const emit = useMutation({
-    mutationFn: async () => {
-      const byFirma = new Map<string, EmitItem[]>()
-      for (const r of selectedRows) {
-        const s = st(r)
-        const list = byFirma.get(r.firma_cui) ?? []
-        list.push({
-          ref: r.ref,
-          client_nume: r.client_nume,
-          suma: r.suma,
-          data: r.data_tranzactie,
-          descriere: s.descriere || r.descriere || '',
-          valuta: r.valuta,
-          client_id: s.match?.tip === 'client' ? s.match.id : null,
-          familia_id:
-            s.match?.tip === 'familie' ? s.match.id : s.match?.familia_id ?? null,
-        })
-        byFirma.set(r.firma_cui, list)
-      }
-      const all: EmitResult[] = []
-      for (const [cui, items] of byFirma) {
-        const res = await emiteFacturi(cui, items)
-        all.push(...res.results)
-      }
-      return all
-    },
-    onSuccess: (res) => {
-      setReport(res)
-      void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
-    },
-    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la emitere.')),
+  const savePlata = useMutation({
+    mutationFn: (v: { ref: string; linii: FacturaLinie[] }) =>
+      salveazaPlataBanca(v.ref, v.linii),
+    onSuccess: invalidate,
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la marcarea plății.')),
   })
 
-  const ignora = useMutation({
-    mutationFn: () => ignoraFacturi(selectedRows.map((r) => r.ref)),
-    onSuccess: () => {
-      setReport(null)
-      void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
-    },
+  const ignoraOne = useMutation({
+    mutationFn: (ref: string) => ignoraFacturi([ref]),
+    onSuccess: invalidate,
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la ignorare.')),
   })
 
-  const marcheaza = useMutation({
-    mutationFn: async () => {
-      const byFirma = new Map<string, MarkItem[]>()
-      for (const r of selectedRows) {
-        const s = st(r)
-        const list = byFirma.get(r.firma_cui) ?? []
-        list.push({
+  const marcheazaOne = useMutation({
+    mutationFn: (r: FacturaRow) =>
+      marcheazaFacturi(r.firma_cui, [
+        {
           ref: r.ref,
           client_nume: r.client_nume,
           suma: r.suma,
           data: r.data_tranzactie,
-          descriere: s.descriere || r.descriere || '',
-        })
-        byFirma.set(r.firma_cui, list)
-      }
-      const all: EmitResult[] = []
-      for (const [cui, items] of byFirma) {
-        const res = await marcheazaFacturi(cui, items)
-        all.push(...res.results)
-      }
-      return all
-    },
-    onSuccess: (res) => {
-      setReport(res)
-      void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
-    },
+          descriere: r.descriere ?? '',
+        },
+      ]),
+    onSuccess: invalidate,
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la marcare.')),
   })
 
-  const totalSelected = selectedRows.reduce((s, r) => s + r.suma, 0)
-
   const columns: Column<FacturaRow>[] = useMemo(
     () => [
-      {
-        header: '',
-        className: 'w-8',
-        cell: (r) => (
-          <input
-            type="checkbox"
-            checked={st(r).selected}
-            onChange={(e) => patch(r.ref, { selected: e.target.checked })}
-          />
-        ),
-      },
       { header: 'Data', cell: (r) => r.data_tranzactie, sortValue: (r) => r.data_tranzactie },
       { header: 'Plătitor', cell: (r) => r.client_nume, sortValue: (r) => r.client_nume },
       {
@@ -175,22 +118,15 @@ export function BancaTab() {
           <ClientMatcher
             payerNume={r.client_nume}
             descriere={r.descriere ?? ''}
-            value={st(r).match}
-            onChange={(m) => patch(r.ref, { match: m })}
+            value={matchOf(r)}
+            onChange={(m) => setMatches((prev) => ({ ...prev, [r.ref]: m }))}
           />
         ),
       },
       {
-        header: 'Descriere factură',
-        className: 'min-w-[200px]',
-        cell: (r) => (
-          <input
-            type="text"
-            value={st(r).descriere}
-            onChange={(e) => patch(r.ref, { descriere: e.target.value })}
-            className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-ink hover:border-line focus:border-quasar-yellow focus:outline-none"
-          />
-        ),
+        header: 'Descriere',
+        className: 'min-w-[180px]',
+        cell: (r) => <span className="text-sm text-muted">{r.descriere}</span>,
       },
       {
         header: 'Sumă',
@@ -198,8 +134,91 @@ export function BancaTab() {
         cell: (r) => `${fmt(r.suma)} ${r.valuta}`,
         sortValue: (r) => r.suma,
       },
+      {
+        header: 'Stare',
+        className: 'whitespace-nowrap',
+        cell: (r) => (
+          <div className="flex flex-col gap-0.5 text-xs">
+            {r.platit_la && <span className="text-green-700">✓ înregistrat</span>}
+            {isFacturat(r) &&
+              (r.factura_link ? (
+                <a
+                  href={r.factura_link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-green-700 underline"
+                >
+                  ✓ facturat {r.factura_fgo ?? ''}
+                </a>
+              ) : (
+                <span className="text-green-700">✓ facturat {r.factura_fgo ?? ''}</span>
+              ))}
+            {r.status === 'Eroare' && (
+              <span className="text-red-700">✗ {r.eroare_mesaj}</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        header: '',
+        className: 'whitespace-nowrap',
+        cell: (r) => {
+          const m = matchOf(r)
+          const platit = !!r.platit_la
+          const facturat = isFacturat(r)
+          return (
+            <div className="flex flex-wrap items-center gap-2">
+              {!platit && (
+                <Button
+                  variant="secondary"
+                  disabled={!m}
+                  title={
+                    m
+                      ? m.tip === 'familie'
+                        ? 'Plată nouă (Transfer) — alege membrul familiei'
+                        : 'Plată nouă (Transfer) pre-completată cu clientul și suma'
+                      : 'Alege întâi clientul din CRM'
+                  }
+                  onClick={() =>
+                    setPlataFor({
+                      ref: r.ref,
+                      clientId: m?.tip === 'client' ? m.id : undefined,
+                      suma: r.suma,
+                    })
+                  }
+                >
+                  💳 Plată
+                </Button>
+              )}
+              {!facturat && (
+                <Button variant="secondary" onClick={() => setFacturaFor({ row: r, match: m })}>
+                  🧾 Facturează
+                </Button>
+              )}
+              <button
+                type="button"
+                className="text-xs text-muted underline hover:text-ink"
+                onClick={() => ignoraOne.mutate(r.ref)}
+                title="Scoate transferul din listă (nu se facturează)"
+              >
+                Ignoră
+              </button>
+              {!facturat && (
+                <button
+                  type="button"
+                  className="text-xs text-muted underline hover:text-ink"
+                  onClick={() => marcheazaOne.mutate(r)}
+                  title="Facturat deja manual în FGO — marchează fără emitere"
+                >
+                  Marcată
+                </button>
+              )}
+            </div>
+          )
+        },
+      },
     ],
-    [rowState, rows],
+    [matches, ignoraOne, marcheazaOne],
   )
 
   return (
@@ -238,97 +257,64 @@ export function BancaTab() {
         <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
-      {report && (
-        <div className="rounded-2xl border border-line bg-card p-4">
-          <p className="mb-2 text-sm font-semibold text-ink">Rezultat</p>
-          <ul className="space-y-1 text-sm">
-            {report.map((r) => (
-              <li key={r.ref}>
-                <span
-                  className={
-                    r.status === 'eroare' ? 'text-red-700' : 'text-green-700'
-                  }
-                >
-                  {r.status === 'emisa'
-                    ? `✓ ${r.client} — ${r.factura}`
-                    : r.status === 'marcata'
-                      ? `✓ ${r.client} — marcată`
-                      : `✗ ${r.client} — ${r.mesaj}`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {pending.isLoading ? (
         <Spinner />
       ) : (
-        <>
-          <DataTable
-            columns={columns}
-            rows={rows}
-            rowKey={(r) => r.ref}
-            emptyMessage="Nicio încasare de procesat. Încarcă un extras de cont."
-          />
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm font-semibold text-ink">
-              {selectedRows.length} selectate · {fmt(totalSelected)} RON
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                disabled={selectedRows.length === 0 || ignora.isPending}
-                onClick={() => ignora.mutate()}
-                title="Scoate rândurile din listă (transferuri care nu se facturează). Rămân în registru — nu se mai propun din nou."
-              >
-                Ignoră
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={selectedRows.length === 0 || marcheaza.isPending}
-                onClick={() => marcheaza.mutate()}
-                title="Pentru încasări facturate deja manual în FGO — intră în registru fără emitere"
-              >
-                Marchează ca facturate
-              </Button>
-              <Button
-                disabled={selectedRows.length === 0 || emit.isPending}
-                onClick={() => emit.mutate()}
-              >
-                {emit.isPending ? 'Se emit…' : 'Emite facturile în FGO'}
-              </Button>
-            </div>
-          </div>
-        </>
+        <DataTable
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => r.ref}
+          emptyMessage="Nicio încasare de procesat. Încarcă un extras de cont."
+        />
       )}
 
       {(recent.data ?? []).length > 0 && (
         <details className="rounded-2xl border border-line bg-card p-4">
           <summary className="cursor-pointer text-sm font-semibold text-ink">
-            Istoric recent ({(recent.data ?? []).length})
+            Istoric ({(recent.data ?? []).length})
           </summary>
           <ul className="mt-3 space-y-1 text-sm">
-            {(recent.data ?? []).slice(0, 50).map((r) => (
+            {(recent.data ?? []).map((r) => (
               <li key={r.ref} className="flex justify-between gap-3">
                 <span className="text-ink">
                   {r.data_tranzactie} · {r.client_nume} · {fmt(r.suma)} RON
                 </span>
-                <span
-                  className={
-                    r.status === 'Eroare' ? 'text-red-700' : 'text-muted'
-                  }
-                >
-                  {r.status === 'Eroare'
-                    ? `eroare: ${r.eroare_mesaj}`
-                    : r.status === 'Ignorata'
-                      ? 'ignorată'
-                      : r.factura_fgo}
+                <span className={r.status === 'Eroare' ? 'text-red-700' : 'text-muted'}>
+                  {[
+                    r.platit_la ? 'înregistrat' : null,
+                    r.status === 'Emisa' || r.status === 'Marcata'
+                      ? `facturat ${r.factura_fgo ?? ''}`.trim()
+                      : null,
+                    r.status === 'Eroare' ? `eroare: ${r.eroare_mesaj}` : null,
+                    r.status === 'Ignorata' ? 'ignorat' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
               </li>
             ))}
           </ul>
         </details>
+      )}
+
+      <PlataNouaModal
+        open={!!plataFor}
+        onClose={() => setPlataFor(null)}
+        defaultClientId={plataFor?.clientId}
+        defaultSuma={plataFor?.suma}
+        defaultMetoda="Transfer"
+        onRecorded={(linii) => {
+          if (plataFor) savePlata.mutate({ ref: plataFor.ref, linii })
+        }}
+      />
+
+      {facturaFor && (
+        <FacturaDialog
+          key={facturaFor.row.ref}
+          row={facturaFor.row}
+          match={facturaFor.match}
+          onClose={() => setFacturaFor(null)}
+        />
       )}
     </div>
   )

@@ -8873,6 +8873,13 @@ export type Database = {
         }
         Returns: string
       }
+      rls_parinte_gap_report: {
+        Args: never
+        Returns: {
+          problema: string
+          tabel: string
+        }[]
+      }
       scor_num: { Args: { p_clasa: string }; Returns: number }
       send_anunt_client: {
         Args: { p_continut: string; p_curs_id?: string; p_titlu: string }

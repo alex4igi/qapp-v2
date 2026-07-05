@@ -7,6 +7,8 @@ export type FacturaStatus =
   | 'Eroare'
   | 'Ignorata'
 
+export type FacturaLinie = { articol: string | null; suma: number }
+
 export type FacturaRow = {
   ref: string
   sursa: FacturaSursa
@@ -24,6 +26,8 @@ export type FacturaRow = {
   status: FacturaStatus
   eroare_mesaj: string | null
   emis_la: string | null
+  platit_la: string | null
+  linii: FacturaLinie[] | null
 }
 
 export type MatchSuggestion = {

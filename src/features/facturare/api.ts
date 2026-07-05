@@ -26,6 +26,8 @@ export type EmitItem = {
   valuta?: string
   client_id?: string | null
   familia_id?: string | null
+  // Liniile facturii FGO (câte o linie per articol + suma ei). Sumele însumate = suma.
+  linii: { articol: string; suma: number }[]
 }
 
 export type MarkItem = {
@@ -63,6 +65,44 @@ export async function listFacturi(
   const { data, error } = await q
   if (error) throw error
   return (data ?? []) as FacturaRow[]
+}
+
+// „De procesat" (banca): NOT done AND NOT Ignorata, unde done = plătit ȘI facturat.
+export async function listBancaWorklist(): Promise<FacturaRow[]> {
+  const { data, error } = await supabase
+    .from('facturi_fgo')
+    .select('*')
+    .eq('sursa', 'banca')
+    .neq('status', 'Ignorata')
+    .or('platit_la.is.null,status.not.in.(Emisa,Marcata)')
+    .order('data_tranzactie', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as FacturaRow[]
+}
+
+// Istoric-jurnal (banca): tot ce a avut o acțiune (plată sau factură/ignorare).
+export async function listBancaIstoric(): Promise<FacturaRow[]> {
+  const { data, error } = await supabase
+    .from('facturi_fgo')
+    .select('*')
+    .eq('sursa', 'banca')
+    .or('platit_la.not.is.null,status.in.(Emisa,Marcata,Eroare,Ignorata)')
+    .order('data_tranzactie', { ascending: false })
+    .limit(50)
+  if (error) throw error
+  return (data ?? []) as FacturaRow[]
+}
+
+// Marchează transferul ca „înregistrat" + stochează liniile derivate din plată.
+export async function salveazaPlataBanca(
+  ref: string,
+  linii: { articol: string | null; suma: number }[],
+): Promise<void> {
+  const { error } = await supabase
+    .from('facturi_fgo')
+    .update({ platit_la: new Date().toISOString(), linii })
+    .eq('ref', ref)
+  if (error) throw error
 }
 
 // „Ignoră" — scoate rândurile din lista de lucru fără să le șteargă (păstrează

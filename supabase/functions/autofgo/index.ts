@@ -136,6 +136,7 @@ type EmitItem = {
   valuta?: string
   client_id?: string | null
   familia_id?: string | null
+  linii?: { articol: string; suma: number }[]
 }
 
 async function handleEmite(admin: SupabaseClient, firmaCui: string, items: EmitItem[]) {
@@ -156,13 +157,17 @@ async function handleEmite(admin: SupabaseClient, firmaCui: string, items: EmitI
   for (const item of items) {
     try {
       const fgoClient = await buildClient(admin, item)
+      const lines =
+        item.linii && item.linii.length
+          ? item.linii.map((l) => ({ denumire: l.articol, pretTotal: Number(l.suma) }))
+          : [{ denumire: item.descriere, pretTotal: Number(item.suma) }]
       const { numar, link } = await emitInvoice(
         firma,
         fgoClient,
-        [{ denumire: item.descriere, pretTotal: Number(item.suma) }],
+        lines,
         item.valuta || 'RON',
       )
-      const { data, error } = await admin.rpc('record_bank_incasare', {
+      const { data, error } = await admin.rpc('record_bank_factura', {
         p_ref: item.ref,
         p_sursa: 'banca',
         p_firma_cui: firmaCui,
@@ -229,17 +234,7 @@ async function buildClient(admin: SupabaseClient, item: EmitItem): Promise<FgoCl
       }
     }
   }
-  if (item.client_id) {
-    const { data: c } = await admin
-      .from('clienti')
-      .select('nume, prenume')
-      .eq('id', item.client_id)
-      .maybeSingle()
-    if (c) {
-      const denumire = [c.nume, c.prenume].filter(Boolean).join(' ').trim()
-      if (denumire) return { tip: 'PF', denumire }
-    }
-  }
+  // PF: numele de pe factură = plătitorul transferului (nu cursantul din CRM).
   return { tip: 'PF', denumire: item.client_nume }
 }
 
