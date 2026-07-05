@@ -4,11 +4,13 @@
 
 **qapp v2** este rescrierea pe stack standard (**Vite + React 19 + TypeScript + Supabase**) a aplicației „Qapp" — sistem complet de management pentru școala de dans **Quasar Dance**: clienți, familii, cursuri, înrolări, prezențe, încasări, restanțe, vouchere, leads, SMS, evenimente, inventar, evaluări, salarii teacheri, pontaj staff.
 
-A doua versiune înlocuiește v1 construită în Noodl (no-code vizual) cu backend PocketBase. Sursele v1 sunt în `v1 sources/` pentru referință, dar codul activ trăiește integral în `src/`.
+A doua versiune înlocuiește v1 construită în Noodl (no-code vizual) cu backend PocketBase. Sursele v1 sunt arhivate în `../_archive/qapp v2/v1 sources/` pentru referință; codul activ trăiește integral în `src/`.
 
-## NU confunda cu Qleads
+## Leads
 
-În workspace există și un folder `qleads/` — acesta e un **draft test (Next.js prototype), NU producție**. Modulul real de leads din qapp v2 trăiește în `src/features/leads/`. CLAUDE.md de la nivelul workspace-ului (`../CLAUDE.md`) descrie Qleads, nu qapp v2 — ignoră-l când lucrezi aici.
+Modulul real de leads trăiește în `src/features/leads/` (e și modulul de referință pentru
+organizarea codului). Fostul prototip separat „Qleads" (Next.js) a fost abandonat și șters
+din workspace — dacă apar referințe la el, sunt istorice.
 
 ## Arhitectura codului
 
@@ -25,6 +27,10 @@ npx tsc -b           # type-check
 npm run gen:types    # regenerare src/types/database.ts din Supabase
 npx supabase db push # aplică migrațiile locale pe Supabase remote
 ```
+
+**Regulă types partajate:** baza de date e comună cu `../qapp-membri`. După ORICE migrație aplicată, regenerează `src/types/database.ts` în AMBELE repo-uri (`npm run gen:types` în fiecare) — altfel portalul rămâne cu tipuri vechi.
+
+**Regulă RLS portal:** orice tabel nou trebuie să primească gardul restrictiv `deny_parinte_direct` (vezi migrația `20260705090000_reapply_deny_parinte_guard.sql`). Verificare: `node scripts/check-rls-parinte.mjs` după fiecare migrație care creează tabele.
 
 ## Convenții cod
 

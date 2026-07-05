@@ -10,7 +10,7 @@ Pentru context business (școala Quasar Dance, roluri, abonamente, fluxuri) vezi
 - **Vite** + **React 19** SPA + **TypeScript**
 - **Supabase** (Postgres + Auth + RLS + Edge Functions + pg_cron)
 - **TanStack React Query** (cache, staleTime 30s, refetchOnWindowFocus false) — `src/main.tsx`
-- **React Router v6** — declarat în `src/App.tsx`
+- **React Router v7** — declarat în `src/App.tsx`
 - **Tailwind CSS** — fără `tailwind.config.ts`, folosește `@theme inline` în `index.css`
 - **dnd-kit** pentru drag-and-drop (kanban leads)
 - **Recharts** pentru grafice (`/statistici`)
@@ -71,6 +71,7 @@ features/<domain>/
 | Lookups | `src/lib/lookups.ts` | fetcher-i React Query pentru relații (teacheri, săli, locații, sezoane, cursuri) |
 | Audit | `src/lib/auditLog.ts` | RPC helper pentru `audit_log_record` |
 | Format | `src/lib/format.ts` | formatRON și alți formattter-i |
+| Fetch all | `src/lib/fetchAll.ts` | `fetchAllRows` — paginare peste plafonul PostgREST `max_rows=1000`; OBLIGATORIU pentru exporturi CSV și agregări client-side |
 | Class names | `src/lib/cn.ts` | concat Tailwind classes |
 | CSV | `src/lib/csv.ts` | export CSV |
 | UI primitives | `src/components/ui/` | 14 componente: Button, Modal, DataTable, Combobox, Tabs, Select, etc. |
@@ -115,14 +116,29 @@ Restul = React Query (`useQuery` / `useMutation`) per feature, cu invalidare dup
 ## Database
 
 - Migrații: `qapp v2/supabase/migrations/*.sql`
-- Tipuri generate: `npm run gen:types` → `src/types/database.ts`
+- Tipuri generate: `npm run gen:types` → `src/types/database.ts`. **Baza e partajată cu
+  `../qapp-membri`** — după orice migrație, regen în AMBELE repo-uri (vezi CLAUDE.md).
 - Aplicare migrații: `npx supabase db push` (vezi [[feedback-aplica-migrate-singur]] în memorie — NU cere user-ului să ruleze SQL manual)
+- Interogare ad-hoc remote (fără psql): `npx supabase db query "select ..." --linked`
 - View-uri și RPC-uri DB folosite pentru rapoarte (`/statistici`, `/financiar`, restanțe)
-- pg_cron job-uri pentru:
-  - SMS dimineața (programări azi)
-  - Auto-mutări leads (nu_a_venit, nurture)
-  - Statusuri client (Activ ↔ Inactiv ↔ EXclient)
-  - Anulare promo reînscrieri
+- **pg_cron: TOATE joburile trăiesc în migrații** (din 2026-07-05; fostul `cron-setup.sql`
+  manual a fost absorbit în `20260705110000_cron_qapp_jobs_formalize.sql`). Joburi:
+  SMS dimineața (morning-a/b cu gardă 10:00 local), mutări leads seara, sfârșit de sezon,
+  statusuri client (Activ↔Inactiv↔EXclient), anulare promo reînscrieri, expirare holduri
+  OPEN, pull Meta leads, drenări SMS (programare/review/amânate), remindere contracte,
+  audit digest, pontaj auto-close. Verificare: `select jobname, schedule from cron.job`.
+
+### Capcane infra (citește înainte de operațiuni pe proiectul Supabase)
+
+- **`supabase config push` clobberează `[auth]`**: config.toml de aici setează
+  `site_url = membri.quasardance.ro` pe proiectul PARTAJAT. Nu rula `config push`
+  pentru altceva decât ce vrei explicit să schimbi — poate strica login-ul portalului.
+- **RLS portal**: orice tabel nou primește gardul restrictiv `deny_parinte_direct`
+  (migrația `20260705090000`). Verificare: `node scripts/check-rls-parinte.mjs`.
+- **PostgREST `max_rows=1000`** (config.toml): query-urile care au nevoie de toate
+  rândurile folosesc `fetchAllRows` din `src/lib/fetchAll.ts`, altfel trunchiere silențioasă.
+- **qbot** (`../qbot/`): sursă parcată intenționat (branch `feature/qbot-paused`);
+  nu există copii sincronizate în app-uri — nu rula `sync.mjs` fără decizie explicită.
 
 ---
 
@@ -138,25 +154,39 @@ npx supabase db push # aplică migrațiile locale pe Supabase remote
 
 ---
 
-## Refactorizări modulare în curs / planificate
+## Refactorizări modulare
 
-Cinci faze, una per sesiune, fiecare lasă comportament identic, doar mută cod:
+**Planul inițial în 5 faze (plati / cursuri / clienti / setari / dashboard) e FĂCUT**
+(2026-07-05: fazele 1, 2, 3, 5 complet; faza 4 parțial — `setari/api.ts` a rămas flat).
 
-| Fază | Modul | Fișier sursă | Linii | Țintă |
-|---|---|---|---|---|
-| 1 | `plati/` | `api.ts` | 740 | `api/{payments,enrollments,refunds,reconciliations}.ts` |
-| 1 | `plati/` | `EnrollmentForm.tsx` | 506 | `components/EnrollmentForm/` (sub-secțiuni) |
-| 1 | `plati/` | `PlataNouaModal.tsx` | 450 | `modals/PlataNouaModal/` (tabs) |
-| 2 | `cursuri/` | `CursProfilePage.tsx` | 737 | `tabs/{Activi,Inactivi,Restantieri,Detalii}Tab.tsx` |
-| 2 | `cursuri/` | `api.ts` | 572 | `api/{courses,schedule}.ts` |
-| 2 | `cursuri/` | `CursForm.tsx` | 505 | sub-secțiuni (Detalii / Program / Tarife) |
-| 3 | `clienti/` | `ClientProfilePage.tsx` | 715 | `tabs/*Tab.tsx` (10+ tab-uri) |
-| 4 | `setari/` | `UtilizatoriSection.tsx` | 598 | List + EditModal + InvitatieModal + ResetPasswordModal |
-| 4 | `setari/` | `SezoaneSection.tsx` | 539 | List + Edit + Arhivare + integrare clone wizard |
-| 4 | `setari/` | `SezonCloneWizard.tsx` | 503 | `wizard/Step{1..N}.tsx` |
-| 5 | `dashboard/` | `api.ts` | 536 | `api/{kpi,charts,activity}.ts` |
+Monoliți rămași (audit 2026-07-05), în ordinea priorității — fiecare o sesiune,
+comportament identic:
 
-**Workflow per fază** (conform memoriei `feedback-workflow`):
+| Modul | Fișier | Linii | Țintă |
+|---|---|---|---|
+| ~~`leads/`~~ | ~~`LeadModal.tsx`~~ | ~~1081~~ | ✅ FĂCUT 2026-07-05: `LeadModal/` (index 675 + rail, stepper, 6 secțiuni, styles, helpers) |
+| ~~`reinscrieri/`~~ | ~~`ReinscrieriPage.tsx`~~ | ~~877~~ | ✅ FĂCUT 2026-07-05: pagină 106 + `components/{CampanieBoard,LegacyBoard,Kpi}` + `modals/{CampanieCursModal,LegacyCursModal}`; fluxul clasic PĂSTRAT (decizie user) |
+| ~~`leads/`~~ | ~~`api.ts`~~ | ~~798~~ | ✅ FĂCUT 2026-07-05: `api/{crud,transitions,programari,import,conversie}.ts` + barrel |
+| `plati/` | `components/EnrollmentForm/index.tsx` | 754 | sub-secțiuni reale (folderul există, corpul e monolit) |
+| `plati/` | `modals/PlataNouaModal/DatoriiUnificateTab.tsx` | 739 | spargere pe secțiuni — DOAR după push-ul lucrului facturare in-flight |
+| `dashboard/` | `GrupaDashboardPage.tsx` | 636 | extrage `ClientCard`/`RosterList` la scope de modul |
+| ~~`financiar/`~~ | ~~`api.ts`~~ | ~~560~~ | ✅ FĂCUT 2026-07-05: `api/{restante-views,rapoarte,incasari,restante}.ts` + barrel |
+| ~~`statistici/`~~ | ~~`api.ts`~~ | ~~510~~ | ✅ FĂCUT 2026-07-05: `api/{interval,financiar,sezoane,prezente,leads,teacheri}.ts` + barrel |
+| `statistici/` | `StatisticiPage.tsx` | 641 | split pe secțiuni (doar pagina a rămas) |
+| `familii/` | `FamilieProfilePage.tsx` | 509 | schelet de modul |
+| ~~`setari/`~~ | ~~`api.ts`~~ | ~~318~~ | ✅ FĂCUT 2026-07-05: `api/{locatii,sali,sezoane,sms}.ts` + barrel |
+
+Transversal — **query hardening FĂCUT 2026-07-05**: audit complet al select-urilor
+nelimitate (≈100 situri). Majoritatea sunt sănătoase (filtrate per client/zi/curs/lună);
+cele 4 cu risc real de trunchiere la `max_rows=1000` au primit `fetchAllRows`:
+încasările per eveniment (evenimente/api + dashboard/api/events — participanți/sume),
+prezențele agregate pe zi (dashboard/api/courses), lista completă /opt-out
+(opt-out/api — era deja trunchiată: 5.456 rânduri reale vs 1.000 afișate).
+Singurul fan-out `Promise.all` per-rând real: restanțieri per curs în
+dashboard/api/preview (~10-15 cursuri/zi — acceptabil, lăsat). La query-uri noi pe
+tabele în creștere: filtrează strict SAU folosește `fetchAllRows`.
+
+**Workflow per sesiune** (conform memoriei `feedback-workflow`):
 1. Refactor pur (fără schimbare de comportament)
 2. `npx tsc -b` verde
 3. `npm run build` verde

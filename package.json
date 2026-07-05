@@ -12,7 +12,7 @@
     "db:push": "supabase db push",
     "db:pull": "supabase db pull",
     "db:reset": "supabase db reset --linked",
-    "gen:types": "supabase gen types typescript --linked > src/types/database.ts"
+    "gen:types": "supabase gen types typescript --linked > /tmp/qapp-types.gen.ts && cp /tmp/qapp-types.gen.ts src/types/database.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
