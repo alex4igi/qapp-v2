@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Spinner, TextInput, Button, DataTable, type Column } from '@/components/ui'
 import { campaniiOptions } from '@/lib/lookups'
+import { formatDate } from '@/lib/format'
 import { matchesWords } from '@/lib/search'
 import type { Lead } from '@/types/db'
 import { listNurtureLeads } from './api'
@@ -15,16 +16,6 @@ const RENDER_CAP = 200
 function numeLead(l: Lead): string {
   const persoana = [l.prenume, l.nume].filter(Boolean).join(' ').trim()
   return persoana || l.nume_parinte || '(fără nume)'
-}
-
-function dataScurta(iso: string | null): string {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return d.toLocaleDateString('ro-RO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
 }
 
 export function NurtureView() {
@@ -80,7 +71,7 @@ export function NurtureView() {
     },
     {
       header: 'Adăugat',
-      cell: (l) => dataScurta(l.created),
+      cell: (l) => formatDate(l.created),
       sortValue: (l) => l.created,
       className: 'text-right',
     },

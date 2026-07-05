@@ -1,6 +1,7 @@
 import { Spinner } from '@/components/ui'
 import type { CursClientActiv } from '../../../api'
 import { formatData, fullName } from '../helpers'
+import { formatRON } from '@/lib/format'
 
 type Props = {
   loading: boolean
@@ -59,7 +60,7 @@ export function ClientiActiviTab({
                 {formatData(r.ultimaPrezenta)}
               </td>
               <td className="px-3 py-2 text-right text-quasar-black">
-                {r.pretInrolare != null ? `${r.pretInrolare} RON` : '—'}
+                {r.pretInrolare != null ? formatRON(r.pretInrolare) : '—'}
               </td>
               {showReinscriere && (
                 <td className="px-3 py-2 text-right">

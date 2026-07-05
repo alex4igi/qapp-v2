@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Modal, Field, TextInput } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { formatDateTime } from '@/lib/format'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import {
   listUsers,
@@ -28,13 +29,8 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatDateTime(d: string | null): string {
-  if (!d) return 'niciodată'
-  return new Date(d).toLocaleString('ro-RO', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  })
-}
+const formatLastLogin = (d: string | null) =>
+  d ? formatDateTime(d) : 'niciodată'
 
 export function TeacherTabPersonale({ teacher, canEdit }: Props) {
   const { role } = useAuth()
@@ -173,7 +169,7 @@ export function TeacherTabPersonale({ teacher, canEdit }: Props) {
                 <Row label="Email" value={userRow.email ?? ''} />
                 <Row
                   label="Ultima logare"
-                  value={formatDateTime(userRow.last_sign_in_at)}
+                  value={formatLastLogin(userRow.last_sign_in_at)}
                 />
               </dl>
               <div className="mt-4 flex flex-wrap gap-2">

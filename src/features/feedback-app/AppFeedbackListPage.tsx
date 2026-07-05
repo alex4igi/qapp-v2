@@ -12,20 +12,13 @@ import {
   type Column,
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { formatDate } from '@/lib/format'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import type { AppFeedback, AppFeedbackStatus } from '@/types/db'
 import { STATUS_BADGE, STATUS_LABEL, TIP_LABEL, statusOptions } from './constants'
 import { AppFeedbackModal } from './AppFeedbackModal'
 import { AppFeedbackTriageModal } from './AppFeedbackTriageModal'
 import { getAppFeedback, listAppFeedback, PAGE_SIZE } from './api'
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ro-RO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
 
 const columns: Column<AppFeedback>[] = [
   {

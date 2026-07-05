@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, Select, TextArea, Button } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { formatDateTime } from '@/lib/format'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import type { AppFeedback, AppFeedbackStatus } from '@/types/db'
 import { STATUS_BADGE, STATUS_LABEL, TIP_LABEL, statusOptions } from './constants'
@@ -11,16 +12,6 @@ import { updateAppFeedback, deleteAppFeedback } from './api'
 type Props = {
   feedback: AppFeedback
   onClose: () => void
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('ro-RO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 export function AppFeedbackTriageModal({ feedback, onClose }: Props) {
@@ -116,7 +107,7 @@ export function AppFeedbackTriageModal({ feedback, onClose }: Props) {
           >
             {STATUS_LABEL[feedback.status]}
           </span>
-          <span className="text-quasar-gray">{formatDate(feedback.created)}</span>
+          <span className="text-quasar-gray">{formatDateTime(feedback.created)}</span>
         </div>
 
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">

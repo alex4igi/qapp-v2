@@ -27,6 +27,7 @@ import { CONTRACT_STATUS_LABEL, CONTRACT_TIP_LABEL } from './constants'
 import { TrimiteContractModal } from './TrimiteContractModal'
 import { TrimiteBulkModal } from './TrimiteBulkModal'
 import { SabloaneTab } from './SabloaneTab'
+import { formatDateTime } from '@/lib/format'
 
 const EVENT_LABEL: Record<string, string> = {
   creat: 'Creat',
@@ -61,7 +62,7 @@ function EventsModal({ contract, onClose }: { contract: ContractRow; onClose: ()
           {(events ?? []).map((ev) => (
             <li key={ev.id} className="flex items-start gap-3">
               <span className="whitespace-nowrap text-muted-2">
-                {new Date(ev.created).toLocaleString('ro-RO')}
+                {formatDateTime(ev.created)}
               </span>
               <span className="font-medium">{EVENT_LABEL[ev.tip] ?? ev.tip}</span>
               {ev.meta?.ip ? <span className="text-muted-2">IP {String(ev.meta.ip)}</span> : null}
@@ -162,7 +163,7 @@ export function ContracteListPage() {
     },
     {
       header: 'Semnat',
-      cell: (r) => (r.semnat_la ? new Date(r.semnat_la).toLocaleString('ro-RO') : '—'),
+      cell: (r) => formatDateTime(r.semnat_la),
       sortValue: (r) => r.semnat_la,
     },
     {

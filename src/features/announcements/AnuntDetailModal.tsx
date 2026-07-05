@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal, Button, Spinner } from '@/components/ui'
+import { formatDateTime } from '@/lib/format'
 import type { Anunt } from '@/types/db'
 import { getReadReceipts, markAnuntRead } from './api'
 
@@ -8,16 +9,6 @@ type Props = {
   anunt: Anunt
   mode: 'primit' | 'trimis'
   onClose: () => void
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('ro-RO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 export function AnuntDetailModal({ anunt, mode, onClose }: Props) {
@@ -60,7 +51,7 @@ export function AnuntDetailModal({ anunt, mode, onClose }: Props) {
           {mode === 'primit' && anunt.expeditor_email && (
             <span>De la: {anunt.expeditor_email}</span>
           )}
-          <span>{formatDate(anunt.created)}</span>
+          <span>{formatDateTime(anunt.created)}</span>
         </div>
 
         <p className="whitespace-pre-wrap rounded-md bg-quasar-gray-light/40 p-3 text-sm text-quasar-black">

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Button, Spinner, TextArea } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { formatDate, formatDateTime } from '@/lib/format'
 import { isPrivileged } from '@/lib/rolesMatrix'
 import {
   listNotificari,
@@ -51,19 +52,6 @@ function targetFor(n: Notification): string | null {
   return null
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleString('ro-RO', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  })
-}
-
-function formatDateOnly(iso: string | undefined): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('ro-RO', { dateStyle: 'short' })
-}
-
 function NotificationCard({
   n,
   onClick,
@@ -106,7 +94,7 @@ function NotificationCard({
           {n.title}
         </h3>
         <time className="shrink-0 text-xs text-quasar-gray">
-          {formatDate(n.created_at)}
+          {formatDateTime(n.created_at)}
         </time>
       </header>
       {n.body && <p className="mb-3 text-sm text-quasar-gray">{n.body}</p>}
@@ -183,13 +171,13 @@ function NotificationCard({
       )}
       {resolved && (
         <p className="mt-1 text-xs font-medium text-green-700">
-          ✓ Rezolvat {n.resolved_at ? `· ${formatDate(n.resolved_at)}` : ''}
+          ✓ Rezolvat {n.resolved_at ? `· ${formatDateTime(n.resolved_at)}` : ''}
         </p>
       )}
       {audit && audit.by_action && audit.by_action.length > 0 && (
         <div className="rounded-md bg-quasar-gray-light/40 p-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-quasar-gray">
-            Detalii ({formatDateOnly(audit.since)} → {formatDateOnly(audit.until)})
+            Detalii ({formatDate(audit.since)} → {formatDate(audit.until)})
           </p>
           <ul className="space-y-1 text-sm">
             {audit.by_action.map((row, i) => (

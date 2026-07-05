@@ -14,6 +14,7 @@ import type { VPlatiInrolari } from '@/types/db'
 import { EnrollmentForm } from './EnrollmentForm'
 import { IncasareForm } from './IncasareForm'
 import { listPlatiInrolari, PAGE_SIZE } from './api'
+import { formatRON } from '@/lib/format'
 
 export function PlatiListPage() {
   const [searchInput, setSearchInput] = useState('')
@@ -78,13 +79,13 @@ export function PlatiListPage() {
     },
     {
       header: 'Total',
-      cell: (r) => `${r.total_de_plata ?? 0} RON`,
+      cell: (r) => formatRON(r.total_de_plata),
       className: 'w-24',
       sortValue: (r) => r.total_de_plata ?? 0,
     },
     {
       header: 'Plătit',
-      cell: (r) => `${r.platit ?? 0} RON`,
+      cell: (r) => formatRON(r.platit),
       className: 'w-24',
       sortValue: (r) => r.platit ?? 0,
     },

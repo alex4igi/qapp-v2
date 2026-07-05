@@ -7,6 +7,7 @@ import {
   Select,
   Spinner,
 } from '@/components/ui'
+import { formatDateTime } from '@/lib/format'
 import {
   listAuditLog,
   listSezoaneForAudit,
@@ -47,13 +48,6 @@ const ROLE_OPTIONS = [
   { value: 'front_desk', label: 'Front Desk' },
   { value: 'teacher', label: 'Teacher' },
 ]
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('ro-RO', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  })
-}
 
 // Luni-ul săptămânii (ISO YYYY-MM-DD) pentru grupare
 function weekKey(iso: string): string {

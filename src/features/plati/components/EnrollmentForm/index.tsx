@@ -618,7 +618,7 @@ export function EnrollmentForm({
                     v.tip === 'Procent'
                       ? `${v.cod_voucher} — ${v.valoare}%`
                       : v.tip === 'Valoare'
-                        ? `${v.cod_voucher} — ${v.valoare} RON`
+                        ? `${v.cod_voucher} — ${formatRON(v.valoare)}`
                         : v.cod_voucher,
                 }))}
                 value={voucherId}

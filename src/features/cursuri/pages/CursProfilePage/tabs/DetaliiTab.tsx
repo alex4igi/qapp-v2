@@ -1,5 +1,6 @@
 import type { Curs } from '@/types/db'
 import { formatOra } from '../../../program'
+import { formatRON } from '@/lib/format'
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -34,7 +35,7 @@ export function DetaliiTab({
   sezonLabel,
   locatieLabel,
 }: Props) {
-  const pret = (n: number | null) => (n != null ? `${n} RON` : '')
+  const pret = (n: number | null) => (n != null ? formatRON(n) : '')
   const tipCurs = curs.facultativ
     ? 'Facultativ'
     : curs.nivelul === 'Trupa'

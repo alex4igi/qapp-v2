@@ -11,24 +11,9 @@ import {
   type Column,
 } from '@/components/ui'
 import { downloadCsv } from '@/lib/csv'
+import { formatDate, formatTime } from '@/lib/format'
 import { listUsers } from '@/features/setari/utilizatoriApi'
 import { listPontaj, type PontajRow } from './api'
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ro-RO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
-function formatTime(iso: string | null): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleTimeString('ro-RO', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 function formatDuration(startIso: string, endIso: string | null): string {
   if (!endIso) return '… (deschisă)'
