@@ -1,11 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Spinner } from '@/components/ui'
+import { Button, Select, Spinner } from '@/components/ui'
 import { campaniiOptions } from '@/lib/lookups'
 import { listUsers } from '@/features/setari/utilizatoriApi'
 import type { Lead } from '@/types/db'
 import { listLeads } from './api'
-import { PIPELINE_COLUMNS, GRUPA_LABELS } from './constants'
+import { PIPELINE_COLUMNS, GRUPA_LABELS, GRUPE, LOCATII } from './constants'
 
 type Bucket = {
   key: string
@@ -95,6 +95,8 @@ function BreakdownTable({
 }
 
 export function LeadReports() {
+  const [locatie, setLocatie] = useState('')
+  const [grupa, setGrupa] = useState('')
   const leadsQ = useQuery({ queryKey: ['leads'], queryFn: listLeads })
   const campaniiQ = useQuery({
     queryKey: ['lookup', 'campanii'],
@@ -118,7 +120,14 @@ export function LeadReports() {
     return m
   }, [usersQ.data])
 
-  const leads = leadsQ.data ?? []
+  // Aceeași semantică de filtrare ca în Kanban (match exact pe câmpul lead-ului)
+  const leads = useMemo(() => {
+    return (leadsQ.data ?? []).filter((l) => {
+      if (locatie && l.locatia !== locatie) return false
+      if (grupa && l.grupa_varsta !== grupa) return false
+      return true
+    })
+  }, [leadsQ.data, locatie, grupa])
 
   const funnel = useMemo(() => {
     const counts = new Map<string, number>()
@@ -184,6 +193,36 @@ export function LeadReports() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="w-40">
+          <Select
+            placeholder="Toate locațiile"
+            options={LOCATII.map((l) => ({ label: l, value: l }))}
+            value={locatie}
+            onChange={(e) => setLocatie(e.target.value)}
+          />
+        </div>
+        <div className="w-40">
+          <Select
+            placeholder="Toate grupele"
+            options={GRUPE.map((g) => ({ label: GRUPA_LABELS[g], value: g }))}
+            value={grupa}
+            onChange={(e) => setGrupa(e.target.value)}
+          />
+        </div>
+        {(locatie || grupa) && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setLocatie('')
+              setGrupa('')
+            }}
+          >
+            Resetează
+          </Button>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-3">
         <div className="rounded-lg border border-quasar-gray-light bg-white px-4 py-3">
           <p className="text-xs text-quasar-gray">Total lead-uri</p>
