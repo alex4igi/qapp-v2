@@ -108,6 +108,40 @@ export async function getBalantaCurs(
   return fetchBalanta(i, cursId ? 'curs' : null, cursId)
 }
 
+// Balanța lunară pe teacher vine dintr-un view separat (restante_teacher_luna),
+// nu din de_incasat/incasat_pe_luna (care nu au dimensiune de teacher).
+export async function getBalantaTeacher(
+  i: Interval,
+  teacherId: string | null,
+): Promise<LunaBalanta[]> {
+  let q = supabase
+    .from('restante_teacher_luna')
+    .select('luna, id_teacher, total_de_incasat, total_incasat')
+    .gte('luna', i.fromLuna)
+    .lte('luna', i.toLuna)
+  if (teacherId) q = q.eq('id_teacher', teacherId)
+
+  const { data, error } = await q
+  if (error) throw error
+
+  const byLuna = new Map<string, { de_incasat: number; incasat: number }>()
+  for (const row of data ?? []) {
+    const luna = row.luna ?? ''
+    if (!luna) continue
+    const cur = byLuna.get(luna) ?? { de_incasat: 0, incasat: 0 }
+    cur.de_incasat += Number(row.total_de_incasat ?? 0)
+    cur.incasat += Number(row.total_incasat ?? 0)
+    byLuna.set(luna, cur)
+  }
+
+  const luniInterval = lunileInInterval(i.fromLuna, i.toLuna)
+  return luniInterval.map((luna) => {
+    const v = byLuna.get(luna) ?? { de_incasat: 0, incasat: 0 }
+    const datorie = Math.max(0, v.de_incasat - v.incasat)
+    return { luna, incasat: v.incasat, datorie }
+  })
+}
+
 export type CategoriePunct = { categorie: string; total: number }
 
 export async function getMixCategoriiIncasari(

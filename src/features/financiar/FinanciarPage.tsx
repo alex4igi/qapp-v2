@@ -5,7 +5,6 @@ import { isPrivileged } from '@/lib/rolesMatrix'
 import { IncasariTab } from './IncasariTab'
 import { RestanteTab } from './RestanteTab'
 import { RaportZileTab } from './RaportZileTab'
-import { EvolutieLunaraTab } from './EvolutieLunaraTab'
 import { ReconcilieriTab } from './ReconcilieriTab'
 import { CheltuieliTab } from './CheltuieliTab'
 
@@ -21,7 +20,6 @@ export function FinanciarPage() {
         { id: 'incasari',     label: 'Încasări' },
         { id: 'cheltuieli',   label: 'Cheltuieli' },
         { id: 'restante',     label: 'Restanțe' },
-        { id: 'evolutie',     label: 'Evoluție lunară' },
         { id: 'reconcilieri', label: 'Reconcilieri cash' },
       ]
     : [
@@ -40,7 +38,6 @@ export function FinanciarPage() {
       {active === 'incasari' && <IncasariTab />}
       {active === 'cheltuieli' && privileged && <CheltuieliTab />}
       {active === 'restante' && <RestanteTab />}
-      {active === 'evolutie' && privileged && <EvolutieLunaraTab />}
       {active === 'reconcilieri' && <ReconcilieriTab />}
     </div>
   )

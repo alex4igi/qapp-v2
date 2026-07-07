@@ -19,6 +19,7 @@ import {
   getKpis,
   getBalantaLocatie,
   getBalantaCurs,
+  getBalantaTeacher,
   getMixMetode,
   getMixCategoriiIncasari,
   getMixCategoriiCheltuieli,
@@ -79,6 +80,7 @@ export function StatisticiPage() {
   const [toLuna, setToLuna] = useState(lunaCurenta())
   const [locatieId, setLocatieId] = useState('')
   const [cursId, setCursId] = useState('')
+  const [teacherBalId, setTeacherBalId] = useState('')
   const [prezLocatieId, setPrezLocatieId] = useState('')
   const [prezTeacherId, setPrezTeacherId] = useState('')
   const [prezCursId, setPrezCursId] = useState('')
@@ -131,6 +133,10 @@ export function StatisticiPage() {
   const balCursQ = useQuery({
     queryKey: ['stat', 'bal-curs', interval, cursId],
     queryFn: () => getBalantaCurs(interval, cursId || null),
+  })
+  const balTeacherQ = useQuery({
+    queryKey: ['stat', 'bal-teacher', interval, teacherBalId],
+    queryFn: () => getBalantaTeacher(interval, teacherBalId || null),
   })
 
   const metodeQ = useQuery({
@@ -361,6 +367,40 @@ export function StatisticiPage() {
               rows={balCursQ.data ?? []}
               baseColor="#1d4ed8"
               topColor="#bfdbfe"
+            />
+          )}
+        </div>
+
+        <div>
+          <div className="mb-2 flex items-end justify-between gap-3">
+            <h2 className="text-sm font-semibold text-quasar-black">
+              Balanță teacher
+            </h2>
+            <div className="w-64">
+              <Field label="Instructor" htmlFor="stat-teacher-bal">
+                <Select
+                  id="stat-teacher-bal"
+                  placeholder="Toți instructorii"
+                  options={teacheriQ.data ?? []}
+                  value={teacherBalId}
+                  onChange={(e) => setTeacherBalId(e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+          {balTeacherQ.isLoading ? (
+            <Spinner />
+          ) : (
+            <BalantaChart
+              title={
+                teacherBalId
+                  ? teacheriQ.data?.find((o) => o.value === teacherBalId)
+                      ?.label ?? 'Instructorul selectat'
+                  : 'Toți instructorii'
+              }
+              rows={balTeacherQ.data ?? []}
+              baseColor="#15803d"
+              topColor="#bbf7d0"
             />
           )}
         </div>
