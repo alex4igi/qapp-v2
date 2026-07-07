@@ -10,6 +10,7 @@ import { formatRON } from '@/lib/format'
 import { waLink } from '@/lib/phone'
 import { updateLeadStatus } from '@/features/leads/api'
 import { EvenimentForm } from './EvenimentForm'
+import { BileteOnlineSection } from './BileteOnlineSection'
 import {
   getEvenimentRoster,
   getEveniment,
@@ -346,6 +347,8 @@ export function EvenimentRosterPage() {
           ))}
         </div>
       )}
+
+      <BileteOnlineSection evenimentId={evenimentId!} />
 
       {payClientId && (
         <PlataNouaModal

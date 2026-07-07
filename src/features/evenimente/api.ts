@@ -311,6 +311,63 @@ export async function getEveniment(id: string): Promise<Eveniment> {
   return data
 }
 
+// ── Bilete online (ticketing spectacole) ────────────────────────────────────
+
+export type BiletOnline = {
+  id: string
+  cod: string | null
+  status: string
+  pret: number
+  validat_at: string | null
+  clientNume: string | null
+}
+
+// Biletele vândute online pentru un eveniment (rânduri `bilete` cu status platit/validat).
+export async function getBileteEveniment(
+  evenimentId: string,
+): Promise<BiletOnline[]> {
+  const { data, error } = await supabase
+    .from('bilete')
+    .select('id, cod, status, pret, validat_at, client_rel:clienti(nume, prenume)')
+    .eq('eveniment', evenimentId)
+    .in('status', ['platit', 'validat'])
+    .order('cod', { ascending: true })
+  if (error) throw error
+  return ((data ?? []) as unknown as Array<{
+    id: string
+    cod: string | null
+    status: string
+    pret: number
+    validat_at: string | null
+    client_rel: { nume: string; prenume: string | null } | null
+  }>).map((b) => ({
+    id: b.id,
+    cod: b.cod,
+    status: b.status,
+    pret: b.pret,
+    validat_at: b.validat_at,
+    clientNume: b.client_rel
+      ? `${b.client_rel.nume} ${b.client_rel.prenume ?? ''}`.trim()
+      : null,
+  }))
+}
+
+export type ValidareBilet = {
+  ok: boolean
+  reason?: string
+  eveniment?: string
+  client?: string
+  pret?: number
+  validat_at?: string
+}
+
+// Validare la ușă — staff scanează/introduce codul. Idempotent-safe (refuză dubla-validare).
+export async function valideazaBilet(cod: string): Promise<ValidareBilet> {
+  const { data, error } = await supabase.rpc('valideaza_bilet', { p_cod: cod })
+  if (error) throw error
+  return data as ValidareBilet
+}
+
 // Gestiune participanți — RPC-uri staff-gated (vezi migrarea
 // 20260624100000); singura cale prin care recepția modifică un eveniment.
 export async function addEvenimentParticipant(

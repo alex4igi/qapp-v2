@@ -306,6 +306,109 @@ export type Database = {
           },
         ]
       }
+      bilete: {
+        Row: {
+          client: string | null
+          cod: string | null
+          created: string
+          eveniment: string
+          id: string
+          order_ref: string | null
+          portal_account_id: string | null
+          pret: number
+          status: string
+          validat_at: string | null
+        }
+        Insert: {
+          client?: string | null
+          cod?: string | null
+          created?: string
+          eveniment: string
+          id?: string
+          order_ref?: string | null
+          portal_account_id?: string | null
+          pret?: number
+          status?: string
+          validat_at?: string | null
+        }
+        Update: {
+          client?: string | null
+          cod?: string | null
+          created?: string
+          eveniment?: string
+          id?: string
+          order_ref?: string | null
+          portal_account_id?: string | null
+          pret?: number
+          status?: string
+          validat_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bilete_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bilete_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bilete_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "bilete_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "bilete_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bilete_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "bilete_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "bilete_eveniment_fkey"
+            columns: ["eveniment"]
+            isOneToOne: false
+            referencedRelation: "bilete_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bilete_eveniment_fkey"
+            columns: ["eveniment"]
+            isOneToOne: false
+            referencedRelation: "evenimente"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campanii_promovare: {
         Row: {
           bani: string | null
@@ -4075,11 +4178,13 @@ export type Database = {
           auth_user_id: string
           client_id: string
           created: string
+          eveniment_id: string | null
           fgo_emitat: string | null
           fgo_factura: string | null
           fifo_plan: Json
           id: string
           netopia_transaction_id: string | null
+          nr_bilete: number | null
           order_ref: string
           order_type: string
           rezervare_id: string | null
@@ -4092,11 +4197,13 @@ export type Database = {
           auth_user_id: string
           client_id: string
           created?: string
+          eveniment_id?: string | null
           fgo_emitat?: string | null
           fgo_factura?: string | null
           fifo_plan: Json
           id?: string
           netopia_transaction_id?: string | null
+          nr_bilete?: number | null
           order_ref: string
           order_type?: string
           rezervare_id?: string | null
@@ -4109,11 +4216,13 @@ export type Database = {
           auth_user_id?: string
           client_id?: string
           created?: string
+          eveniment_id?: string | null
           fgo_emitat?: string | null
           fgo_factura?: string | null
           fifo_plan?: Json
           id?: string
           netopia_transaction_id?: string | null
+          nr_bilete?: number | null
           order_ref?: string
           order_type?: string
           rezervare_id?: string | null
@@ -4170,6 +4279,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "raport_incasari"
             referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "netopia_orders_eveniment_id_fkey"
+            columns: ["eveniment_id"]
+            isOneToOne: false
+            referencedRelation: "bilete_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "netopia_orders_eveniment_id_fkey"
+            columns: ["eveniment_id"]
+            isOneToOne: false
+            referencedRelation: "evenimente"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "netopia_orders_rezervare_id_fkey"
@@ -8147,6 +8270,20 @@ export type Database = {
           venit: number
         }[]
       }
+      get_bilete_membru: {
+        Args: { p_client: string }
+        Returns: {
+          cod: string
+          created: string
+          data: string
+          eveniment: string
+          eveniment_nume: string
+          id: string
+          locatie: string
+          pret: number
+          status: string
+        }[]
+      }
       get_campanie_progress: {
         Args: { p_campanie_id: string }
         Returns: {
@@ -8861,6 +8998,15 @@ export type Database = {
           luna_num: number
         }[]
       }
+      hold_bilete: {
+        Args: {
+          p_client: string
+          p_eveniment: string
+          p_order_ref: string
+          p_qty: number
+        }
+        Returns: Json
+      }
       hold_loc_open: {
         Args: { p_client: string; p_sesiune: string }
         Returns: Json
@@ -9269,6 +9415,7 @@ export type Database = {
           voucher_id: string
         }[]
       }
+      valideaza_bilet: { Args: { p_cod: string }; Returns: Json }
       warn_existing_incasare: {
         Args: { p_client: string; p_data: string; p_suma: number }
         Returns: boolean

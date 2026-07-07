@@ -20,8 +20,11 @@ const NETOPIA_BASE = (Deno.env.get('NETOPIA_ENV') ?? 'sandbox') === 'live'
 
 type Body = {
   clientId: string
-  kind?: 'abonament' | 'rezervare'
+  kind?: 'abonament' | 'rezervare' | 'bilet'
   sesiuneId?: string
+  // bilet: evenimentul pentru care se cumpără + câte bilete (preț server-side din eveniment).
+  evenimentId?: string
+  qty?: number
   // abonament: plătește restanța până la (și inclusiv) această înrolare/lună (FIFO);
   // null => toată restanța. Garda cronologică e validată server-side în RPC.
   panaLa?: string
@@ -67,7 +70,7 @@ Deno.serve(async (req) => {
       return json({ error: 'invalid token' }, 401)
     }
 
-    const { clientId, kind = 'abonament', sesiuneId, panaLa, datorii, includeInrolari, voucherCod } = (await req.json()) as Body
+    const { clientId, kind = 'abonament', sesiuneId, evenimentId, qty, panaLa, datorii, includeInrolari, voucherCod } = (await req.json()) as Body
     if (!clientId) return json({ error: 'clientId obligatoriu' }, 400)
 
     // Client scopat pe JWT-ul părintelui => RPC-urile validează apartenența la familie
@@ -80,8 +83,25 @@ Deno.serve(async (req) => {
     let plan: unknown[] = []
     let rezervareId: string | null = null
     let voucherId: string | null = null
+    let nrBilete: number | null = null
 
-    if (kind === 'rezervare') {
+    // Generat înainte de branch: `hold_bilete` stampilează order_ref pe biletele rezervate.
+    const orderRef = `QM-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`.toUpperCase()
+
+    if (kind === 'bilet') {
+      // Bilete spectacol: creează holduri (bilete 'rezervat', fără bani) → preț × qty.
+      if (!evenimentId || !qty) return json({ error: 'evenimentId + qty obligatorii pentru bilet' }, 400)
+      const { data: holdRes, error: holdErr } = await userClient.rpc('hold_bilete', {
+        p_eveniment: evenimentId,
+        p_qty: qty,
+        p_client: clientId,
+        p_order_ref: orderRef,
+      })
+      if (holdErr) return json({ error: holdErr.message }, 400)
+      amount = Number(holdRes?.amount ?? 0)
+      nrBilete = Number(holdRes?.nr ?? 0)
+      if (amount <= 0 || !nrBilete) return json({ error: 'Bilete invalide.' }, 400)
+    } else if (kind === 'rezervare') {
       // Rezervare OPEN class: creează un hold (loc 'rezervat', fără bani) → prețul ședinței.
       if (!sesiuneId) return json({ error: 'sesiuneId obligatoriu pentru rezervare' }, 400)
       const { data: holdRes, error: holdErr } = await userClient.rpc('hold_loc_open', {
@@ -151,8 +171,6 @@ Deno.serve(async (req) => {
       billingPhone = billingPhone ?? fam?.telefon ?? null
     }
 
-    const orderRef = `QM-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`.toUpperCase()
-
     // Înregistrează intentul ÎNAINTE de a contacta Netopia (sursa de adevăr a sumei).
     const { error: insErr } = await admin.from('netopia_orders').insert({
       order_ref: orderRef,
@@ -164,18 +182,23 @@ Deno.serve(async (req) => {
       order_type: kind,
       rezervare_id: rezervareId,
       voucher_id: voucherId,
+      eveniment_id: kind === 'bilet' ? evenimentId : null,
+      nr_bilete: nrBilete,
     })
     if (insErr) {
-      // dacă a rămas un hold orfan, eliberează-l
+      // eliberează holdurile orfane (rezervare / bilete stampilate cu acest order_ref)
       if (rezervareId) await admin.rpc('cancel_netopia_order', { p_order_ref: orderRef })
+      if (kind === 'bilet') await admin.from('bilete').update({ status: 'anulat' }).eq('order_ref', orderRef)
       return json({ error: `order insert: ${insErr.message}` }, 500)
     }
 
     const portalBase = (Deno.env.get('PORTAL_BASE_URL') ?? '').replace(/\/$/, '')
-    const returnPath = kind === 'rezervare' ? 'rezervari' : 'plati'
+    const returnPath = kind === 'rezervare' ? 'rezervari' : kind === 'bilet' ? 'bilete' : 'plati'
     const description = kind === 'rezervare'
       ? `Rezervare ședință Quasar Dance (${orderRef})`
-      : `Plată abonament Quasar Dance (${orderRef})`
+      : kind === 'bilet'
+        ? `Bilete spectacol Quasar Dance (${orderRef})`
+        : `Plată abonament Quasar Dance (${orderRef})`
     const startReq = {
       config: {
         language: 'ro',

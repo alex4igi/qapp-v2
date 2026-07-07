@@ -60,6 +60,7 @@ export type TarifInchiriere = Tables<'tarife_inchiriere'>
 export type Spectacol = Tables<'spectacole'>
 export type SpectacolAct = Tables<'spectacol_acte'>
 export type SpectacolActPerformer = Tables<'spectacol_act_performeri'>
+export type Bilet = Tables<'bilete'>
 
 // Enums folosite în UI
 export type StatusPrezenta = Enums<'status_prezenta'>
