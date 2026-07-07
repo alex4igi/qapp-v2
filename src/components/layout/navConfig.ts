@@ -51,6 +51,7 @@ export const navSections: NavSection[] = [
       { label: 'Vouchere',    path: '/vouchere' },
       { label: 'Inventar',    path: '/inventar' },
       { label: 'Evenimente',  path: '/evenimente' },
+      { label: 'Spectacole',  path: '/spectacole' },
       { label: 'Concursuri',  path: '/concursuri' },
       { label: 'Campanii',    path: '/campanii' },
       { label: 'Reînscrieri',    path: '/reinscrieri' },

@@ -57,6 +57,9 @@ export type ProdusPublic = Views<'produse_publice'>
 export type BiletPublic = Views<'bilete_publice'>
 export type Inchiriere = Tables<'inchirieri'>
 export type TarifInchiriere = Tables<'tarife_inchiriere'>
+export type Spectacol = Tables<'spectacole'>
+export type SpectacolAct = Tables<'spectacol_acte'>
+export type SpectacolActPerformer = Tables<'spectacol_act_performeri'>
 
 // Enums folosite în UI
 export type StatusPrezenta = Enums<'status_prezenta'>
@@ -67,6 +70,7 @@ export type InteresLead = Enums<'interes_lead'>
 export type AppFeedbackTip = Enums<'app_feedback_tip'>
 export type AppFeedbackStatus = Enums<'app_feedback_status'>
 export type StatusRezervare = Enums<'status_rezervare'>
+export type StatusSpectacol = Enums<'status_spectacol'>
 
 // Row-uri view-uri folosite în UI
 export type VPlatiInrolari = Views<'plati_inrolari'>

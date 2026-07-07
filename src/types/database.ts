@@ -5790,6 +5790,297 @@ export type Database = {
           },
         ]
       }
+      spectacol_act_performeri: {
+        Row: {
+          act: string
+          client: string
+          created: string
+          id: string
+        }
+        Insert: {
+          act: string
+          client: string
+          created?: string
+          id?: string
+        }
+        Update: {
+          act?: string
+          client?: string
+          created?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spectacol_act_performeri_act_fkey"
+            columns: ["act"]
+            isOneToOne: false
+            referencedRelation: "spectacol_acte"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacol_act_performeri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacol_act_performeri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacol_act_performeri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "spectacol_act_performeri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "spectacol_act_performeri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacol_act_performeri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "spectacol_act_performeri_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+        ]
+      }
+      spectacol_acte: {
+        Row: {
+          created: string
+          curs: string | null
+          durata_min: number | null
+          id: string
+          note: string | null
+          ordine: number
+          responsabil: string | null
+          spectacol: string
+          titlu: string
+        }
+        Insert: {
+          created?: string
+          curs?: string | null
+          durata_min?: number | null
+          id?: string
+          note?: string | null
+          ordine?: number
+          responsabil?: string | null
+          spectacol: string
+          titlu: string
+        }
+        Update: {
+          created?: string
+          curs?: string | null
+          durata_min?: number | null
+          id?: string
+          note?: string | null
+          ordine?: number
+          responsabil?: string | null
+          spectacol?: string
+          titlu?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_responsabil_fkey"
+            columns: ["responsabil"]
+            isOneToOne: false
+            referencedRelation: "incasari_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_responsabil_fkey"
+            columns: ["responsabil"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_responsabil_fkey"
+            columns: ["responsabil"]
+            isOneToOne: false
+            referencedRelation: "profil_teacher"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_responsabil_fkey"
+            columns: ["responsabil"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_responsabil_fkey"
+            columns: ["responsabil"]
+            isOneToOne: false
+            referencedRelation: "restante_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_responsabil_fkey"
+            columns: ["responsabil"]
+            isOneToOne: false
+            referencedRelation: "teacheri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_spectacol_fkey"
+            columns: ["spectacol"]
+            isOneToOne: false
+            referencedRelation: "spectacole"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spectacole: {
+        Row: {
+          created: string
+          data: string | null
+          eveniment: string | null
+          id: string
+          locatie: string | null
+          note: string | null
+          nume: string
+          ora: string | null
+          sezon: string | null
+          status: Database["public"]["Enums"]["status_spectacol"]
+          updated: string
+        }
+        Insert: {
+          created?: string
+          data?: string | null
+          eveniment?: string | null
+          id?: string
+          locatie?: string | null
+          note?: string | null
+          nume: string
+          ora?: string | null
+          sezon?: string | null
+          status?: Database["public"]["Enums"]["status_spectacol"]
+          updated?: string
+        }
+        Update: {
+          created?: string
+          data?: string | null
+          eveniment?: string | null
+          id?: string
+          locatie?: string | null
+          note?: string | null
+          nume?: string
+          ora?: string | null
+          sezon?: string | null
+          status?: Database["public"]["Enums"]["status_spectacol"]
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spectacole_eveniment_fkey"
+            columns: ["eveniment"]
+            isOneToOne: false
+            referencedRelation: "bilete_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacole_eveniment_fkey"
+            columns: ["eveniment"]
+            isOneToOne: false
+            referencedRelation: "evenimente"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spectacole_sezon_fkey"
+            columns: ["sezon"]
+            isOneToOne: false
+            referencedRelation: "sezoane"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_pontaj: {
         Row: {
           created: string
@@ -9086,6 +9377,7 @@ export type Database = {
         | "Trimis"
         | "Esuat"
         | "Amanat"
+      status_spectacol: "planificat" | "confirmat" | "finalizat" | "anulat"
       sub_status_lead: "de_revenit" | "nu_raspunde"
       sursa_prospect:
         | "Meta ADS"
@@ -9357,6 +9649,7 @@ export const Constants = {
         "Esuat",
         "Amanat",
       ],
+      status_spectacol: ["planificat", "confirmat", "finalizat", "anulat"],
       sub_status_lead: ["de_revenit", "nu_raspunde"],
       sursa_prospect: [
         "Meta ADS",

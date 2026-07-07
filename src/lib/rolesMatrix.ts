@@ -58,6 +58,9 @@ export const ROUTE_ACCESS = {
   // Rosterul unui eveniment (participanți + încasare bilet) — tot staff-ul.
   '/eveniment': ALL_STAFF,
   '/concursuri': PRIVILEGED,
+  // Spectacole / recitaluri (producție lineup) — owner/admin/manager. Teacherii pot
+  // fi responsabili de act, dar gestiunea rămâne la privilegiați (ca la concursuri).
+  '/spectacole': PRIVILEGED,
   '/campanii': ALL_STAFF,
   '/reinscrieri': PRIVILEGED,
   '/contracte': PRIVILEGED,

@@ -47,6 +47,8 @@ import { InventarListPage } from '@/features/inventar/InventarListPage'
 import { EvenimenteListPage } from '@/features/evenimente/EvenimenteListPage'
 import { EvenimentRosterPage } from '@/features/evenimente/EvenimentRosterPage'
 import { ConcursuriListPage } from '@/features/concursuri/ConcursuriListPage'
+import { SpectacoleListPage } from '@/features/spectacole/SpectacoleListPage'
+import { SpectacolProfilePage } from '@/features/spectacole/SpectacolProfilePage'
 import { CampaniiListPage } from '@/features/campanii/CampaniiListPage'
 import { ContracteListPage } from '@/features/contracte/ContracteListPage'
 import { ReinscrieriPage } from '@/features/reinscrieri/ReinscrieriPage'
@@ -187,6 +189,14 @@ function App() {
               <Route path="evenimente" element={<EvenimenteListPage />} />
               <Route path="concursuri" element={<ConcursuriListPage />} />
               <Route path="reinscrieri" element={<ReinscrieriPage />} />
+            </Route>
+          </Route>
+
+          {/* Spectacole / recitaluri — producție lineup (owner/admin/manager). */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/spectacole']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="spectacole" element={<SpectacoleListPage />} />
+              <Route path="spectacole/:id" element={<SpectacolProfilePage />} />
             </Route>
           </Route>
 
