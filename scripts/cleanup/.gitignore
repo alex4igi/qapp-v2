@@ -1,4 +1,7 @@
 # date generate / backup-uri cu PII — nu se comit
 *.txt
 _merged_clients_backup_*.json
+_merged_teacheri_backup_*.json
 merge-failed.json
+merge-teacheri-failed.json
+merge-teacheri-conflicte-auth.json
