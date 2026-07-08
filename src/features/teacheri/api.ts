@@ -17,6 +17,7 @@ export type SalariuGrupa = {
   tip: 'recurent' | 'facultativ' | 'trupa'
   sedinte_per_sapt: number
   nr_unitati: number | null
+  nr_prezente: number | null
   prag_unitati_min: number | null
   suma: number
   manual: boolean
@@ -27,6 +28,7 @@ export type SalariuPreview = {
   anul: number
   luna: number
   total: number
+  total_prezente: number
   grupe: SalariuGrupa[]
 }
 

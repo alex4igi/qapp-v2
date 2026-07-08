@@ -123,6 +123,15 @@ function LunaAccordion({
     item.kind === 'preview'
       ? item.data.grupe
       : ((item.data.breakdown ?? []) as unknown as SalariuGrupa[])
+  // Sumat din grupe (funcționează și pentru snapshot-uri: total_prezente nu se
+  // persistă, dar nr_prezente e în breakdown). Snapshot-urile vechi n-au câmpul → 0.
+  const totalPrezente = grupe.reduce((s, g) => s + (g.nr_prezente ?? 0), 0)
+  // Cursanți activi = suma pe grupele recurente (nr_unitati). Facultativ = prezențe,
+  // trupă = manual/null → excluse. Se potrivește cu suma coloanei „Numărați" din tabel.
+  const totalCursanti = grupe.reduce(
+    (s, g) => s + (g.tip === 'recurent' ? (g.nr_unitati ?? 0) : 0),
+    0,
+  )
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -149,7 +158,13 @@ function LunaAccordion({
             </span>
           )}
         </div>
-        <span className="font-display text-base font-bold text-quasar-black">{formatLei(total)}</span>
+        <div className="flex items-baseline gap-3">
+          <span className="text-xs font-medium text-quasar-gray">
+            {totalCursanti} {totalCursanti === 1 ? 'cursant activ' : 'cursanți activi'} ·{' '}
+            {totalPrezente} prezenț{totalPrezente === 1 ? 'ă' : 'e'}
+          </span>
+          <span className="font-display text-base font-bold text-quasar-black">{formatLei(total)}</span>
+        </div>
       </button>
       {open && (
         <div className="border-t border-gray-200 px-4 py-3">
