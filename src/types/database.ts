@@ -6392,6 +6392,7 @@ export type Database = {
           id: string
           link_contract: string | null
           marime_tricou: Database["public"]["Enums"]["marime_tricou"] | null
+          model_salariu: string | null
           nivelul: Database["public"]["Enums"]["nivel_teacher"] | null
           nume: string
           observatii: string | null
@@ -6410,6 +6411,7 @@ export type Database = {
           id?: string
           link_contract?: string | null
           marime_tricou?: Database["public"]["Enums"]["marime_tricou"] | null
+          model_salariu?: string | null
           nivelul?: Database["public"]["Enums"]["nivel_teacher"] | null
           nume: string
           observatii?: string | null
@@ -6428,6 +6430,7 @@ export type Database = {
           id?: string
           link_contract?: string | null
           marime_tricou?: Database["public"]["Enums"]["marime_tricou"] | null
+          model_salariu?: string | null
           nivelul?: Database["public"]["Enums"]["nivel_teacher"] | null
           nume?: string
           observatii?: string | null

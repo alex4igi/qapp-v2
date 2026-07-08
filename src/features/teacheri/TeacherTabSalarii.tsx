@@ -1,18 +1,27 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Spinner } from '@/components/ui'
+import { Button, Select, Spinner } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import type { SalariuTeacher } from '@/types/db'
 import { getSezonActiv } from '../setari/api'
 import {
   confirmaSalariuTeacher,
+  getTeacher,
   listSalariiTeacher,
   previewSalariuTeacher,
+  setModelSalariu,
+  type ModelSalariu,
   type SalariuGrupa,
   type SalariuPreview,
 } from './api'
+
+const MODEL_OPTIONS = [
+  { value: '', label: 'Auto (după tipul cursului)' },
+  { value: 'per_client', label: 'Per client (recurent)' },
+  { value: 'per_prezenta', label: 'Per prezențe (facultativ)' },
+]
 
 const LUNI_RO = [
   'Ianuarie',
@@ -259,6 +268,20 @@ export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
     queryFn: getSezonActiv,
   })
 
+  const teacherQuery = useQuery({
+    queryKey: ['teacher', teacherId],
+    queryFn: () => getTeacher(teacherId),
+  })
+
+  const modelMutation = useMutation({
+    mutationFn: (model: ModelSalariu | null) => setModelSalariu(teacherId, model),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['teacher', teacherId] })
+      // preview-urile depind de model → le recalculăm
+      void queryClient.invalidateQueries({ queryKey: ['salariu-preview', teacherId] })
+    },
+  })
+
   const snapshotsQuery = useQuery({
     queryKey: ['salarii-teacher', teacherId],
     queryFn: () => listSalariiTeacher(teacherId),
@@ -350,8 +373,36 @@ export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
         ? Number(currentItem.data.total)
         : 0
 
+  const currentModel = teacherQuery.data?.model_salariu ?? ''
+
   return (
     <div className="space-y-4">
+      {/* Model de salarizare — override per teacher (admin) */}
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-quasar-black">
+              Model de salarizare
+            </h3>
+            <p className="text-xs text-quasar-gray">
+              Cum se plătește acest teacher. „Auto" folosește tipul fiecărui curs
+              (facultativ → prezențe, recurent → client). Trupele rămân mereu manual.
+            </p>
+          </div>
+          <Select
+            className="w-64"
+            options={MODEL_OPTIONS}
+            value={currentModel}
+            disabled={modelMutation.isPending || teacherQuery.isLoading}
+            onChange={(e) =>
+              modelMutation.mutate(
+                e.target.value === '' ? null : (e.target.value as ModelSalariu),
+              )
+            }
+          />
+        </div>
+      )}
+
       {/* Mini-summary „Cursanți Înrolați" — luna curentă */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-2 flex items-center justify-between">

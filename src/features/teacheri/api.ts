@@ -30,13 +30,28 @@ export type SalariuGrupa = {
   prag_prezente_min?: number | null
 }
 
+export type ModelSalariu = 'per_client' | 'per_prezenta'
+
 export type SalariuPreview = {
   teacher_id: string
   anul: number
   luna: number
   total: number
   total_prezente: number
+  model_salariu: ModelSalariu | null
   grupe: SalariuGrupa[]
+}
+
+// Setează override-ul de model de salarizare per teacher (null = auto din facultativ).
+export async function setModelSalariu(
+  teacherId: string,
+  model: ModelSalariu | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('teacheri')
+    .update({ model_salariu: model })
+    .eq('id', teacherId)
+  if (error) throw error
 }
 
 export const PAGE_SIZE = 25
