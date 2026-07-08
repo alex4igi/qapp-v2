@@ -9037,6 +9037,18 @@ export type Database = {
       is_owner: { Args: never; Returns: boolean }
       is_parinte: { Args: never; Returns: boolean }
       is_teacher: { Args: never; Returns: boolean }
+      list_bilete_evenimente: {
+        Args: never
+        Returns: {
+          capacitate: number
+          data: string
+          id: string
+          locatie: string
+          locuri_ramase: number
+          nume: string
+          pret_bilet: number
+        }[]
+      }
       list_campanie_clienti_curs: {
         Args: { p_campanie_id: string; p_curs_tinta_id: string }
         Returns: {
