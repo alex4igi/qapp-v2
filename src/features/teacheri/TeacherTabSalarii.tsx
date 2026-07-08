@@ -38,35 +38,82 @@ function unitLabel(g: SalariuGrupa) {
   return 'cursanți'
 }
 
-function GrupaRow({ g }: { g: SalariuGrupa }) {
-  if (g.manual) {
-    return (
-      <tr className="border-t border-gray-200 text-sm">
-        <td className="py-2 pr-3 font-medium">{g.curs_nume}</td>
-        <td className="py-2 pr-3 text-quasar-gray">trupă</td>
-        <td className="py-2 pr-3 text-quasar-gray" colSpan={3}>
-          Calcul manual — completați separat
-        </td>
-      </tr>
-    )
+// O celulă „model" (per client / per prezențe) cu nr numărat + suma la prag.
+// `activ` = modelul care intră efectiv în plată pentru grupa asta → evidențiat.
+function ModelCell({
+  nr,
+  unit,
+  prag,
+  suma,
+  activ,
+}: {
+  nr: number | null | undefined
+  unit: string
+  prag: number | null | undefined
+  suma: number | null | undefined
+  activ: boolean
+}) {
+  // Snapshot vechi fără câmpurile duale → nimic de arătat
+  if (suma == null && nr == null) {
+    return <td className="py-2 pr-3 text-quasar-gray">—</td>
   }
   return (
-    <tr className="border-t border-gray-200 text-sm">
-      <td className="py-2 pr-3 font-medium">{g.curs_nume}</td>
+    <td
+      className={`py-2 pr-3 ${activ ? 'rounded-md bg-quasar-yellow/15' : ''}`}
+    >
+      <div className="flex items-baseline gap-2">
+        <span className={activ ? 'font-semibold' : 'text-quasar-gray'}>
+          {formatLei(suma ?? 0)}
+        </span>
+        {activ && (
+          <span className="rounded-full bg-quasar-yellow px-1.5 py-0.5 text-[10px] font-bold text-quasar-black">
+            plătit
+          </span>
+        )}
+      </div>
+      <div className="text-xs text-quasar-gray">
+        {nr ?? 0} {unit}
+        {prag != null && prag > 0 ? ` · prag ≥ ${prag}` : ''}
+      </div>
+    </td>
+  )
+}
+
+function GrupaRow({ g }: { g: SalariuGrupa }) {
+  return (
+    <tr className="border-t border-gray-200 align-top text-sm">
+      <td className="py-2 pr-3 font-medium">
+        {g.curs_nume}
+        {g.tip === 'trupa' && (
+          <span className="ml-2 text-xs text-quasar-gray">(trupă)</span>
+        )}
+      </td>
       <td className="py-2 pr-3 text-quasar-gray">
         {g.sedinte_per_sapt
           ? `${g.sedinte_per_sapt} ședinț${g.sedinte_per_sapt === 1 ? 'ă' : 'e'}/săpt`
           : '—'}
       </td>
-      <td className="py-2 pr-3">
-        {g.nr_unitati ?? 0} {unitLabel(g)}
+      <ModelCell
+        nr={g.nr_cursanti}
+        unit="cursanți"
+        prag={g.prag_client_min}
+        suma={g.suma_per_client}
+        activ={g.tip === 'recurent'}
+      />
+      <ModelCell
+        nr={g.nr_prezente}
+        unit="prezențe"
+        prag={g.prag_prezente_min}
+        suma={g.suma_per_prezente}
+        activ={g.tip === 'facultativ'}
+      />
+      <td className="py-2 pr-3 text-right font-medium">
+        {g.manual ? (
+          <span className="text-quasar-gray">manual</span>
+        ) : (
+          formatLei(g.suma)
+        )}
       </td>
-      <td className="py-2 pr-3 text-quasar-gray">
-        {g.prag_unitati_min !== null && g.prag_unitati_min > 0
-          ? `≥ ${g.prag_unitati_min}`
-          : '—'}
-      </td>
-      <td className="py-2 pr-3 text-right font-medium">{formatLei(g.suma)}</td>
     </tr>
   )
 }
@@ -85,9 +132,9 @@ function BreakdownTable({ grupe }: { grupe: SalariuGrupa[] }) {
         <tr>
           <th className="pb-2 pr-3">Grupă</th>
           <th className="pb-2 pr-3">Ședințe</th>
-          <th className="pb-2 pr-3">Numărați</th>
-          <th className="pb-2 pr-3">Prag</th>
-          <th className="pb-2 pr-3 text-right">Sumă</th>
+          <th className="pb-2 pr-3">Per client</th>
+          <th className="pb-2 pr-3">Per prezențe</th>
+          <th className="pb-2 pr-3 text-right">Plătit</th>
         </tr>
       </thead>
       <tbody>

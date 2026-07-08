@@ -21,6 +21,13 @@ export type SalariuGrupa = {
   prag_unitati_min: number | null
   suma: number
   manual: boolean
+  // Dual informativ: ambele modele calculate pentru orice grupă (snapshot-urile
+  // vechi n-au câmpurile → null/undefined, UI-ul tratează absența).
+  nr_cursanti?: number | null
+  suma_per_client?: number | null
+  prag_client_min?: number | null
+  suma_per_prezente?: number | null
+  prag_prezente_min?: number | null
 }
 
 export type SalariuPreview = {
