@@ -83,6 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userId = next?.user?.id ?? null
       // SIGNED_IN: deschide o sesiune pontaj nouă (RPC închide automat sesiunile reziduale).
       // INITIAL_SESSION: la prima încărcare a paginii cu sesiune persistată, NU deschidem.
+      // RPC-ul e idempotent pe zi (o tură deschisă azi → o continuă), deci re-firing pe
+      // focus/reload/multi-device nu mai fragmentează tura — garda de mai jos e doar optimizare.
       if (event === 'SIGNED_IN' && userId && pontajOpenedFor.current !== userId) {
         pontajOpenedFor.current = userId
         void openPontajSession()
