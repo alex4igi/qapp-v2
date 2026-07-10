@@ -6,6 +6,7 @@ import { IncasariTab } from './IncasariTab'
 import { RestanteTab } from './RestanteTab'
 import { RaportZileTab } from './RaportZileTab'
 import { ReconcilieriTab } from './ReconcilieriTab'
+import { SumarCashTab } from './SumarCashTab'
 import { CheltuieliTab } from './CheltuieliTab'
 
 export function FinanciarPage() {
@@ -21,12 +22,14 @@ export function FinanciarPage() {
         { id: 'cheltuieli',   label: 'Cheltuieli' },
         { id: 'restante',     label: 'Restanțe' },
         { id: 'reconcilieri', label: 'Reconcilieri cash' },
+        { id: 'sumar-cash',   label: 'Sumar cash' },
       ]
     : [
         { id: 'raport',       label: 'Raport pe zile' },
         { id: 'incasari',     label: 'Încasări' },
         { id: 'restante',     label: 'Restanțe' },
         { id: 'reconcilieri', label: 'Reconcilieri cash' },
+        { id: 'sumar-cash',   label: 'Sumar cash' },
       ]
   const [active, setActive] = useState('raport')
 
@@ -39,6 +42,7 @@ export function FinanciarPage() {
       {active === 'cheltuieli' && privileged && <CheltuieliTab />}
       {active === 'restante' && <RestanteTab />}
       {active === 'reconcilieri' && <ReconcilieriTab />}
+      {active === 'sumar-cash' && <SumarCashTab />}
     </div>
   )
 }

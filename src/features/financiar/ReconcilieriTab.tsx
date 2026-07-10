@@ -17,9 +17,12 @@ import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { locatiiOptions } from '@/lib/lookups'
 import type { ReconciliereCash } from '@/types/db'
 
-type Row = ReconciliereCash & { locatii?: { nume: string | null } | null }
+export type ReconciliereRow = ReconciliereCash & {
+  locatii?: { nume: string | null } | null
+}
+type Row = ReconciliereRow
 
-async function listReconcilieri(params: {
+export async function listReconcilieri(params: {
   from: string
   to: string
   locatieId: string | null
@@ -173,14 +176,15 @@ export function ReconcilieriTab() {
         r.notite ?? '',
       ]
     })
-    // Total doar pe coloanele aditive; fondurile sunt solduri zilnice, nu se cumulează.
+    // Total doar pe coloanele aditive; fondurile sunt solduri zilnice, iar
+    // Numărat conține fondul reportat de ieri — suma lui ar dubla banii.
     const sum = (pick: (r: Row) => number) => rows.reduce((a, r) => a + pick(r), 0)
     body.push([
       'TOTAL',
       '',
       sum((r) => Number(r.total_sistem ?? 0)),
       '',
-      sum((r) => Number(r.total_numarat ?? 0)),
+      '',
       sumar.difTotal,
       sumar.depus,
       '',

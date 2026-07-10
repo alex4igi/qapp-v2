@@ -119,6 +119,13 @@ export function ReconciliereCashCard({
         ? 'bg-amber-100 text-amber-700'
         : 'bg-red-100 text-red-700'
 
+  // Tipar de introducere greșită: „numărat" ≈ doar cash-ul zilei, fără fondul
+  // de ieri — diferența ar ieși fals negativă exact cu fondul.
+  const probabilFaraFond =
+    fondInceputNum >= 5 &&
+    totalNumarat > 0 &&
+    Math.abs(totalNumarat - cashSistem) <= 5
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
@@ -137,9 +144,12 @@ export function ReconciliereCashCard({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-quasar-gray">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-quasar-gray">
             Bancnote/monede în casă
           </h3>
+          <p className="mb-2 mt-0.5 text-xs text-quasar-gray">
+            Numără tot sertarul, inclusiv fondul de la ieri.
+          </p>
           <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
             <table className="w-full text-sm">
               <thead>
@@ -175,7 +185,7 @@ export function ReconciliereCashCard({
               <tfoot>
                 <tr className="bg-gray-50">
                   <td colSpan={2} className="px-3 py-2 text-right text-sm font-medium">
-                    Total numărat:
+                    Total în sertar:
                   </td>
                   <td className="px-3 py-2 text-right text-base font-bold text-quasar-black">
                     {formatRON(totalNumarat)}
@@ -273,6 +283,14 @@ export function ReconciliereCashCard({
               }}
             />
           </Field>
+
+          {probabilFaraFond && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              ⚠️ Ai numărat și fondul de ieri (
+              {formatRON(fondInceputNum)})? Totalul trebuie să includă{' '}
+              <strong>tot</strong> ce e în sertar, nu doar încasările de azi.
+            </div>
+          )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
