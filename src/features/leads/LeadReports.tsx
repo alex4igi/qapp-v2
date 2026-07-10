@@ -1,11 +1,20 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button, Select, Spinner } from '@/components/ui'
-import { campaniiOptions } from '@/lib/lookups'
+import { campaniiOptions, sezonActiv } from '@/lib/lookups'
 import { listUsers } from '@/features/setari/utilizatoriApi'
 import type { Lead } from '@/types/db'
-import { listLeads } from './api'
-import { PIPELINE_COLUMNS, GRUPA_LABELS, GRUPE, LOCATII } from './constants'
+import { listLeads, getLeadFunnelGlobal } from './api'
+import { GRUPA_LABELS, GRUPE, LOCATII } from './constants'
+
+// Perioada cohortei de funnel (data intrării lead-ului).
+type Perioada = 'sezon' | 'luna' | 'tot'
+
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate(),
+  ).padStart(2, '0')}`
+}
 
 type Bucket = {
   key: string
@@ -97,7 +106,9 @@ function BreakdownTable({
 export function LeadReports() {
   const [locatie, setLocatie] = useState('')
   const [grupa, setGrupa] = useState('')
+  const [perioada, setPerioada] = useState<Perioada>('sezon')
   const leadsQ = useQuery({ queryKey: ['leads'], queryFn: listLeads })
+  const sezonQ = useQuery({ queryKey: ['lookup', 'sezon-activ'], queryFn: sezonActiv })
   const campaniiQ = useQuery({
     queryKey: ['lookup', 'campanii'],
     queryFn: campaniiOptions,
@@ -120,28 +131,55 @@ export function LeadReports() {
     return m
   }, [usersQ.data])
 
-  // Aceeași semantică de filtrare ca în Kanban (match exact pe câmpul lead-ului)
+  // Intervalul cohortei [from, to] pe data intrării lead-ului (leads.created).
+  const range = useMemo(() => {
+    const today = ymd(new Date())
+    if (perioada === 'luna') {
+      const d = new Date()
+      return { from: ymd(new Date(d.getFullYear(), d.getMonth(), 1)), to: today }
+    }
+    if (perioada === 'sezon' && sezonQ.data) {
+      return {
+        from: sezonQ.data.data_incepere.slice(0, 10),
+        to: sezonQ.data.data_final.slice(0, 10),
+      }
+    }
+    // „Tot istoricul" (și fallback dacă sezonul încă se încarcă).
+    return { from: '2019-01-01', to: today }
+  }, [perioada, sezonQ.data])
+
+  // Aceeași semantică de filtrare ca în Kanban (match exact pe câmpul lead-ului),
+  // plus cohorta pe perioadă — coerentă cu funnel-ul.
   const leads = useMemo(() => {
     return (leadsQ.data ?? []).filter((l) => {
       if (locatie && l.locatia !== locatie) return false
       if (grupa && l.grupa_varsta !== grupa) return false
+      const zi = (l.created ?? '').slice(0, 10)
+      if (zi && (zi < range.from || zi > range.to)) return false
       return true
     })
-  }, [leadsQ.data, locatie, grupa])
+  }, [leadsQ.data, locatie, grupa, range])
 
-  const funnel = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const l of leads) counts.set(l.status, (counts.get(l.status) ?? 0) + 1)
-    return PIPELINE_COLUMNS.map((c) => ({
-      status: c.status,
-      label: c.label,
-      count: counts.get(c.status) ?? 0,
-    }))
-  }, [leads])
+  // Funnel cumulativ istoric — semnale persistente din get_lead_funnel (un lead
+  // avansat rămâne numărat la treptele anterioare), NU statusul curent.
+  const funnelQ = useQuery({
+    queryKey: ['lead-funnel', range.from, range.to, locatie, grupa],
+    queryFn: () => getLeadFunnelGlobal(range.from, range.to, locatie || null, grupa || null),
+  })
 
-  const total = leads.length
-  const convertiti = funnel.find((f) => f.status === 'convertit')?.count ?? 0
-  const maxFunnel = Math.max(1, ...funnel.map((f) => f.count))
+  const funnel = funnelQ.data
+  const funnelStages = funnel
+    ? [
+        { key: 'noi', label: 'Noi', count: funnel.noi },
+        { key: 'contactati', label: 'Contactați', count: funnel.contactati },
+        { key: 'programati', label: 'Programați', count: funnel.programati },
+        { key: 'prezenti', label: 'Au venit', count: funnel.prezenti },
+        { key: 'convertiti', label: 'Convertiți', count: funnel.convertiti },
+      ]
+    : []
+
+  const total = funnel?.noi ?? 0
+  const convertiti = funnel?.convertiti ?? 0
 
   const perSursa = useMemo(
     () =>
@@ -194,6 +232,17 @@ export function LeadReports() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
+        <div className="w-44">
+          <Select
+            options={[
+              { label: 'Sezonul curent', value: 'sezon' },
+              { label: 'Luna curentă', value: 'luna' },
+              { label: 'Tot istoricul', value: 'tot' },
+            ]}
+            value={perioada}
+            onChange={(e) => setPerioada(e.target.value as Perioada)}
+          />
+        </div>
         <div className="w-40">
           <Select
             placeholder="Toate locațiile"
@@ -244,26 +293,80 @@ export function LeadReports() {
 
       <section className="rounded-lg border border-quasar-gray-light bg-white">
         <h3 className="border-b border-quasar-gray-light px-3 py-2 text-sm font-semibold text-quasar-black">
-          Distribuție pe pipeline
+          Funnel istoric
+          <span className="ml-2 font-normal text-quasar-gray">
+            din lead-urile intrate în perioadă, câți au ajuns la fiecare etapă
+          </span>
         </h3>
-        <div className="space-y-1.5 p-3">
-          {funnel.map((f) => (
-            <div key={f.status} className="flex items-center gap-2 text-sm">
-              <span className="w-28 shrink-0 text-quasar-gray">
-                {f.label}
-              </span>
-              <div className="h-4 flex-1 rounded bg-quasar-gray-light/50">
-                <div
-                  className="h-4 rounded bg-quasar-yellow"
-                  style={{ width: `${(f.count / maxFunnel) * 100}%` }}
-                />
-              </div>
-              <span className="w-8 shrink-0 text-right font-medium text-quasar-black">
-                {f.count}
-              </span>
+        {funnelQ.isLoading ? (
+          <div className="p-3">
+            <Spinner />
+          </div>
+        ) : !funnel || funnel.noi === 0 ? (
+          <p className="px-3 py-3 text-sm text-quasar-gray">Fără date.</p>
+        ) : (
+          <div className="space-y-2 p-3">
+            {funnelStages.map((s, i) => {
+              const prev = i === 0 ? s.count : funnelStages[i - 1].count
+              const dinAnterior = i === 0 || prev === 0 ? null : (s.count / prev) * 100
+              const dinTotal = funnel.noi ? (s.count / funnel.noi) * 100 : 0
+              return (
+                <div key={s.key} className="flex items-center gap-2 text-sm">
+                  <span className="w-24 shrink-0 text-quasar-gray">{s.label}</span>
+                  <div className="h-5 flex-1 rounded bg-quasar-gray-light/50">
+                    <div
+                      className="flex h-5 items-center justify-end rounded bg-quasar-yellow px-1.5"
+                      style={{ width: `${Math.max(dinTotal, 3)}%` }}
+                    >
+                      <span className="text-xs font-semibold text-quasar-black">
+                        {s.count}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="w-24 shrink-0 text-right text-xs text-quasar-gray">
+                    {dinAnterior === null
+                      ? `${Math.round(dinTotal)}% total`
+                      : `${Math.round(dinAnterior)}% din ant.`}
+                  </span>
+                </div>
+              )
+            })}
+            <div className="mt-1 space-y-1 border-t border-quasar-gray-light/60 pt-2">
+              <p className="text-xs font-medium text-quasar-gray">Ieșiri</p>
+              {(
+                [
+                  { key: 'nu_a_venit', label: 'Nu a venit', count: funnel.nuAVenit },
+                  { key: 'pierdut', label: 'Pierdut', count: funnel.pierdut },
+                ] as const
+              ).map((o) => (
+                <div key={o.key} className="flex items-center gap-2 text-sm">
+                  <span className="w-24 shrink-0 text-quasar-gray">{o.label}</span>
+                  <div className="h-4 flex-1 rounded bg-quasar-gray-light/50">
+                    <div
+                      className="h-4 rounded bg-quasar-gray/40"
+                      style={{
+                        width: `${funnel.noi ? Math.max((o.count / funnel.noi) * 100, o.count ? 3 : 0) : 0}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="w-24 shrink-0 text-right text-xs text-quasar-gray">
+                    {o.count}
+                    {funnel.noi ? ` · ${Math.round((o.count / funnel.noi) * 100)}% total` : ''}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="mt-1 border-t border-quasar-gray-light/60 pt-2 text-xs text-quasar-gray">
+              Retenție 90z:{' '}
+              <span className="font-semibold text-quasar-black">
+                {funnel.retentie90z}
+              </span>{' '}
+              din {funnel.retentieEligibili} convertiți eligibili (≥90 zile)
+              {funnel.retentieEligibili > 0 &&
+                ` — ${Math.round((funnel.retentie90z / funnel.retentieEligibili) * 100)}%`}
+            </div>
+          </div>
+        )}
       </section>
 
       <BreakdownTable

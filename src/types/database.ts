@@ -8525,11 +8525,18 @@ export type Database = {
         }[]
       }
       get_lead_funnel: {
-        Args: { p_from: string; p_locatie?: string; p_to: string }
+        Args: {
+          p_from: string
+          p_grupa?: string
+          p_locatie?: string
+          p_to: string
+        }
         Returns: {
           contactati: number
           convertiti: number
           leads_total: number
+          nu_a_venit: number
+          pierdut: number
           prezenti: number
           proba: number
           retentie_90z: number
