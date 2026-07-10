@@ -22,7 +22,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
-      refetchOnWindowFocus: false,
+      // Reîmprospătează pagina activă când tabul redevine în focus, ca datele
+      // să se sincronizeze între taburi diferite (ex: leads într-un tab,
+      // dashboard grupă în altul) fără refresh manual.
+      refetchOnWindowFocus: true,
     },
   },
 })
