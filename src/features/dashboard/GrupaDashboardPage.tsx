@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Spinner, Tabs, Badge, type BadgeTone } from '@/components/ui'
@@ -16,6 +16,7 @@ import {
   getGrupaDashboard,
   type RosterStatus,
   type GrupaRosterRow,
+  type GrupaDashboard,
 } from './api'
 
 type RosterView = 'cards' | 'list' | 'cols'
@@ -378,32 +379,10 @@ export function GrupaDashboardPage() {
       Boolean(cursId && sezon?.data_incepere && sezon?.data_final),
   })
 
-  // Ordine stabilă: fixăm pozițiile cardurilor la primul fetch pentru această
-  // combinație curs+zi, ca toggle Prezent↔Absent să nu re-sorteze grila.
-  // Reset la schimbare de curs/zi.
-  const [stableOrder, setStableOrder] = useState<string[] | null>(null)
-  useEffect(() => {
-    setStableOrder(null)
-  }, [cursId, date])
-  useEffect(() => {
-    if (data && stableOrder === null) {
-      setStableOrder(data.roster.map((r) => r.rowId))
-    }
-  }, [data, stableOrder])
-
-  const orderedRoster = useMemo(() => {
-    if (!data) return []
-    if (!stableOrder) return data.roster
-    const byId = new Map(data.roster.map((r) => [r.rowId, r]))
-    const ordered = stableOrder
-      .map((id) => byId.get(id))
-      .filter((r): r is GrupaRosterRow => Boolean(r))
-    const seen = new Set(stableOrder)
-    for (const r of data.roster) {
-      if (!seen.has(r.rowId)) ordered.push(r)
-    }
-    return ordered
-  }, [data, stableOrder])
+  // Rosterul vine deja sortat alfabetic din server (grupa.ts). Ordinea e stabilă
+  // prin ea însăși — numele nu depinde de status, deci toggle Prezent↔Absent nu
+  // re-sortează grila, iar un cursant nou intră direct pe poziția lui alfabetică.
+  const orderedRoster = data?.roster ?? []
 
   const toggleMut = useMutation({
     mutationFn: async (row: GrupaRosterRow) => {
@@ -419,7 +398,48 @@ export function GrupaDashboardPage() {
         })
       }
     },
-    onSuccess: () => {
+    onMutate: async (row: GrupaRosterRow) => {
+      const key = ['grupa-dashboard', cursId, date]
+      await queryClient.cancelQueries({ queryKey: key })
+      const prev = queryClient.getQueryData<GrupaDashboard>(key)
+      queryClient.setQueryData<GrupaDashboard>(key, (old) => {
+        if (!old) return old
+        // client: prezent<->absent (inactiv la click => devine prezent).
+        // lead:   prezent<->programat (a_venit / nu_a_venit).
+        const next: RosterStatus =
+          row.status === 'prezent'
+            ? row.kind === 'lead'
+              ? 'programat'
+              : 'absent'
+            : 'prezent'
+        const roster = old.roster.map((r) =>
+          r.rowId === row.rowId ? { ...r, status: next } : r,
+        )
+        const counters = roster.reduce(
+          (acc, r) => {
+            const k =
+              r.status === 'prezent'
+                ? 'prezenti'
+                : r.status === 'absent'
+                  ? 'absenti'
+                  : r.status === 'inactiv'
+                    ? 'inactivi'
+                    : 'programati'
+            acc[k]++
+            return acc
+          },
+          { prezenti: 0, absenti: 0, inactivi: 0, programati: 0 },
+        )
+        return { ...old, roster, counters }
+      })
+      return { prev }
+    },
+    onError: (_e, _row, ctx) => {
+      if (ctx?.prev) {
+        queryClient.setQueryData(['grupa-dashboard', cursId, date], ctx.prev)
+      }
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({
         queryKey: ['grupa-dashboard', cursId, date],
       })

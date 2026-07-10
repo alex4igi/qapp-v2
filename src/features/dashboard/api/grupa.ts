@@ -391,17 +391,11 @@ export async function getGrupaDashboard(params: {
   const roster: GrupaRosterRow[] = [
     ...Array.from(byClient.values()),
     ...leadRows,
-  ].sort((a, b) => {
-    const order: Record<RosterStatus, number> = {
-      prezent: 0,
-      absent: 1,
-      programat: 2,
-      inactiv: 3,
-    }
-    const so = order[a.status] - order[b.status]
-    if (so !== 0) return so
-    return a.nume.localeCompare(b.nume)
-  })
+  ].sort(
+    (a, b) =>
+      a.nume.localeCompare(b.nume, 'ro') ||
+      (a.prenume || '').localeCompare(b.prenume || '', 'ro'),
+  )
 
   const counters = roster.reduce(
     (acc, r) => {
