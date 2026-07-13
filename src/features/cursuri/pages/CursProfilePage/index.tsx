@@ -214,7 +214,7 @@ export function CursProfilePage() {
               { id: 'absenti',     label: 'Absenți' },
               { id: 'restantieri', label: 'Restanțieri' },
               { id: 'inactivi',    label: 'Clienți inactivi' },
-              ...(curs.facultativ
+              ...(curs.facultativ && curs.rezervari_online
                 ? [{ id: 'open', label: 'Sesiuni OPEN' }]
                 : []),
               { id: 'detalii',     label: 'Detalii curs' },
@@ -265,7 +265,7 @@ export function CursProfilePage() {
             />
           )}
 
-          {tab === 'open' && curs.facultativ && (
+          {tab === 'open' && curs.facultativ && curs.rezervari_online && (
             <OpenSesiuniTab
               cursId={curs.id}
               canManage={!isTeacher(role)}

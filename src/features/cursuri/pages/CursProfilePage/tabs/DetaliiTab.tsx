@@ -57,6 +57,12 @@ export function DetaliiTab({
         <DetailRow label="Sezon" value={sezonLabel} />
         <DetailRow label="Locație" value={locatieLabel} />
         <DetailRow label="Sală" value={salaLabel} />
+        {curs.facultativ && (
+          <DetailRow
+            label="Rezervări online"
+            value={curs.rezervari_online ? 'Da' : 'Nu'}
+          />
+        )}
       </Section>
       <Section title="Program">
         <DetailRow label="Zile" value={curs.zile?.join(', ') ?? ''} />
