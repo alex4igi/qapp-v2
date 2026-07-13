@@ -39,6 +39,11 @@ async function syncProgramarePrezenta(
 // Când un lead devine nu_a_venit: marchează programarea absent (triggerul DB
 // recalculează nr_neprezentari), apoi decide statusul efectiv — a 2-a
 // neprezentare merge direct în nurture (fără SMS). Întoarce statusul de scris.
+//
+// Gard (același ca `prune_expired_leads` pasul 2a): NU muta în nurture cât timp
+// mai există o programare azi/viitoare — altfel leadul dispare din roster (care
+// filtrează pe status global) deși are o programare validă. Nurture-ul îl preia
+// prune-ul abia după ce toate programările au trecut.
 async function resolveNoShow(leadId: string): Promise<StatusLead> {
   await syncProgramarePrezenta(leadId, 'nu_a_venit')
   const { data } = await supabase
@@ -46,7 +51,15 @@ async function resolveNoShow(leadId: string): Promise<StatusLead> {
     .select('nr_neprezentari')
     .eq('id', leadId)
     .single()
-  return (data?.nr_neprezentari ?? 0) >= 2 ? 'nurture' : 'nu_a_venit'
+  if ((data?.nr_neprezentari ?? 0) < 2) return 'nu_a_venit'
+
+  const today = new Date().toISOString().slice(0, 10)
+  const { count } = await supabase
+    .from('programari_leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('lead', leadId)
+    .gte('data_programarii', today)
+  return (count ?? 0) > 0 ? 'nu_a_venit' : 'nurture'
 }
 
 // Mută lead-urile cu programări doar în trecut din `programat` → `nu_a_venit`
