@@ -7,8 +7,9 @@
 //    - nou > 24h
 //    - contactat/nu_raspunde fără contactare de > 2 zile
 //    - contactat/de_revenit cu data_callback_dorit trecută
-//    - a_venit > 5 zile fără conversie
 //    La al 2-lea flag ignorat (flag_streak >= 2) → auto-Nurture.
+//    NB: a_venit NU se flaghează aici — are cadență săptămânală (lunea), în
+//    cron-morning (lista de sunat de luni pentru demo-uri neconvertite).
 // 3. auto-Nurture plasă de siguranță: nr_contactari >= 4
 // NU trimite SMS.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
@@ -145,7 +146,6 @@ Deno.serve(async (req) => {
 
   const SEL = 'id, flag_reminder, flag_streak, flag_reminder_at'
   const cutoff24 = new Date(now.getTime() - DAY).toISOString()
-  const cutoff5d = new Date(now.getTime() - 5 * DAY).toISOString()
   const cutoff10d = new Date(now.getTime() - 10 * DAY).toISOString()
 
   const { data: nouVechi } = await supabase
@@ -176,12 +176,6 @@ Deno.serve(async (req) => {
     .eq('status', 'nu_a_venit')
     .lt('updated', cutoff10d)
 
-  const { data: avVechi } = await supabase
-    .from('leads')
-    .select(SEL)
-    .eq('status', 'a_venit')
-    .lt('updated', cutoff5d)
-
   const navVechiIds = (navVechi ?? []).map((l) => l.id)
   let nuAVenitNurtured = 0
   if (navVechiIds.length) {
@@ -201,7 +195,6 @@ Deno.serve(async (req) => {
   const rNou = await processStale(nouVechi ?? [])
   const rNuRasp = await processStale(cNuRasp ?? [])
   const rDeRev = await processStale(cDeRev ?? [])
-  const rAV = await processStale(avVechi ?? [])
 
   // 3. auto-Nurture plasă de siguranță — nr_contactari >= 4
   const { data: deNurture } = await supabase
@@ -228,7 +221,6 @@ Deno.serve(async (req) => {
     nou: rNou,
     contactatNuRaspunde: rNuRasp,
     contactatDeRevenit: rDeRev,
-    aVenit: rAV,
     autoNurture,
   }
   console.log('[cron/evening]', JSON.stringify(report.sumar))

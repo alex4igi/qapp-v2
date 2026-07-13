@@ -40,6 +40,14 @@ function localHourBucharest(d: Date): number {
   )
 }
 
+// Ziua săptămânii în fus București (Mon..Sun) — pentru lista de sunat de luni.
+function localWeekdayBucharest(d: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Bucharest',
+    weekday: 'short',
+  }).format(d)
+}
+
 Deno.serve(async (req) => {
   const cronSecret = Deno.env.get('CRON_SECRET')
   if (cronSecret) {
@@ -282,13 +290,76 @@ Deno.serve(async (req) => {
     if (result.ok) confirmariSent++
   }
 
+  // --- 4. Lista de sunat de LUNI: demo-uri neconvertite (a_venit) ---
+  // Cadență săptămânală: leadfii care au fost la demo și n-au convertit primesc
+  // flag de prioritate lunea dimineața → apar pe „De lucrat azi" (steag roșu),
+  // ca recepția să-i sune. Un demo de marți primește flagul lunea următoare.
+  // Escaladare (regula generală): al 2-lea flag ignorat (flag_streak >= 2) →
+  // auto-Nurture. Recepția nu are buton „am sunat"; flagul se șterge doar la
+  // schimbarea statusului (conversie / mutare). Rulat DOAR aici (nu în
+  // cron-evening) ca să nu se flagheze zilnic.
+  let aVenitFlagged = 0
+  let aVenitNurtured = 0
+  if (localWeekdayBucharest(now) === 'Mon') {
+    // „Flag ignorat un ciclu" = stamp de la o luni anterioară. Rulările sunt la
+    // ~7 zile distanță, deci pragul de 2 zile separă clar un flag proaspăt de
+    // unul vechi (parcurge regula existentă din cron-evening).
+    const twoDaysAgo = new Date(now.getTime() - 2 * 86_400_000).toISOString()
+    const { data: aVenit } = await supabase
+      .from('leads')
+      .select('id, flag_reminder, flag_streak, flag_reminder_at')
+      .eq('status', 'a_venit')
+
+    for (const l of aVenit ?? []) {
+      if (!l.flag_reminder) {
+        // Primul flag (prima luni după demo).
+        const { error } = await supabase
+          .from('leads')
+          .update({
+            flag_reminder: true,
+            flag_streak: 1,
+            flag_reminder_at: now.toISOString(),
+          })
+          .eq('id', l.id)
+        if (!error) aVenitFlagged++
+        else errors.push(`a_venit flag ${l.id}: ${error.message}`)
+      } else if ((l.flag_reminder_at ?? '') < twoDaysAgo) {
+        // Flag ignorat un ciclu întreg → escaladează.
+        const streak = (l.flag_streak ?? 1) + 1
+        if (streak >= 2) {
+          const { error } = await supabase
+            .from('leads')
+            .update({
+              status: 'nurture',
+              sub_status: null,
+              flag_reminder: false,
+              flag_streak: 0,
+              flag_reminder_at: null,
+            })
+            .eq('id', l.id)
+          if (!error) aVenitNurtured++
+          else errors.push(`a_venit nurture ${l.id}: ${error.message}`)
+        } else {
+          const { error } = await supabase
+            .from('leads')
+            .update({ flag_streak: streak, flag_reminder_at: now.toISOString() })
+            .eq('id', l.id)
+          if (!error) aVenitFlagged++
+          else errors.push(`a_venit streak ${l.id}: ${error.message}`)
+        }
+      }
+    }
+  }
+
   console.log(
-    `[cron/morning] remindere: ${sent.length}, followup: ${followupSent}, confirmari: ${confirmariSent}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, followup: ${followupSent}, confirmari: ${confirmariSent}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, erori: ${errors.length}`,
   )
   return Response.json({
     sent,
     followup: followupSent,
     confirmari: confirmariSent,
+    aVenitFlagged,
+    aVenitNurtured,
     errors,
     rulatLa: now.toISOString(),
   })
