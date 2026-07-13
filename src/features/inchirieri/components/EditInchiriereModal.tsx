@@ -90,6 +90,16 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
   const newPret = isFree ? 0 : computePret(tarif, durataMin)
   const pretLipsa = !isFree && newPret == null // treaptă neconfigurată pt noua durată
   const priceChanged = !isFree && newPret != null && newPret !== d?.pret
+  // Editarea efectivă a duratei (nu simpla deschidere a modalului) e ce justifică
+  // banner-ul „preț recalculat".
+  const durationEdited = Boolean(d && durataMin !== d.durata_min)
+  // Drift de preț: prețul STOCAT nu corespunde tarifului pentru durata SALVATĂ (nu
+  // cea din formular) — ex. o închiriere scurtată fără să se aplice recalculul.
+  // Blocăm încasarea unei sume greșite până la o corecție explicită.
+  const savedDurationPret = isFree ? 0 : computePret(tarif, d?.durata_min ?? 0)
+  const priceDrift = Boolean(
+    !isFree && d && savedDurationPret != null && savedDurationPret !== d.pret,
+  )
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['inchirieri'] })
@@ -149,6 +159,22 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la încasare.')),
+  })
+
+  // Aduce prețul stocat la tariful curent pentru durata salvată (rezolvă drift-ul).
+  // Trece prin același RPC ca ajustarea de preț → reconciliază datoria + auditul.
+  const correctPrice = useMutation({
+    mutationFn: async () => {
+      if (savedDurationPret == null) {
+        throw new Error('Tarif neconfigurat pentru această durată.')
+      }
+      await adjustInchirierePrice(inchiriereId, savedDurationPret)
+    },
+    onSuccess: () => {
+      invalidate()
+      void queryClient.invalidateQueries({ queryKey: ['inchiriere-detail', inchiriereId] })
+    },
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la corecția prețului.')),
   })
 
   const remove = useMutation({
@@ -243,7 +269,7 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
             </div>
           </Field>
 
-          {priceChanged && newPret != null && (
+          {durationEdited && priceChanged && newPret != null && (
             <p className="rounded-md border border-warn/40 bg-warn/10 p-2 text-sm text-ink">
               Preț recalculat: <span className="font-semibold">{formatRON(newPret)}</span>{' '}
               <span className="text-muted">(era {formatRON(d.pret ?? 0)})</span>
@@ -253,6 +279,24 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
                 </span>
               )}
             </p>
+          )}
+
+          {priceDrift && !durationEdited && savedDurationPret != null && (
+            <div className="space-y-2 rounded-md border border-warn/50 bg-warn/10 p-3 text-sm">
+              <p className="text-ink">
+                Prețul stocat (<span className="font-semibold">{formatRON(d.pret ?? 0)}</span>) nu
+                corespunde tarifului pentru {d.durata_min} min pe această sală
+                (<span className="font-semibold">{formatRON(savedDurationPret)}</span>). Corectează
+                prețul înainte de încasare.
+              </p>
+              <div className="flex justify-end">
+                <Button onClick={() => correctPrice.mutate()} disabled={correctPrice.isPending}>
+                  {correctPrice.isPending
+                    ? 'Se corectează…'
+                    : `Corectează prețul la ${formatRON(savedDurationPret)}`}
+                </Button>
+              </div>
+            </div>
           )}
 
           {pretLipsa && (
@@ -268,7 +312,7 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
             </p>
           )}
 
-          {canCollect && (
+          {canCollect && !priceDrift && (
             <div className="space-y-2 rounded-md border border-quasar-yellow/60 bg-quasar-yellow/10 p-3">
               <div className="text-sm font-semibold text-ink">
                 Rest de încasat: {formatRON(rest)}
