@@ -1258,6 +1258,7 @@ export type Database = {
           pret_lunar_promo: number | null
           pret_sedinta: number | null
           pret_sedinta_reziliere: number | null
+          rezervari_online: boolean
           sala: string | null
           sezon: string | null
           stil: string | null
@@ -1288,6 +1289,7 @@ export type Database = {
           pret_lunar_promo?: number | null
           pret_sedinta?: number | null
           pret_sedinta_reziliere?: number | null
+          rezervari_online?: boolean
           sala?: string | null
           sezon?: string | null
           stil?: string | null
@@ -1318,6 +1320,7 @@ export type Database = {
           pret_lunar_promo?: number | null
           pret_sedinta?: number | null
           pret_sedinta_reziliere?: number | null
+          rezervari_online?: boolean
           sala?: string | null
           sezon?: string | null
           stil?: string | null
@@ -8648,11 +8651,21 @@ export type Database = {
         }[]
       }
       get_prezente_client: {
-        Args: { p_client: string }
+        Args: { p_client: string; p_sezon?: string }
         Returns: {
           curs_nume: string
           data: string
           status: Database["public"]["Enums"]["status_prezenta"]
+        }[]
+      }
+      get_prezente_sezoane_client: {
+        Args: { p_client: string }
+        Returns: {
+          absente: number
+          prezente: number
+          sezon_id: string
+          sezon_nume: string
+          total: number
         }[]
       }
       get_profil_client: {

@@ -95,6 +95,14 @@ export function TarifFields({ form, set }: Props) {
           checked={form.suspendat}
           onChange={(e) => set('suspendat', e.target.checked)}
         />
+        {form.tip === 'facultativ' && (
+          <Checkbox
+            id="rezervari_online"
+            label="Rezervări online (portal membri)"
+            checked={form.rezervari_online}
+            onChange={(e) => set('rezervari_online', e.target.checked)}
+          />
+        )}
       </div>
     </>
   )

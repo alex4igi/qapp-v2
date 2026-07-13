@@ -158,6 +158,8 @@ export function CursForm({ open, curs, onClose }: Props) {
         facultativ: form.tip === 'facultativ',
         one_time: form.one_time,
         suspendat: form.suspendat,
+        // Membrii se pot programa online DOAR la facultative cu bifa activă.
+        rezervari_online: form.tip === 'facultativ' ? form.rezervari_online : false,
       }
       const saved = isEdit
         ? await updateCurs(curs!.id, payload)

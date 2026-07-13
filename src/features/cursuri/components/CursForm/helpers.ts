@@ -43,6 +43,7 @@ export type FormState = {
   pret_lunar_promo: string
   one_time: boolean
   suspendat: boolean
+  rezervari_online: boolean
 }
 
 const numOrEmpty = (n: number | null | undefined) => (n != null ? String(n) : '')
@@ -81,6 +82,7 @@ export function initialState(curs?: Curs | null): FormState {
     pret_lunar_promo: numOrEmpty(curs?.pret_lunar_promo),
     one_time: curs?.one_time ?? false,
     suspendat: curs?.suspendat ?? false,
+    rezervari_online: curs?.rezervari_online ?? false,
   }
 }
 
