@@ -13,9 +13,11 @@ const corsHeaders = {
 }
 
 // Netopia v2 — endpoint card/start (sandbox vs live după NETOPIA_ENV).
-// URL-uri preluate ad literam din SDK-ul oficial netopia-payment2 (javascript-sdk).
+// Producția e pe secure.mobilpay.ro/pay (verificat empiric + doc oficială).
+// secure.netopia-payments.com e SITE-ul de prezentare (redirect 302 → HTML),
+// NU API-ul — folosit greșit înainte, plata primea HTML în loc de JSON.
 const NETOPIA_BASE = (Deno.env.get('NETOPIA_ENV') ?? 'sandbox') === 'live'
-  ? 'https://secure.netopia-payments.com'
+  ? 'https://secure.mobilpay.ro/pay'
   : 'https://secure-sandbox.netopia-payments.com'
 
 type Body = {
@@ -233,11 +235,14 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json', Authorization: Deno.env.get('NETOPIA_API_KEY')! },
       body: JSON.stringify(startReq),
     })
-    const ntp = await ntpRes.json().catch(() => null)
+    const rawText = await ntpRes.text()
+    let ntp: any = null
+    try { ntp = JSON.parse(rawText) } catch { /* Netopia a răspuns non-JSON (ex. HTML) */ }
     const redirectUrl = ntp?.payment?.paymentURL
     if (!ntpRes.ok || !redirectUrl) {
       // eliberează holdul (dacă e rezervare) + marchează comanda canceled
       await admin.rpc('cancel_netopia_order', { p_order_ref: orderRef })
+      console.error('Netopia start failed', ntpRes.status, `${NETOPIA_BASE}/payment/card/start`, rawText.slice(0, 500))
       return json({ error: ntp?.error?.message ?? 'Netopia start a eșuat', netopia: ntp?.error }, 502)
     }
 
