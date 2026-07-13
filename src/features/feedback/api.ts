@@ -14,9 +14,12 @@ export async function listFeedback({
   const from = page * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
+  // Review-urile (rating pe curs/eveniment din portal) apar pe fișa cursului/evenimentului,
+  // nu aici — pagina asta e worklist-ul de sesizări.
   let query = supabase
     .from('feedback')
     .select('*', { count: 'exact' })
+    .or('tip.is.null,tip.neq.Review')
     .order('created', { ascending: false })
     .range(from, to)
 
@@ -56,4 +59,32 @@ export async function updateFeedback(
 export async function deleteFeedback(id: string): Promise<void> {
   const { error } = await supabase.from('feedback').delete().eq('id', id)
   if (error) throw error
+}
+
+export type Review = {
+  id: string
+  rating: number | null
+  detalii: string | null
+  nume: string | null
+  created: string | null
+}
+
+// Review-urile (rating de la membri) pentru un curs SAU un eveniment.
+export async function listReviews(params: {
+  cursId?: string
+  evenimentId?: string
+}): Promise<Review[]> {
+  let query = supabase
+    .from('feedback')
+    .select('id, rating, detalii, nume, created')
+    .eq('tip', 'Review')
+    .not('rating', 'is', null)
+    .order('created', { ascending: false })
+
+  if (params.cursId) query = query.eq('cursul', params.cursId)
+  if (params.evenimentId) query = query.eq('eveniment', params.evenimentId)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
 }

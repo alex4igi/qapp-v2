@@ -11,6 +11,7 @@ import { waLink } from '@/lib/phone'
 import { updateLeadStatus } from '@/features/leads/api'
 import { EvenimentForm } from './EvenimentForm'
 import { BileteOnlineSection } from './BileteOnlineSection'
+import { RatingSummary } from '@/features/feedback/RatingSummary'
 import {
   getEvenimentRoster,
   getEveniment,
@@ -349,6 +350,10 @@ export function EvenimentRosterPage() {
       )}
 
       <BileteOnlineSection evenimentId={evenimentId!} />
+
+      <div className="mt-6">
+        <RatingSummary evenimentId={evenimentId!} />
+      </div>
 
       {payClientId && (
         <PlataNouaModal

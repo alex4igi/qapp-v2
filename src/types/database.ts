@@ -2990,6 +2990,7 @@ export type Database = {
           cursul: string | null
           detalii: string | null
           detalii_rezolvare: string | null
+          eveniment: string | null
           id: string
           nume: string | null
           rating: number | null
@@ -3005,6 +3006,7 @@ export type Database = {
           cursul?: string | null
           detalii?: string | null
           detalii_rezolvare?: string | null
+          eveniment?: string | null
           id?: string
           nume?: string | null
           rating?: number | null
@@ -3020,6 +3022,7 @@ export type Database = {
           cursul?: string | null
           detalii?: string | null
           detalii_rezolvare?: string | null
+          eveniment?: string | null
           id?: string
           nume?: string | null
           rating?: number | null
@@ -3029,6 +3032,20 @@ export type Database = {
           updated?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "feedback_eveniment_fkey"
+            columns: ["eveniment"]
+            isOneToOne: false
+            referencedRelation: "bilete_publice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_eveniment_fkey"
+            columns: ["eveniment"]
+            isOneToOne: false
+            referencedRelation: "evenimente"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_feedback_autor"
             columns: ["autor"]
@@ -8731,6 +8748,17 @@ export type Database = {
           prezenti: number
         }[]
       }
+      get_ratable_activities_client: {
+        Args: { p_client: string }
+        Returns: {
+          context: string
+          detalii: string
+          id: string
+          kind: string
+          nume: string
+          rating: number
+        }[]
+      }
       get_reduceri_familie: {
         Args: never
         Returns: {
@@ -9393,7 +9421,9 @@ export type Database = {
         Args: {
           p_client: string
           p_context: string
+          p_curs?: string
           p_detalii?: string
+          p_eveniment?: string
           p_rating: number
         }
         Returns: undefined

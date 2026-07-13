@@ -1,6 +1,7 @@
 import type { Curs } from '@/types/db'
 import { formatOra } from '../../../program'
 import { formatRON } from '@/lib/format'
+import { RatingSummary } from '@/features/feedback/RatingSummary'
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -48,6 +49,7 @@ export function DetaliiTab({
 
   return (
     <div className="mt-4 space-y-4">
+      <RatingSummary cursId={curs.id} />
       <Section title="General">
         <DetailRow label="Stil" value={curs.stil ?? ''} />
         <DetailRow label="Tip curs" value={tipCurs} />
