@@ -8658,6 +8658,14 @@ export type Database = {
           status: Database["public"]["Enums"]["status_prezenta"]
         }[]
       }
+      get_prezente_interval_client: {
+        Args: { p_client: string; p_from: string; p_to: string }
+        Returns: {
+          curs_nume: string
+          data: string
+          status: Database["public"]["Enums"]["status_prezenta"]
+        }[]
+      }
       get_prezente_sezoane_client: {
         Args: { p_client: string }
         Returns: {
