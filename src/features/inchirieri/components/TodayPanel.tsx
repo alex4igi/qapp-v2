@@ -49,7 +49,7 @@ export function TodayPanel({ locatieId, onRental }: Props) {
                       ? 'gratis'
                       : r.status_plata === 'achitat'
                         ? formatRON(r.pret ?? 0)
-                        : `datorie ${formatRON(r.pret ?? 0)}`}
+                        : `neachitat ${formatRON(r.pret ?? 0)}`}
                   </span>
                 </button>
               </li>

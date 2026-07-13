@@ -72,6 +72,71 @@ export async function listInchirieriWeek(params: {
   return (data ?? []) as unknown as InchiriereCalendar[]
 }
 
+export type InchiriereNeachitata = {
+  id: string
+  data: string
+  ora_start: string
+  ora_final: string
+  pret: number
+  status_plata: Enums<'status_plata_inchiriere'>
+  sala_nume: string | null
+  renter: string
+  rest: number // pret - suma încasată
+}
+
+// Toate închirierile cu sold rămas (status ≠ achitat, preț > 0), pentru worklist-ul
+// de recuperare. Rest-ul = preț − încasările legate de închiriere.
+export async function listInchirieriNeachitate(params: {
+  locatieId?: string | null
+}): Promise<InchiriereNeachitata[]> {
+  let q = supabase
+    .from('inchirieri')
+    .select(
+      'id, data, ora_start, ora_final, pret, status_plata, guest_nume, teacher_rel:teacheri(nume,prenume), client_rel:clienti(nume,prenume), sala_rel:sali(nume), incasari(suma)',
+    )
+    .neq('status_plata', 'achitat')
+    .gt('pret', 0)
+    .order('data', { ascending: true })
+  if (params.locatieId) q = q.eq('locatie', params.locatieId)
+  const { data, error } = await q
+  if (error) throw error
+  type Row = {
+    id: string
+    data: string
+    ora_start: string
+    ora_final: string
+    pret: number | null
+    status_plata: Enums<'status_plata_inchiriere'>
+    guest_nume: string | null
+    teacher_rel: { nume: string | null; prenume: string | null } | null
+    client_rel: { nume: string | null; prenume: string | null } | null
+    sala_rel: { nume: string | null } | null
+    incasari: { suma: number | null }[] | null
+  }
+  return ((data ?? []) as unknown as Row[])
+    .map((r) => {
+      const incasat = (r.incasari ?? []).reduce((s, i) => s + (Number(i.suma) || 0), 0)
+      const rest = Math.round((Number(r.pret ?? 0) - incasat) * 100) / 100
+      const renter = r.teacher_rel
+        ? `${r.teacher_rel.nume ?? ''} ${r.teacher_rel.prenume ?? ''}`.trim()
+        : r.client_rel
+          ? `${r.client_rel.nume ?? ''} ${r.client_rel.prenume ?? ''}`.trim()
+          : (r.guest_nume ?? 'guest')
+      return {
+        id: r.id,
+        data: r.data,
+        ora_start: r.ora_start,
+        ora_final: r.ora_final,
+        pret: Number(r.pret ?? 0),
+        status_plata: r.status_plata,
+        sala_nume: r.sala_rel?.nume ?? null,
+        renter,
+        rest,
+      }
+    })
+    .filter((r) => r.rest > 0.004)
+}
+
 // Nume afișabil al chiriașului pentru eticheta din calendar.
 export function renterLabel(r: InchiriereCalendar): string {
   if (r.teacher_rel) return `${r.teacher_rel.nume ?? ''} ${r.teacher_rel.prenume ?? ''}`.trim()

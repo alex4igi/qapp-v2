@@ -119,6 +119,7 @@ export type InchiriereDetail = {
   sala_rel: { nume: string | null } | null
   teacher_rel: { nume: string | null; prenume: string | null } | null
   client_rel: { nume: string | null; prenume: string | null } | null
+  incasat: number // suma deja încasată pe această închiriere (rest = pret - incasat)
 }
 
 // maybeSingle: după anulare, refetch-ul tranzitoriu al rândului șters întoarce
@@ -129,12 +130,20 @@ export async function getInchiriereDetail(
   const { data, error } = await supabase
     .from('inchirieri')
     .select(
-      'id, sala, locatie, data, ora_start, ora_final, durata_min, tier, pret, status_plata, teacher, client, guest_nume, guest_tel, observatii, sala_rel:sali(nume), teacher_rel:teacheri(nume,prenume), client_rel:clienti(nume,prenume)',
+      'id, sala, locatie, data, ora_start, ora_final, durata_min, tier, pret, status_plata, teacher, client, guest_nume, guest_tel, observatii, sala_rel:sali(nume), teacher_rel:teacheri(nume,prenume), client_rel:clienti(nume,prenume), incasari(suma)',
     )
     .eq('id', id)
     .maybeSingle()
   if (error) throw error
-  return (data as unknown as InchiriereDetail) ?? null
+  if (!data) return null
+  const { incasari, ...row } = data as unknown as Omit<
+    InchiriereDetail,
+    'incasat'
+  > & { incasari: { suma: number | null }[] | null }
+  const incasat = round2(
+    (incasari ?? []).reduce((s, i) => s + (Number(i.suma) || 0), 0),
+  )
+  return { ...row, incasat }
 }
 
 // ---------- Creare închiriere + plată ----------
@@ -171,12 +180,11 @@ export async function createInchiriere(
   const collected = round2(Math.min(Math.max(0, params.collected), pret))
   const rest = round2(pret - collected)
 
-  // Doar un CLIENT poate rămâne cu datorie pe cont. Teacher/guest → plată integrală
-  // (excepție: teacher antrenament individual, unde pret=0 → rest=0).
-  if (rest > 0.001 && params.renter.kind !== 'client') {
-    throw new Error(
-      'Rest de plată permis doar pentru un client (datoria se urmărește pe cont). Pentru teacher/guest, încasează integral.',
-    )
+  // Guest (walk-in fără cont) trebuie să achite integral pe loc — n-avem cum să-l urmărim.
+  // Client → datoria stă pe cont; teacher → sold neachitat pe rândul închirierii
+  // (fără cont, urmărit prin status_plata + încasări legate de inchiriere).
+  if (rest > 0.001 && params.renter.kind === 'guest') {
+    throw new Error('Guest trebuie să achite integral pe loc.')
   }
 
   const clientId =
@@ -248,6 +256,57 @@ export async function createInchiriere(
   }
 
   return inchiriere
+}
+
+// Încasare ulterioară a soldului rămas pe o închiriere (teacher/guest fără cont, dar și
+// client). Adaugă încasările legate de închiriere și recalculează status_plata din suma
+// totală încasată vs preț. Pentru client, dacă închirierea are o datorie legată, o leagă și
+// pe ea (ca plata să se scadă din restanța de pe cont).
+export async function collectInchiriere(
+  id: string,
+  params: { tenders: Tender[]; data: string; locatieId: string; descriere: string },
+): Promise<void> {
+  const { data: row, error: rowErr } = await supabase
+    .from('inchirieri')
+    .select('pret, client, datorie, incasari(suma)')
+    .eq('id', id)
+    .single()
+  if (rowErr) throw rowErr
+
+  const pret = round2(Number(row.pret) || 0)
+  const already = round2(
+    ((row.incasari as { suma: number | null }[] | null) ?? []).reduce(
+      (s, i) => s + (Number(i.suma) || 0),
+      0,
+    ),
+  )
+  const adding = round2(params.tenders.reduce((s, t) => s + (Number(t.suma) || 0), 0))
+  if (adding <= 0.001) throw new Error('Suma de încasat trebuie să fie mai mare ca 0.')
+  if (already + adding > pret + 0.001) {
+    throw new Error('Suma depășește restul de plată al închirierii.')
+  }
+
+  const payloads: InsertDto<'incasari'>[] = params.tenders.map((t) => ({
+    client: (row.client as string | null) ?? null,
+    data: params.data,
+    suma: round2(t.suma),
+    metoda: t.metoda,
+    categorie: 'Inchiriere',
+    locatie: params.locatieId,
+    observatii: params.descriere,
+    datorie: (row.datorie as string | null) ?? null,
+    inchiriere: id,
+  }))
+  await createIncasari(payloads)
+
+  const total = round2(already + adding)
+  const status_plata: Enums<'status_plata_inchiriere'> =
+    total >= pret - 0.001 ? 'achitat' : total > 0.001 ? 'partial' : 'neachitat'
+  const { error: updErr } = await supabase
+    .from('inchirieri')
+    .update({ status_plata })
+    .eq('id', id)
+  if (updErr) throw updErr
 }
 
 // Mutare/editare interval (dată/oră/durată) — recalculează ora_final.

@@ -9,6 +9,7 @@ import { RoomLocationFilter } from '../components/RoomLocationFilter'
 import { WeekNav } from '../components/WeekNav'
 import { WeekGrid } from '../components/WeekGrid'
 import { TodayPanel } from '../components/TodayPanel'
+import { NeachitatePanel } from '../components/NeachitatePanel'
 import { EditInchiriereModal } from '../components/EditInchiriereModal'
 import { useWeekOccupancy } from '../hooks/useWeekOccupancy'
 import { mondayOf, todayIso } from '../week'
@@ -95,7 +96,10 @@ export function CalendarPage() {
           )}
         </div>
 
-        <TodayPanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
+        <div className="space-y-4">
+          <TodayPanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
+          <NeachitatePanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
+        </div>
       </div>
 
       {booking && (

@@ -73,7 +73,7 @@ export function InchirieriAziCard({ locatieId, salaId }: Props) {
                   ? 'gratis'
                   : r.status_plata === 'achitat'
                     ? formatRON(r.pret ?? 0)
-                    : `datorie ${formatRON(r.pret ?? 0)}`}
+                    : `neachitat ${formatRON(r.pret ?? 0)}`}
               </span>
             </li>
           )

@@ -45,6 +45,7 @@ export {
   adjustInchirierePrice,
   cancelInchiriere,
   getInchiriereDetail,
+  collectInchiriere,
 } from './inchirieri'
 
 export type { BiletSursaOption, InventarOptionRow } from './sources'

@@ -8,10 +8,20 @@ import {
   adjustInchirierePrice,
   cancelInchiriere,
   checkInchiriereConflict,
+  collectInchiriere,
   getInchiriereDetail,
   listTarifeInchiriere,
   updateInchiriere,
 } from '@/features/plati/api'
+import {
+  MetodaPlataField,
+  resolveTenders,
+  type MetodaSel,
+} from '@/features/plati/modals/PlataNouaModal/MetodaPlataField'
+import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { useWorkingDate } from '@/hooks/useWorkingDate'
+
+const round2 = (n: number) => Math.round(n * 100) / 100
 
 const DURATE = [30, 60, 90, 120, 150, 180, 210, 240]
 
@@ -22,11 +32,17 @@ type Props = {
 
 export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
   const queryClient = useQueryClient()
+  const { locatieId: workLocatieId } = useWorkingLocatie()
+  const { date: workingDate } = useWorkingDate()
   const [data, setData] = useState('')
   const [oraStart, setOraStart] = useState('')
   const [durataMin, setDurataMin] = useState(60)
   const [error, setError] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [collectAmount, setCollectAmount] = useState('')
+  const [collectMetoda, setCollectMetoda] = useState<MetodaSel>('Cash')
+  const [collectCash, setCollectCash] = useState('')
+  const [collectCard, setCollectCard] = useState('')
 
   const detailQ = useQuery({
     queryKey: ['inchiriere-detail', inchiriereId],
@@ -34,11 +50,17 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
   })
   const d = detailQ.data
 
+  const rest = d ? round2((d.pret ?? 0) - d.incasat) : 0
+  const canCollect = Boolean(
+    d && (d.pret ?? 0) > 0 && d.status_plata !== 'achitat' && rest > 0.004,
+  )
+
   useEffect(() => {
     if (!d) return
     setData(d.data)
     setOraStart(d.ora_start.slice(0, 5))
     setDurataMin(d.durata_min)
+    setCollectAmount(String(round2((d.pret ?? 0) - d.incasat)))
   }, [d])
 
   const oraFinal = computeOraFinal(oraStart, durataMin)
@@ -99,6 +121,34 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
       onClose()
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
+  })
+
+  const collect = useMutation({
+    mutationFn: async () => {
+      const amount = round2(Number(collectAmount) || 0)
+      if (amount <= 0) throw new Error('Suma de încasat trebuie să fie mai mare ca 0.')
+      if (amount > rest + 0.004) throw new Error('Suma depășește restul de plată.')
+      const locatieId = workLocatieId ?? d?.locatie ?? null
+      if (!locatieId) throw new Error('Setează locația de lucru din bara de sus (📍).')
+      const tenders = resolveTenders({
+        metoda: collectMetoda,
+        total: amount,
+        cash: collectCash,
+        card: collectCard,
+      })
+      const descriere = `Încasare rest închiriere ${d?.sala_rel?.nume ?? ''} · ${d?.data ?? ''} ${d?.ora_start?.slice(0, 5) ?? ''}`
+      await collectInchiriere(inchiriereId, {
+        tenders,
+        data: workingDate,
+        locatieId,
+        descriere,
+      })
+    },
+    onSuccess: () => {
+      invalidate()
+      onClose()
+    },
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la încasare.')),
   })
 
   const remove = useMutation({
@@ -216,6 +266,46 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
               Interval ocupat — {conflict.kind === 'curs' ? 'curs' : 'închiriere'}: {conflict.label}{' '}
               ({conflict.ora_start}–{conflict.ora_final})
             </p>
+          )}
+
+          {canCollect && (
+            <div className="space-y-2 rounded-md border border-quasar-yellow/60 bg-quasar-yellow/10 p-3">
+              <div className="text-sm font-semibold text-ink">
+                Rest de încasat: {formatRON(rest)}
+                {d.incasat > 0.004 && (
+                  <span className="ml-1 font-normal text-muted">
+                    (încasat până acum {formatRON(d.incasat)})
+                  </span>
+                )}
+              </div>
+              <Field label="Încasează acum (RON)">
+                <TextInput
+                  type="number"
+                  min={0}
+                  max={rest || undefined}
+                  step="0.01"
+                  value={collectAmount}
+                  onChange={(e) => setCollectAmount(e.target.value)}
+                />
+              </Field>
+              <MetodaPlataField
+                metoda={collectMetoda}
+                onMetoda={setCollectMetoda}
+                total={round2(Number(collectAmount) || 0)}
+                cash={collectCash}
+                card={collectCard}
+                onCash={setCollectCash}
+                onCard={setCollectCard}
+              />
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => collect.mutate()}
+                  disabled={collect.isPending || !(Number(collectAmount) > 0)}
+                >
+                  {collect.isPending ? 'Se încasează…' : 'Încasează'}
+                </Button>
+              </div>
+            </div>
           )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}

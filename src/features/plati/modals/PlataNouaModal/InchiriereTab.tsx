@@ -171,6 +171,10 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
       if (!isFreePractice && pret == null) {
         throw new Error('Tarif nesetat pentru această sală — completează-l în Setări.')
       }
+      // Guest (walk-in fără cont) achită integral pe loc; doar teacher/client pot amâna.
+      if (rest > 0 && renterKind === 'guest') {
+        throw new Error('Guest trebuie să achite integral pe loc.')
+      }
       if (!workLocatieId) {
         throw new Error('Setează locația de lucru din bara de sus (📍 lângă dată).')
       }
@@ -397,7 +401,11 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
               {rest > 0 && (
                 <>
                   {' '}· rest <strong className="text-ink">{formatRON(rest)}</strong>{' '}
-                  {renterKind === 'client' ? '(datorie pe client)' : '(trebuie integral)'}
+                  {renterKind === 'client'
+                    ? '(datorie pe client)'
+                    : renterKind === 'teacher'
+                      ? '(neachitat — de încasat mai târziu)'
+                      : '(trebuie integral)'}
                 </>
               )}
             </p>
@@ -449,7 +457,9 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
             : isFreePractice
               ? 'Rezervă (gratis)'
               : rest > 0
-                ? 'Rezervă + datorie'
+                ? renterKind === 'client'
+                  ? 'Rezervă + datorie'
+                  : 'Rezervă + neachitat'
                 : 'Rezervă + încasează'}
         </Button>
       </div>
