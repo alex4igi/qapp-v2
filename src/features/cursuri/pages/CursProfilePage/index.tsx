@@ -50,6 +50,9 @@ export function CursProfilePage() {
   const { role } = useAuth()
   const canArchive = isManagerOrHigher(role)
   const canDelete = isAdminOrHigher(role)
+  // Scrierea pe cursuri e permisă doar manager+ (RLS cursuri_manager_update).
+  // Fără gard, front-desk vedea butonul, edita și primea eroarea RLS brută.
+  const canEdit = isManagerOrHigher(role)
 
   const activeazaReinscriereMut = useMutation({
     mutationFn: (clientId: string) => activateReinscriere(clientId, id!),
@@ -173,7 +176,7 @@ export function CursProfilePage() {
         title={curs.numele}
         actions={
           <>
-            <Button onClick={() => setEditOpen(true)}>Editează</Button>
+            {canEdit && <Button onClick={() => setEditOpen(true)}>Editează</Button>}
             {canArchive && (
               <Button
                 variant={curs.suspendat ? 'secondary' : 'ghost'}

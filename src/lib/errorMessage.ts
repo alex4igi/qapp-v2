@@ -10,6 +10,10 @@ const PERMISSION_DENIED =
 // e tratat separat: mesajul lui e deja text custom, îl lăsăm să treacă.
 const CODE_MESSAGES: Record<string, string> = {
   '42501': PERMISSION_DENIED, // insufficient_privilege / RLS denied
+  // PGRST116: un .select().single() după scriere a întors 0 rânduri. Într-un flux
+  // de salvare asta înseamnă că RLS a blocat update/insert-ul (rândul există, dar
+  // politica a respins scrierea) → lipsă drepturi, nu un „json object" tehnic.
+  PGRST116: PERMISSION_DENIED,
   '23505': 'Există deja o înregistrare cu aceste date.', // unique_violation
   '23503': 'Operația nu se poate face: există date asociate.', // foreign_key_violation
   '23502': 'Lipsește un câmp obligatoriu.', // not_null_violation
