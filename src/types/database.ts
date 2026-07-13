@@ -2569,6 +2569,7 @@ export type Database = {
           capacitate: number | null
           cost_organizare: number | null
           created: string
+          curs: string | null
           data: string | null
           descriere: string | null
           id: string
@@ -2588,6 +2589,7 @@ export type Database = {
           capacitate?: number | null
           cost_organizare?: number | null
           created?: string
+          curs?: string | null
           data?: string | null
           descriere?: string | null
           id?: string
@@ -2607,6 +2609,7 @@ export type Database = {
           capacitate?: number | null
           cost_organizare?: number | null
           created?: string
+          curs?: string | null
           data?: string | null
           descriere?: string | null
           id?: string
@@ -2623,6 +2626,69 @@ export type Database = {
           updated?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
           {
             foreignKeyName: "fk_evenimente_organizator"
             columns: ["organizator"]
@@ -8470,13 +8536,16 @@ export type Database = {
         }[]
       }
       get_evenimente_client: {
-        Args: never
+        Args: { p_client?: string }
         Returns: {
+          curs_id: string
+          curs_nume: string
           data: string
           descriere: string
           eveniment_id: string
           locatie: string
           nume: string
+          ora: string
           pret_bilet: number
           tip: Database["public"]["Enums"]["tip_eveniment"]
         }[]

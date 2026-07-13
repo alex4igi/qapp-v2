@@ -12,7 +12,10 @@ export type EvenimenteListParams = {
   temporal?: 'all' | 'viitoare' | 'trecute'
   today?: string // YYYY-MM-DD, pasat din componentă pentru filtrul Viitoare/Trecute
 }
-export type EvenimenteListResult = { rows: Eveniment[]; total: number }
+export type EvenimentCuGrupa = Eveniment & {
+  curs_rel: { numele: string } | null
+}
+export type EvenimenteListResult = { rows: EvenimentCuGrupa[]; total: number }
 
 export async function listEvenimente({
   search,
@@ -26,7 +29,7 @@ export async function listEvenimente({
 
   let query = supabase
     .from('evenimente')
-    .select('*', { count: 'exact' })
+    .select('*, curs_rel:cursuri(numele)', { count: 'exact' })
     .order('data', { ascending: false, nullsFirst: false })
     .range(from, to)
 
@@ -43,7 +46,10 @@ export async function listEvenimente({
 
   const { data, error, count } = await query
   if (error) throw error
-  return { rows: data ?? [], total: count ?? 0 }
+  return {
+    rows: (data ?? []) as unknown as EvenimentCuGrupa[],
+    total: count ?? 0,
+  }
 }
 
 // Anii disponibili (descrescător) din `data` evenimentelor; include mereu anul curent.
@@ -72,6 +78,17 @@ export async function listEvenimenteAni(): Promise<number[]> {
   const years: number[] = []
   for (let y = hi; y >= lo; y--) years.push(y)
   return years
+}
+
+// Evenimentele unei grupe (tab Evenimente de pe pagina grupei).
+export async function listEvenimenteGrupa(cursId: string): Promise<Eveniment[]> {
+  const { data, error } = await supabase
+    .from('evenimente')
+    .select('*')
+    .eq('curs', cursId)
+    .order('data', { ascending: true, nullsFirst: false })
+  if (error) throw error
+  return data ?? []
 }
 
 export async function createEveniment(

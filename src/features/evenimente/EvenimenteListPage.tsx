@@ -12,11 +12,15 @@ import {
   Spinner,
   type Column,
 } from '@/components/ui'
-import type { Eveniment } from '@/types/db'
 import { useAuth } from '@/hooks/useAuth'
 import { isPrivileged } from '@/lib/rolesMatrix'
 import { EvenimentForm } from './EvenimentForm'
-import { listEvenimente, listEvenimenteAni, PAGE_SIZE } from './api'
+import {
+  listEvenimente,
+  listEvenimenteAni,
+  PAGE_SIZE,
+  type EvenimentCuGrupa,
+} from './api'
 
 type Temporal = 'all' | 'viitoare' | 'trecute'
 const TEMPORAL_TABS: { key: Temporal; label: string }[] = [
@@ -25,7 +29,7 @@ const TEMPORAL_TABS: { key: Temporal; label: string }[] = [
   { key: 'trecute', label: 'Trecute' },
 ]
 
-const columns: Column<Eveniment>[] = [
+const columns: Column<EvenimentCuGrupa>[] = [
   {
     header: 'Eveniment',
     cell: (e) => <span className="font-medium">{e.nume_eveniment}</span>,
@@ -36,6 +40,11 @@ const columns: Column<Eveniment>[] = [
     cell: (e) => e.data ?? '—',
     className: 'w-32',
     sortValue: (e) => e.data,
+  },
+  {
+    header: 'Grupă',
+    cell: (e) => e.curs_rel?.numele ?? '—',
+    sortValue: (e) => e.curs_rel?.numele?.toLowerCase(),
   },
   {
     header: 'Locație',

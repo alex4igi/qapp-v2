@@ -13,6 +13,7 @@ import {
 } from '@/components/ui'
 import { statusEvenimentOptions, tipEvenimentOptions } from '@/lib/enums'
 import { teacheriOptions } from '@/lib/lookups'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import type { Eveniment } from '@/types/db'
 import { createEveniment, updateEveniment, deleteEveniment } from './api'
 
@@ -38,6 +39,7 @@ type FormState = {
   status: string
   notite: string
   public: boolean
+  curs: string
 }
 
 function initialState(e?: Eveniment | null): FormState {
@@ -54,6 +56,7 @@ function initialState(e?: Eveniment | null): FormState {
     status: e?.status ?? '',
     notite: e?.notite ?? '',
     public: e?.public ?? false,
+    curs: e?.curs ?? '',
   }
 }
 
@@ -70,6 +73,9 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
     queryKey: ['lookup', 'teacheri'],
     queryFn: () => teacheriOptions(),
   })
+  // Toate grupele sezonului activ, indiferent de locația de lucru.
+  const cursuri = useCursuriOptions({ locatieId: null })
+  const isGrupa = Boolean(form.curs)
 
   const set = (key: keyof FormState) => (value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -88,10 +94,11 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
         locatia: form.locatia.trim() || null,
         organizator: form.organizator || null,
         capacitate: toNum(form.capacitate),
-        pret_bilet: toNum(form.pret_bilet),
+        pret_bilet: form.curs ? null : toNum(form.pret_bilet),
         status: (form.status || null) as Eveniment['status'],
         notite: form.notite.trim() || null,
-        public: form.public,
+        public: form.curs ? false : form.public,
+        curs: form.curs || null,
       }
       return isEdit
         ? updateEveniment(eveniment!.id, payload)
@@ -124,6 +131,10 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
     }
     if (form.public && !form.data) {
       setError('Un eveniment afișat pe portal are nevoie de o dată.')
+      return
+    }
+    if (form.curs && !form.data) {
+      setError('Un eveniment de grupă are nevoie de o dată — apare în calendarul membrilor.')
       return
     }
     save.mutate()
@@ -230,6 +241,22 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
           </Field>
         </div>
 
+        <Field label="Grupă (opțional — eveniment exclusiv grupei)" htmlFor="curs">
+          <Select
+            id="curs"
+            placeholder="— eveniment pentru tot studioul —"
+            options={cursuri.data ?? []}
+            value={form.curs}
+            onChange={(e) => set('curs')(e.target.value)}
+          />
+        </Field>
+        {isGrupa && (
+          <p className="text-xs text-quasar-gray">
+            Vizibil în calendarul portalului doar pentru cursanții grupei.
+            Informativ — fără bilete și fără afișare pe /servicii.
+          </p>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <Field label="Organizator" htmlFor="organizator">
             <Select
@@ -261,15 +288,17 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
               onChange={(e) => set('capacitate')(e.target.value)}
             />
           </Field>
-          <Field label="Preț bilet" htmlFor="pret_bilet">
-            <TextInput
-              id="pret_bilet"
-              type="number"
-              min={0}
-              value={form.pret_bilet}
-              onChange={(e) => set('pret_bilet')(e.target.value)}
-            />
-          </Field>
+          {!isGrupa && (
+            <Field label="Preț bilet" htmlFor="pret_bilet">
+              <TextInput
+                id="pret_bilet"
+                type="number"
+                min={0}
+                value={form.pret_bilet}
+                onChange={(e) => set('pret_bilet')(e.target.value)}
+              />
+            </Field>
+          )}
         </div>
 
         <Field label="Notițe" htmlFor="notite">
@@ -285,10 +314,16 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
           <Checkbox
             id="eveniment-public"
             label="Afișează biletul pe portalul de membri (/servicii)"
-            checked={form.public}
+            checked={isGrupa ? false : form.public}
+            disabled={isGrupa}
             onChange={(e) => set('public')(e.target.checked)}
           />
-          {form.public && (
+          {isGrupa && (
+            <p className="mt-2 text-xs text-quasar-gray">
+              Evenimentele de grupă nu se afișează pe /servicii.
+            </p>
+          )}
+          {!isGrupa && form.public && (
             <p className="mt-2 text-xs text-quasar-gray">
               Apare pe portal cât timp data e în viitor și statusul nu e „Anulat".
               Se afișează numele, descrierea, data, locația și prețul biletului.
