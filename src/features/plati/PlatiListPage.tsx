@@ -13,8 +13,16 @@ import {
 import type { VPlatiInrolari } from '@/types/db'
 import { EnrollmentForm } from './EnrollmentForm'
 import { IncasareForm } from './IncasareForm'
-import { listPlatiInrolari, PAGE_SIZE } from './api'
+import { CorecteazaMetodaModal } from './modals/CorecteazaMetodaModal'
+import { PlatiInrolareModal } from './modals/PlatiInrolareModal'
+import {
+  listPlatiInrolari,
+  listMetodePerInrolare,
+  PAGE_SIZE,
+  type EnrollmentTender,
+} from './api'
 import { formatRON } from '@/lib/format'
+import { metodaTone } from '@/lib/metodaPlata'
 
 export function PlatiListPage() {
   const [searchInput, setSearchInput] = useState('')
@@ -22,6 +30,12 @@ export function PlatiListPage() {
   const [page, setPage] = useState(0)
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [payFor, setPayFor] = useState<VPlatiInrolari | null>(null)
+  const [correctIncasareId, setCorrectIncasareId] = useState<string | null>(null)
+  const [pickEnrollment, setPickEnrollment] = useState<{
+    tenders: EnrollmentTender[]
+    clientNume: string | null
+    cursNume: string | null
+  } | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -41,6 +55,37 @@ export function PlatiListPage() {
     () => (data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1),
     [data],
   )
+
+  const enrollmentIds = useMemo(
+    () =>
+      (data?.rows ?? [])
+        .map((r) => r.id_enrollment)
+        .filter((id): id is string => Boolean(id)),
+    [data],
+  )
+
+  const metodeQ = useQuery({
+    queryKey: ['plati-metode', enrollmentIds],
+    queryFn: () => listMetodePerInrolare(enrollmentIds),
+    enabled: enrollmentIds.length > 0,
+    placeholderData: keepPreviousData,
+  })
+  const metodeMap = metodeQ.data
+
+  // Click pe badge-ul metodei: o singură plată → corectare directă; mai multe → selector.
+  const onMetodaClick = (r: VPlatiInrolari) => {
+    const tenders = metodeMap?.get(r.id_enrollment ?? '') ?? []
+    if (tenders.length === 0) return
+    if (tenders.length === 1) {
+      setCorrectIncasareId(tenders[0].id)
+    } else {
+      setPickEnrollment({
+        tenders,
+        clientNume: `${r.nume_client ?? ''} ${r.prenume_client ?? ''}`.trim() || null,
+        cursNume: r.nume_curs ?? null,
+      })
+    }
+  }
 
   const columns: Column<VPlatiInrolari>[] = [
     {
@@ -101,6 +146,31 @@ export function PlatiListPage() {
       },
       className: 'w-24',
       sortValue: (r) => (r.total_de_plata ?? 0) - (r.platit ?? 0),
+    },
+    {
+      header: 'Metodă',
+      className: 'w-24',
+      cell: (r) => {
+        const tenders = metodeMap?.get(r.id_enrollment ?? '') ?? []
+        if (tenders.length === 0)
+          return <span className="text-quasar-gray">—</span>
+        const distinct = [
+          ...new Set(tenders.map((t) => t.metoda).filter(Boolean)),
+        ] as string[]
+        const label = distinct.length >= 2 ? 'Mixt' : (distinct[0] ?? '—')
+        return (
+          <button
+            type="button"
+            onClick={() => onMetodaClick(r)}
+            title="Corectează forma de plată"
+            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${metodaTone(
+              label,
+            )} hover:ring-2 hover:ring-quasar-yellow`}
+          >
+            {label}
+          </button>
+        )
+      },
     },
     {
       header: '',
@@ -180,6 +250,26 @@ export function PlatiListPage() {
           open
           enrollment={payFor}
           onClose={() => setPayFor(null)}
+        />
+      )}
+      {pickEnrollment && (
+        <PlatiInrolareModal
+          open
+          tenders={pickEnrollment.tenders}
+          clientNume={pickEnrollment.clientNume}
+          cursNume={pickEnrollment.cursNume}
+          onClose={() => setPickEnrollment(null)}
+          onCorect={(id) => {
+            setPickEnrollment(null)
+            setCorrectIncasareId(id)
+          }}
+        />
+      )}
+      {correctIncasareId && (
+        <CorecteazaMetodaModal
+          open
+          incasareId={correctIncasareId}
+          onClose={() => setCorrectIncasareId(null)}
         />
       )}
     </div>

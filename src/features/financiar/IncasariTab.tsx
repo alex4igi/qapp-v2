@@ -12,6 +12,7 @@ import {
   type Column,
 } from '@/components/ui'
 import { formatRON } from '@/lib/format'
+import { metodaTone } from '@/lib/metodaPlata'
 import { downloadCsv } from '@/lib/csv'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { locatiiOptions } from '@/lib/lookups'
@@ -20,21 +21,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { listIncasari, exportIncasari, PAGE_SIZE, type IncasareRow } from './api'
 import { IncasareEditModal } from './IncasareEditModal'
-
-function metodaTone(metoda: string): string {
-  switch (metoda) {
-    case 'Cash':
-      return 'bg-emerald-100 text-emerald-700'
-    case 'Card':
-      return 'bg-blue-100 text-blue-700'
-    case 'Transfer':
-      return 'bg-amber-100 text-amber-700'
-    case 'Revolut':
-      return 'bg-violet-100 text-violet-700'
-    default:
-      return 'bg-gray-100 text-gray-600'
-  }
-}
 
 function buildColumns(
   onEdit: ((id: string) => void) | null,
