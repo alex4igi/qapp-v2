@@ -49,7 +49,8 @@ export function DetaliiTab({
 
   return (
     <div className="mt-4 space-y-4">
-      <RatingSummary cursId={curs.id} />
+      {/* OPEN: ratingul e pe sesiune (tab „Sesiuni OPEN"), nu pe cursul-șablon */}
+      {!curs.facultativ && <RatingSummary cursId={curs.id} />}
       <Section title="General">
         <DetailRow label="Stil" value={curs.stil ?? ''} />
         <DetailRow label="Tip curs" value={tipCurs} />

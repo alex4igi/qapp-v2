@@ -39,7 +39,7 @@ const check = (name, ok, detail = '') => {
   else { fail++; console.log(`  ✗ ${name} ${detail}`) }
 }
 
-const cleanup = { feedbackClientIds: [], evenimentId: null }
+const cleanup = { feedbackClientIds: [], evenimentId: null, sesiuneId: null, sesiune2Id: null, cursId: null }
 
 async function main() {
   // ── login parinte ──
@@ -54,7 +54,7 @@ async function main() {
   const { data: acts, error: actsErr } = await cli.rpc('get_ratable_activities_client', { p_client: ana.id })
   check('get_ratable_activities_client fără eroare', !actsErr, actsErr?.message ?? '')
   const cursActs = (acts ?? []).filter((a) => a.kind === 'curs')
-  check('întoarce cursurile înrolate ale membrului (>=2)', cursActs.length >= 2, `got ${cursActs.length}`)
+  check('întoarce cursurile recurente înrolate (>=1)', cursActs.length >= 1, `got ${cursActs.length}`)
   check('rating inițial null pe cursuri', cursActs.every((a) => a.rating == null), '')
   const target = cursActs[0]
   console.log(`    → curs țintă: ${target?.nume} (${target?.context})`)
@@ -80,9 +80,11 @@ async function main() {
   check('un singur rând (upsert, nu duplică)', (rows ?? []).length === 1, `got ${rows?.length}`)
   check('ratingul actualizat la 2', rows?.[0]?.rating === 2, `got ${rows?.[0]?.rating}`)
 
-  // ── 4. gard apartenență: curs în care NU e înrolată ──
+  // ── 4. gard apartenență: curs în care NU e înrolată deloc ──
+  const { data: anaEnr } = await svc.from('enrollments').select('cursul').eq('client', ana.id)
+  const enrolledIds = (anaEnr ?? []).map((e) => e.cursul).filter(Boolean)
   const { data: strayCurs } = await svc.from('cursuri').select('id')
-    .not('id', 'in', `(${cursActs.map((a) => a.id).join(',')})`).limit(1).single()
+    .not('id', 'in', `(${enrolledIds.join(',')})`).limit(1).maybeSingle()
   if (strayCurs) {
     const { error: guardErr } = await cli.rpc('submit_rating_client', {
       p_client: ana.id, p_context: 'curs_recurent', p_rating: 5, p_curs: strayCurs.id,
@@ -90,7 +92,49 @@ async function main() {
     check('gard: curs neevaluabil respins', !!guardErr, 'ar fi trebuit să dea eroare')
   }
 
-  // ── 5. path eveniment ──
+  // ── 5. path sesiune OPEN (trecută, rezervată) — pe un curs ZZTEST dedicat, izolat de date reale ──
+  const { data: zcurs, error: zErr } = await svc.from('cursuri').insert({
+    numele: 'ZZTEST Curs OPEN rating', facultativ: true, pret_sedinta: 50,
+  }).select('id').single()
+  if (zErr) throw new Error('insert cursuri ZZTEST: ' + zErr.message)
+  cleanup.cursId = zcurs.id
+  const { data: ses, error: sesInsErr } = await svc.from('open_sesiuni').insert({
+    curs: zcurs.id, data: '2026-07-01', capacitate: 10, status: 'activa', observatii: 'ZZTEST',
+  }).select('id').single()
+  if (sesInsErr) throw new Error('insert open_sesiuni: ' + sesInsErr.message)
+  cleanup.sesiuneId = ses.id
+  await svc.from('open_rezervari').insert({ sesiune: ses.id, client: ana.id, status: 'platit', suma: 50 })
+
+  const { data: actsOpen } = await cli.rpc('get_ratable_activities_client', { p_client: ana.id })
+  const sesAct = (actsOpen ?? []).find((a) => a.kind === 'open_sesiune' && a.id === ses.id)
+  check('sesiunea OPEN trecută rezervată apare în listă', !!sesAct, '')
+  check('numele sesiunii include data', /01\.07\.2026/.test(sesAct?.nume ?? ''), sesAct?.nume ?? '')
+
+  const { error: sesSubErr } = await cli.rpc('submit_rating_client', {
+    p_client: ana.id, p_context: 'open', p_rating: 3, p_detalii: 'OK sesiunea', p_sesiune: ses.id,
+  })
+  check('submit_rating_client (sesiune) fără eroare', !sesSubErr, sesSubErr?.message ?? '')
+  const { data: sesRows } = await svc.from('feedback').select('id, rating, open_sesiune, cursul')
+    .eq('autor', ana.id).eq('open_sesiune', ses.id)
+  check('review sesiune salvat (rating=3, cursul null)',
+    sesRows?.[0]?.rating === 3 && sesRows?.[0]?.cursul == null, JSON.stringify(sesRows?.[0]))
+
+  // gard: sesiune nerezervată (a doua sesiune ZZTEST, fără rezervare pt Ana)
+  const { data: ses2 } = await svc.from('open_sesiuni').insert({
+    curs: zcurs.id, data: '2026-07-02', capacitate: 10, status: 'activa', observatii: 'ZZTEST',
+  }).select('id').single()
+  cleanup.sesiune2Id = ses2.id
+  const { error: sesGuard } = await cli.rpc('submit_rating_client', {
+    p_client: ana.id, p_context: 'open', p_rating: 5, p_sesiune: ses2.id,
+  })
+  check('gard: sesiune nerezervată respinsă', !!sesGuard, 'ar fi trebuit eroare')
+
+  // CRM: rating agregat per sesiune (replică listOpenSesiuniRatings)
+  const { data: crmSes } = await svc.from('feedback')
+    .select('rating, open_sesiune').eq('tip', 'Review').not('rating', 'is', null).eq('open_sesiune', ses.id)
+  check('CRM sesiune: găsește review-ul agregat', (crmSes ?? []).some((r) => r.rating === 3), '')
+
+  // ── 6. path eveniment ──
   const { data: ev } = await svc.from('evenimente').insert({
     nume_eveniment: 'ZZTEST Eveniment rating', data: '2026-07-01', participant: [ana.id],
   }).select('id').single()
@@ -125,6 +169,11 @@ async function main() {
 async function doCleanup() {
   if (cleanup.feedbackClientIds.length)
     await svc.from('feedback').delete().in('autor', cleanup.feedbackClientIds)
+  for (const sid of [cleanup.sesiuneId, cleanup.sesiune2Id].filter(Boolean)) {
+    await svc.from('open_rezervari').delete().eq('sesiune', sid)
+    await svc.from('open_sesiuni').delete().eq('id', sid)
+  }
+  if (cleanup.cursId) await svc.from('cursuri').delete().eq('id', cleanup.cursId)
   if (cleanup.evenimentId)
     await svc.from('evenimente').delete().eq('id', cleanup.evenimentId)
 }

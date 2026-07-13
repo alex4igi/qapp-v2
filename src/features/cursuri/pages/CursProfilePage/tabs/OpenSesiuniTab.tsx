@@ -9,7 +9,65 @@ import {
   anuleazaRezervare,
   createOpenSesiune,
 } from '@/features/plati/api'
+import { listOpenSesiuniRatings } from '@/features/feedback/api'
 import { formatData } from '../helpers'
+
+function SesiuniRatings({ cursId }: { cursId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['curs', cursId, 'open-sesiuni-ratings'],
+    queryFn: () => listOpenSesiuniRatings(cursId),
+  })
+
+  if (isLoading || !data || data.length === 0) return null
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <h3 className="mb-3 font-display text-sm font-bold text-quasar-black">
+        Rating pe sesiune (de la membri)
+      </h3>
+      <ul className="space-y-3">
+        {data.map((s) => (
+          <li
+            key={s.sesiuneId}
+            className="border-t border-gray-100 pt-3 first:border-0 first:pt-0"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium text-quasar-black">
+                {formatData(s.data)}
+              </span>
+              <span className="flex items-center gap-2 whitespace-nowrap">
+                <span className="text-quasar-yellow">
+                  {'★'.repeat(Math.round(s.avg))}
+                  <span className="text-quasar-gray/30">
+                    {'★'.repeat(5 - Math.round(s.avg))}
+                  </span>
+                </span>
+                <span className="text-sm font-bold text-quasar-black">
+                  {s.avg.toFixed(1)}
+                </span>
+                <span className="text-xs text-quasar-gray">
+                  ({s.count} {s.count === 1 ? 'evaluare' : 'evaluări'})
+                </span>
+              </span>
+            </div>
+            {s.comments.length > 0 && (
+              <ul className="mt-1.5 space-y-1">
+                {s.comments.map((c) => (
+                  <li key={c.id} className="text-sm text-quasar-gray">
+                    <span className="font-medium text-quasar-black">
+                      {c.nume || 'Membru'}:
+                    </span>{' '}
+                    {c.detalii}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 type Props = {
   cursId: string
@@ -151,6 +209,7 @@ export function OpenSesiuniTab({ cursId, canManage, capacitateImplicita }: Props
 
   return (
     <div className="mt-4 space-y-3">
+      <SesiuniRatings cursId={cursId} />
       {canManage && <AdaugaSesiuneForm cursId={cursId} capacitateImplicita={capacitateImplicita} />}
 
       {sesiuniQ.isLoading ? (

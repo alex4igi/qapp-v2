@@ -2993,6 +2993,7 @@ export type Database = {
           eveniment: string | null
           id: string
           nume: string | null
+          open_sesiune: string | null
           rating: number | null
           reprezentant: string | null
           rezolvat: boolean
@@ -3009,6 +3010,7 @@ export type Database = {
           eveniment?: string | null
           id?: string
           nume?: string | null
+          open_sesiune?: string | null
           rating?: number | null
           reprezentant?: string | null
           rezolvat?: boolean
@@ -3025,6 +3027,7 @@ export type Database = {
           eveniment?: string | null
           id?: string
           nume?: string | null
+          open_sesiune?: string | null
           rating?: number | null
           reprezentant?: string | null
           rezolvat?: boolean
@@ -3044,6 +3047,13 @@ export type Database = {
             columns: ["eveniment"]
             isOneToOne: false
             referencedRelation: "evenimente"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_open_sesiune_fkey"
+            columns: ["open_sesiune"]
+            isOneToOne: false
+            referencedRelation: "open_sesiuni"
             referencedColumns: ["id"]
           },
           {
@@ -9425,6 +9435,7 @@ export type Database = {
           p_detalii?: string
           p_eveniment?: string
           p_rating: number
+          p_sesiune?: string
         }
         Returns: undefined
       }
