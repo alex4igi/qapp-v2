@@ -13,6 +13,7 @@ export type {
   CursOcupare,
   CursClientActiv,
   CursClientInactiv,
+  CursClientFaraDoc,
   CursDatorieRow,
   CursFaraPrezentaRow,
 } from './profile'
@@ -20,6 +21,7 @@ export {
   getCursOcupare,
   getCursClientiActivi,
   getCursClientiInactivi,
+  getCursClientiFaraDocumente,
   getCursDatorii,
   getCursFaraPrezenteRecente,
 } from './profile'

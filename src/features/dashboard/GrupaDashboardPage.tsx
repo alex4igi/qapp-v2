@@ -12,7 +12,6 @@ import { waLink } from '@/lib/phone'
 import { listSezoane } from '@/features/plati/api'
 import { getCursDatorii } from '@/features/cursuri/api'
 import { RestantieriTab } from '@/features/cursuri/pages/CursProfilePage/tabs/RestantieriTab'
-import { GrupaEvenimenteSection } from '@/features/evenimente/GrupaEvenimenteSection'
 import {
   getGrupaDashboard,
   type RosterStatus,
@@ -328,7 +327,7 @@ export function GrupaDashboardPage() {
   const queryClient = useQueryClient()
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
-  const [tab, setTab] = useState<'roster' | 'restantieri' | 'evenimente'>('roster')
+  const [tab, setTab] = useState<'roster' | 'restantieri'>('roster')
   const [rosterView, setRosterView] = useState<RosterView>(() => {
     try {
       return (localStorage.getItem('qapp.roster_view') as RosterView) || 'cards'
@@ -545,10 +544,9 @@ export function GrupaDashboardPage() {
           tabs={[
             { id: 'roster', label: 'Roster' },
             { id: 'restantieri', label: 'Restanțieri' },
-            { id: 'evenimente', label: 'Evenimente' },
           ]}
           active={tab}
-          onChange={(t) => setTab(t as 'roster' | 'restantieri' | 'evenimente')}
+          onChange={(t) => setTab(t as 'roster' | 'restantieri')}
         />
       </div>
 
@@ -631,12 +629,6 @@ export function GrupaDashboardPage() {
             onRowClick={(cid) => navigate(`/clienti/${cid}`)}
             onPayClick={(cid) => setPayClientId(cid)}
           />
-        </div>
-      )}
-
-      {tab === 'evenimente' && cursId && (
-        <div className="mt-2">
-          <GrupaEvenimenteSection cursId={cursId} />
         </div>
       )}
 

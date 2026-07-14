@@ -259,6 +259,36 @@ export async function getCursClientiActivi(
 }
 
 // ============================================================
+// Clienți fără niciun document atașat la profil (documente_client)
+// ============================================================
+
+export type CursClientFaraDoc = {
+  clientId: string
+  nume: string
+  prenume: string | null
+}
+
+// Membrii activi ai cursului care NU au niciun rând în `documente_client`
+// (câmpul legacy `link_contract` nu contează). Refolosește lista de clienți
+// activi + o singură interogare pe `documente_client`.
+export async function getCursClientiFaraDocumente(
+  cursId: string,
+): Promise<CursClientFaraDoc[]> {
+  const activi = await getCursClientiActivi(cursId)
+  if (activi.length === 0) return []
+  const ids = activi.map((c) => c.clientId)
+  const { data, error } = await supabase
+    .from('documente_client')
+    .select('client')
+    .in('client', ids)
+  if (error) throw error
+  const cuDoc = new Set((data ?? []).map((d) => d.client))
+  return activi
+    .filter((c) => !cuDoc.has(c.clientId))
+    .map((c) => ({ clientId: c.clientId, nume: c.nume, prenume: c.prenume }))
+}
+
+// ============================================================
 // Clienți inactivi (au fost cândva, nu mai sunt acum)
 // ============================================================
 

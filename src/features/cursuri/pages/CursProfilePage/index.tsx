@@ -21,22 +21,33 @@ import {
   getCursOcupare,
   getCursClientiActivi,
   getCursClientiInactivi,
+  getCursClientiFaraDocumente,
   getCursDatorii,
   getCursFaraPrezenteRecente,
   activateReinscriere,
   toggleCursArchived,
   deleteCurs,
 } from '../../api'
+import { GrupaEvenimenteSection } from '@/features/evenimente/GrupaEvenimenteSection'
 import { CursSidebar } from './CursSidebar'
 import { getCursInitials, labelOf } from './helpers'
 import { ClientiActiviTab } from './tabs/ClientiActiviTab'
 import { AbsentiTab } from './tabs/AbsentiTab'
 import { RestantieriTab } from './tabs/RestantieriTab'
 import { ClientiInactiviTab } from './tabs/ClientiInactiviTab'
+import { FaraDocumenteTab } from './tabs/FaraDocumenteTab'
 import { DetaliiTab } from './tabs/DetaliiTab'
 import { OpenSesiuniTab } from './tabs/OpenSesiuniTab'
 
-type TabId = 'activi' | 'absenti' | 'restantieri' | 'inactivi' | 'open' | 'detalii'
+type TabId =
+  | 'activi'
+  | 'absenti'
+  | 'restantieri'
+  | 'inactivi'
+  | 'open'
+  | 'fara-documente'
+  | 'evenimente'
+  | 'detalii'
 
 export function CursProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -87,6 +98,12 @@ export function CursProfilePage() {
     queryKey: ['curs', id, 'clienti-inactivi'],
     queryFn: () => getCursClientiInactivi(id!),
     enabled: Boolean(id) && tab === 'inactivi',
+  })
+
+  const faraDocQuery = useQuery({
+    queryKey: ['curs', id, 'fara-documente'],
+    queryFn: () => getCursClientiFaraDocumente(id!),
+    enabled: Boolean(id) && tab === 'fara-documente',
   })
 
   const absentiQuery = useQuery({
@@ -217,6 +234,8 @@ export function CursProfilePage() {
               ...(curs.facultativ && curs.rezervari_online
                 ? [{ id: 'open', label: 'Sesiuni OPEN' }]
                 : []),
+              { id: 'fara-documente', label: 'Fără documente' },
+              { id: 'evenimente',  label: 'Evenimente' },
               { id: 'detalii',     label: 'Detalii curs' },
             ]}
             active={tab}
@@ -271,6 +290,20 @@ export function CursProfilePage() {
               canManage={!isTeacher(role)}
               capacitateImplicita={curs.capacitate_maxima ?? 35}
             />
+          )}
+
+          {tab === 'fara-documente' && (
+            <FaraDocumenteTab
+              loading={faraDocQuery.isLoading}
+              rows={faraDocQuery.data ?? []}
+              onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+            />
+          )}
+
+          {tab === 'evenimente' && (
+            <div className="mt-4">
+              <GrupaEvenimenteSection cursId={curs.id} />
+            </div>
           )}
 
           {tab === 'detalii' && (
