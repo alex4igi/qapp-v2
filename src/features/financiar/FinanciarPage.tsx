@@ -5,8 +5,7 @@ import { isPrivileged } from '@/lib/rolesMatrix'
 import { IncasariTab } from './IncasariTab'
 import { RestanteTab } from './RestanteTab'
 import { RaportZileTab } from './RaportZileTab'
-import { ReconcilieriTab } from './ReconcilieriTab'
-import { SumarCashTab } from './SumarCashTab'
+import { CashTab } from './CashTab'
 import { CheltuieliTab } from './CheltuieliTab'
 
 export function FinanciarPage() {
@@ -21,15 +20,13 @@ export function FinanciarPage() {
         { id: 'incasari',     label: 'Încasări' },
         { id: 'cheltuieli',   label: 'Cheltuieli' },
         { id: 'restante',     label: 'Restanțe' },
-        { id: 'reconcilieri', label: 'Reconcilieri cash' },
-        { id: 'sumar-cash',   label: 'Sumar cash' },
+        { id: 'cash',         label: 'Cash' },
       ]
     : [
         { id: 'raport',       label: 'Raport pe zile' },
         { id: 'incasari',     label: 'Încasări' },
         { id: 'restante',     label: 'Restanțe' },
-        { id: 'reconcilieri', label: 'Reconcilieri cash' },
-        { id: 'sumar-cash',   label: 'Sumar cash' },
+        { id: 'cash',         label: 'Cash' },
       ]
   const [active, setActive] = useState('raport')
 
@@ -41,8 +38,7 @@ export function FinanciarPage() {
       {active === 'incasari' && <IncasariTab />}
       {active === 'cheltuieli' && privileged && <CheltuieliTab />}
       {active === 'restante' && <RestanteTab />}
-      {active === 'reconcilieri' && <ReconcilieriTab />}
-      {active === 'sumar-cash' && <SumarCashTab />}
+      {active === 'cash' && <CashTab />}
     </div>
   )
 }

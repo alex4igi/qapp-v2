@@ -12,12 +12,45 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Field, DateInput, Select, Spinner } from '@/components/ui'
+import {
+  Button,
+  Field,
+  DateInput,
+  Select,
+  DataTable,
+  Spinner,
+  type Column,
+} from '@/components/ui'
+import { supabase } from '@/lib/supabase'
 import { formatRON } from '@/lib/format'
+import { downloadCsv } from '@/lib/csv'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { locatiiOptions } from '@/lib/lookups'
+import { difReconciliere } from '@/features/situatie-zilnica/api'
 import { KpiCard } from '@/features/statistici/KpiCard'
-import { listReconcilieri, type ReconciliereRow } from './ReconcilieriTab'
+import type { ReconciliereCash } from '@/types/db'
+
+export type ReconciliereRow = ReconciliereCash & {
+  locatii?: { nume: string | null } | null
+}
+type Row = ReconciliereRow
+
+export async function listReconcilieri(params: {
+  from: string
+  to: string
+  locatieId: string | null
+}): Promise<Row[]> {
+  let q = supabase
+    .from('reconcilieri_cash')
+    .select(`*, locatii(nume)`)
+    .order('data', { ascending: false })
+  if (params.from) q = q.gte('data', params.from)
+  if (params.to) q = q.lte('data', params.to)
+  if (params.locatieId) q = q.eq('locatie', params.locatieId)
+  const { data, error } = await q
+  if (error) throw error
+  return (data as unknown as Row[] | null) ?? []
+}
 
 function startOfMonthIso(): string {
   const d = new Date()
@@ -31,14 +64,66 @@ function todayIso(): string {
     .slice(0, 10)
 }
 
-function difOf(r: ReconciliereRow): number {
-  return (
-    Number(r.total_numarat ?? 0) -
-    (Number(r.fond_inceput ?? 0) + Number(r.total_sistem ?? 0))
-  )
+function difTone(d: number): string {
+  if (d === 0) return 'text-emerald-700'
+  if (d > 0) return 'text-amber-600'
+  return 'text-red-600'
 }
 
-export function SumarCashTab() {
+const columns: Column<Row>[] = [
+  {
+    header: 'Data',
+    cell: (r) => r.data,
+    className: 'w-28',
+    sortValue: (r) => r.data,
+  },
+  {
+    header: 'Locație',
+    cell: (r) => r.locatii?.nume ?? '—',
+    className: 'w-44',
+    sortValue: (r) => r.locatii?.nume?.toLowerCase(),
+  },
+  {
+    header: 'Încasări cash',
+    cell: (r) => formatRON(Number(r.total_sistem ?? 0)),
+    className: 'w-32 text-right',
+    sortValue: (r) => Number(r.total_sistem ?? 0),
+  },
+  {
+    header: 'Cheltuieli cash',
+    cell: (r) => formatRON(Number(r.total_cheltuieli ?? 0)),
+    className: 'w-32 text-right',
+    sortValue: (r) => Number(r.total_cheltuieli ?? 0),
+  },
+  {
+    header: 'Numărat',
+    cell: (r) => formatRON(Number(r.total_numarat ?? 0)),
+    className: 'w-28 text-right',
+    sortValue: (r) => Number(r.total_numarat ?? 0),
+  },
+  {
+    header: 'Dif.',
+    cell: (r) => {
+      const d = difReconciliere(r)
+      return (
+        <span className={`font-semibold ${difTone(d)}`}>
+          {d > 0 ? '+' : ''}
+          {formatRON(d)}
+        </span>
+      )
+    },
+    className: 'w-32 text-right',
+    sortValue: (r) => difReconciliere(r),
+  },
+  {
+    header: 'Notițe',
+    cell: (r) => r.notite ?? '—',
+    className: 'text-xs text-quasar-gray',
+    sortValue: (r) => r.notite?.toLowerCase(),
+  },
+]
+
+export function CashTab() {
   const { locatieId: globalLocatieId } = useWorkingLocatie()
   const [from, setFrom] = useState(startOfMonthIso())
   const [to, setTo] = useState(todayIso())
@@ -54,29 +139,22 @@ export function SumarCashTab() {
   })
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['sumar-cash', { from, to, locatieId }],
+    queryKey: ['cash', { from, to, locatieId }],
     queryFn: () => listReconcilieri({ from, to, locatieId: locatieId || null }),
   })
 
   const sumar = useMemo(() => {
     const rows = data ?? []
-    const sum = (pick: (r: ReconciliereRow) => number) =>
-      rows.reduce((a, r) => a + pick(r), 0)
-    const difTotal = sum(difOf)
-    // Numărat NU se sumează pe zile: conține fondul reportat de ieri,
-    // deja numărat în ziua precedentă — suma ar dubla banii.
-    const last = [...rows].sort((a, b) =>
-      (a.data ?? '').localeCompare(b.data ?? ''),
-    )[rows.length - 1]
+    const sum = (pick: (r: Row) => number) => rows.reduce((a, r) => a + pick(r), 0)
     return {
       zile: rows.length,
       sistem: sum((r) => Number(r.total_sistem ?? 0)),
-      sertarFinal: Number(last?.fond_ramas ?? 0),
-      sertarFinalData: last?.data ?? null,
-      depus: sum((r) => Number(r.de_depus ?? 0)),
-      difTotal,
-      zileLipsa: rows.filter((r) => difOf(r) < 0).length,
-      zileSurplus: rows.filter((r) => difOf(r) > 0).length,
+      cheltuieli: sum((r) => Number(r.total_cheltuieli ?? 0)),
+      // Fără fond reportat, Numărat = net-ul zilei → însumabil = cash rămas.
+      numarat: sum((r) => Number(r.total_numarat ?? 0)),
+      difTotal: sum((r) => difReconciliere(r)),
+      zileLipsa: rows.filter((r) => difReconciliere(r) < 0).length,
+      zileSurplus: rows.filter((r) => difReconciliere(r) > 0).length,
     }
   }, [data])
 
@@ -85,41 +163,82 @@ export function SumarCashTab() {
     () =>
       [...(data ?? [])]
         .sort((a, b) => (a.data ?? '').localeCompare(b.data ?? ''))
-        .map((r) => ({ data: (r.data ?? '').slice(5), dif: difOf(r) })),
+        .map((r) => ({ data: (r.data ?? '').slice(5), dif: difReconciliere(r) })),
     [data],
   )
+
+  const onExport = () => {
+    const rows = data ?? []
+    const body: (string | number)[][] = rows.map((r) => [
+      r.data ?? '',
+      r.locatii?.nume ?? '',
+      Number(r.total_sistem ?? 0),
+      Number(r.total_cheltuieli ?? 0),
+      Number(r.total_numarat ?? 0),
+      difReconciliere(r),
+      r.notite ?? '',
+    ])
+    const sum = (pick: (r: Row) => number) => rows.reduce((a, r) => a + pick(r), 0)
+    body.push([
+      'TOTAL',
+      '',
+      sum((r) => Number(r.total_sistem ?? 0)),
+      sum((r) => Number(r.total_cheltuieli ?? 0)),
+      sumar.numarat,
+      sumar.difTotal,
+      '',
+    ])
+    downloadCsv(
+      `cash-${from}_${to}.csv`,
+      [
+        'Data',
+        'Locație',
+        'Încasări cash',
+        'Cheltuieli cash',
+        'Numărat',
+        'Diferență',
+        'Notițe',
+      ],
+      body,
+    )
+  }
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="w-40">
-          <Field label="De la" htmlFor="sc-from">
+          <Field label="De la" htmlFor="cash-from">
             <DateInput
-              id="sc-from"
+              id="cash-from"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
             />
           </Field>
         </div>
         <div className="w-40">
-          <Field label="Până la" htmlFor="sc-to">
+          <Field label="Până la" htmlFor="cash-to">
             <DateInput
-              id="sc-to"
+              id="cash-to"
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />
           </Field>
         </div>
         <div className="w-48">
-          <Field label="Locația" htmlFor="sc-loc">
+          <Field label="Locația" htmlFor="cash-loc">
             <Select
-              id="sc-loc"
+              id="cash-loc"
               placeholder="Toate locațiile"
               options={locatiiQ.data ?? []}
               value={locatieId}
               onChange={(e) => setLocatieId(e.target.value)}
             />
           </Field>
+        </div>
+        <div className="ml-auto">
+          <Button variant="secondary" onClick={onExport} disabled={!data?.length}>
+            ⬇ Export CSV
+          </Button>
         </div>
       </div>
 
@@ -139,15 +258,12 @@ export function SumarCashTab() {
               value={sumar.zile}
               hint={`${sumar.zileLipsa} cu lipsă · ${sumar.zileSurplus} cu surplus`}
             />
-            <KpiCard label="Cash în sistem" value={formatRON(sumar.sistem)} />
+            <KpiCard label="Încasări cash" value={formatRON(sumar.sistem)} />
+            <KpiCard label="Cheltuieli cash" value={formatRON(sumar.cheltuieli)} />
             <KpiCard
-              label="Sertar la final"
-              value={formatRON(sumar.sertarFinal)}
-              hint={
-                sumar.sertarFinalData
-                  ? `fond rămas după ${sumar.sertarFinalData}`
-                  : 'fond rămas după ultima reconciliere'
-              }
+              label="Cash rămas în casă"
+              value={formatRON(sumar.numarat)}
+              hint="suma numărată pe zile"
             />
             <KpiCard
               label="Diferență cumulată"
@@ -165,11 +281,10 @@ export function SumarCashTab() {
                   : sumar.difTotal > 0
                     ? 'surplus'
                     : 'lipsă'
-              } · numărat − (fond ieri + cash sistem), pe zile`}
+              } · numărat − (încasări − cheltuieli), pe zile`}
             />
-            <KpiCard label="Total depus" value={formatRON(sumar.depus)} />
             <KpiCard
-              label="Zile cu probleme"
+              label="Zile cu diferență"
               value={sumar.zileLipsa + sumar.zileSurplus}
               tone={
                 sumar.zileLipsa + sumar.zileSurplus > 0 ? 'warning' : 'positive'
@@ -177,6 +292,12 @@ export function SumarCashTab() {
               hint={`din ${sumar.zile} zile`}
             />
           </div>
+
+          <p className="px-1 text-xs text-quasar-gray">
+            „Cash rămas în casă" e corect pentru zilele reconciliate cu modelul
+            nou (încasări − cheltuieli). Zilele mai vechi, făcute cu fond
+            reportat, pot avea numărat umflat.
+          </p>
 
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h3 className="mb-3 text-sm font-semibold text-quasar-black">
@@ -214,6 +335,13 @@ export function SumarCashTab() {
               </ResponsiveContainer>
             </div>
           </div>
+
+          <DataTable
+            columns={columns}
+            rows={data ?? []}
+            rowKey={(r) => r.id}
+            emptyMessage="Nicio reconciliere în intervalul ales."
+          />
         </div>
       )}
     </div>

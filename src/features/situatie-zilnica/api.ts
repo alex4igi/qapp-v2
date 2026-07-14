@@ -35,6 +35,19 @@ export function totalDinDenominatii(d: DenominatiiMap): number {
   )
 }
 
+// Diferența de reconciliere (model simplu, per zi): banii intră din încasări
+// cash, cheltuielile plătite cash ies din sertar. 0 = torn.
+export function difReconciliere(r: {
+  total_numarat?: number | null
+  total_sistem?: number | null
+  total_cheltuieli?: number | null
+}): number {
+  return (
+    Number(r.total_numarat ?? 0) -
+    (Number(r.total_sistem ?? 0) - Number(r.total_cheltuieli ?? 0))
+  )
+}
+
 export async function getIncasariZi(
   data: string,
   locatieId: string | null,
@@ -120,22 +133,6 @@ export async function getReconciliereZi(
     .maybeSingle()
   if (error) throw error
   return row
-}
-
-export async function getFondAnterior(
-  data: string,
-  locatieId: string,
-): Promise<number> {
-  const { data: row, error } = await supabase
-    .from('reconcilieri_cash')
-    .select('fond_ramas')
-    .eq('locatie', locatieId)
-    .lt('data', data)
-    .order('data', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (error) throw error
-  return Number(row?.fond_ramas ?? 0)
 }
 
 export async function upsertReconciliere(

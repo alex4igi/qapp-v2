@@ -5282,6 +5282,7 @@ export type Database = {
           id: string
           locatie: string | null
           notite: string | null
+          total_cheltuieli: number
           total_numarat: number
           total_sistem: number
           updated: string
@@ -5297,6 +5298,7 @@ export type Database = {
           id?: string
           locatie?: string | null
           notite?: string | null
+          total_cheltuieli?: number
           total_numarat?: number
           total_sistem?: number
           updated?: string
@@ -5312,6 +5314,7 @@ export type Database = {
           id?: string
           locatie?: string | null
           notite?: string | null
+          total_cheltuieli?: number
           total_numarat?: number
           total_sistem?: number
           updated?: string

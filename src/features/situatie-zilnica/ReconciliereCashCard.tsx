@@ -10,7 +10,7 @@ import {
 import { formatRON } from '@/lib/format'
 import {
   DENOMINATII,
-  getFondAnterior,
+  difReconciliere,
   getReconciliereZi,
   totalDinDenominatii,
   upsertReconciliere,
@@ -44,15 +44,8 @@ export function ReconciliereCashCard({
     queryFn: () => getReconciliereZi(data, locatieId),
   })
 
-  const fondAnteriorQ = useQuery({
-    queryKey: ['recon-cash-fond', data, locatieId],
-    queryFn: () => getFondAnterior(data, locatieId),
-    enabled: !reconQ.data,
-  })
-
   const [denominatii, setDenominatii] = useState<DenominatiiMap>(emptyDenominatii)
-  const [fondInceput, setFondInceput] = useState('')
-  const [deDepus, setDeDepus] = useState('')
+  const [cheltuieli, setCheltuieli] = useState('')
   const [notite, setNotite] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -61,24 +54,23 @@ export function ReconciliereCashCard({
     if (reconQ.data) {
       const d = (reconQ.data.denominatii ?? {}) as DenominatiiMap
       setDenominatii({ ...emptyDenominatii(), ...d })
-      setFondInceput(String(Number(reconQ.data.fond_inceput ?? 0)))
-      setDeDepus(String(Number(reconQ.data.de_depus ?? 0)))
+      setCheltuieli(String(Number(reconQ.data.total_cheltuieli ?? 0)))
       setNotite(reconQ.data.notite ?? '')
       setSaved(true)
-    } else if (fondAnteriorQ.data != null) {
-      setFondInceput(String(fondAnteriorQ.data))
-      setSaved(false)
     }
-  }, [reconQ.data, fondAnteriorQ.data])
+  }, [reconQ.data])
 
   const totalNumarat = useMemo(
     () => totalDinDenominatii(denominatii),
     [denominatii],
   )
-  const fondInceputNum = Number(fondInceput) || 0
-  const deDepusNum = Number(deDepus) || 0
-  const diferenta = totalNumarat - (fondInceputNum + cashSistem)
-  const fondRamas = totalNumarat - deDepusNum
+  const cheltuieliNum = Number(cheltuieli) || 0
+  const arTrebui = cashSistem - cheltuieliNum
+  const diferenta = difReconciliere({
+    total_numarat: totalNumarat,
+    total_sistem: cashSistem,
+    total_cheltuieli: cheltuieliNum,
+  })
 
   const setDenom = (v: number, n: string) => {
     const num = Math.max(0, Math.round(Number(n) || 0))
@@ -87,22 +79,16 @@ export function ReconciliereCashCard({
   }
 
   const mut = useMutation({
-    mutationFn: () => {
-      if (deDepusNum > totalNumarat) {
-        throw new Error('Suma de depus nu poate depăși totalul numărat.')
-      }
-      return upsertReconciliere({
+    mutationFn: () =>
+      upsertReconciliere({
         data,
         locatie: locatieId,
         denominatii,
         total_numarat: totalNumarat,
         total_sistem: cashSistem,
-        fond_inceput: fondInceputNum,
-        de_depus: deDepusNum,
-        fond_ramas: fondRamas,
+        total_cheltuieli: cheltuieliNum,
         notite: notite.trim() || null,
-      })
-    },
+      }),
     onSuccess: () => {
       setSaved(true)
       setError(null)
@@ -118,13 +104,6 @@ export function ReconciliereCashCard({
       : diferenta > 0
         ? 'bg-amber-100 text-amber-700'
         : 'bg-red-100 text-red-700'
-
-  // Tipar de introducere greșită: „numărat" ≈ doar cash-ul zilei, fără fondul
-  // de ieri — diferența ar ieși fals negativă exact cu fondul.
-  const probabilFaraFond =
-    fondInceputNum >= 5 &&
-    totalNumarat > 0 &&
-    Math.abs(totalNumarat - cashSistem) <= 5
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -148,7 +127,7 @@ export function ReconciliereCashCard({
             Bancnote/monede în casă
           </h3>
           <p className="mb-2 mt-0.5 text-xs text-quasar-gray">
-            Numără tot sertarul, inclusiv fondul de la ieri.
+            Numără cash-ul zilei, pe bancnote.
           </p>
           <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
             <table className="w-full text-sm">
@@ -185,7 +164,7 @@ export function ReconciliereCashCard({
               <tfoot>
                 <tr className="bg-gray-50">
                   <td colSpan={2} className="px-3 py-2 text-right text-sm font-medium">
-                    Total în sertar:
+                    Total numărat:
                   </td>
                   <td className="px-3 py-2 text-right text-base font-bold text-quasar-black">
                     {formatRON(totalNumarat)}
@@ -203,18 +182,16 @@ export function ReconciliereCashCard({
 
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm shadow-sm">
             <div className="flex justify-between py-0.5">
-              <span>Cash în sistem (azi)</span>
+              <span>Încasări cash (azi)</span>
               <span className="font-medium">{formatRON(cashSistem)}</span>
             </div>
             <div className="flex justify-between py-0.5">
-              <span>+ Fond de la ieri</span>
-              <span className="font-medium">{formatRON(fondInceputNum)}</span>
+              <span>− Cheltuieli cash (azi)</span>
+              <span className="font-medium">{formatRON(cheltuieliNum)}</span>
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-1.5">
-              <span>= Ar trebui în casă</span>
-              <span className="font-semibold">
-                {formatRON(cashSistem + fondInceputNum)}
-              </span>
+              <span>= Ar trebui în sertar</span>
+              <span className="font-semibold">{formatRON(arTrebui)}</span>
             </div>
             <div className="flex justify-between py-0.5">
               <span>Numărat efectiv</span>
@@ -236,41 +213,18 @@ export function ReconciliereCashCard({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Fond start zi (RON)" htmlFor="rc-fond-i">
-              <TextInput
-                id="rc-fond-i"
-                type="number"
-                min={0}
-                value={fondInceput}
-                onChange={(e) => {
-                  setFondInceput(e.target.value)
-                  setSaved(false)
-                }}
-              />
-            </Field>
-            <Field label="De depus la bancă (RON)" htmlFor="rc-depus">
-              <TextInput
-                id="rc-depus"
-                type="number"
-                min={0}
-                value={deDepus}
-                onChange={(e) => {
-                  setDeDepus(e.target.value)
-                  setSaved(false)
-                }}
-              />
-            </Field>
-          </div>
-
-          <div className="flex items-center justify-between rounded-xl bg-quasar-yellow px-4 py-3 text-sm shadow-sm">
-            <span className="font-medium text-quasar-black">
-              Fond rămas pentru mâine
-            </span>
-            <span className="font-display text-lg font-bold text-quasar-black">
-              {formatRON(fondRamas)}
-            </span>
-          </div>
+          <Field label="Cheltuieli cash azi (RON)" htmlFor="rc-chelt">
+            <TextInput
+              id="rc-chelt"
+              type="number"
+              min={0}
+              value={cheltuieli}
+              onChange={(e) => {
+                setCheltuieli(e.target.value)
+                setSaved(false)
+              }}
+            />
+          </Field>
 
           <Field label="Notițe" htmlFor="rc-notite">
             <TextArea
@@ -283,14 +237,6 @@ export function ReconciliereCashCard({
               }}
             />
           </Field>
-
-          {probabilFaraFond && (
-            <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              ⚠️ Ai numărat și fondul de ieri (
-              {formatRON(fondInceputNum)})? Totalul trebuie să includă{' '}
-              <strong>tot</strong> ce e în sertar, nu doar încasările de azi.
-            </div>
-          )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
