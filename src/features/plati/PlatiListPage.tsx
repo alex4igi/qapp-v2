@@ -21,7 +21,7 @@ import {
   PAGE_SIZE,
   type EnrollmentTender,
 } from './api'
-import { formatRON } from '@/lib/format'
+import { formatDate, formatMonth, formatRON } from '@/lib/format'
 import { metodaTone } from '@/lib/metodaPlata'
 
 export function PlatiListPage() {
@@ -112,10 +112,21 @@ export function PlatiListPage() {
       sortValue: (r) => r.nume_curs,
     },
     {
-      header: 'Început',
-      cell: (r) => r.data_incepere ?? '—',
-      className: 'w-28',
+      // Ce acoperă plata: Per luna → luna facturată (data_incepere = ziua 1);
+      // Per sedinta / Per an → data concretă a ședinței / începutului.
+      header: 'Pentru',
+      cell: (r) =>
+        r.tip_plata === 'Per luna'
+          ? formatMonth(r.data_incepere)
+          : formatDate(r.data_incepere),
+      className: 'w-32',
       sortValue: (r) => r.data_incepere,
+    },
+    {
+      header: 'Data plății',
+      cell: (r) => formatDate(r.data_platii),
+      className: 'w-28',
+      sortValue: (r) => r.data_platii,
     },
     {
       header: 'Tip plată',

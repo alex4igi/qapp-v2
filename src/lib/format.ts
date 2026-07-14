@@ -13,6 +13,15 @@ export function formatDate(iso: string | null | undefined): string {
   })
 }
 
+// Luna facturată (ex. „iulie 2026") — pt. înrolări, unde data e ziua 1 a lunii.
+export function formatMonth(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('ro-RO', {
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('ro-RO', {

@@ -7630,6 +7630,7 @@ export type Database = {
         Row: {
           cod_voucher: string | null
           data_incepere: string | null
+          data_platii: string | null
           id: number | null
           id_curs: string | null
           id_cursant: string | null
