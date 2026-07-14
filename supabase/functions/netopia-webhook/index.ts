@@ -132,8 +132,41 @@ async function verifyRsaSignature(signingInput: string, sigPart: string): Promis
 
 async function importSpki(pem: string, hash: string): Promise<CryptoKey> {
   const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')
-  const der = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+  let der = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+  // Netopia livrează cheia de notificare ca CERTIFICAT X.509, dar WebCrypto importă
+  // doar SPKI (SubjectPublicKeyInfo). Dacă e certificat, extragem SPKI-ul din el.
+  if (/BEGIN CERTIFICATE/.test(pem)) der = spkiFromCert(der)
   return crypto.subtle.importKey('spki', der, { name: 'RSASSA-PKCS1-v1_5', hash }, false, ['verify'])
+}
+
+// ASN.1 DER minimal — extrage subjectPublicKeyInfo dintr-un certificat X.509.
+function asn1Len(b: Uint8Array, o: number): { len: number; hl: number } {
+  let len = b[o], n = 1
+  if (len & 0x80) {
+    const nb = len & 0x7f
+    len = 0
+    for (let i = 0; i < nb; i++) len = (len << 8) | b[o + 1 + i]
+    n = 1 + nb
+  }
+  return { len, hl: n }
+}
+function asn1Next(b: Uint8Array, o: number): { vs: number; next: number } {
+  const { len, hl } = asn1Len(b, o + 1)
+  const vs = o + 1 + hl
+  return { vs, next: vs + len }
+}
+function spkiFromCert(der: Uint8Array): Uint8Array {
+  const cert = asn1Next(der, 0)          // Certificate SEQUENCE
+  const tbs = asn1Next(der, cert.vs)     // tbsCertificate SEQUENCE
+  let o = tbs.vs
+  if (der[o] === 0xa0) o = asn1Next(der, o).next // version [0] (optional)
+  o = asn1Next(der, o).next // serialNumber
+  o = asn1Next(der, o).next // signature
+  o = asn1Next(der, o).next // issuer
+  o = asn1Next(der, o).next // validity
+  o = asn1Next(der, o).next // subject
+  const spki = asn1Next(der, o) // subjectPublicKeyInfo
+  return der.slice(o, spki.next)
 }
 
 function b64urlToBytes(s: string): Uint8Array {
