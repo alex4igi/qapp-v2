@@ -152,6 +152,7 @@ Deno.serve(async (req) => {
     .from('leads')
     .select(SEL)
     .eq('status', 'nou')
+    .eq('deja_client', false)
     .lt('created', cutoff24)
 
   const { data: cNuRasp } = await supabase
@@ -159,6 +160,7 @@ Deno.serve(async (req) => {
     .select(SEL)
     .eq('status', 'contactat')
     .eq('sub_status', 'nu_raspunde')
+    .eq('deja_client', false)
     .lt('ultima_contactare_la', twoDaysAgo)
 
   const { data: cDeRev } = await supabase
@@ -166,6 +168,7 @@ Deno.serve(async (req) => {
     .select(SEL)
     .eq('status', 'contactat')
     .eq('sub_status', 'de_revenit')
+    .eq('deja_client', false)
     .lte('data_callback_dorit', nowIso)
 
   // nu_a_venit rămâne în listă 10 zile, apoi trece automat în nurture
@@ -201,6 +204,7 @@ Deno.serve(async (req) => {
     .from('leads')
     .select('id')
     .in('status', ['nou', 'contactat'])
+    .eq('deja_client', false)
     .gte('nr_contactari', 4)
 
   const nurtureIds = (deNurture ?? []).map((l) => l.id)

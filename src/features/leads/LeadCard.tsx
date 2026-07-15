@@ -1,5 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { Link } from 'react-router-dom'
 import type { Lead } from '@/types/db'
 import { waLink } from '@/lib/phone'
 import { InteresBadge, GrupaBadge, SursaBadge, SubStatusBadge } from './Badges'
@@ -195,6 +196,22 @@ export function LeadCard({
         onPointerDown={(e) => e.stopPropagation()}
         {...listeners}
       >
+        {lead.deja_client &&
+          (lead.id_client ? (
+            <Link
+              to={`/clienti/${lead.id_client}`}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="inline-flex items-center rounded-full bg-quasar-yellow px-2 py-0.5 text-xs font-semibold text-quasar-black hover:underline"
+              title="Deja client — deschide fișa"
+            >
+              ⭐ DEJA CLIENT
+            </Link>
+          ) : (
+            <span className="inline-flex items-center rounded-full bg-quasar-yellow px-2 py-0.5 text-xs font-semibold text-quasar-black">
+              ⭐ DEJA CLIENT
+            </span>
+          ))}
         {lead.interes && <InteresBadge interes={lead.interes} />}
         {lead.grupa_varsta && <GrupaBadge grupa={lead.grupa_varsta} />}
         {sursaNume && <SursaBadge sursa={sursaNume} />}

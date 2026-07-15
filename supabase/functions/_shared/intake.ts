@@ -117,6 +117,33 @@ export function mapLocatie(v: unknown): string | null {
   return k ? (LOCATIE_ALIASES[k] ?? null) : null
 }
 
+// Găsește un client existent (activ sau ex) cu același telefon sau email.
+// clienti.telefon e stocat INCONSISTENT (majoritatea '0…', unele '+40…') iar
+// leadurile vin normalizate '+40…' — deci comparăm pe toate formatele plauzibile
+// derivate din numărul național (9 cifre), nu pe string brut.
+export async function findMatchingClient(
+  supabase: SupabaseClient,
+  telefon: string | null,
+  email: string | null,
+): Promise<{ id: string } | null> {
+  const filters: string[] = []
+  const nat = roMobileNational(telefon)
+  if (nat) {
+    filters.push(`telefon.eq.0${nat}`)
+    filters.push(`telefon.eq.+40${nat}`)
+    filters.push(`telefon.eq.0040${nat}`)
+  }
+  if (email?.trim()) filters.push(`email.eq.${email.trim()}`)
+  if (!filters.length) return null
+  const { data } = await supabase
+    .from('clienti')
+    .select('id')
+    .or(filters.join(','))
+    .limit(1)
+    .maybeSingle()
+  return data ?? null
+}
+
 export type IntakeLead = {
   nume: string
   prenume?: string | null
@@ -171,6 +198,11 @@ export async function insertLead(
   }
   if (lead.observatii?.trim()) note.push(lead.observatii.trim())
 
+  // Dacă telefonul/emailul aparține unui client existent (activ sau ex), marchează
+  // lead-ul „deja client": rămâne pe board ca istoric, dar e scos din fluxul rece.
+  const emailTrim = lead.email?.trim() || null
+  const match = await findMatchingClient(supabase, telefon, emailTrim)
+
   const { data, error } = await supabase
     .from('leads')
     .insert({
@@ -178,12 +210,14 @@ export async function insertLead(
       prenume: lead.prenume?.trim() || null,
       nume_parinte: lead.nume_parinte?.trim() || null,
       telefon,
-      email: lead.email?.trim() || null,
+      email: emailTrim,
       data_nasterii: dataNasterii,
       interes,
       grupa_varsta: safeEnum(lead.grupa_varsta, GRUPA_VALUES),
       locatia,
       sursa: sursaId,
+      id_client: match?.id ?? null,
+      deja_client: !!match,
       status: opts?.status ?? 'nou',
       observatii: note.length ? note.join('\n') : null,
       utm_source: lead.utm_source?.trim() || null,

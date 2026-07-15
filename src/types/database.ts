@@ -3942,6 +3942,7 @@ export type Database = {
           data_followup: string | null
           data_nasterii: string | null
           data_programare: string | null
+          deja_client: boolean
           email: string | null
           flag_reminder: boolean
           flag_reminder_at: string | null
@@ -3983,6 +3984,7 @@ export type Database = {
           data_followup?: string | null
           data_nasterii?: string | null
           data_programare?: string | null
+          deja_client?: boolean
           email?: string | null
           flag_reminder?: boolean
           flag_reminder_at?: string | null
@@ -4024,6 +4026,7 @@ export type Database = {
           data_followup?: string | null
           data_nasterii?: string | null
           data_programare?: string | null
+          deja_client?: boolean
           email?: string | null
           flag_reminder?: boolean
           flag_reminder_at?: string | null

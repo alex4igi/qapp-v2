@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .select(
-        'id, prenume, nume, telefon, locatia, grupa_varsta, data_programare',
+        'id, prenume, nume, telefon, locatia, grupa_varsta, data_programare, deja_client',
       )
       .eq('id', leadId)
       .single()
@@ -49,6 +49,10 @@ Deno.serve(async (req) => {
     }
     if (!lead.telefon) {
       return json({ skipped: true, reason: 'fără telefon' })
+    }
+    // Lead „deja client" e scos din fluxul rece — nu i se trimite SMS automat.
+    if (lead.deja_client) {
+      return json({ skipped: true, reason: 'deja client' })
     }
 
     // Dedup — un SMS de un anumit tip se trimite o singură dată per lead

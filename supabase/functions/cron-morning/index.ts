@@ -157,6 +157,7 @@ Deno.serve(async (req) => {
     .from('leads')
     .select('id, prenume, nume, telefon, locatia, data_programare, nr_neprezentari')
     .eq('status', 'nu_a_venit')
+    .eq('deja_client', false)
     .gte('updated', cutoffFollowup)
 
   for (const lead of noShows ?? []) {
@@ -309,6 +310,7 @@ Deno.serve(async (req) => {
       .from('leads')
       .select('id, flag_reminder, flag_streak, flag_reminder_at')
       .eq('status', 'a_venit')
+      .eq('deja_client', false)
 
     for (const l of aVenit ?? []) {
       if (!l.flag_reminder) {

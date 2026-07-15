@@ -9,6 +9,9 @@ export async function triggerLeadSms(
   lead: Lead,
 ): Promise<void> {
   if (!lead.telefon) return
+  // Lead marcat „deja client" = client existent care a completat un formular „for
+  // fun" → scos din fluxul rece, niciun SMS automat.
+  if (lead.deja_client) return
 
   // review = la conversie (lead → client), NU după prezența la demo. NU se trimite
   // imediat: trece prin coada `confirmari_review_sms` cu delay de 5 min (fereastră

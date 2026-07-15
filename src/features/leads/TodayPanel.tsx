@@ -46,6 +46,8 @@ export function groupTodayLeads(leads: Lead[], now = new Date()): TodayGroups {
   const inactive: Lead[] = []
   for (const l of leads) {
     if (TERMINAL.includes(l.status)) continue
+    // Lead marcat „deja client" nu intră în call-list-ul de lucru.
+    if (l.deja_client) continue
     if (l.flag_reminder) {
       reminders.push(l)
       continue
