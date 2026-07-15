@@ -35,11 +35,25 @@ Deno.serve(async (req) => {
     const payload = JSON.parse(raw) as {
       order?: { orderID?: string }
       payment?: { ntpID?: string; status?: number; amount?: number }
+      id?: number | string
     }
-    const orderRef = payload.order?.orderID
-    const txId = payload.payment?.ntpID
-    const status = Number(payload.payment?.status)
-    const amount = Number(payload.payment?.amount)
+    let order = payload.order
+    let payment = payload.payment
+
+    // Notificare compactă (`{action, amount, id}` — trimisă de platforma veche Netopia /
+    // butonul „Retrimite IPN"). Nu conține orderID, dar `id` = ntpID; cerem noi starea
+    // completă prin API (/operation/status) și procesăm exact ca un IPN normal.
+    if (!order?.orderID && payload.id != null) {
+      const st = await fetchNetopiaStatus(String(payload.id))
+      if (!st.ok) return json({ errorCode: 1, error: 'status lookup failed', detail: st.detail }, 400)
+      order = st.order
+      payment = st.payment
+    }
+
+    const orderRef = order?.orderID
+    const txId = payment?.ntpID
+    const status = Number(payment?.status)
+    const amount = Number(payment?.amount)
     if (!orderRef) return json({ errorCode: 1, error: 'missing orderID' }, 400)
 
     const admin = createClient(
@@ -77,6 +91,37 @@ Deno.serve(async (req) => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Status lookup — pentru notificările compacte fără orderID
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchNetopiaStatus(ntpID: string): Promise<
+  | { ok: true; order?: { orderID?: string }; payment?: { ntpID?: string; status?: number; amount?: number } }
+  | { ok: false; detail: string }
+> {
+  // Același base ca netopia-create-payment: producția e pe secure.mobilpay.ro/pay.
+  const base = (Deno.env.get('NETOPIA_ENV') ?? 'sandbox') === 'live'
+    ? 'https://secure.mobilpay.ro/pay'
+    : 'https://secure-sandbox.netopia-payments.com'
+  const res = await fetch(`${base}/operation/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: Deno.env.get('NETOPIA_API_KEY')! },
+    body: JSON.stringify({
+      posID: Deno.env.get('NETOPIA_POS_SIGNATURE') ?? '',
+      ntpID,
+      orderID: '',
+    }),
+  })
+  const text = await res.text()
+  let data: { order?: { orderID?: string }; payment?: { ntpID?: string; status?: number; amount?: number } } | null = null
+  try { data = JSON.parse(text) } catch { /* non-JSON */ }
+  if (!res.ok || !data?.order?.orderID) {
+    return { ok: false, detail: `status ${res.status}: ${text.slice(0, 300)}` }
+  }
+  // ntpID din răspuns poate lipsi — păstrăm id-ul din notificare ca fallback de dedup
+  data.payment = { ntpID, ...data.payment }
+  return { ok: true, order: data.order, payment: data.payment }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Verificarea IPN-ului
 // ─────────────────────────────────────────────────────────────────────────────
 async function verifyIpn(raw: string, jwt: string | null): Promise<{ ok: boolean; reason?: string }> {
@@ -106,28 +151,36 @@ async function verifyIpn(raw: string, jwt: string | null): Promise<{ ok: boolean
   // Semnătura RSA (RS512/RS256) cu cheia publică de notificare Netopia (NETOPIA_PUBLIC_KEY).
   // STRICT: obligatorie în orice mediu. (Escape-hatch explicit DOAR dacă owner-ul setează
   // NETOPIA_IPN_ALLOW_UNSIGNED=true — de evitat; nu e activat automat pe sandbox.)
-  const sigOk = await verifyRsaSignature(`${h}.${p}`, s)
-  if (sigOk) return { ok: true }
+  if (await verifyRsaSignature(`${h}.${p}`, s)) return { ok: true }
   if (Deno.env.get('NETOPIA_IPN_ALLOW_UNSIGNED') === 'true') {
     return { ok: true, reason: 'unsigned-allowed' }
   }
   return { ok: false, reason: 'invalid signature' }
 }
 
+// NETOPIA_PUBLIC_KEY poate conține MAI MULTE blocuri PEM (cheia de platformă 2048-bit
+// care semnează efectiv IPN-urile live — cea din plugin-urile oficiale WooCommerce/
+// OpenCart — plus certificatul POS din dashboard). Se încearcă fiecare bloc.
 async function verifyRsaSignature(signingInput: string, sigPart: string): Promise<boolean> {
-  const pem = Deno.env.get('NETOPIA_PUBLIC_KEY')
-  if (!pem) return false
+  const env = Deno.env.get('NETOPIA_PUBLIC_KEY')
+  if (!env) return false
   const data = new TextEncoder().encode(signingInput)
   const sig = b64urlToBytes(sigPart)
-  for (const hash of ['SHA-512', 'SHA-256']) {
-    try {
-      const key = await importSpki(pem, hash)
-      if (await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig, data)) return true
-    } catch {
-      // încearcă următorul algoritm / cheie incompatibilă
+  for (const pem of pemBlocks(env)) {
+    for (const hash of ['SHA-512', 'SHA-256']) {
+      try {
+        const key = await importSpki(pem, hash)
+        if (await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig, data)) return true
+      } catch {
+        // bloc/algoritm incompatibil — încearcă următorul
+      }
     }
   }
   return false
+}
+
+function pemBlocks(s: string): string[] {
+  return s.match(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g) ?? []
 }
 
 async function importSpki(pem: string, hash: string): Promise<CryptoKey> {
