@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
       const r = await emitPortalInvoice(admin, body.orderRef as string, { force: true })
       return json({ result: r })
     }
+    if (action === 'portal_pending') {
+      return await handlePortalPending(admin)
+    }
 
     return json({ error: 'acțiune necunoscută' }, 400)
   } catch (e) {
@@ -64,6 +67,53 @@ Deno.serve(async (req) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Acțiuni
 // ─────────────────────────────────────────────────────────────────────────────
+
+// „De facturat" (portal): comenzi Netopia confirmate, neîncă facturate și fără niciun
+// rând în facturi_fgo (cele cu Eroare sunt deja în lista principală, cu buton Reemite).
+// Descrierea = exact ce va scrie emitPortalInvoice pe factură.
+async function handlePortalPending(admin: SupabaseClient) {
+  const { data: orders } = await admin
+    .from('netopia_orders')
+    .select('order_ref, client_id, amount, order_type, created')
+    .eq('status', 'confirmed')
+    .is('fgo_emitat', null)
+    .order('created', { ascending: false })
+  const list = (orders ?? []) as {
+    order_ref: string
+    client_id: string | null
+    amount: number
+    order_type: string | null
+    created: string | null
+  }[]
+  if (!list.length) return json({ items: [] })
+
+  const refs = list.map((o) => o.order_ref)
+  const { data: existing } = await admin.from('facturi_fgo').select('ref').in('ref', refs)
+  const already = new Set((existing ?? []).map((r) => (r as { ref: string }).ref))
+  const pending = list.filter((o) => !already.has(o.order_ref))
+  if (!pending.length) return json({ items: [] })
+
+  const ids = [...new Set(pending.map((o) => o.client_id).filter(Boolean))] as string[]
+  const nameById = new Map<string, string>()
+  if (ids.length) {
+    const { data: cs } = await admin.from('clienti').select('id, nume, prenume').in('id', ids)
+    for (const c of (cs ?? []) as { id: string; nume: string | null; prenume: string | null }[]) {
+      nameById.set(c.id, [c.nume, c.prenume].filter(Boolean).join(' ').trim())
+    }
+  }
+
+  const items = pending.map((o) => ({
+    order_ref: o.order_ref,
+    client_nume: (o.client_id && nameById.get(o.client_id)) || 'Client',
+    suma: Number(o.amount),
+    descriere:
+      o.order_type === 'rezervare'
+        ? 'Rezervare ședință (plată online)'
+        : 'Abonament cursuri (plată online)',
+    data: (o.created ?? '').slice(0, 10),
+  }))
+  return json({ items })
+}
 
 type FirmaRow = {
   cui: string

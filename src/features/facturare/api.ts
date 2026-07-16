@@ -52,6 +52,19 @@ export const retryPortal = (orderRef: string) =>
     { orderRef },
   )
 
+// Plată online confirmată, dar încă nefacturată (toggle off la momentul plății sau
+// nicio încercare de emitere). Fiecare devine o factură cu un click („Emite factură").
+export type PortalPendingRow = {
+  order_ref: string
+  client_nume: string
+  suma: number
+  descriere: string
+  data: string
+}
+
+export const listPortalPending = () =>
+  invoke<{ items: PortalPendingRow[] }>('portal_pending', {})
+
 export async function listFacturi(
   sursa: FacturaSursa,
   statusIn?: FacturaStatus[],
