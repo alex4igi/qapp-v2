@@ -8742,6 +8742,7 @@ export type Database = {
           total_de_plata: number
         }[]
       }
+      get_portal_invoice_lines: { Args: { p_order_ref: string }; Returns: Json }
       get_prezenta_saptamana_grupe: {
         Args: { p_locatie?: string }
         Returns: {

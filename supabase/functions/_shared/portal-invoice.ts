@@ -2,7 +2,7 @@
 // Apelat de `netopia-webhook` (respectă toggle-ul) și de acțiunea de retry din `autofgo` (force).
 // Idempotent pe netopia_orders.fgo_emitat. Niciodată nu aruncă către apelant — întoarce un rezultat.
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { emitInvoice, type FgoClient, type FgoFirma } from './fgo.ts'
+import { emitInvoice, type FgoClient, type FgoFirma, type FgoLine } from './fgo.ts'
 
 // CUI-ul firmei pe care e contractul Netopia (Quasar Dance Studio SRL).
 const NETOPIA_CUI = Deno.env.get('NETOPIA_FGO_CUI') || '49361270'
@@ -71,10 +71,14 @@ export async function emitPortalInvoice(
     }
   }
 
-  const descriere =
-    order.order_type === 'rezervare'
-      ? 'Rezervare ședință (plată online)'
-      : 'Abonament cursuri (plată online)'
+  // Liniile facturii, detaliate per serviciu vândut (RPC comună cu preview-ul din „De facturat").
+  const { data: lineRows } = await admin.rpc('get_portal_invoice_lines', { p_order_ref: orderRef })
+  const rows = (Array.isArray(lineRows) ? lineRows : []) as { denumire: string; suma: number }[]
+  const lines: FgoLine[] = rows.length
+    ? rows.map((l) => ({ denumire: String(l.denumire), pretTotal: Number(l.suma) }))
+    : [{ denumire: 'Abonament cursuri (plată online)', pretTotal: Number(order.amount) }]
+  const descriere = lines.map((l) => l.denumire).join('; ').slice(0, 500)
+
   const firma: FgoFirma = {
     cui: firmaRow.cui,
     serie: firmaRow.serie,
@@ -85,9 +89,7 @@ export async function emitPortalInvoice(
   }
 
   try {
-    const { numar, link } = await emitInvoice(firma, fgoClient, [
-      { denumire: descriere, pretTotal: Number(order.amount) },
-    ])
+    const { numar, link } = await emitInvoice(firma, fgoClient, lines)
     await admin
       .from('netopia_orders')
       .update({ fgo_emitat: new Date().toISOString(), fgo_factura: numar })

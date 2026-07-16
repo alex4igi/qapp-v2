@@ -102,16 +102,26 @@ async function handlePortalPending(admin: SupabaseClient) {
     }
   }
 
-  const items = pending.map((o) => ({
-    order_ref: o.order_ref,
-    client_nume: (o.client_id && nameById.get(o.client_id)) || 'Client',
-    suma: Number(o.amount),
-    descriere:
-      o.order_type === 'rezervare'
-        ? 'Rezervare ședință (plată online)'
-        : 'Abonament cursuri (plată online)',
-    data: (o.created ?? '').slice(0, 10),
-  }))
+  // Liniile detaliate (exact ce se va emite) — aceeași sursă ca emitPortalInvoice.
+  const items = await Promise.all(
+    pending.map(async (o) => {
+      const { data: lineRows } = await admin.rpc('get_portal_invoice_lines', {
+        p_order_ref: o.order_ref,
+      })
+      const linii = (Array.isArray(lineRows) ? lineRows : []) as { denumire: string; suma: number }[]
+      const descriere = linii.length
+        ? linii.map((l) => l.denumire).join('; ')
+        : 'Abonament cursuri (plată online)'
+      return {
+        order_ref: o.order_ref,
+        client_nume: (o.client_id && nameById.get(o.client_id)) || 'Client',
+        suma: Number(o.amount),
+        descriere,
+        linii,
+        data: (o.created ?? '').slice(0, 10),
+      }
+    }),
+  )
   return json({ items })
 }
 

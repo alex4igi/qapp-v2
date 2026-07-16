@@ -59,6 +59,7 @@ export type PortalPendingRow = {
   client_nume: string
   suma: number
   descriere: string
+  linii: { denumire: string; suma: number }[]
   data: string
 }
 

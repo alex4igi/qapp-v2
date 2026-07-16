@@ -162,18 +162,46 @@ export function PortalTab() {
         }
       >
         {confirmRow && (
-          <div className="space-y-2 text-sm">
+          <div className="space-y-3 text-sm">
             <p className="text-muted">Se va emite o factură fiscală reală (FGO + e-Factura):</p>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
               <dt className="text-muted">Client</dt>
-              <dd className="font-medium text-ink">{confirmRow.client_nume} (PF)</dd>
-              <dt className="text-muted">Descriere</dt>
-              <dd className="text-ink">{confirmRow.descriere}</dd>
-              <dt className="text-muted">Sumă</dt>
-              <dd className="font-medium text-ink">{fmt(confirmRow.suma)} RON</dd>
+              <dd className="font-medium text-ink">{confirmRow.client_nume}</dd>
               <dt className="text-muted">Comandă</dt>
               <dd className="text-ink">{confirmRow.order_ref}</dd>
             </dl>
+            <div className="rounded-lg border border-line">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-muted">
+                    <th className="px-3 py-1.5 font-medium">Linie factură</th>
+                    <th className="px-3 py-1.5 text-right font-medium">Sumă</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(confirmRow.linii.length
+                    ? confirmRow.linii
+                    : [{ denumire: confirmRow.descriere, suma: confirmRow.suma }]
+                  ).map((l, i) => (
+                    <tr key={i} className="border-b border-line last:border-0">
+                      <td className="px-3 py-1.5 text-ink">{l.denumire}</td>
+                      <td className="px-3 py-1.5 text-right whitespace-nowrap text-ink">
+                        {fmt(l.suma)} RON
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-line font-medium">
+                    <td className="px-3 py-1.5 text-ink">Total</td>
+                    <td className="px-3 py-1.5 text-right whitespace-nowrap text-ink">
+                      {fmt(confirmRow.suma)} RON
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <p className="text-xs text-muted">Firma emitentă: Quasar Dance Studio SRL · TVA 21%.</p>
             {emit.isError && (
               <p className="text-red-700">
                 {(emit.error as Error)?.message ?? 'Eroare la emitere.'}
