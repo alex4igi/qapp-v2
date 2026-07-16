@@ -117,10 +117,13 @@ export function mapLocatie(v: unknown): string | null {
   return k ? (LOCATIE_ALIASES[k] ?? null) : null
 }
 
-// Găsește un client existent (activ sau ex) cu același telefon sau email.
+// Găsește un client existent „real" (activ sau ex) cu același telefon sau email.
 // clienti.telefon e stocat INCONSISTENT (majoritatea '0…', unele '+40…') iar
 // leadurile vin normalizate '+40…' — deci comparăm pe toate formatele plauzibile
 // derivate din numărul național (9 cifre), nu pe string brut.
+// „Real" = are ≥1 înrolare SAU ≥1 plată: baza clienti conține ~1.4k fantome de
+// import v1 (EXclient fără istoric); un lead care se potrivește doar cu o fantomă
+// rămâne lead normal (nu-l scoatem din fluxul rece).
 export async function findMatchingClient(
   supabase: SupabaseClient,
   telefon: string | null,
@@ -141,7 +144,26 @@ export async function findMatchingClient(
     .or(filters.join(','))
     .limit(1)
     .maybeSingle()
-  return data ?? null
+  if (!data) return null
+  return (await clientHasHistory(supabase, data.id)) ? data : null
+}
+
+// True dacă clientul are cel puțin o înrolare sau o încasare (client „real",
+// nu o fantomă de import fără istoric).
+async function clientHasHistory(
+  supabase: SupabaseClient,
+  clientId: string,
+): Promise<boolean> {
+  const { count: enr } = await supabase
+    .from('enrollments')
+    .select('id', { count: 'exact', head: true })
+    .eq('client', clientId)
+  if ((enr ?? 0) > 0) return true
+  const { count: pay } = await supabase
+    .from('incasari')
+    .select('id', { count: 'exact', head: true })
+    .eq('client', clientId)
+  return (pay ?? 0) > 0
 }
 
 export type IntakeLead = {
