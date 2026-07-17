@@ -23,5 +23,5 @@ export const skills: SkillDef[] = [
   { key: 'skill_prezentare',    label: 'Poate prezenta o coregrafie în fața publicului cu încredere' },
 ]
 
-export const SCALE_LEFT  = 'cu foarte mult ajutor'
-export const SCALE_RIGHT = 'reușește independent'
+export const SCALE_LEFT  = 'mai necesită exercițiu'
+export const SCALE_RIGHT = 'în zona de confort'
