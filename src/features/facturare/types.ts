@@ -36,6 +36,7 @@ export type MatchSuggestion = {
   nume: string
   familia_id: string | null
   scor: number
+  status?: string | null
 }
 
 export type IngestSummary = {

@@ -123,6 +123,9 @@ export function ClientMatcher({ payerNume, descriere, value, onChange }: Props) 
                 className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-surface"
               >
                 {r.nume}
+                {r.status && r.status !== 'Activ' && (
+                  <span className="ml-1 text-xs text-muted">· {r.status}</span>
+                )}
               </button>
             ))}
           </div>,

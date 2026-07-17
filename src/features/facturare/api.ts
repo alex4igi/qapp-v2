@@ -82,6 +82,15 @@ export const emitePortal = (orderRef: string, linii: { denumire: string; suma: n
     { orderRef, linii },
   )
 
+// Ordine deterministă: data_tranzactie e doar ziua, deci fără tie-break rândurile din
+// aceeași zi se reamestecă la fiecare UPDATE (Postgres mută fizic rândul). created + ref
+// nu se schimbă niciodată → poziția rămâne fixă după orice procedură.
+const STABLE_ORDER = [
+  ['data_tranzactie', { ascending: false }],
+  ['created', { ascending: false }],
+  ['ref', { ascending: true }],
+] as const
+
 export async function listFacturi(
   sursa: FacturaSursa,
   statusIn?: FacturaStatus[],
@@ -90,7 +99,7 @@ export async function listFacturi(
     .from('facturi_fgo')
     .select('*')
     .eq('sursa', sursa)
-    .order('data_tranzactie', { ascending: false })
+  for (const [col, opts] of STABLE_ORDER) q = q.order(col, opts)
   if (statusIn && statusIn.length) q = q.in('status', statusIn)
   const { data, error } = await q
   if (error) throw error
@@ -99,26 +108,27 @@ export async function listFacturi(
 
 // „De procesat" (banca): NOT done AND NOT Ignorata, unde done = plătit ȘI facturat.
 export async function listBancaWorklist(): Promise<FacturaRow[]> {
-  const { data, error } = await supabase
+  let q = supabase
     .from('facturi_fgo')
     .select('*')
     .eq('sursa', 'banca')
     .neq('status', 'Ignorata')
     .or('platit_la.is.null,status.not.in.(Emisa,Marcata)')
-    .order('data_tranzactie', { ascending: false })
+  for (const [col, opts] of STABLE_ORDER) q = q.order(col, opts)
+  const { data, error } = await q
   if (error) throw error
   return (data ?? []) as FacturaRow[]
 }
 
 // Istoric-jurnal (banca): tot ce a avut o acțiune (plată sau factură/ignorare).
 export async function listBancaIstoric(): Promise<FacturaRow[]> {
-  const { data, error } = await supabase
+  let q = supabase
     .from('facturi_fgo')
     .select('*')
     .eq('sursa', 'banca')
     .or('platit_la.not.is.null,status.in.(Emisa,Marcata,Eroare,Ignorata)')
-    .order('data_tranzactie', { ascending: false })
-    .limit(50)
+  for (const [col, opts] of STABLE_ORDER) q = q.order(col, opts)
+  const { data, error } = await q.limit(50)
   if (error) throw error
   return (data ?? []) as FacturaRow[]
 }
@@ -158,22 +168,36 @@ export async function matchPayer(
   return (data ?? []) as MatchSuggestion[]
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 // Căutare manuală peste clienți (nume/prenume/telefon) — fallback când sugestiile nu nimeresc.
+// Acceptă mai multe cuvinte („olaru alessia") și un UUID de client (apare în detaliile
+// transferurilor din portal).
 export async function searchClienti(term: string): Promise<MatchSuggestion[]> {
-  const t = `%${term.trim()}%`
-  const { data, error } = await supabase
-    .from('clienti')
-    .select('id, nume, prenume, familia')
-    .or(`nume.ilike.${t},prenume.ilike.${t},telefon.ilike.${t}`)
-    .limit(10)
+  const trimmed = term.trim()
+  let query = supabase.from('clienti').select('id, nume, prenume, familia, status')
+  if (UUID_RE.test(trimmed)) {
+    query = query.eq('id', trimmed)
+  } else {
+    // .or() repetat se combină cu AND: fiecare cuvânt trebuie să apară în una din coloane
+    for (const tok of trimmed.split(/\s+/)) {
+      const t = `%${tok.replace(/[,()]/g, '')}%`
+      query = query.or(`nume.ilike.${t},prenume.ilike.${t},telefon.ilike.${t}`)
+    }
+  }
+  const { data, error } = await query.limit(25)
   if (error) throw error
-  return (data ?? []).map((c) => ({
-    tip: 'client' as const,
-    id: c.id,
-    nume: [c.nume, c.prenume].filter(Boolean).join(' ').trim(),
-    familia_id: c.familia,
-    scor: 0,
-  }))
+  const rank: Record<string, number> = { Activ: 0, Inactiv: 1 }
+  return (data ?? [])
+    .sort((a, b) => (rank[a.status ?? ''] ?? 2) - (rank[b.status ?? ''] ?? 2))
+    .map((c) => ({
+      tip: 'client' as const,
+      id: c.id,
+      nume: [c.nume, c.prenume].filter(Boolean).join(' ').trim(),
+      familia_id: c.familia,
+      scor: 0,
+      status: c.status,
+    }))
 }
 
 export async function warnExisting(
