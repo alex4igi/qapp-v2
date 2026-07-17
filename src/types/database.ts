@@ -8165,6 +8165,12 @@ export type Database = {
         Args: { p_inchiriere: string; p_new_pret: number }
         Returns: Json
       }
+      anon_rpc_gap_report: {
+        Args: never
+        Returns: {
+          functie: string
+        }[]
+      }
       anuleaza_rezervare_open: {
         Args: { p_motiv?: string; p_rezervare: string }
         Returns: undefined

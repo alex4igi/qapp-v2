@@ -32,6 +32,8 @@ npx supabase db push # aplică migrațiile locale pe Supabase remote
 
 **Regulă RLS portal:** orice tabel nou trebuie să primească gardul restrictiv `deny_parinte_direct` (vezi migrația `20260705090000_reapply_deny_parinte_guard.sql`). Verificare: `node scripts/check-rls-parinte.mjs` după fiecare migrație care creează tabele.
 
+**Regulă anon pe RPC (securitate):** default privileges Supabase acordă `anon` EXECUTE pe orice funcție nouă, iar `auth_role()` cade pe `front_desk` pentru requesturile fără rol — deci un RPC `security definer` devine apelabil cu cheia publică dacă nu revoci `anon`. La FIECARE funcție `security definer` nouă adaugă în migrație `revoke execute on function <sig> from anon, public;` (staff/portal rămân pe grantul `authenticated`). Excepție doar dacă funcția e chemată dintr-o politică RLS pentru rolul public. Verificare: `node scripts/check-anon-rpc.mjs` după orice migrație care creează funcții. (Audit 2026-07-17: `20260717150000` + `150100` au închis 110+96 funcții expuse.)
+
 ## Convenții cod
 
 - **Limba**: română pentru UI (etichete, mesaje, denumiri domeniu în DB); engleză pentru cod (variabile, funcții, fișiere, componente).
