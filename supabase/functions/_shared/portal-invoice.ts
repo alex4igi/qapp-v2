@@ -8,7 +8,8 @@ import { emitInvoice, type FgoClient, type FgoFirma, type FgoLine } from './fgo.
 const NETOPIA_CUI = Deno.env.get('NETOPIA_FGO_CUI') || '49361270'
 
 type PortalInvoiceResult = {
-  status: 'emisa' | 'idempotent' | 'eroare' | 'off' | 'skip'
+  // 'manual' = mapare nesigură la generarea automată → rămâne pentru recepție.
+  status: 'emisa' | 'idempotent' | 'eroare' | 'off' | 'skip' | 'manual'
   factura?: string | null
   error?: string
 }
@@ -25,7 +26,7 @@ function today(): string {
 export async function emitPortalInvoice(
   admin: SupabaseClient,
   orderRef: string,
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean; lines?: FgoLine[] } = {},
 ): Promise<PortalInvoiceResult> {
   const { data: order } = await admin
     .from('netopia_orders')
@@ -71,12 +72,27 @@ export async function emitPortalInvoice(
     }
   }
 
-  // Liniile facturii, detaliate per serviciu vândut (RPC comună cu preview-ul din „De facturat").
-  const { data: lineRows } = await admin.rpc('get_portal_invoice_lines', { p_order_ref: orderRef })
-  const rows = (Array.isArray(lineRows) ? lineRows : []) as { denumire: string; suma: number }[]
-  const lines: FgoLine[] = rows.length
-    ? rows.map((l) => ({ denumire: String(l.denumire), pretTotal: Number(l.suma) }))
-    : [{ denumire: 'Abonament cursuri (plată online)', pretTotal: Number(order.amount) }]
+  // Liniile facturii. La emiterea manuală (recepție) vin gata alese; altfel se
+  // construiesc din RPC-ul comun cu preview-ul din „De facturat".
+  let lines: FgoLine[]
+  if (opts.lines && opts.lines.length) {
+    lines = opts.lines
+  } else {
+    const { data: lineRows } = await admin.rpc('get_portal_invoice_lines', { p_order_ref: orderRef })
+    const rows = (Array.isArray(lineRows) ? lineRows : []) as {
+      denumire: string
+      suma: number
+      articol: string | null
+      certain: boolean
+    }[]
+    const allCertain = rows.length > 0 && rows.every((r) => r.certain)
+    // Guardrail: la generarea AUTOMATĂ (fără force) nu emitem dacă maparea e nesigură
+    // — plata rămâne în „De facturat" pentru recepție (alege articolul manual).
+    if (!opts.force && !allCertain) return { status: 'manual' }
+    lines = rows.length
+      ? rows.map((l) => ({ denumire: String(l.denumire), pretTotal: Number(l.suma) }))
+      : [{ denumire: 'Servicii Quasar Dance (plată online)', pretTotal: Number(order.amount) }]
+  }
   const descriere = lines.map((l) => l.denumire).join('; ').slice(0, 500)
 
   const firma: FgoFirma = {

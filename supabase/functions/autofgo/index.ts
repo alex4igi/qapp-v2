@@ -54,6 +54,17 @@ Deno.serve(async (req) => {
       const r = await emitPortalInvoice(admin, body.orderRef as string, { force: true })
       return json({ result: r })
     }
+    if (action === 'emite_portal') {
+      // Emitere manuală de recepție: liniile (articol + sumă) sunt alese în UI.
+      const linii = (body.linii ?? []) as { denumire: string; suma: number }[]
+      if (!Array.isArray(linii) || !linii.length) return json({ error: 'linii obligatorii' }, 400)
+      const lines = linii
+        .filter((l) => l.denumire && Number(l.suma) > 0)
+        .map((l) => ({ denumire: String(l.denumire), pretTotal: Number(l.suma) }))
+      if (!lines.length) return json({ error: 'liniile trebuie să aibă articol și sumă' }, 400)
+      const r = await emitPortalInvoice(admin, body.orderRef as string, { force: true, lines })
+      return json({ result: r })
+    }
     if (action === 'portal_pending') {
       return await handlePortalPending(admin)
     }
@@ -103,21 +114,29 @@ async function handlePortalPending(admin: SupabaseClient) {
   }
 
   // Liniile detaliate (exact ce se va emite) — aceeași sursă ca emitPortalInvoice.
+  // `certain=false` pe orice linie ⇒ recepția trebuie să aleagă articolul manual.
   const items = await Promise.all(
     pending.map(async (o) => {
       const { data: lineRows } = await admin.rpc('get_portal_invoice_lines', {
         p_order_ref: o.order_ref,
       })
-      const linii = (Array.isArray(lineRows) ? lineRows : []) as { denumire: string; suma: number }[]
+      const linii = (Array.isArray(lineRows) ? lineRows : []) as {
+        denumire: string
+        suma: number
+        articol: string | null
+        certain: boolean
+      }[]
+      const certain = linii.length > 0 && linii.every((l) => l.certain)
       const descriere = linii.length
         ? linii.map((l) => l.denumire).join('; ')
-        : 'Abonament cursuri (plată online)'
+        : 'Necunoscut — alege articolul'
       return {
         order_ref: o.order_ref,
         client_nume: (o.client_id && nameById.get(o.client_id)) || 'Client',
         suma: Number(o.amount),
         descriere,
         linii,
+        certain,
         data: (o.created ?? '').slice(0, 10),
       }
     }),
