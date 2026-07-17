@@ -80,14 +80,19 @@ function todayIso(): string {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 
+// Valoare-sentinelă în dropdown-ul de instructor: trainer invitat, cu nume scris liber.
+const INSTRUCTOR_INVITAT = '__invitat__'
+
 function AdaugaSesiuneForm({ cursId, capacitateImplicita }: { cursId: string; capacitateImplicita: number }) {
   const queryClient = useQueryClient()
   const teacheriQ = useTeacheriOptions()
   const [open, setOpen] = useState(false)
   const [data, setData] = useState('')
   const [instructorId, setInstructorId] = useState('')
+  const [instructorManual, setInstructorManual] = useState('')
   const [capacitate, setCapacitate] = useState(String(capacitateImplicita))
   const [error, setError] = useState<string | null>(null)
+  const isInvitat = instructorId === INSTRUCTOR_INVITAT
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -95,13 +100,21 @@ function AdaugaSesiuneForm({ cursId, capacitateImplicita }: { cursId: string; ca
       if (data < todayIso()) throw new Error('Sesiunea nu poate fi în trecut.')
       const cap = Number(capacitate)
       if (!isFinite(cap) || cap <= 0) throw new Error('Limita de locuri trebuie să fie pozitivă.')
-      return createOpenSesiune({ cursId, data, capacitate: cap, instructorId: instructorId || null })
+      if (isInvitat && !instructorManual.trim()) throw new Error('Scrie numele trainerului invitat.')
+      return createOpenSesiune({
+        cursId,
+        data,
+        capacitate: cap,
+        instructorId: isInvitat ? null : instructorId || null,
+        instructorManual: isInvitat ? instructorManual.trim() : null,
+      })
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['curs', cursId, 'open-sesiuni'] })
       setOpen(false)
       setData('')
       setInstructorId('')
+      setInstructorManual('')
       setCapacitate(String(capacitateImplicita))
       setError(null)
     },
@@ -121,12 +134,24 @@ function AdaugaSesiuneForm({ cursId, capacitateImplicita }: { cursId: string; ca
           <DateInput min={todayIso()} value={data} onChange={(e) => setData(e.target.value)} />
         </Field>
         <Field label="Instructor (opțional)">
-          <Select
-            placeholder="— neatribuit —"
-            options={teacheriQ.data ?? []}
-            value={instructorId}
-            onChange={(e) => setInstructorId(e.target.value)}
-          />
+          <div className="space-y-2">
+            <Select
+              placeholder="— neatribuit —"
+              options={[
+                ...(teacheriQ.data ?? []),
+                { value: INSTRUCTOR_INVITAT, label: 'Invitat / alt nume…' },
+              ]}
+              value={instructorId}
+              onChange={(e) => setInstructorId(e.target.value)}
+            />
+            {isInvitat && (
+              <TextInput
+                placeholder="Numele trainerului invitat"
+                value={instructorManual}
+                onChange={(e) => setInstructorManual(e.target.value)}
+              />
+            )}
+          </div>
         </Field>
         <Field label="Limită locuri" required>
           <TextInput
@@ -236,7 +261,10 @@ export function OpenSesiuniTab({ cursId, canManage, capacitateImplicita }: Props
                   <div>
                     <span className="font-medium text-quasar-black">{formatData(s.data)}</span>
                     {s.instructor_nume && (
-                      <span className="ml-2 text-sm text-quasar-gray">· {s.instructor_nume}</span>
+                      <span className="ml-2 text-sm text-quasar-gray">
+                        · {s.instructor_nume}
+                        {!s.instructor && ' (invitat)'}
+                      </span>
                     )}
                     {s.status === 'anulata' && (
                       <span className="ml-2 text-xs font-semibold text-red-600">ANULATĂ</span>

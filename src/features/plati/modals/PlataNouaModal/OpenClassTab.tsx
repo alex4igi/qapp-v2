@@ -22,6 +22,9 @@ type Props = {
   defaultClientId?: string
 }
 
+// Valoare-sentinelă în dropdown-ul de instructor: trainer invitat, cu nume scris liber.
+const INSTRUCTOR_INVITAT = '__invitat__'
+
 export function OpenClassTab({ onClose, defaultClientId }: Props) {
   const queryClient = useQueryClient()
   const { locatieId, locatieNume } = useWorkingLocatie()
@@ -30,6 +33,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
   const [data, setData] = useState('')
   const [clientId, setClientId] = useState(defaultClientId ?? '')
   const [instructorId, setInstructorId] = useState('')
+  const [instructorManual, setInstructorManual] = useState('')
   const [suma, setSuma] = useState('')
   const [sumaTouched, setSumaTouched] = useState(false)
   const [metoda, setMetoda] = useState<MetodaSel>('Cash')
@@ -98,6 +102,10 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
       if (!locatieId) {
         throw new Error('Setează locația de lucru din bara de sus (📍 lângă dată).')
       }
+      const isInvitat = instructorId === INSTRUCTOR_INVITAT
+      if (isInvitat && !instructorManual.trim()) {
+        throw new Error('Scrie numele trainerului invitat.')
+      }
       // Încasare 0 → fără tenders (nicio metodă cerută); restul rămâne restanță.
       const tenders = sumaNum > 0 ? resolveTenders({ metoda, total: sumaNum, cash, card }) : []
       const [t0, t1] = tenders
@@ -112,7 +120,8 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
         sesiuneId: ocupare?.sesiune?.id ?? null,
         cursId,
         data,
-        instructorId: instructorId || null,
+        instructorId: isInvitat ? null : instructorId || null,
+        instructorManual: isInvitat ? instructorManual.trim() : null,
         permiteOverbook: overbook,
       })
     },
@@ -216,12 +225,24 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
 
       <div className="grid grid-cols-3 gap-3">
         <Field label="Instructor sesiune (opțional)">
-          <Select
-            placeholder="— neatribuit —"
-            options={teacheriQ.data ?? []}
-            value={instructorId}
-            onChange={(e) => setInstructorId(e.target.value)}
-          />
+          <div className="space-y-2">
+            <Select
+              placeholder="— neatribuit —"
+              options={[
+                ...(teacheriQ.data ?? []),
+                { value: INSTRUCTOR_INVITAT, label: 'Invitat / alt nume…' },
+              ]}
+              value={instructorId}
+              onChange={(e) => setInstructorId(e.target.value)}
+            />
+            {instructorId === INSTRUCTOR_INVITAT && (
+              <TextInput
+                placeholder="Numele trainerului invitat"
+                value={instructorManual}
+                onChange={(e) => setInstructorManual(e.target.value)}
+              />
+            )}
+          </div>
         </Field>
         <Field label="Încasează acum (RON)">
           <TextInput

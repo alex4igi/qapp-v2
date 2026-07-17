@@ -92,7 +92,7 @@ export async function listOpenSesiuni(cursId: string): Promise<OpenSesiuneRow[]>
     return {
       ...(rest as OpenSesiune),
       ocupate: countBySesiune.get(r.id) ?? 0,
-      instructor_nume: instructor_rel?.nume ?? null,
+      instructor_nume: instructor_rel?.nume ?? r.instructor_manual ?? null,
     }
   })
 }
@@ -148,6 +148,8 @@ export type RezervaLocParams = {
   cursId?: string | null
   data?: string | null
   instructorId?: string | null
+  // trainer invitat (nume liber) — folosit doar când instructorId lipsește
+  instructorManual?: string | null
   dataIncasare?: string | null
   // walk-in la recepție: permite depășirea limitei sesiunii (limita rămâne strictă online)
   permiteOverbook?: boolean
@@ -171,6 +173,7 @@ export async function rezervaLocOpen(params: RezervaLocParams): Promise<string> 
     p_curs: params.cursId ?? undefined,
     p_data: params.data ?? undefined,
     p_instructor: params.instructorId ?? undefined,
+    p_instructor_manual: params.instructorManual ?? undefined,
     p_data_incasare: params.dataIncasare ?? undefined,
     p_permite_overbook: params.permiteOverbook ?? undefined,
     p_metoda2: params.metoda2 ?? undefined,
@@ -206,6 +209,7 @@ export type CreateOpenSesiuneParams = {
   data: string
   capacitate: number
   instructorId?: string | null
+  instructorManual?: string | null
 }
 
 // Creează o sesiune OPEN goală în viitor (staff), ca să fie vizibilă pentru rezervare
@@ -218,6 +222,7 @@ export async function createOpenSesiune(params: CreateOpenSesiuneParams): Promis
       data: params.data,
       capacitate: params.capacitate,
       instructor: params.instructorId || null,
+      instructor_manual: params.instructorManual?.trim() || null,
     })
     .select('id')
     .single()

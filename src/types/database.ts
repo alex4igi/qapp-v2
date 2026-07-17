@@ -4603,6 +4603,7 @@ export type Database = {
           data: string
           id: string
           instructor: string | null
+          instructor_manual: string | null
           observatii: string | null
           status: string
         }
@@ -4613,6 +4614,7 @@ export type Database = {
           data: string
           id?: string
           instructor?: string | null
+          instructor_manual?: string | null
           observatii?: string | null
           status?: string
         }
@@ -4623,6 +4625,7 @@ export type Database = {
           data?: string
           id?: string
           instructor?: string | null
+          instructor_manual?: string | null
           observatii?: string | null
           status?: string
         }
@@ -9519,6 +9522,7 @@ export type Database = {
           p_data?: string
           p_data_incasare?: string
           p_instructor?: string
+          p_instructor_manual?: string
           p_locatie: string
           p_metoda: Database["public"]["Enums"]["metoda_plata"]
           p_metoda2?: Database["public"]["Enums"]["metoda_plata"]
