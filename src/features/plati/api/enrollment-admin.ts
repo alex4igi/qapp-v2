@@ -711,3 +711,47 @@ export async function moveEnrollmentToCurs(params: {
     if (nErr) console.error('notify_enrollment_move failed:', nErr.message)
   }
 }
+
+// Corectează data unei înrolări greșite la înregistrare (ex. ședință trecută pe
+// altă zi). Gardurile (fereastra front_desk, luna întreagă la „Per luna",
+// prezențe/rezervări OPEN) sunt în RPC; încasările nu se ating.
+export async function corecteazaDataInrolare(params: {
+  enrollmentId: string
+  dataNoua: string
+  motiv: string
+}): Promise<{ changed: boolean }> {
+  const motiv = params.motiv.trim()
+  if (!motiv) throw new Error('Motivul e obligatoriu.')
+
+  const { data: cur, error: gErr } = await supabase
+    .from('enrollments')
+    .select('cursul, data_incepere')
+    .eq('id', params.enrollmentId)
+    .single()
+  if (gErr) throw gErr
+
+  const { data, error } = await supabase.rpc('corecteaza_data_inrolare', {
+    p_enrollment: params.enrollmentId,
+    p_data_noua: params.dataNoua,
+    p_motiv: motiv,
+  })
+  if (error) throw error
+  const result = (data ?? {}) as {
+    changed?: boolean
+    new_data_incepere?: string
+  }
+
+  if (result.changed) {
+    const locatieId = await getLocatieFromCurs(cur.cursul)
+    await recordAuditLog({
+      action: 'enrollment_date_corrected',
+      entityType: 'enrollment',
+      entityId: params.enrollmentId,
+      oldValue: { data_incepere: cur.data_incepere },
+      newValue: { data_incepere: result.new_data_incepere ?? params.dataNoua },
+      reason: motiv,
+      locatieId,
+    })
+  }
+  return { changed: Boolean(result.changed) }
+}

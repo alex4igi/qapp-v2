@@ -19,6 +19,7 @@ import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
 import { UseCreditModal } from '@/features/plati/UseCreditModal'
 import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
+import { CorecteazaDataModal } from '@/features/plati/CorecteazaDataModal'
 import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
 import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentSedinteModal'
 import { useAuth } from '@/hooks/useAuth'
@@ -63,6 +64,7 @@ export function ClientProfilePage() {
   const [adjustEnrollmentId, setAdjustEnrollmentId] = useState<string | null>(null)
   const [useCreditOpen, setUseCreditOpen] = useState(false)
   const [moveEnrollmentId, setMoveEnrollmentId] = useState<string | null>(null)
+  const [corectDataEnrollmentId, setCorectDataEnrollmentId] = useState<string | null>(null)
   const [motivareEnrollmentId, setMotivareEnrollmentId] = useState<string | null>(null)
   const [convertSedinta, setConvertSedinta] = useState<{
     sedintaId: string
@@ -400,6 +402,9 @@ export function ClientProfilePage() {
               // Mutarea între grupe e permisă și front_desk-ului; managerul
               // primește o notificare informativă (vezi notify_enrollment_move).
               onMoveCurs={(eId) => setMoveEnrollmentId(eId)}
+              // Corectarea datei e permisă și front_desk-ului, dar RPC-ul o
+              // limitează la ±14 zile de azi (manager+ fără limită).
+              onCorectDate={(eId) => setCorectDataEnrollmentId(eId)}
               // Motivarea absențelor + eventuala scutire de lună e doar manager+.
               onMotiveaza={
                 canManagerActions ? (eId) => setMotivareEnrollmentId(eId) : undefined
@@ -494,6 +499,14 @@ export function ClientProfilePage() {
           open
           enrollmentId={moveEnrollmentId}
           onClose={() => setMoveEnrollmentId(null)}
+        />
+      )}
+
+      {corectDataEnrollmentId && (
+        <CorecteazaDataModal
+          open
+          enrollmentId={corectDataEnrollmentId}
+          onClose={() => setCorectDataEnrollmentId(null)}
         />
       )}
 

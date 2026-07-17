@@ -76,6 +76,7 @@ export {
   getClientCredit,
   useClientCredit,
   moveEnrollmentToCurs,
+  corecteazaDataInrolare,
   convertSedintaInAbonament,
   getAbonamentToSedintePreview,
   convertAbonamentInSedinte,

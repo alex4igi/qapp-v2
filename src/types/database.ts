@@ -8326,6 +8326,10 @@ export type Database = {
         Args: { p_motiv?: string; p_sedinta: string; p_target: string }
         Returns: Json
       }
+      corecteaza_data_inrolare: {
+        Args: { p_data_noua: string; p_enrollment: string; p_motiv: string }
+        Returns: Json
+      }
       create_campanie_reinscriere: {
         Args: {
           p_data_final: string

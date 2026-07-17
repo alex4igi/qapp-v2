@@ -13,6 +13,7 @@ type Props = {
   onAskRezilia: (id: string) => void
   onAdjustPrice?: (enrollmentId: string) => void
   onMoveCurs?: (enrollmentId: string) => void
+  onCorectDate?: (enrollmentId: string) => void
   onMotiveaza?: (enrollmentId: string) => void
   onConvertToAbonament?: (enrollmentId: string, cursId: string) => void
   onConvertToSedinte?: (enrollmentId: string) => void
@@ -30,6 +31,7 @@ export function InrolariSezonTab({
   onAskRezilia,
   onAdjustPrice,
   onMoveCurs,
+  onCorectDate,
   onMotiveaza,
   onConvertToAbonament,
   onConvertToSedinte,
@@ -111,6 +113,14 @@ export function InrolariSezonTab({
                     label: 'Mută',
                     title: 'Mută înrolarea la alt curs (păstrează plata)',
                     onClick: () => onMoveCurs(r.id_enrollment),
+                  })
+                if (onCorectDate)
+                  actions.push({
+                    icon: '📅',
+                    label: 'Corectează data',
+                    title:
+                      'Corectează data înrolării (greșeală de operare; banii nu se ating)',
+                    onClick: () => onCorectDate(r.id_enrollment),
                   })
                 if (onMotiveaza)
                   actions.push({
