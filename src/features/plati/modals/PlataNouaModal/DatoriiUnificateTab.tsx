@@ -145,28 +145,6 @@ export function DatoriiUnificateTab({
   )
   const datRows = useMemo(() => datoriiQ.data ?? [], [datoriiQ.data])
 
-  // canCheck: pentru un rând de înrolare, toate rândurile anterioare de același curs
-  // sunt plătite (rest=0) sau bifate → garantează FIFO pe curs.
-  const canCheck = useMemo(() => {
-    const map = new Map<string, boolean>()
-    const byCurs = new Map<string, VPlatiInrolari[]>()
-    for (const r of enrollRows) {
-      if (!r.id_curs) continue
-      const arr = byCurs.get(r.id_curs) ?? []
-      arr.push(r)
-      byCurs.set(r.id_curs, arr)
-    }
-    for (const list of byCurs.values()) {
-      for (let i = 0; i < list.length; i++) {
-        const earlierUnpaidUnchecked = list
-          .slice(0, i)
-          .some((prev) => (prev.rest ?? 0) > 0 && !checkedEnroll.has(String(prev.id_enrollment)))
-        map.set(String(list[i].id_enrollment), !earlierUnpaidUnchecked)
-      }
-    }
-    return map
-  }, [enrollRows, checkedEnroll])
-
   const checkedEnrollOrdered = useMemo(
     () => enrollRows.filter((r) => r.id_enrollment && checkedEnroll.has(String(r.id_enrollment))),
     [enrollRows, checkedEnroll],
@@ -215,9 +193,22 @@ export function DatoriiUnificateTab({
       }
       setCheckedEnroll(next)
     } else {
-      if (!canCheck.get(key)) return
       const next = new Set(checkedEnroll)
       next.add(key)
+      // FIFO: bifez automat și lunile anterioare neachitate ale aceluiași curs.
+      if (r.id_curs) {
+        for (const other of enrollRows) {
+          if (
+            other.id_curs === r.id_curs &&
+            other.data_incepere &&
+            r.data_incepere &&
+            other.data_incepere < r.data_incepere &&
+            Number(other.rest ?? 0) > 0
+          ) {
+            next.add(String(other.id_enrollment))
+          }
+        }
+      }
       setCheckedEnroll(next)
     }
   }
@@ -484,7 +475,6 @@ export function DatoriiUnificateTab({
                     {curentRows.map((r) => {
                       const key = String(r.id_enrollment)
                       const isChecked = checkedEnroll.has(key)
-                      const allowed = canCheck.get(key) ?? false
                       const rest = Number(r.rest ?? 0)
                       return (
                         <tr
@@ -501,7 +491,7 @@ export function DatoriiUnificateTab({
                               className="h-4 w-4 rounded accent-quasar-yellow"
                               checked={isChecked}
                               onChange={() => toggleEnroll(r)}
-                              disabled={rest === 0 || (!isChecked && !allowed)}
+                              disabled={rest === 0}
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -550,7 +540,6 @@ export function DatoriiUnificateTab({
                     {anteriorRows.map((r) => {
                       const key = String(r.id_enrollment)
                       const isChecked = checkedEnroll.has(key)
-                      const allowed = canCheck.get(key) ?? false
                       const rest = Number(r.rest ?? 0)
                       return (
                         <tr
@@ -566,7 +555,6 @@ export function DatoriiUnificateTab({
                               className="h-4 w-4 rounded accent-quasar-yellow"
                               checked={isChecked}
                               onChange={() => toggleEnroll(r)}
-                              disabled={!isChecked && !allowed}
                             />
                           </td>
                           <td className="px-3 py-2">
