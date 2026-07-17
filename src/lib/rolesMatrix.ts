@@ -71,6 +71,9 @@ export const ROUTE_ACCESS = {
   '/setari': PRIVILEGED,
   '/opt-out': PRIVILEGED,
   '/salariul-meu': TEACHER_ONLY,
+  // Hub personal de statistici pe grupele instructorului (RPC-uri scoped pe
+  // current_teacher_id() — pentru non-teacher ar fi gol, deci teacher-only).
+  '/grupele-mele': TEACHER_ONLY,
   '/pontaj-staff': PRIVILEGED,
   '/notificari': WITH_TEACHER,
   '/audit': PRIVILEGED,

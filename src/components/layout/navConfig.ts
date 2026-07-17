@@ -63,6 +63,7 @@ export const navSections: NavSection[] = [
   {
     label: 'Personal',
     items: [
+      { label: 'Grupele mele',       path: '/grupele-mele' },
       { label: 'Salariul meu',       path: '/salariul-meu' },
       // Anunțuri + Feedback aplicație trăiesc în meniul contului (vezi
       // AccountMenu), ca să nu fie dublate aici.

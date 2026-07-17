@@ -2255,6 +2255,7 @@ export type Database = {
           feedback_general: string | null
           id: string
           nivel_grupa: string | null
+          sezon_id: string | null
           skill_coordonare: number | null
           skill_coregrafie: number | null
           skill_expresivitate: number | null
@@ -2276,6 +2277,7 @@ export type Database = {
           feedback_general?: string | null
           id?: string
           nivel_grupa?: string | null
+          sezon_id?: string | null
           skill_coordonare?: number | null
           skill_coregrafie?: number | null
           skill_expresivitate?: number | null
@@ -2297,6 +2299,7 @@ export type Database = {
           feedback_general?: string | null
           id?: string
           nivel_grupa?: string | null
+          sezon_id?: string | null
           skill_coordonare?: number | null
           skill_coregrafie?: number | null
           skill_expresivitate?: number | null
@@ -2463,6 +2466,13 @@ export type Database = {
             columns: ["teacher"]
             isOneToOne: false
             referencedRelation: "teacheri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_evaluari_sezon"
+            columns: ["sezon_id"]
+            isOneToOne: false
+            referencedRelation: "sezoane"
             referencedColumns: ["id"]
           },
         ]
@@ -8357,6 +8367,17 @@ export type Database = {
           ultima_prezenta: string
         }[]
       }
+      get_absente_risc_teacher: {
+        Args: { p_prag?: number }
+        Returns: {
+          absente_consecutive: number
+          client_id: string
+          client_nume: string
+          curs_id: string
+          curs_nume: string
+          ultima_prezenta: string
+        }[]
+      }
       get_anunturi_client: {
         Args: never
         Returns: {
@@ -8542,6 +8563,18 @@ export type Database = {
           teacher_nume: string
         }[]
       }
+      get_evaluari_stats_teacher: {
+        Args: never
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          media_generala: number
+          n_cursanti: number
+          n_evaluari: number
+          skills: Json
+          trend: Json
+        }[]
+      }
       get_evenimente_client: {
         Args: { p_client?: string }
         Returns: {
@@ -8717,6 +8750,15 @@ export type Database = {
         }[]
       }
       get_pachet_luni: { Args: { p_locatie?: string }; Returns: Json }
+      get_participare_teacher: {
+        Args: never
+        Returns: {
+          concurs: number
+          curs_id: string
+          curs_nume: string
+          spectacol: number
+        }[]
+      }
       get_participari_client: {
         Args: { p_client: string }
         Returns: {
@@ -8857,6 +8899,16 @@ export type Database = {
           suma: number
           suma_baza: number
           tip_plata: Database["public"]["Enums"]["tip_plata"]
+        }[]
+      }
+      get_reinscriere_teacher: {
+        Args: { p_sezon_tinta?: string }
+        Returns: {
+          activati: number
+          curs_id: string
+          curs_nume: string
+          procent: number
+          total_eligibili: number
         }[]
       }
       get_reinscrieri_conversie: {

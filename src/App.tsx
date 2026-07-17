@@ -57,6 +57,7 @@ import { OfertaPublicaPage } from '@/features/oferta-publica/OfertaPublicaPage'
 import { OrganizatiePage } from '@/features/setari/OrganizatiePage'
 import { EvaluariListPage } from '@/features/evaluari/EvaluariListPage'
 import { SalariulMeuPage } from '@/features/salariu-teacher/SalariulMeuPage'
+import { GrupeleMelePage } from '@/features/teacher-stats/GrupeleMelePage'
 import { NotificariPage } from '@/features/notificari/NotificariPage'
 import { AuditPage } from '@/features/audit/AuditPage'
 import { PontajStaffPage } from '@/features/pontaj/PontajStaffPage'
@@ -82,6 +83,12 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/salariul-meu']} />}>
             <Route element={<AppLayout />}>
               <Route path="salariul-meu" element={<SalariulMeuPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/grupele-mele']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="grupele-mele" element={<GrupeleMelePage />} />
             </Route>
           </Route>
 
