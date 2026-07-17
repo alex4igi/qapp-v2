@@ -149,6 +149,20 @@ export function EvaluariListPage() {
       className: 'w-28',
       sortValue: (e) => avgScoreNum(e),
     },
+    {
+      header: 'Observații',
+      cell: (e) =>
+        e.feedback_general ? (
+          <span
+            className="block max-w-[22rem] truncate text-quasar-gray"
+            title={e.feedback_general}
+          >
+            {e.feedback_general}
+          </span>
+        ) : (
+          <span className="text-quasar-gray">—</span>
+        ),
+    },
   ]
 
   // Pentru teacher fără auth_user_id link → mesaj de eroare.

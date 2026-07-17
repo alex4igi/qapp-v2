@@ -104,7 +104,10 @@ function ClientCard({
       role="button"
       aria-label={nextLabel}
       title={nextLabel}
-      className="mcard flex items-center gap-2.5 rounded-[11px] border px-[13px] py-[11px]"
+      className={
+        'mcard flex items-center gap-2.5 rounded-[11px] border px-[13px] py-[11px]' +
+        (row.esteZiua ? ' ring-2 ring-quasar-yellow ring-offset-1' : '')
+      }
       style={{
         background: st.bg,
         borderColor: st.bd,
@@ -140,8 +143,11 @@ function ClientCard({
         </div>
       </div>
       {row.esteZiua && (
-        <span className="inline-flex items-center text-sm" title="Aniversare azi">
-          🎂
+        <span
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-quasar-yellow px-1.5 py-0.5 text-[10px] font-bold text-ink"
+          title="Aniversare azi"
+        >
+          🎂 Ziua!
         </span>
       )}
       {showPay && (
@@ -223,7 +229,14 @@ function RosterList({
               <span className="truncate text-sm font-medium text-ink">{name}</span>
               {isLead && <Badge tone="warn">LEAD</Badge>}
             </span>
-            {r.esteZiua && <span title="Aniversare azi">🎂</span>}
+            {r.esteZiua && (
+              <span
+                className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-quasar-yellow px-1.5 py-0.5 text-[10px] font-bold text-ink"
+                title="Aniversare azi"
+              >
+                🎂 Ziua!
+              </span>
+            )}
             {r.restanta > 0 && (
               <span className="fnum text-sm font-bold text-danger">
                 {formatRON(r.restanta)}
@@ -305,7 +318,14 @@ function RosterColumns({
                     <span className="flex-1 truncate text-[12.5px] font-medium text-ink">
                       {[m.nume, m.prenume].filter(Boolean).join(' ')}
                     </span>
-                    {m.esteZiua && <span title="Aniversare azi">🎂</span>}
+                    {m.esteZiua && (
+                      <span
+                        className="inline-flex shrink-0 items-center rounded-full bg-quasar-yellow px-1 py-0.5 text-[10px] font-bold text-ink"
+                        title="Aniversare azi"
+                      >
+                        🎂
+                      </span>
+                    )}
                     {m.restanta > 0 && (
                       <span className="h-2 w-2 rounded-full bg-danger" title="Restanță" />
                     )}

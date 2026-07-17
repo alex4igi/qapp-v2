@@ -31,7 +31,7 @@ export function AnuntDetailModal({ anunt, mode, onClose }: Props) {
 
   const receiptsQ = useQuery({
     queryKey: ['anunt-receipts', anunt.id],
-    queryFn: () => getReadReceipts(anunt.id),
+    queryFn: () => getReadReceipts(anunt.id, anunt.canal),
     enabled: mode === 'trimis',
   })
 

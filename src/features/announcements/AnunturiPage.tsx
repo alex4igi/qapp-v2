@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import type { Anunt } from '@/types/db'
 import { ComposeAnuntModal } from './ComposeAnuntModal'
+import { ComposeMesajGrupaModal } from './ComposeMesajGrupaModal'
 import { AnuntDetailModal } from './AnuntDetailModal'
 import {
   getAnunt,
@@ -32,11 +33,20 @@ function formatDate(iso: string): string {
 type Selected = { anunt: Anunt; mode: 'primit' | 'trimis' }
 
 export function AnunturiPage() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const uid = user?.id ?? ''
+
+  // Cine poate trimite mesaje către membri (portal): instructor + conducere.
+  // Recepția (front_desk) nu — la fel ca gardul din send_anunt_client.
+  const canMesajGrupa =
+    role === 'teacher' ||
+    role === 'manager' ||
+    role === 'admin' ||
+    role === 'owner'
 
   const [tab, setTab] = useState<'primite' | 'trimise'>('primite')
   const [composeOpen, setComposeOpen] = useState(false)
+  const [mesajGrupaOpen, setMesajGrupaOpen] = useState(false)
   const [selected, setSelected] = useState<Selected | null>(null)
 
   // Deep-link din notificare: ?anunt=<id> → deschide detaliul (primit).
@@ -141,7 +151,19 @@ export function AnunturiPage() {
       <PageHeader
         title="Anunțuri"
         subtitle="Mesaje către echipă, livrate în notificări"
-        actions={<Button onClick={() => setComposeOpen(true)}>📢 Anunț nou</Button>}
+        actions={
+          <div className="flex gap-2">
+            {canMesajGrupa && (
+              <Button
+                variant="secondary"
+                onClick={() => setMesajGrupaOpen(true)}
+              >
+                💬 Mesaj către grupă
+              </Button>
+            )}
+            <Button onClick={() => setComposeOpen(true)}>📢 Anunț nou</Button>
+          </div>
+        }
       />
 
       <Tabs
@@ -179,6 +201,9 @@ export function AnunturiPage() {
 
       {composeOpen && (
         <ComposeAnuntModal open onClose={() => setComposeOpen(false)} />
+      )}
+      {mesajGrupaOpen && (
+        <ComposeMesajGrupaModal open onClose={() => setMesajGrupaOpen(false)} />
       )}
       {selected && (
         <AnuntDetailModal

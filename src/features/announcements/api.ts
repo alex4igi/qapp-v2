@@ -43,6 +43,34 @@ export async function markAnuntRead(anuntId: string): Promise<void> {
   if (error) throw error
 }
 
+// ---- Client (portal membri): mesaj de grupă ----
+
+export type SendAnuntClientParams = {
+  titlu: string
+  continut: string
+  cursId: string | null
+}
+
+export async function previewAnuntClient(cursId: string | null): Promise<number> {
+  const { data, error } = await supabase.rpc('preview_anunt_client', {
+    p_curs_id: cursId ?? undefined,
+  })
+  if (error) throw error
+  return (data as unknown as number) ?? 0
+}
+
+export async function sendAnuntClient(
+  p: SendAnuntClientParams,
+): Promise<{ anunt_id: string; nr_destinatari: number }> {
+  const { data, error } = await supabase.rpc('send_anunt_client', {
+    p_titlu: p.titlu,
+    p_continut: p.continut,
+    p_curs_id: p.cursId ?? undefined,
+  })
+  if (error) throw error
+  return data as unknown as { anunt_id: string; nr_destinatari: number }
+}
+
 // ---- Liste ----
 
 export type AnuntTrimis = { anunt: Anunt; citite: number }
@@ -51,25 +79,39 @@ export async function listAnunturiTrimise(uid: string): Promise<AnuntTrimis[]> {
   const { data: anunturi, error } = await supabase
     .from('anunturi')
     .select('*')
-    .eq('canal', 'staff')
     .eq('expeditor_user_id', uid)
     .order('created', { ascending: false })
   if (error) throw error
   const rows = (anunturi ?? []) as Anunt[]
   if (rows.length === 0) return []
 
-  const ids = rows.map((a) => a.id)
-  const { data: dest, error: e2 } = await supabase
-    .from('anunturi_destinatari')
-    .select('anunt_id, read_at')
-    .in('anunt_id', ids)
-  if (e2) throw e2
-
   const cititeByAnunt = new Map<string, number>()
-  for (const d of dest ?? []) {
-    if (d.read_at != null)
-      cititeByAnunt.set(d.anunt_id, (cititeByAnunt.get(d.anunt_id) ?? 0) + 1)
+  const bump = (id: string) =>
+    cititeByAnunt.set(id, (cititeByAnunt.get(id) ?? 0) + 1)
+
+  // Citirile vin din tabele diferite per canal: staff → anunturi_destinatari,
+  // client (portal) → anunturi_clienti.
+  const staffIds = rows.filter((a) => a.canal === 'staff').map((a) => a.id)
+  const clientIds = rows.filter((a) => a.canal === 'client').map((a) => a.id)
+
+  if (staffIds.length > 0) {
+    const { data: dest, error: e2 } = await supabase
+      .from('anunturi_destinatari')
+      .select('anunt_id, read_at')
+      .in('anunt_id', staffIds)
+    if (e2) throw e2
+    for (const d of dest ?? []) if (d.read_at != null) bump(d.anunt_id)
   }
+
+  if (clientIds.length > 0) {
+    const { data: dcli, error: e3 } = await supabase
+      .from('anunturi_clienti')
+      .select('anunt_id, read_at')
+      .in('anunt_id', clientIds)
+    if (e3) throw e3
+    for (const d of dcli ?? []) if (d.read_at != null) bump(d.anunt_id)
+  }
+
   return rows.map((a) => ({ anunt: a, citite: cititeByAnunt.get(a.id) ?? 0 }))
 }
 
@@ -101,9 +143,14 @@ export async function getAnunt(id: string): Promise<Anunt | null> {
 
 export type ReadReceipts = { total: number; citite: number }
 
-export async function getReadReceipts(anuntId: string): Promise<ReadReceipts> {
+export async function getReadReceipts(
+  anuntId: string,
+  canal: string = 'staff',
+): Promise<ReadReceipts> {
+  // Citirile stau în tabele diferite per canal.
+  const table = canal === 'client' ? 'anunturi_clienti' : 'anunturi_destinatari'
   const { data, error } = await supabase
-    .from('anunturi_destinatari')
+    .from(table)
     .select('read_at')
     .eq('anunt_id', anuntId)
   if (error) throw error
