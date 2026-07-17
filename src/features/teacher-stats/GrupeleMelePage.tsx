@@ -12,6 +12,7 @@ import {
   type GrupaProgres,
   type AbsentaRisc,
   type EvaluariStats,
+  type ZiNastere,
 } from './api'
 
 const SKILL_LABEL: Record<string, string> = {
@@ -39,6 +40,35 @@ function formatData(iso: string | null): string {
     month: '2-digit',
     year: 'numeric',
   })
+}
+
+/* Sparkline mini pe seria de rate (0-100). */
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null
+  const w = 60
+  const h = 18
+  const max = Math.max(...values, 100)
+  const min = Math.min(...values, 0)
+  const span = max - min || 1
+  const pts = values
+    .map((v, i) => {
+      const x = (i / (values.length - 1)) * w
+      const y = h - ((v - min) / span) * h
+      return `${x.toFixed(1)},${y.toFixed(1)}`
+    })
+    .join(' ')
+  return (
+    <svg width={w} height={h} className="shrink-0" aria-hidden="true">
+      <polyline
+        points={pts}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
 }
 
 /* ── Cursanți la risc ─────────────────────────────────────────────────────── */
@@ -114,12 +144,17 @@ function GrupeTable({ rows }: { rows: GrupaProgres[] }) {
         g.rataPrezenta == null ? (
           <span className="text-muted">—</span>
         ) : (
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-2">
+            <span
+              className={g.prezentaInScadere ? 'text-danger' : 'text-muted'}
+            >
+              <Sparkline values={g.trendSaptamani} />
+            </span>
             <span className="text-ink">{pct(g.rataPrezenta)}</span>
-            {g.prezentaInScadere && <Badge tone="danger">↓ scade</Badge>}
+            {g.prezentaInScadere && <Badge tone="danger">↓</Badge>}
           </span>
         ),
-      className: 'w-32',
+      className: 'w-44',
       sortValue: (g) => g.rataPrezenta ?? -1,
     },
     {
@@ -213,6 +248,25 @@ function EvaluariCard({ ev }: { ev: EvaluariStats }) {
           })}
         </div>
       )}
+      {ev.trend.length > 1 && (
+        <div className="mt-3 border-t border-line-2 pt-2">
+          <span className="mb-1 block text-xs text-muted">Istoric (media)</span>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            {ev.trend.map((t, i) => (
+              <span key={t.data} className="inline-flex items-center gap-1.5">
+                {i > 0 && <span className="text-muted">→</span>}
+                <span className="rounded bg-card px-1.5 py-0.5 text-ink">
+                  {new Date(t.data).toLocaleDateString('ro-RO', {
+                    month: 'short',
+                    year: '2-digit',
+                  })}
+                  : <span className="font-semibold">{t.media}</span>
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -239,6 +293,36 @@ function EvaluariSection({ rows }: { rows: EvaluariStats[] }) {
   )
 }
 
+/* ── Zile de naștere luna asta ────────────────────────────────────────────── */
+function ZileNastereSection({ rows }: { rows: ZiNastere[] }) {
+  if (rows.length === 0) return null
+  return (
+    <section className="rounded-2xl border border-line bg-card p-4">
+      <h2 className="mb-3 text-base font-bold text-ink">
+        🎂 Zile de naștere luna aceasta
+      </h2>
+      <div className="flex flex-wrap gap-2">
+        {rows.map((z) => (
+          <span
+            key={z.client_id}
+            className={
+              'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ' +
+              (z.este_azi
+                ? 'border-quasar-yellow bg-quasar-yellow/15 text-ink'
+                : 'border-line-2 text-ink')
+            }
+            title={z.curs_nume}
+          >
+            <span className="font-bold text-muted">{z.zi}</span>
+            <span className="font-medium">{z.client_nume}</span>
+            {z.este_azi && <span>🎂</span>}
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function GrupeleMelePage() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['teacher-hub'],
@@ -261,6 +345,7 @@ export function GrupeleMelePage() {
       ) : !data ? null : (
         <div className="space-y-4">
           <AbsenteRiscSection rows={data.absenteRisc} />
+          <ZileNastereSection rows={data.zileNastere} />
           <GrupeTable rows={data.grupe} />
           <EvaluariSection rows={data.evaluari} />
         </div>

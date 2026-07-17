@@ -40,11 +40,19 @@ export async function getGradOcupare(): Promise<GradOcupare[]> {
   return (data as GradOcupare[]) ?? []
 }
 
+export type SaptamanaPrezenta = {
+  saptamana: string
+  prezenti: number
+  roster: number
+  rata: number
+}
+
 export type TrendPrezenta = {
   curs_id: string
   rata_recenta: number | null
   rata_precedenta: number | null
   in_scadere: boolean
+  saptamani: SaptamanaPrezenta[] | null
 }
 
 export async function getTrendPrezente(): Promise<TrendPrezenta[]> {
@@ -103,6 +111,21 @@ export async function getEvaluariStats(): Promise<EvaluariStats[]> {
   return (data as EvaluariStats[]) ?? []
 }
 
+export type ZiNastere = {
+  client_id: string
+  client_nume: string
+  curs_nume: string
+  zi: number
+  este_azi: boolean
+}
+
+export async function getZileNastere(): Promise<ZiNastere[]> {
+  const { data, error } = await supabase.rpc('get_zile_nastere_teacher')
+  if (error) throw error
+  const rows = (data as ZiNastere[]) ?? []
+  return rows.sort((a, b) => a.zi - b.zi)
+}
+
 // ── Model compus per grupă pentru tabelul principal ─────────────────────────
 export type GrupaProgres = {
   cursId: string
@@ -113,6 +136,7 @@ export type GrupaProgres = {
   ocupare: number | null
   rataPrezenta: number | null
   prezentaInScadere: boolean
+  trendSaptamani: number[]
   reinscriereProcent: number | null
   reinscriereEligibili: number
   concurs: number
@@ -123,18 +147,27 @@ export type HubData = {
   grupe: GrupaProgres[]
   absenteRisc: AbsentaRisc[]
   evaluari: EvaluariStats[]
+  zileNastere: ZiNastere[]
 }
 
 export async function getHubData(): Promise<HubData> {
-  const [ocupare, trend, reinscriere, participare, absenteRisc, evaluari] =
-    await Promise.all([
-      getGradOcupare(),
-      getTrendPrezente(),
-      getReinscriere(),
-      getParticipare(),
-      getAbsenteRisc(2),
-      getEvaluariStats(),
-    ])
+  const [
+    ocupare,
+    trend,
+    reinscriere,
+    participare,
+    absenteRisc,
+    evaluari,
+    zileNastere,
+  ] = await Promise.all([
+    getGradOcupare(),
+    getTrendPrezente(),
+    getReinscriere(),
+    getParticipare(),
+    getAbsenteRisc(2),
+    getEvaluariStats(),
+    getZileNastere(),
+  ])
 
   const trendById = new Map(trend.map((t) => [t.curs_id, t]))
   const reinById = new Map(reinscriere.map((r) => [r.curs_id, r]))
@@ -154,6 +187,7 @@ export async function getHubData(): Promise<HubData> {
       ocupare: o.procent,
       rataPrezenta: t?.rata_recenta ?? null,
       prezentaInScadere: t?.in_scadere ?? false,
+      trendSaptamani: (t?.saptamani ?? []).map((s) => s.rata),
       reinscriereProcent: r?.procent ?? null,
       reinscriereEligibili: r?.total_eligibili ?? 0,
       concurs: p?.concurs ?? 0,
@@ -161,5 +195,5 @@ export async function getHubData(): Promise<HubData> {
     }
   })
 
-  return { grupe, absenteRisc, evaluari }
+  return { grupe, absenteRisc, evaluari, zileNastere }
 }

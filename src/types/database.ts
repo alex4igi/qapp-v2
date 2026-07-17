@@ -9196,6 +9196,16 @@ export type Database = {
           luna_num: number
         }[]
       }
+      get_zile_nastere_teacher: {
+        Args: never
+        Returns: {
+          client_id: string
+          client_nume: string
+          curs_nume: string
+          este_azi: boolean
+          zi: number
+        }[]
+      }
       hold_bilete: {
         Args: {
           p_client: string
