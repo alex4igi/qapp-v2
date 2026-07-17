@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Ghidul instructorului · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:24px}
+  html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased;line-height:1.55}
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--galben);z-index:50}
+
+  .layout{max-width:1180px;margin:0 auto;padding:54px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:44px;align-items:start}
+
+  nav.toc{position:sticky;top:30px;max-height:calc(100vh - 60px);overflow:auto;border-right:1px solid var(--linie);padding-right:18px}
+  nav.toc .logo{font-weight:900;letter-spacing:4px;color:var(--accent);font-size:12px;margin-bottom:18px}
+  nav.toc .grp{color:var(--gri2);font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin:18px 0 8px}
+  nav.toc a{display:block;color:#cfcfcf;text-decoration:none;font-size:13.5px;padding:5px 10px;border-radius:8px;border-left:2px solid transparent}
+  nav.toc a:hover{background:#1c1c1c;color:#fff;border-left-color:var(--accent)}
+
+  main{min-width:0}
+  .hero{margin-bottom:30px}
+  .hero .logo{font-weight:900;letter-spacing:5px;color:var(--accent);font-size:13px;margin-bottom:18px}
+  h1{font-size:clamp(30px,4.5vw,48px);line-height:1.05;margin:0 0 14px;font-weight:800}
+  h1 span{color:var(--accent)}
+  .hero .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,19px);max-width:62ch}
+
+  section.block{scroll-margin-top:24px;background:var(--card);border:1px solid var(--linie);border-radius:18px;padding:26px 28px;margin:22px 0}
+  section.block > h2{font-size:clamp(21px,2.6vw,30px);margin:0 0 6px;font-weight:800;display:flex;align-items:center;gap:12px}
+  section.block > h2 .ic{font-size:1.05em}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:2px;font-size:11.5px;text-transform:uppercase;margin-bottom:14px}
+  .intro{color:#d6d6d6;font-size:16px;margin:0 0 14px;max-width:78ch}
+
+  .stat{border-top:1px solid #262626;padding:15px 0 4px}
+  .stat:first-of-type{border-top:none}
+  .stat h3{font-size:16.5px;font-weight:800;margin:0 0 8px;color:#fff;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .stat .pair{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font-size:14.8px}
+  .stat .pair .k{color:var(--accent);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;padding-top:2px}
+  .stat .pair .v{color:#d8d8d8}
+  .stat .v b{color:#fff}
+
+  .note{margin-top:18px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:13px 17px;color:#f0e6b0;font-size:14.5px;max-width:82ch}
+  .note .lbl{display:block;color:var(--accent);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .note b{color:var(--accent)}
+  .lock{background:#241312;border-color:#6b2c28;color:#ffd9d4}
+  .lock .lbl{color:#ff9b8f}
+  .lock b{color:#ffb4a8}
+
+  code{background:#222;border:1px solid var(--linie);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#ffe98a}
+  a.inl{color:var(--accent);text-decoration:none}
+  a.inl:hover{text-decoration:underline}
+  .tagm{font-size:11px;font-weight:800;background:#10271b;color:#5ee0a0;border:1px solid #1f5135;padding:2px 9px;border-radius:999px;letter-spacing:.4px}
+  .tagn{font-size:11px;font-weight:800;background:#2a2410;color:#ffd600;border:1px solid #6b5e18;padding:2px 9px;border-radius:999px;letter-spacing:.4px}
+
+  footer{text-align:center;color:var(--gri);font-size:13px;margin-top:50px}
+  footer b{color:var(--gri2)}
+  .toplink{display:block;text-align:right;margin-top:14px;color:var(--gri);font-size:12.5px;text-decoration:none}
+  .toplink:hover{color:var(--accent)}
+
+  @media(max-width:880px){
+    .layout{grid-template-columns:1fr;gap:0}
+    nav.toc{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--linie);padding:0 0 18px;margin-bottom:28px}
+    nav.toc .cols{columns:2;gap:18px}
+    .stat .pair{grid-template-columns:1fr}
+    .stat .pair .k{padding-top:8px}
+  }
+</style>
+</head>
+<body>
+<a href="/" style="position:fixed;top:14px;right:14px;z-index:100;display:inline-flex;align-items:center;gap:7px;background:#FFD600;color:#111;font-weight:800;font-size:13.5px;text-decoration:none;padding:9px 15px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4)">← Înapoi în aplicație</a>
+<span id="top"></span>
+<div class="layout">
+
+  <nav class="toc">
+    <div class="logo">QUASAR DANCE</div>
+    <div class="cols">
+      <div class="grp">Start</div>
+      <a href="#intro">Ce e contul tău</a>
+
+      <div class="grp">Ziua ta</div>
+      <a href="#azi">Grupele mele azi</a>
+      <a href="#prezente">Marcarea prezenței</a>
+
+      <div class="grp">Grupele tale</div>
+      <a href="#roster">Rosterul grupei</a>
+      <a href="#cursuri">Cursuri &amp; profil</a>
+      <a href="#evenimente">Evenimente de grupă</a>
+
+      <div class="grp">Progres</div>
+      <a href="#progres">Grupele mele — statistici</a>
+
+      <div class="grp">Cursanți</div>
+      <a href="#evaluari">Evaluări</a>
+      <a href="#fisa">Fișa cursantului</a>
+
+      <div class="grp">Comunicare</div>
+      <a href="#mesaj">Mesaj către grupă</a>
+      <a href="#anunturi">Anunțuri &amp; notificări</a>
+
+      <div class="grp">Personal</div>
+      <a href="#salariu">Salariul meu</a>
+      <a href="#inchirieri">Antrenament propriu</a>
+      <a href="#pontaj">Pontaj</a>
+
+      <div class="grp">Limite</div>
+      <a href="#limite">Ce NU vezi</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div class="logo">QUASAR DANCE · GHID</div>
+      <h1>Ghidul <span>instructorului</span></h1>
+      <p class="sub">Tot ce poți face în aplicație, pe înțelesul tău. Contul tău e făcut să fie simplu: <b>grupele tale</b>, <b>prezența</b> și <b>evaluările</b> — fără bătăi de cap cu bani sau administrație.</p>
+    </div>
+
+    <section class="block" id="intro">
+      <div class="eyebrow">Start</div>
+      <h2><span class="ic">🧭</span>Ce e contul tău</h2>
+      <p class="intro">Ca instructor vezi <b>doar grupele tale</b> — cele la care ești trecut ca antrenor (poți fi și titular, și asistent; o grupă poate avea doi instructori, amândoi o văd). Când te loghezi, aterizezi direct pe <b>„Grupele mele azi"</b>.</p>
+      <div class="stat"><h3>🎯 Ce ai de făcut, în esență</h3>
+        <div class="pair"><span class="k">Zilnic</span><span class="v">Marchezi <b>prezența</b> la grupele tale.</span></div>
+        <div class="pair"><span class="k">Periodic</span><span class="v">Completezi <b>evaluări</b> pentru cursanți (de ~3× pe sezon).</span></div>
+        <div class="pair"><span class="k">Când e cazul</span><span class="v">Creezi <b>evenimente de grupă</b>, trimiți un <b>mesaj către grupă</b>, îți verifici <b>progresul grupelor</b> și <b>salariul</b>.</span></div>
+      </div>
+      <div class="note"><span class="lbl">Meniul tău</span>În bară vezi doar ce-ți trebuie: <b>Prezențe</b> și <b>Evaluări</b> (Clienți) · <b>Cursuri</b> și <b>Închirieri</b> (Studio) · <b>Grupele mele</b> și <b>Salariul meu</b> (Personal). Sus ai clopoțelul de notificări, căutarea de cursant și selectorul de dată. În meniul contului: Ghiduri, Anunțuri, Feedback aplicație.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- ZIUA TA -->
+    <section class="block" id="azi">
+      <div class="eyebrow">Ziua ta</div>
+      <h2><span class="ic">🏠</span>Grupele mele azi</h2>
+      <p class="intro">Pagina de start. Vezi <b>doar grupele tale de azi</b>, în ordinea orelor.</p>
+      <div class="stat"><h3>✋ Marchezi prezența dintr-un click</h3>
+        <div class="pair"><span class="k">Cum</span><span class="v">Dai click pe o grupă → se deschide <b>rosterul</b> (lista cursanților) → comuți fiecare copil prezent/absent.</span></div>
+        <div class="pair"><span class="k">Bun de știut</span><span class="v">Nu vezi widgeturile de recepție (încasări, restanțe, agendă) — pagina ta e curată, doar despre grupe.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="prezente">
+      <div class="eyebrow">Ziua ta</div>
+      <h2><span class="ic">✅</span>Marcarea prezenței</h2>
+      <p class="intro">Pagina <b>Prezențe</b> — sarcina ta principală. Tu ești responsabilul; recepția e doar rezervă.</p>
+      <div class="stat"><h3>Pas cu pas</h3>
+        <div class="pair"><span class="k">1</span><span class="v">Alegi <b>cursul</b> tău (lista are doar cursurile tale).</span></div>
+        <div class="pair"><span class="k">2</span><span class="v">Alegi <b>data</b> ședinței.</span></div>
+        <div class="pair"><span class="k">3</span><span class="v">Pentru fiecare cursant comuți <b>Prezent</b> / <b>Absent</b> / <b>Motivat</b>.</span></div>
+      </div>
+      <div class="note"><span class="lbl">Când folosești „Motivat"</span>Când știi că un copil lipsește dintr-un motiv întemeiat (ex. bolnav). „Motivat" înregistrează ședința fără s-o numere ca absență obișnuită. <b>Scutirea de plată</b> a lunii (dacă e cazul, pe bază de adeverință medicală) o face managerul — nu tu.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- GRUPELE TALE -->
+    <section class="block" id="roster">
+      <div class="eyebrow">Grupele tale</div>
+      <h2><span class="ic">👥</span>Rosterul grupei</h2>
+      <p class="intro">Lista cursanților unei grupe, cu tot ce-ți trebuie ca antrenor.</p>
+      <div class="stat"><h3>Ce poți face</h3>
+        <div class="pair"><span class="k">Prezență</span><span class="v">Click pe cardul unui cursant → comută prezent/absent (sau „Reactivează" la cei inactivi).</span></div>
+        <div class="pair"><span class="k">Contact</span><span class="v">Buton <b>WhatsApp</b> către părinte, direct de pe card.</span></div>
+        <div class="pair"><span class="k">🎂 Zile de naștere <span class="tagn">NOU</span></span><span class="v">Copilul care are ziua <b>azi</b> apare evidențiat, cu un inel galben și eticheta „🎂 Ziua!".</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="cursuri">
+      <div class="eyebrow">Grupele tale</div>
+      <h2><span class="ic">📚</span>Cursuri &amp; profil</h2>
+      <p class="intro">Lista ta de cursuri (doar ale tale) și, pe fiecare, un profil detaliat.</p>
+      <div class="stat"><h3>Pe profilul unui curs</h3>
+        <div class="pair"><span class="k">Tab-uri</span><span class="v">Activi · Absenți · Restanțieri · Inactivi · Fără documente · <b>Evenimente</b> · Detalii.</span></div>
+        <div class="pair"><span class="k">Ce nu poți</span><span class="v">Editarea/arhivarea cursului și gestiunea locurilor rămân la manager — tu vezi și lucrezi cu cursanții.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="evenimente">
+      <div class="eyebrow">Grupele tale</div>
+      <h2><span class="ic">📅</span>Evenimente de grupă</h2>
+      <p class="intro">Din tab-ul <b>Evenimente</b> al unui curs poți crea evenimente pentru grupa ta.</p>
+      <div class="stat"><h3>Cum funcționează</h3>
+        <div class="pair"><span class="k">Creezi</span><span class="v">„+ Eveniment grupă" — ex. un recital intern, un workshop, o filmare.</span></div>
+        <div class="pair"><span class="k">Cine vede</span><span class="v">Apare în <b>calendarul din portalul membrilor</b>, dar <b>doar</b> pentru părinții cursanților acelei grupe.</span></div>
+        <div class="pair"><span class="k">Limite</span><span class="v">Evenimentele tale sunt <b>de grupă</b> — nu le poți face publice sau cu bilet (astea sunt evenimentele de studio, gestionate de manager).</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- PROGRES -->
+    <section class="block" id="progres">
+      <div class="eyebrow">Progres <span class="tagn">NOU</span></div>
+      <h2><span class="ic">📊</span>Grupele mele — statistici</h2>
+      <p class="intro">O pagină nouă (Personal › <b>Grupele mele</b>) care adună la un loc progresul grupelor tale. Totul e <b>doar despre grupele tale</b>.</p>
+      <div class="stat"><h3>⚠️ Cursanți la risc</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Cursanții cu <b>mai multe absențe la rând</b> — semnal că ar putea pleca.</span></div>
+        <div class="pair"><span class="k">Ce faci</span><span class="v">Suni sau scrii părintele înainte să se rupă legătura. E cel mai util instrument de <b>retenție</b> pe care-l ai.</span></div>
+      </div>
+      <div class="stat"><h3>🎂 Zile de naștere luna aceasta</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Toți cursanții tăi care își sărbătoresc ziua luna asta, cu ziua marcată; cel de azi e evidențiat.</span></div>
+      </div>
+      <div class="stat"><h3>📋 Tabelul grupelor</h3>
+        <div class="pair"><span class="k">Cursanți</span><span class="v">Câți activi din capacitate.</span></div>
+        <div class="pair"><span class="k">Ocupare</span><span class="v">Cât de plină e grupa (activi ÷ capacitate).</span></div>
+        <div class="pair"><span class="k">Prezență</span><span class="v">Rata medie pe ultimele săptămâni, cu un mini-grafic; „↓" dacă e în scădere.</span></div>
+        <div class="pair"><span class="k">Reînscriere</span><span class="v">Câți din sezonul trecut s-au reînscris (doar la grupele cu sursă în sezonul anterior).</span></div>
+        <div class="pair"><span class="k">Concurs / Spectacol</span><span class="v">Câți cursanți din grupă participă la un concurs sau la un spectacol.</span></div>
+      </div>
+      <div class="stat"><h3>⭐ Evaluări</h3>
+        <div class="pair"><span class="k">Ce arată</span><span class="v">Per grupă: media generală + media pe fiecare din cele 10 abilități, plus <b>istoricul</b> (cum a evoluat media de la o evaluare la alta).</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- CURSANTI -->
+    <section class="block" id="evaluari">
+      <div class="eyebrow">Cursanți</div>
+      <h2><span class="ic">⭐</span>Evaluări</h2>
+      <p class="intro">Notezi progresul fiecărui cursant. Vezi <b>doar evaluările tale</b>.</p>
+      <div class="stat"><h3>Cum completezi</h3>
+        <div class="pair"><span class="k">Buton</span><span class="v">„+ Evaluare nouă" → alegi cursul și cursantul.</span></div>
+        <div class="pair"><span class="k">Ce notezi</span><span class="v">Cele <b>10 abilități</b> (ritm, pași de bază, coregrafie, izolări, coordonare, freeze, sincronizare, improvizație, expresivitate, prezentare), pe o scală de <b>1–5</b>.</span></div>
+        <div class="pair"><span class="k">Observații</span><span class="v">Câmpul de <b>observații</b> (feedback) — aici scrii pe scurt cum stă copilul. Apare și în listă, ca să-l poți reciti. <span class="tagn">NOU</span></span></div>
+      </div>
+      <div class="note"><span class="lbl">Ritm</span>Evaluările se dau de obicei de <b>3× pe sezon — decembrie, aprilie și iunie</b>. Fiecare rămâne legată de sezonul ei, ca să vezi progresul în timp.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="fisa">
+      <div class="eyebrow">Cursanți</div>
+      <h2><span class="ic">👤</span>Fișa cursantului</h2>
+      <p class="intro">Din roster poți deschide fișa unui cursant — o versiune <b>redusă</b>, potrivită rolului tău.</p>
+      <div class="stat"><h3>Ce vezi</h3>
+        <div class="pair"><span class="k">Prezențe</span><span class="v">Istoricul lui de prezență.</span></div>
+        <div class="pair"><span class="k">Date personale</span><span class="v">Nume, data nașterii, familia, telefonul părintelui.</span></div>
+        <div class="pair"><span class="k">Nu vezi</span><span class="v">Plăți, înrolări, documente, email — acelea sunt pentru recepție/manager.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- COMUNICARE -->
+    <section class="block" id="mesaj">
+      <div class="eyebrow">Comunicare <span class="tagn">NOU</span></div>
+      <h2><span class="ic">💬</span>Mesaj către grupă</h2>
+      <p class="intro">Din pagina <b>Anunțuri</b>, butonul „💬 Mesaj către grupă" — trimiți un mesaj tuturor părinților unei grupe.</p>
+      <div class="stat"><h3>Cum funcționează</h3>
+        <div class="pair"><span class="k">Cum</span><span class="v">Alegi grupa, scrii titlu + mesaj, vezi câți părinți vor primi, trimiți.</span></div>
+        <div class="pair"><span class="k">Unde ajunge</span><span class="v">În <b>notificările din portalul membrilor</b> (clopoțelul lor). Îl vezi și tu în tab-ul „Trimise", cu câți l-au citit.</span></div>
+        <div class="pair"><span class="k">Bun de știut</span><span class="v">E doar pentru anunțuri (ex. „sâmbătă venim în tricou negru") — părinții <b>nu pot răspunde</b> pe acest canal.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="anunturi">
+      <div class="eyebrow">Comunicare</div>
+      <h2><span class="ic">🔔</span>Anunțuri &amp; notificări</h2>
+      <div class="stat"><h3>📣 Anunțuri</h3>
+        <div class="pair"><span class="k">Ce e</span><span class="v">Mesaje către echipă. Primești și poți trimite; când trimiți, poți ținti <b>doar locațiile unde predai</b>.</span></div>
+      </div>
+      <div class="stat"><h3>🔔 Notificări</h3>
+        <div class="pair"><span class="k">Ce e</span><span class="v">Inbox-ul tău din clopoțel — le marchezi citite / rezolvate.</span></div>
+      </div>
+      <div class="stat"><h3>💬 Feedback aplicație</h3>
+        <div class="pair"><span class="k">Ce e</span><span class="v">Dacă ceva nu merge sau ai o idee, trimite-ne feedback din meniul contului.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- PERSONAL -->
+    <section class="block" id="salariu">
+      <div class="eyebrow">Personal</div>
+      <h2><span class="ic">💰</span>Salariul meu</h2>
+      <p class="intro">Îți vezi salariile lunare confirmate.</p>
+      <div class="stat"><h3>Ce vezi</h3>
+        <div class="pair"><span class="k">Listă</span><span class="v">Fiecare lună, cu status <b>✓ Plătit</b> / <b>⏳ În așteptare</b>.</span></div>
+        <div class="pair"><span class="k">Detaliu</span><span class="v">Deschizi o lună → defalcare pe grupă (câte unități, prag, sumă).</span></div>
+        <div class="pair"><span class="k">Notă</span><span class="v">Sunt cifre <b>confirmate</b> de administrație — le vezi, nu le modifici.</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="inchirieri">
+      <div class="eyebrow">Personal</div>
+      <h2><span class="ic">🏋️</span>Antrenament propriu</h2>
+      <div class="stat"><h3>Închirieri săli</h3>
+        <div class="pair"><span class="k">Ce poți</span><span class="v">Vezi calendarul sălilor și îți poți rezerva <b>antrenament propriu la 0 lei</b> („Gratis (antrenament)").</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <section class="block" id="pontaj">
+      <div class="eyebrow">Personal</div>
+      <h2><span class="ic">⏱️</span>Pontaj</h2>
+      <div class="stat"><h3>Automat</h3>
+        <div class="pair"><span class="k">Cum</span><span class="v">Pontajul se deschide singur când te loghezi și se închide la delogare/inactivitate. <b>Nu ai de apăsat nimic</b> — nu ai buton de „încheie tura".</span></div>
+      </div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <!-- LIMITE -->
+    <section class="block" id="limite">
+      <div class="eyebrow">Limite</div>
+      <h2><span class="ic">🔐</span>Ce NU vezi (e normal)</h2>
+      <p class="intro">Contul tău e făcut îngust intenționat — ca să te concentrezi pe antrenat, nu pe administrație.</p>
+      <div class="note lock"><span class="lbl">Rezervat recepției / managerului</span>
+        <b>Bani</b> (plăți, facturare, financiar, vouchere) · <b>Leads</b> și listele de clienți/familii · <b>Statistici</b> generale · <b>Inventar</b>, sezoane, contracte, campanii, setări · alte <b>grupe</b> decât ale tale. Chiar dacă undeva apare un buton, acțiunile pe bani/clienți sunt blocate pentru rolul tău.
+      </div>
+      <div class="note"><span class="lbl">Cont neconectat?</span>Dacă la <b>Salariul meu</b> sau <b>Evaluări</b> vezi un mesaj că „contul nu e legat de un profesor", cere managerului să-l lege — durează un minut și după aceea totul apare.</div>
+      <a class="toplink" href="#top">▲ sus</a>
+    </section>
+
+    <footer>Ghidul instructorului · beta · <b>Quasar Dance</b> · Material viu — îl completăm pe măsură ce aplicația crește.</footer>
+  </main>
+</div>
+</body>
+</html>
