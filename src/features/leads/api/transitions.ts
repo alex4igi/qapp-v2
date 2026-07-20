@@ -85,9 +85,17 @@ export async function reactivateFromNurture(id: string): Promise<void> {
   if (error) throw error
 }
 
+// Intenția de contact, declarată de apelant. `nr_contactari` numără încercările
+// CONSECUTIVE fără răspuns — plasa de siguranță „4 → Nurture" înseamnă „de patru
+// ori la rând n-am dat de el", nu „l-am sunat de patru ori". De aceea un contact
+// reușit rupe seria și resetează contorul: un lead pe care îl urmărești insistent
+// DAR cu care vorbești nu trebuie aruncat automat în Nurture.
+export type ContactIntent = 'incercare' | 'reusit'
+
 export async function updateLead(
   id: string,
   form: Partial<LeadForm>,
+  opts?: { contact?: ContactIntent },
 ): Promise<Lead> {
   const { data: current, error: fetchError } = await supabase
     .from('leads')
@@ -98,19 +106,32 @@ export async function updateLead(
 
   const payload = normalize(form)
 
-  // Incrementare nr_contactari când sub_status devine nu_raspunde / de_revenit
-  if (
-    'sub_status' in form &&
+  // Fluxurile dedicate (logContact, ContactareModal) declară intenția explicit.
+  // Heuristica pe sub_status rămâne doar ca fallback pentru editarea liberă din
+  // LeadModal, unde nu se poate distinge o re-încercare de o re-salvare a
+  // formularului — de aceea cere ca sub_status să se și schimbe. Ca sursă unică
+  // era însă greșită: rata două cazuri reale (contact reușit, „nu răspunde"
+  // repetat de două ori la rând).
+  const contact: ContactIntent | null =
+    opts?.contact ??
+    ('sub_status' in form &&
     (form.sub_status === 'nu_raspunde' || form.sub_status === 'de_revenit') &&
     current.sub_status !== form.sub_status
-  ) {
-    const newNr = (current.nr_contactari ?? 0) + 1
-    payload.nr_contactari = newNr
+      ? 'incercare'
+      : null)
+
+  if (contact) {
     payload.ultima_contactare_la = new Date().toISOString()
-    // După 4 contactări fără răspuns → Nurture
-    if (newNr >= 4) {
-      payload.status = 'nurture'
-      payload.sub_status = null
+    if (contact === 'reusit') {
+      payload.nr_contactari = 0
+    } else {
+      const newNr = (current.nr_contactari ?? 0) + 1
+      payload.nr_contactari = newNr
+      // După 4 încercări consecutive fără răspuns → Nurture
+      if (newNr >= 4) {
+        payload.status = 'nurture'
+        payload.sub_status = null
+      }
     }
   }
 
@@ -220,19 +241,37 @@ export type LogContactInput = {
 // (sursa de adevăr pentru scorecard, atribuit operatorului curent), apoi
 // (2) reflectă rezultatul în lead prin updateLead — care deja gestionează
 // nr_contactari, sub_status, auto-nurture și triggerele SMS. Nu dublăm logica.
-export async function logContact(input: LogContactInput): Promise<void> {
+// Un rând în `lead_contacte` = o încercare de contact, din ORICE flux al aplicației.
+// E sursa de adevăr pentru scorecard și alimentează `leads.ultima_contactare_la`
+// prin triggerul din migrația 20260722100000. Orice UI care înseamnă „am contactat"
+// trebuie să treacă pe aici — altfel apelul nu există nicăieri în date.
+export async function insertLeadContact(input: {
+  leadId: string
+  canal: CanalContact
+  rezultat: RezultatContact
+  observatii?: string
+}): Promise<void> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { error: insErr } = await supabase.from('lead_contacte').insert({
+  const { error } = await supabase.from('lead_contacte').insert({
     lead_id: input.leadId,
     user_id: user?.id,
     canal: input.canal,
     rezultat: input.rezultat,
     observatii: input.observatii?.trim() || null,
   })
-  if (insErr) throw insErr
+  if (error) throw error
+}
+
+export async function logContact(input: LogContactInput): Promise<void> {
+  await insertLeadContact({
+    leadId: input.leadId,
+    canal: input.canal,
+    rezultat: input.rezultat,
+    observatii: input.observatii,
+  })
 
   const { data: current } = await supabase
     .from('leads')
@@ -270,7 +309,18 @@ export async function logContact(input: LogContactInput): Promise<void> {
     if (current?.status === 'nou') patch.status = 'contactat'
   }
 
-  if (Object.keys(patch).length > 0) {
-    await updateLead(input.leadId, patch)
-  }
+  // „A răspuns" nu înseamnă doar rezultat `reusit`: un follow-up cu sub-status
+  // `de_revenit` e tot un contact în care omul a răspuns (vezi LogContactInput).
+  // Doar `nu_raspunde` e o încercare eșuată care urcă seria spre Nurture.
+  const aRaspuns =
+    input.rezultat === 'reusit' ||
+    (input.rezultat === 'follow_up' &&
+      (input.subStatus ?? 'de_revenit') === 'de_revenit')
+
+  // Apelăm updateLead MEREU, chiar cu patch gol: un contact reușit fără notiță pe
+  // un lead deja `contactat` nu producea niciun patch, deci contorul și
+  // `ultima_contactare_la` rămâneau neatinse deși apelul chiar avusese loc.
+  await updateLead(input.leadId, patch, {
+    contact: aRaspuns ? 'reusit' : 'incercare',
+  })
 }

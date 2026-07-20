@@ -4,7 +4,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, DateInput, TextArea, Button } from '@/components/ui'
 import type { Lead } from '@/types/db'
 import { SUB_STATUS_OPTIONS, prependObservatie, dataPesteZile } from './constants'
-import { updateLead, type LeadForm } from './api'
+import {
+  insertLeadContact,
+  updateLead,
+  type CanalContact,
+  type LeadForm,
+} from './api'
 
 type Props = {
   open: boolean
@@ -14,8 +19,16 @@ type Props = {
 
 type SubStatus = 'de_revenit' | 'nu_raspunde'
 
+const CANALE: { value: CanalContact; label: string; icon: string }[] = [
+  { value: 'telefon', label: 'Telefon', icon: '📞' },
+  { value: 'sms', label: 'SMS', icon: '💬' },
+  { value: 'email', label: 'Email', icon: '✉️' },
+  { value: 'dm', label: 'DM', icon: '📩' },
+]
+
 export function ContactareModal({ open, lead, onClose }: Props) {
   const queryClient = useQueryClient()
+  const [canal, setCanal] = useState<CanalContact>('telefon')
   const [subStatus, setSubStatus] = useState<SubStatus | ''>('')
   const [dataCallback, setDataCallback] = useState('')
   const [nota, setNota] = useState('')
@@ -23,6 +36,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
 
   useEffect(() => {
     if (!open) return
+    setCanal('telefon')
     setSubStatus((lead?.sub_status as SubStatus | null) ?? '')
     setDataCallback(
       lead?.data_callback_dorit ? lead.data_callback_dorit.slice(0, 10) : '',
@@ -32,7 +46,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
   }, [open, lead])
 
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const form: Partial<LeadForm> = {
         status: 'contactat',
         sub_status: subStatus,
@@ -44,10 +58,29 @@ export function ContactareModal({ open, lead, onClose }: Props) {
           nota,
           lead!.observatii,
         )
-      return updateLead(lead!.id, form)
+
+      // Acest modal E acțiunea „am contactat", deci lasă urmă în lead_contacte ca
+      // orice alt contact. Altfel fluxul cel mai folosit (drag → Contactat) rămânea
+      // invizibil pentru scorecard și pentru coloana „Ultim contact".
+      // `rezultat: follow_up` pentru ambele sub-statusuri — o dată de revenire e
+      // mereu setată aici; păstrează paritatea cu LogContactModal, care înregistrează
+      // tot `follow_up` în aceeași situație.
+      await insertLeadContact({
+        leadId: lead!.id,
+        canal,
+        rezultat: 'follow_up',
+        observatii: nota,
+      })
+
+      // `de_revenit` = a răspuns (revine el sau îl sunăm noi) → seria de încercări
+      // fără răspuns se rupe. `nu_raspunde` = n-am dat de el → o încercare în plus.
+      return updateLead(lead!.id, form, {
+        contact: subStatus === 'de_revenit' ? 'reusit' : 'incercare',
+      })
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
+      void queryClient.invalidateQueries({ queryKey: ['scorecard'] })
       onClose()
     },
     onError: (e: unknown) =>
@@ -104,6 +137,25 @@ export function ContactareModal({ open, lead, onClose }: Props) {
             </span>
           </p>
         )}
+
+        <Field label="Canal">
+          <div className="flex flex-wrap gap-2">
+            {CANALE.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setCanal(c.value)}
+                className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                  canal === c.value
+                    ? 'border-quasar-yellow bg-quasar-yellow/10 font-medium text-quasar-black'
+                    : 'border-quasar-gray-light text-quasar-gray hover:border-quasar-yellow'
+                }`}
+              >
+                {c.icon} {c.label}
+              </button>
+            ))}
+          </div>
+        </Field>
 
         <Field label="Sub-status" required htmlFor="contactare-substatus">
           <div className="flex flex-wrap gap-1.5">

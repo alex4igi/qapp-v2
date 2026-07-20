@@ -60,17 +60,32 @@ export function normalize(form: Partial<LeadForm>): UpdateDto<'leads'> {
 // PostgREST returnează max 1000 rânduri/request.
 const PAGE = 1000
 
+// Interval pe `created`, aplicat server-side (vezi listNurtureLeads).
+export type LeadDateRange = { de?: string; pana?: string }
+
 // Paginare completă pe `leads`, filtrată pe apartenența la `nurture`
 // (PostgREST cap = 1000 rânduri/request).
-async function fetchLeadsPaged(inNurture: boolean): Promise<Lead[]> {
+//
+// `id` e tiebreaker OBLIGATORIU: ordonarea doar pe `created` nu e deterministă
+// (importurile în masă au creat mii de rânduri cu același timestamp), iar
+// PostgREST poate atunci să sară sau să dubleze rânduri peste granița de pagină.
+// Un lead sărit = un lead nesunat care nu apare nicăieri — exact ce trebuie
+// să excludem.
+async function fetchLeadsPaged(
+  inNurture: boolean,
+  range?: LeadDateRange,
+): Promise<Lead[]> {
   let all: Lead[] = []
   for (;;) {
     const base = supabase.from('leads').select('*')
-    const filtered = inNurture
+    let filtered = inNurture
       ? base.eq('status', 'nurture')
       : base.neq('status', 'nurture')
+    if (range?.de) filtered = filtered.gte('created', range.de)
+    if (range?.pana) filtered = filtered.lte('created', range.pana)
     const { data, error } = await filtered
       .order('created', { ascending: false })
+      .order('id', { ascending: true })
       .range(all.length, all.length + PAGE - 1)
     if (error) throw error
     if (!data?.length) break
@@ -87,9 +102,26 @@ export async function listLeads(): Promise<Lead[]> {
   return fetchLeadsPaged(false)
 }
 
-// Pool-ul Nurture complet (separat de board), pentru tab-ul „Nurture".
-export async function listNurtureLeads(): Promise<Lead[]> {
-  return fetchLeadsPaged(true)
+// Pool-ul Nurture (separat de board). `range` taie server-side, ca filtrul de
+// perioadă din vederea Listă să nu aducă în memorie toți cei ~6000 de ex-clienți
+// când utilizatorul cere doar ultimele 30 de zile.
+export async function listNurtureLeads(
+  range?: LeadDateRange,
+): Promise<Lead[]> {
+  return fetchLeadsPaged(true, range)
+}
+
+// Lead-urile atinse azi, din `lead_contacte` (sursa de adevăr pentru apeluri).
+// Alimentează contorul „sunate azi" — prima citire a acestui tabel din UI.
+export async function listLeadIdsContactedToday(): Promise<string[]> {
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  const { data, error } = await supabase
+    .from('lead_contacte')
+    .select('lead_id')
+    .gte('created', start.toISOString())
+  if (error) throw error
+  return [...new Set((data ?? []).map((r) => r.lead_id))]
 }
 
 export async function checkDuplicateTelefon(

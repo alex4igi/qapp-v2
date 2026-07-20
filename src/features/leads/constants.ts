@@ -144,6 +144,71 @@ export function dataPesteZile(zile: number): string {
   return `${y}-${m}-${day}`
 }
 
+// Praguri de „neglijență", partajate de panoul „De lucrat azi" și de coloana
+// „Ultim contact" din vederea Listă. Trebuie să rămână UNA singură: două praguri
+// diferite ar arăta owner-ului două adevăruri despre același lead.
+export const FOLLOWUP_DAYS = 7
+export const INACTIVE_DAYS = 30
+
+export const DAY_MS = 24 * 60 * 60 * 1000
+
+export type PerioadaPreset =
+  | 'tot' | '7z' | '30z' | 'luna_curenta' | 'luna_trecuta' | 'personalizat'
+
+export type Perioada = { preset: PerioadaPreset; de?: string; pana?: string }
+
+export const PERIOADA_LABELS: Record<PerioadaPreset, string> = {
+  tot: 'Toată perioada',
+  '7z': 'Ultimele 7 zile',
+  '30z': 'Ultimele 30 de zile',
+  luna_curenta: 'Luna aceasta',
+  luna_trecuta: 'Luna trecută',
+  personalizat: 'Interval personalizat',
+}
+
+// Traduce presetul într-un interval ISO aplicabil pe `created`. Întoarce {} pentru
+// „toată perioada" — apelantul omite atunci filtrul din query.
+export function perioadaToRange(p: Perioada): { de?: string; pana?: string } {
+  const now = new Date()
+  switch (p.preset) {
+    case 'tot':
+      return {}
+    case '7z':
+    case '30z': {
+      const zile = p.preset === '7z' ? 7 : 30
+      const de = new Date(now.getTime() - zile * DAY_MS)
+      de.setHours(0, 0, 0, 0)
+      return { de: de.toISOString() }
+    }
+    case 'luna_curenta': {
+      const de = new Date(now.getFullYear(), now.getMonth(), 1)
+      return { de: de.toISOString() }
+    }
+    case 'luna_trecuta': {
+      const de = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const pana = new Date(now.getFullYear(), now.getMonth(), 1)
+      return { de: de.toISOString(), pana: pana.toISOString() }
+    }
+    case 'personalizat': {
+      // Inputurile `date` dau YYYY-MM-DD; `pana` include ziua întreagă.
+      const de = p.de ? new Date(`${p.de}T00:00:00`).toISOString() : undefined
+      const pana = p.pana
+        ? new Date(`${p.pana}T23:59:59.999`).toISOString()
+        : undefined
+      return { de, pana }
+    }
+  }
+}
+
+// Eticheta scurtă a intervalului activ, pentru badge-ul de pe filtru.
+export function perioadaLabel(p: Perioada): string {
+  if (p.preset !== 'personalizat') return PERIOADA_LABELS[p.preset]
+  if (p.de && p.pana) return `${p.de} → ${p.pana}`
+  if (p.de) return `din ${p.de}`
+  if (p.pana) return `până la ${p.pana}`
+  return 'Interval personalizat'
+}
+
 // Prepend o notă datată la observații, cu o etichetă de context.
 // Ex: prependObservatie('Contactat', 'sunat, indecis', '...existent') →
 //     "[Contactat 21 mai] sunat, indecis\n...existent"

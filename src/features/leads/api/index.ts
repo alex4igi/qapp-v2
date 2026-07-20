@@ -9,6 +9,7 @@ export { normalizeTelefon }
 export * from './crud'
 export * from './transitions'
 export * from './programari'
+export * from './prezente'
 export * from './import'
 export * from './conversie'
 export * from './reports'

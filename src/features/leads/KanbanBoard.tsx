@@ -13,9 +13,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui'
 import { campaniiOptions } from '@/lib/lookups'
-import { matchesWords } from '@/lib/search'
 import type { Lead, StatusLead } from '@/types/db'
-import { PIPELINE_COLUMNS } from './constants'
+import { PIPELINE_COLUMNS, perioadaToRange } from './constants'
 import { KanbanColumn } from './KanbanColumn'
 import { LeadCard } from './LeadCard'
 import { LeadModal } from './LeadModal'
@@ -25,29 +24,37 @@ import { ContactareModal } from './ContactareModal'
 import { WaitingListModal } from './WaitingListModal'
 import { ConversieModal, type ConversieResult } from './ConversieModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
-import { LeadFilters, type LeadFiltersValue } from './LeadFilters'
+import {
+  LeadFilters,
+  applyLeadFilters,
+  EMPTY_LEAD_FILTERS,
+  STATUSURI_DE_SUNAT,
+  type LeadFiltersValue,
+} from './LeadFilters'
+import { LeadListView } from './LeadListView'
 import { NurtureMatchBanner } from './NurtureMatchBanner'
 import { TodayPanel } from './TodayPanel'
 import {
   getEnrolledClientIds,
   getLatestProgramareCurs,
+  lastPrezentaByLead,
+  listLeadIdsContactedToday,
   listLeads,
+  listNurtureLeads,
   markLeadConvertit,
   pruneExpiredLeads,
   updateLeadStatus,
 } from './api'
 
-const EMPTY_FILTERS: LeadFiltersValue = {
-  search: '',
-  sursa: '',
-  grupa: '',
-  locatie: '',
-}
+type PipelineMode = 'kanban' | 'lista'
 
 export function KanbanBoard() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [filters, setFilters] = useState<LeadFiltersValue>(EMPTY_FILTERS)
+  const [filters, setFilters] = useState<LeadFiltersValue>(EMPTY_LEAD_FILTERS)
+  // Modul e în URL (?mod=lista) ca lista de sunat să poată fi pusă la favorite.
+  const mode: PipelineMode =
+    searchParams.get('mod') === 'lista' ? 'lista' : 'kanban'
   const [activeId, setActiveId] = useState<string | null>(null)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
   const [addingToStatus, setAddingToStatus] = useState<string | null>(null)
@@ -72,6 +79,48 @@ export function KanbanBoard() {
     queryKey: ['lookup', 'campanii'],
     queryFn: campaniiOptions,
   })
+
+  // Nurture (~6000 ex-clienți) intră în listă doar când e cerut explicit — sau
+  // când nu e bifat niciun status, caz în care „toate" chiar înseamnă toate.
+  // Intervalul taie server-side, ca presetul implicit să nu aducă tot pool-ul.
+  const vreaNurture =
+    mode === 'lista' &&
+    (filters.statusuri.length === 0 || filters.statusuri.includes('nurture'))
+  const nurtureRange = perioadaToRange(filters.perioada)
+  const nurtureQuery = useQuery({
+    queryKey: ['leads', 'nurture', nurtureRange],
+    queryFn: () => listNurtureLeads(nurtureRange),
+    enabled: vreaNurture,
+  })
+
+  const contactatiAziQuery = useQuery({
+    queryKey: ['leads', 'contactate-azi'],
+    queryFn: listLeadIdsContactedToday,
+    enabled: mode === 'lista',
+  })
+  const contactatiAzi = useMemo(
+    () => new Set(contactatiAziQuery.data ?? []),
+    [contactatiAziQuery.data],
+  )
+
+  // Prezența la demo se citește din programari_leads doar pentru listă: în
+  // Nurture `status` e uniform, deci „a venit / nu a venit" s-ar pierde.
+  const prezenteQuery = useQuery({
+    queryKey: ['leads', 'prezente'],
+    queryFn: lastPrezentaByLead,
+    enabled: mode === 'lista',
+  })
+
+  function setMode(next: PipelineMode) {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'lista') params.set('mod', 'lista')
+    else params.delete('mod')
+    setSearchParams(params, { replace: true })
+    // Lista pornește pe cine chiar așteaptă un telefon, nu pe tot istoricul.
+    if (next === 'lista' && filters.statusuri.length === 0) {
+      setFilters((f) => ({ ...f, statusuri: [...STATUSURI_DE_SUNAT] }))
+    }
+  }
 
   const campaniiById = useMemo(() => {
     const map = new Map<string, string>()
@@ -125,20 +174,17 @@ export function KanbanBoard() {
     setEnrollData({ clientId: lead.id_client, cursId, leadId: lead.id })
   }
 
-  const filtered = useMemo(() => {
-    return leads.filter((lead) => {
-      if (filters.search) {
-        const hay = [lead.prenume, lead.nume, lead.telefon]
-          .filter(Boolean)
-          .join(' ')
-        if (!matchesWords(hay, filters.search)) return false
-      }
-      if (filters.sursa && lead.sursa !== filters.sursa) return false
-      if (filters.grupa && lead.grupa_varsta !== filters.grupa) return false
-      if (filters.locatie && lead.locatia !== filters.locatie) return false
-      return true
-    })
-  }, [leads, filters])
+  // Setul de bază al vederii curente. Kanbanul rămâne strict pe pipeline;
+  // lista unește pipeline-ul cu Nurture când e cerut.
+  const baseLeads = useMemo(
+    () => (vreaNurture ? [...leads, ...(nurtureQuery.data ?? [])] : leads),
+    [leads, nurtureQuery.data, vreaNurture],
+  )
+
+  const filtered = useMemo(
+    () => applyLeadFilters(baseLeads, filters),
+    [baseLeads, filters],
+  )
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: StatusLead }) =>
@@ -232,11 +278,31 @@ export function KanbanBoard() {
 
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-4 space-y-2">
+        <div className="flex rounded-lg border border-quasar-gray-light p-0.5 w-fit">
+          {([
+            { key: 'kanban', label: '⬛ Kanban' },
+            { key: 'lista', label: '☰ Listă' },
+          ] as const).map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              onClick={() => setMode(m.key)}
+              className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                mode === m.key
+                  ? 'bg-quasar-yellow font-medium text-quasar-black'
+                  : 'text-quasar-gray hover:text-quasar-black'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
         <LeadFilters
           value={filters}
           campanii={campaniiQuery.data ?? []}
           onChange={setFilters}
+          variant={mode === 'lista' ? 'lista' : 'kanban'}
         />
       </div>
 
@@ -249,6 +315,19 @@ export function KanbanBoard() {
         onLogContact={setLogContactLead}
       />
 
+      {mode === 'lista' ? (
+        <LeadListView
+          leads={filtered}
+          totalLeads={baseLeads.length}
+          campaniiById={campaniiById}
+          prezentaByLead={prezenteQuery.data}
+          contactatiAzi={contactatiAzi}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onLeadClick={setEditingLead}
+          onLogContact={setLogContactLead}
+        />
+      ) : (
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
@@ -286,8 +365,9 @@ export function KanbanBoard() {
           )}
         </DragOverlay>
       </DndContext>
+      )}
 
-      <BottomScrollbar targetRef={scrollRef} />
+      {mode === 'kanban' && <BottomScrollbar targetRef={scrollRef} />}
 
       {editingLead && (
         <LeadModal

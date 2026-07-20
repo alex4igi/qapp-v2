@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Lead, StatusLead } from '@/types/db'
 import { InteresBadge } from './Badges'
+import { FOLLOWUP_DAYS, INACTIVE_DAYS } from './constants'
 import { timpRelativ } from './LeadHistory'
 
 type Props = {
@@ -23,9 +24,8 @@ const DAY = 24 * 60 * 60 * 1000
 // Pipeline activ pentru listele de neglijență (exclude stările „parcate":
 // programat are demo, waiting_list/nurture sunt intenționat în așteptare).
 const ACTIVE_PIPELINE: StatusLead[] = ['nou', 'contactat']
-// Praguri escaladare: contactat dar cald 7–30z → „fără follow-up"; >30z → „inactiv".
-const FOLLOWUP_DAYS = 7
-const INACTIVE_DAYS = 30
+// Praguri escaladare (contactat dar cald 7–30z → „fără follow-up"; >30z →
+// „inactiv") — definite în constants.ts, partajate cu coloana „Ultim contact".
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.toDateString() === b.toDateString()

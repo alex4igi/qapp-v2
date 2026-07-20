@@ -17,6 +17,13 @@ type Props<T> = {
   rowKey: (row: T) => string
   onRowClick?: (row: T) => void
   emptyMessage?: string
+  // Plafon de randare, aplicat DUPĂ sortare. Apelanții care taie ei lista înainte
+  // (`rows.slice(0, N)`) sortează doar felia vizibilă — un click pe „Nume" peste
+  // 6000 de rânduri ar da atunci primul rând greșit.
+  maxRows?: number
+  // Evidențiere per rând (ex: „sunat azi"); nu se poate exprima prin
+  // Column.className, care nu vede rândul.
+  rowClassName?: (row: T) => string | undefined
 }
 
 function compareValues(
@@ -39,6 +46,8 @@ export function DataTable<T>({
   rowKey,
   onRowClick,
   emptyMessage = 'Niciun rezultat.',
+  maxRows,
+  rowClassName,
 }: Props<T>) {
   const [sortIdx, setSortIdx] = useState<number | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>('asc')
@@ -61,6 +70,12 @@ export function DataTable<T>({
       (a, b) => compareValues(col.sortValue!(a), col.sortValue!(b)) * dir,
     )
   }, [rows, columns, sortIdx, sortDir])
+
+  const visibleRows =
+    maxRows != null && sortedRows.length > maxRows
+      ? sortedRows.slice(0, maxRows)
+      : sortedRows
+  const taiate = sortedRows.length - visibleRows.length
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-sm">
@@ -108,7 +123,7 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
-          {sortedRows.length === 0 ? (
+          {visibleRows.length === 0 ? (
             <tr>
               <td
                 colSpan={columns.length}
@@ -118,13 +133,14 @@ export function DataTable<T>({
               </td>
             </tr>
           ) : (
-            sortedRows.map((row) => (
+            visibleRows.map((row) => (
               <tr
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 className={cn(
                   'border-b border-line-2 last:border-0',
                   onRowClick && 'cursor-pointer hover:bg-rowhover',
+                  rowClassName?.(row),
                 )}
               >
                 {columns.map((col, idx) => (
@@ -139,6 +155,19 @@ export function DataTable<T>({
             ))
           )}
         </tbody>
+        {taiate > 0 && (
+          <tfoot>
+            <tr>
+              <td
+                colSpan={columns.length}
+                className="border-t border-line bg-surface px-3 py-2 text-center text-xs text-muted"
+              >
+                Afișate primele {visibleRows.length} din {sortedRows.length} —
+                restrânge filtrele sau exportă lista completă.
+              </td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   )
