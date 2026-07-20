@@ -120,7 +120,7 @@ export function RecuperareWorklistTable({ rows, onLog }: Props) {
       columns={columns}
       rows={rows}
       rowKey={(r) => r.client_id}
-      emptyMessage="Niciun datornic activ cu 2+ rate neachitate. 🎉"
+      emptyMessage="Niciun datornic activ cu rate depășite. 🎉"
     />
   )
 }

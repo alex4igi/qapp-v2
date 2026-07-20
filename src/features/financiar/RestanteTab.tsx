@@ -7,6 +7,7 @@ import {
   TextInput,
   Field,
   Select,
+  MonthPicker,
   DataTable,
   Spinner,
   type Column,
@@ -16,9 +17,14 @@ import { downloadCsv } from '@/lib/csv'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { locatiiOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
+import {
+  LogRecuperareModal,
+  type RecuperareTarget,
+} from '@/features/recuperare/LogRecuperareModal'
 import { listRestante, exportRestante, PAGE_SIZE, type RestantaRow } from './api'
 
-const columns: Column<RestantaRow>[] = [
+function columnsFor(onRecuperare: (r: RestantaRow) => void): Column<RestantaRow>[] {
+  return [
   {
     header: 'Client',
     cell: (r) =>
@@ -87,7 +93,18 @@ const columns: Column<RestantaRow>[] = [
     className: 'w-44 text-right',
     sortValue: (r) => r.rest ?? 0,
   },
-]
+  {
+    header: '',
+    cell: (r) =>
+      r.id_cursant && !r.prescris ? (
+        <Button variant="secondary" onClick={() => onRecuperare(r)}>
+          📞 Loghează apel
+        </Button>
+      ) : null,
+    className: 'w-40 text-right',
+  },
+  ]
+}
 
 export function RestanteTab() {
   const { locatieId: globalLocatieId } = useWorkingLocatie()
@@ -95,7 +112,22 @@ export function RestanteTab() {
   const [search, setSearch] = useState('')
   const [locatieId, setLocatieId] = useState<string>('')
   const [cursId, setCursId] = useState<string>('')
+  const [luna, setLuna] = useState<string>('')
   const [page, setPage] = useState(0)
+  const [target, setTarget] = useState<RecuperareTarget | null>(null)
+
+  const columns = useMemo(
+    () =>
+      columnsFor((r) =>
+        setTarget({
+          clientId: r.id_cursant!,
+          nume: `${r.nume_client ?? ''} ${r.prenume_client ?? ''}`.trim(),
+          rest: r.rest,
+          curs: r.nume_curs,
+        }),
+      ),
+    [],
+  )
 
   useEffect(() => {
     if (!locatieId && globalLocatieId) setLocatieId(globalLocatieId)
@@ -117,13 +149,14 @@ export function RestanteTab() {
   const cursuriQ = useCursuriOptions({ locatieId })
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['restante', { search, page, locatieId, cursId }],
+    queryKey: ['restante', { search, page, locatieId, cursId, luna }],
     queryFn: () =>
       listRestante({
         search,
         page,
         locatieId: locatieId || null,
         cursId: cursId || null,
+        luna: luna || null,
       }),
     placeholderData: keepPreviousData,
   })
@@ -141,6 +174,7 @@ export function RestanteTab() {
         search,
         locatieId: locatieId || null,
         cursId: cursId || null,
+        luna: luna || null,
       })
       const body: (string | number)[][] = rows.map((r) => [
         `${r.nume_client ?? ''} ${r.prenume_client ?? ''}`.trim(),
@@ -178,7 +212,7 @@ export function RestanteTab() {
         '',
       ])
       downloadCsv(
-        `restante-${locatieId ? 'loc' : 'toate-loc'}_${cursId ? 'curs' : 'toate-curs'}.csv`,
+        `restante-${locatieId ? 'loc' : 'toate-loc'}_${cursId ? 'curs' : 'toate-curs'}${luna ? `_${luna}` : ''}.csv`,
         ['Client', 'Curs', 'Locație', 'Început', 'Total (RON)', 'Plătit (RON)', 'Rest (RON)', 'Prescris'],
         body,
       )
@@ -188,6 +222,11 @@ export function RestanteTab() {
   }
 
   const cursLabel = cursuriQ.data?.find((c) => c.value === cursId)?.label
+  const lunaLabel = luna
+    ? new Intl.DateTimeFormat('ro-RO', { month: 'long', year: 'numeric' }).format(
+        new Date(`${luna}-01`),
+      )
+    : null
 
   return (
     <div>
@@ -230,6 +269,33 @@ export function RestanteTab() {
             />
           </Field>
         </div>
+        <div className="w-44">
+          <Field label="Luna" htmlFor="rs-luna">
+            <div className="flex items-center gap-1">
+              <MonthPicker
+                id="rs-luna"
+                value={luna}
+                onChange={(v) => {
+                  setLuna(v)
+                  setPage(0)
+                }}
+              />
+              {luna && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLuna('')
+                    setPage(0)
+                  }}
+                  title="Toate lunile"
+                  className="shrink-0 rounded-md border border-quasar-gray-light px-2 py-2 text-xs text-quasar-gray hover:border-quasar-yellow"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </Field>
+        </div>
         <div className="ml-auto">
           <Button
             variant="secondary"
@@ -254,6 +320,12 @@ export function RestanteTab() {
               </>
             ) : (
               'Total: '
+            )}
+            {lunaLabel && (
+              <>
+                luna <strong className="text-quasar-black">{lunaLabel}</strong>{' '}
+                ·{' '}
+              </>
             )}
             <strong className="text-quasar-black">{data.total}</strong> înrolări
             cu restanță · de recuperat{' '}
@@ -308,6 +380,10 @@ export function RestanteTab() {
             </Button>
           </div>
         </>
+      )}
+
+      {target && (
+        <LogRecuperareModal open target={target} onClose={() => setTarget(null)} />
       )}
     </div>
   )

@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
 import { fetchAllRows } from '@/lib/fetchAll'
 import type { Views } from '@/types/db'
+import { lunaToBounds } from '@/features/statistici/api/interval'
 import { PAGE_SIZE } from './incasari'
 
 export type RestantaRow = Views<'plati_inrolari'>
@@ -11,6 +12,7 @@ export type RestanteListParams = {
   page: number
   locatieId: string | null
   cursId: string | null
+  luna: string | null // 'YYYY-MM' — luna facturată (data_incepere), null = toate lunile
 }
 
 export type RestanteListResult = {
@@ -26,6 +28,7 @@ export async function listRestante({
   page,
   locatieId,
   cursId,
+  luna,
 }: RestanteListParams): Promise<RestanteListResult> {
   const rangeFrom = page * PAGE_SIZE
   const rangeTo = rangeFrom + PAGE_SIZE - 1
@@ -34,6 +37,10 @@ export async function listRestante({
     let q = supabase.from('plati_inrolari').select('*').gt('rest', 0)
     if (locatieId) q = q.eq('id_locatie', locatieId)
     if (cursId) q = q.eq('id_curs', cursId)
+    if (luna) {
+      const { from, to } = lunaToBounds(luna)
+      q = q.gte('data_incepere', from).lte('data_incepere', to)
+    }
     q = applyWordSearch(q, search, ['nume_client', 'prenume_client', 'nume_curs'])
     return q
   }
@@ -76,6 +83,10 @@ export async function exportRestante(
     let q = supabase.from('plati_inrolari').select('*').gt('rest', 0)
     if (params.locatieId) q = q.eq('id_locatie', params.locatieId)
     if (params.cursId) q = q.eq('id_curs', params.cursId)
+    if (params.luna) {
+      const { from, to } = lunaToBounds(params.luna)
+      q = q.gte('data_incepere', from).lte('data_incepere', to)
+    }
     q = applyWordSearch(q, params.search, [
       'nume_client',
       'prenume_client',

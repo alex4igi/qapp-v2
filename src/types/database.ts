@@ -8987,7 +8987,7 @@ export type Database = {
         }[]
       }
       get_restante_worklist: {
-        Args: { p_locatie?: string; p_sezon?: string }
+        Args: { p_locatie?: string; p_luna?: string; p_sezon?: string }
         Returns: {
           client_id: string
           nr_rate_neachitate: number

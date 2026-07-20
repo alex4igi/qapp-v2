@@ -18,16 +18,21 @@ export type WorklistRow = {
   ultim_apel_rezultat: string | null
 }
 
-// Worklist de recuperare: clienți Activ cu ≥2 rate neachitate, sortați după
-// zile de întârziere. p_locatie/p_sezon = uuid sau null = toate (sezonul e
-// aliniat cu get_sms_recipients — UI presetează sezonul activ).
+// Worklist de recuperare: clienți Activ cu cel puțin o rată chiar depășită
+// (nu doar luna curentă, neajunsă încă la scadență), sortați după zile de
+// întârziere. p_locatie/p_sezon = uuid sau null = toate (sezonul e aliniat cu
+// get_sms_recipients — UI presetează sezonul activ). luna (opțional, 'YYYY-MM')
+// = țintește doar clienții care au o rată neachitată facturată în luna
+// respectivă, dar totalul afișat rămâne cel complet (toate lunile lor restante).
 export async function getRestanteWorklist(
   locatieId: string | null,
   sezonId: string | null = null,
+  luna: string | null = null,
 ): Promise<WorklistRow[]> {
   const { data, error } = await supabase.rpc('get_restante_worklist', {
     ...(locatieId ? { p_locatie: locatieId } : {}),
     ...(sezonId ? { p_sezon: sezonId } : {}),
+    ...(luna ? { p_luna: `${luna}-01` } : {}),
   })
   if (error) throw error
   return (data ?? []) as unknown as WorklistRow[]

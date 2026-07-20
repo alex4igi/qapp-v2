@@ -1,7 +1,7 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { PageHeader, Field, Select, Spinner } from '@/components/ui'
+import { PageHeader, Field, Select, MonthPicker, Spinner } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { locatiiOptions, sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
@@ -13,6 +13,7 @@ export function RecuperarePage() {
   const { locatieId: globalLocatieId } = useWorkingLocatie()
   const [locatieId, setLocatieId] = useState(globalLocatieId ?? '')
   const [sezonId, setSezonId] = useState('')
+  const [luna, setLuna] = useState('')
   const [target, setTarget] = useState<RecuperareTarget | null>(null)
 
   const locatiiQ = useQuery({
@@ -39,8 +40,8 @@ export function RecuperarePage() {
   }, [sezonInit, sezonActivQ.data])
 
   const worklistQ = useQuery({
-    queryKey: ['restante-worklist', locatieId, sezonId],
-    queryFn: () => getRestanteWorklist(locatieId || null, sezonId || null),
+    queryKey: ['restante-worklist', locatieId, sezonId, luna],
+    queryFn: () => getRestanteWorklist(locatieId || null, sezonId || null, luna || null),
     placeholderData: keepPreviousData,
   })
 
@@ -61,7 +62,7 @@ export function RecuperarePage() {
     <div>
       <PageHeader
         title="Recuperare restanțe"
-        subtitle="Datornici activi cu 2+ rate neachitate — de sunat"
+        subtitle="Datornici activi cu rate depășite — de sunat"
       />
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
@@ -85,6 +86,23 @@ export function RecuperarePage() {
               value={sezonId}
               onChange={(e) => setSezonId(e.target.value)}
             />
+          </Field>
+        </div>
+        <div className="w-44">
+          <Field label="Are rată din luna" htmlFor="rec-luna">
+            <div className="flex items-center gap-1">
+              <MonthPicker id="rec-luna" value={luna} onChange={setLuna} />
+              {luna && (
+                <button
+                  type="button"
+                  onClick={() => setLuna('')}
+                  title="Toate lunile"
+                  className="shrink-0 rounded-md border border-quasar-gray-light px-2 py-2 text-xs text-quasar-gray hover:border-quasar-yellow"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </Field>
         </div>
       </div>

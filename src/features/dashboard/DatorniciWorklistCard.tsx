@@ -12,9 +12,9 @@ import {
 const TOP = 8
 
 // Card „de sunat azi" pe dashboard — apare DOAR când există datornici activi cu
-// 2+ rate neachitate (worklist), filtrat pe locația de lucru și sezonul activ
-// (aliniat cu compozitorul SMS — nu sunăm pentru sezoane vechi). Front-desk (și
-// restul staff-ului) acționează direct din locul unde aterizează.
+// cel puțin o rată chiar depășită (worklist), filtrat pe locația de lucru și
+// sezonul activ (aliniat cu compozitorul SMS — nu sunăm pentru sezoane vechi).
+// Front-desk (și restul staff-ului) acționează direct din locul unde aterizează.
 export function DatorniciWorklistCard({
   locatieId,
 }: {
