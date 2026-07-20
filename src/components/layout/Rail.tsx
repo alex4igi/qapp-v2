@@ -60,8 +60,27 @@ function SectionIcon({ label }: { label: string }) {
   }
 }
 
+/* ---------- stare colapsat ---------- */
+const COLLAPSED_KEY = 'qapp.rail.collapsed'
+
+function useCollapsed() {
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem(COLLAPSED_KEY) === '1',
+  )
+  useEffect(() => {
+    localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0')
+  }, [collapsed])
+  return [collapsed, setCollapsed] as const
+}
+
 /* ---------- nav expandabil ---------- */
-function RailNav() {
+function RailNav({
+  collapsed,
+  onExpand,
+}: {
+  collapsed: boolean
+  onExpand: () => void
+}) {
   const { role } = useAuth()
   const sections = visibleSections(role)
   const location = useLocation()
@@ -78,6 +97,40 @@ function RailNav() {
   useEffect(() => {
     if (activeLabel) setOpen(activeLabel)
   }, [activeLabel])
+
+  // Colapsat: doar iconurile secțiunilor. Clic pe una redeschide rail-ul cu
+  // secțiunea aceea desfăcută (submeniul n-are unde încăpea la 64px).
+  if (collapsed) {
+    return (
+      <nav className="flex flex-col items-center gap-1">
+        {sections.map((section) => {
+          const hasActive = section.items.some((i) =>
+            location.pathname.startsWith(i.path),
+          )
+          return (
+            <button
+              key={section.label}
+              type="button"
+              title={section.label}
+              aria-label={section.label}
+              onClick={() => {
+                setOpen(section.label)
+                onExpand()
+              }}
+              className={[
+                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                hasActive
+                  ? 'bg-rail-2 text-white shadow-[inset_3px_0_0_var(--color-quasar-yellow)]'
+                  : 'text-rail-soft hover:bg-rail-2/60 hover:text-white',
+              ].join(' ')}
+            >
+              <SectionIcon label={section.label} />
+            </button>
+          )
+        })}
+      </nav>
+    )
+  }
 
   return (
     <nav className="flex flex-col gap-0.5">
@@ -155,12 +208,42 @@ function RailNav() {
 }
 
 /* ---------- acțiuni rapide ---------- */
-function RailActions() {
+function RailActions({ collapsed }: { collapsed: boolean }) {
   const { role } = useAuth()
   const [leadOpen, setLeadOpen] = useState(false)
   const [clientOpen, setClientOpen] = useState(false)
 
   if (role === 'teacher') return null
+
+  if (collapsed) {
+    return (
+      <>
+        <div className="mt-2 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setClientOpen(true)}
+            title="Client nou"
+            aria-label="Client nou"
+            className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-quasar-yellow text-base font-bold text-ink transition-colors hover:bg-quasar-yellow-dark"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={() => setLeadOpen(true)}
+            title="Lead nou"
+            aria-label="Lead nou"
+            className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-rail-line text-[11px] font-bold text-rail-soft transition-colors hover:border-rail-soft hover:text-white"
+          >
+            +L
+          </button>
+        </div>
+
+        {leadOpen && <LeadModal open onClose={() => setLeadOpen(false)} />}
+        {clientOpen && <ClientForm open onClose={() => setClientOpen(false)} />}
+      </>
+    )
+  }
 
   return (
     <>
@@ -194,7 +277,13 @@ function initials(email: string | undefined): string {
   return (letters.slice(0, 2) || '?').toUpperCase()
 }
 
-function RailAccount() {
+function RailAccount({
+  collapsed,
+  onExpand,
+}: {
+  collapsed: boolean
+  onExpand: () => void
+}) {
   const { user, role, signOut, endShift } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -227,6 +316,24 @@ function RailAccount() {
 
   const item =
     'flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-ink transition-colors hover:bg-quasar-gray-light'
+
+  // Colapsat: dropdown-ul (mai lat decât rail-ul) ar fi tăiat de overflow-ul
+  // aside-ului, deci clicul pe avatar doar redeschide rail-ul.
+  if (collapsed) {
+    return (
+      <div className="mt-4 flex justify-center border-t border-rail-line pt-4">
+        <button
+          type="button"
+          onClick={onExpand}
+          title={user?.email ?? 'Cont'}
+          aria-label="Cont"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-quasar-yellow text-[11px] font-bold text-ink"
+        >
+          {initials(user?.email)}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="relative mt-4 border-t border-rail-line pt-4" ref={ref}>
@@ -313,23 +420,63 @@ function RailAccount() {
 
 /* ---------- rail ---------- */
 export function Rail(): ReactNode {
-  return (
-    <aside className="flex w-[236px] min-w-[236px] max-w-[236px] shrink-0 flex-col overflow-y-auto overflow-x-hidden bg-rail px-4 py-5 text-white [scrollbar-gutter:stable]">
-      <Link to="/" className="mb-5 flex items-center px-1.5" title="Acasă">
-        <img
-          src="/logo-q-a-l-contur.png"
-          alt="Quasar Dance"
-          className="h-12 w-auto select-none"
-          draggable={false}
-        />
-      </Link>
+  const [collapsed, setCollapsed] = useCollapsed()
+  const expand = () => setCollapsed(false)
 
-      <RailNav />
+  const toggle = (
+    <button
+      type="button"
+      onClick={() => setCollapsed((v) => !v)}
+      title={collapsed ? 'Afișează meniul' : 'Ascunde meniul'}
+      aria-label={collapsed ? 'Afișează meniul' : 'Ascunde meniul'}
+      aria-expanded={!collapsed}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rail-muted transition-colors hover:bg-rail-2 hover:text-white"
+    >
+      <span aria-hidden>{collapsed ? '»' : '«'}</span>
+    </button>
+  )
+
+  return (
+    <aside
+      className={[
+        'flex shrink-0 flex-col overflow-y-auto overflow-x-hidden bg-rail py-5 text-white [scrollbar-gutter:stable]',
+        collapsed
+          ? 'w-[64px] min-w-[64px] max-w-[64px] px-2'
+          : 'w-[236px] min-w-[236px] max-w-[236px] px-4',
+      ].join(' ')}
+    >
+      {collapsed ? (
+        <div className="mb-4 flex flex-col items-center gap-2">
+          <Link to="/" className="flex items-center" title="Acasă">
+            <img
+              src="/logo-q-a-l-contur.png"
+              alt="Quasar Dance"
+              className="h-8 w-auto max-w-full select-none object-contain"
+              draggable={false}
+            />
+          </Link>
+          {toggle}
+        </div>
+      ) : (
+        <div className="mb-5 flex items-center gap-2 px-1.5">
+          <Link to="/" className="flex min-w-0 flex-1 items-center" title="Acasă">
+            <img
+              src="/logo-q-a-l-contur.png"
+              alt="Quasar Dance"
+              className="h-12 w-auto select-none"
+              draggable={false}
+            />
+          </Link>
+          {toggle}
+        </div>
+      )}
+
+      <RailNav collapsed={collapsed} onExpand={expand} />
 
       <div className="flex-1" />
 
-      <RailActions />
-      <RailAccount />
+      <RailActions collapsed={collapsed} />
+      <RailAccount collapsed={collapsed} onExpand={expand} />
     </aside>
   )
 }
