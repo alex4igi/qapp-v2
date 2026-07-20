@@ -19,6 +19,7 @@ export type {
   RosterStatus,
   RosterKind,
   GrupaRosterRow,
+  GrupaFostRow,
   GrupaDashboard,
 } from './grupa'
 export { getGrupaDashboard } from './grupa'

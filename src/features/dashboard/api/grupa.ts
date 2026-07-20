@@ -3,7 +3,19 @@
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
 import { endOfMonth } from '@/features/plati/api/calendar'
+import { fetchAllRows } from '@/lib/fetchAll'
 import { isoDaysAgo } from './helpers'
+
+// `.in(...)` cu prea multe UUID-uri depășește limita de headers a PostgREST (~16KB)
+// și pică cu HeadersOverflowError. Istoricul unei grupe poate aduna sute de rânduri
+// lunare, deci filtrele pe id se sparg în bucăți.
+const IN_CHUNK = 100
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
+}
 
 export type RosterStatus = 'prezent' | 'absent' | 'inactiv' | 'programat'
 
@@ -27,6 +39,20 @@ export type GrupaRosterRow = {
   esteZiua: boolean
 }
 
+// Cursant care a fost pe această grupă recent, dar NU mai are nicio înrolare
+// care să acopere luna afișată (s-a oprit sau e reziliat) — deci a dispărut cu
+// totul din roster. Nu e „inactiv" (ăla e încă înrolat); e candidat de recuperat.
+export type GrupaFostRow = {
+  clientId: string
+  nume: string
+  prenume: string | null
+  poza: string | null
+  telefon: string | null
+  // Luna ultimei înrolări pe această grupă (data_incepere = ziua 1 a lunii facturate).
+  ultimaLuna: string | null
+  ultimaPrezenta: string | null
+}
+
 export type GrupaDashboard = {
   cursId: string
   cursNume: string
@@ -35,6 +61,7 @@ export type GrupaDashboard = {
   sala: string | null
   facultativ: boolean
   roster: GrupaRosterRow[]
+  fosti: GrupaFostRow[]
   counters: {
     prezenti: number
     absenti: number
@@ -47,6 +74,9 @@ export type GrupaDashboard = {
 // NU are nicio prezență `Prezent` în ultimele 21 zile la enrollment-ul lui pe
 // acea grupă. „Activ" = există minim o prezență Prezent în acest interval.
 const INACTIV_DAYS = 21
+
+// Fereastra în care un cursant plecat mai are sens să fie propus spre recuperare.
+const FOSTI_DAYS = 180
 
 export async function getGrupaDashboard(params: {
   cursId: string
@@ -181,18 +211,78 @@ export async function getGrupaDashboard(params: {
   }
 
   const cutoff = isoDaysAgo(INACTIV_DAYS)
-  const { data: recent, error: rErr } = enrollmentIds.length
-    ? await supabase
-        .from('prezente')
-        .select('enrollment, data')
-        .in('enrollment', enrollmentIds)
-        .gte('data', cutoff)
-        .eq('status', 'Prezent')
-    : { data: [], error: null }
-  if (rErr) throw rErr
-  const hasRecent = new Set<string>()
-  for (const r of recent ?? []) {
-    if (r.enrollment) hasRecent.add(r.enrollment)
+  const rosterClientIds = [
+    ...new Set(
+      enrollments.map((e) => e.client?.id).filter((id): id is string => Boolean(id)),
+    ),
+  ]
+
+  // Istoricul înrolărilor acestor cursanți PE ACEASTĂ grupă (toate lunile, inclusiv
+  // reziliate). Ambele semnale de mai jos sunt per CLIENT, nu per rând de înrolare,
+  // pentru că `data_incepere` = ziua 1 a lunii facturate (vezi convenția v2), nu ziua
+  // în care cursantul a intrat în grupă:
+  //   1. prezența recentă — o prezență din 28 ale lunii trecute e legată de rândul
+  //      lunii trecute; căutată doar pe rândul lunii curente ar apărea inexistentă,
+  //      și cursantul ar fi marcat greșit inactiv la început de lună;
+  //   2. „abia înrolat pe grupă" — se citește din PRIMA înrolare pe curs. Citit de pe
+  //      rândul lunar curent, oricine e „proaspăt înrolat" în fiecare lună, iar
+  //      statusul `inactiv` nu s-ar aprinde niciodată în primele ~22 zile ale lunii.
+  const istoric = rosterClientIds.length
+    ? (
+        await Promise.all(
+          chunk(rosterClientIds, IN_CHUNK).map((ids) =>
+            fetchAllRows<{
+              id: string
+              client: string | null
+              data_incepere: string | null
+            }>(() =>
+              supabase
+                .from('enrollments')
+                .select('id, client, data_incepere')
+                .eq('cursul', params.cursId)
+                .in('client', ids)
+                .order('id'),
+            ),
+          ),
+        )
+      ).flat()
+    : []
+
+  const primaInrolareByClient = new Map<string, string>()
+  const clientByEnrId = new Map<string, string>()
+  for (const r of istoric) {
+    if (!r.client) continue
+    clientByEnrId.set(r.id, r.client)
+    if (r.data_incepere) {
+      const prev = primaInrolareByClient.get(r.client)
+      if (!prev || r.data_incepere < prev) {
+        primaInrolareByClient.set(r.client, r.data_incepere)
+      }
+    }
+  }
+
+  const istoricIds = istoric.map((r) => r.id)
+  const recent = istoricIds.length
+    ? (
+        await Promise.all(
+          chunk(istoricIds, IN_CHUNK).map((ids) =>
+            fetchAllRows<{ enrollment: string | null }>(() =>
+              supabase
+                .from('prezente')
+                .select('enrollment')
+                .in('enrollment', ids)
+                .gte('data', cutoff)
+                .eq('status', 'Prezent')
+                .order('enrollment'),
+            ),
+          ),
+        )
+      ).flat()
+    : []
+  const hasRecentClient = new Set<string>()
+  for (const r of recent) {
+    const clientId = r.enrollment ? clientByEnrId.get(r.enrollment) : undefined
+    if (clientId) hasRecentClient.add(clientId)
   }
 
   // Plăți cumulative per înrolare → restanță = max(0, suma - sum(plăți))
@@ -250,16 +340,17 @@ export async function getGrupaDashboard(params: {
     if (isPerSedintaFacultativ && e.data_incepere !== params.date) continue
 
     const s = statusToday.get(e.id)
-    // O înrolare abia începută (data_incepere în fereastra de 21 zile) NU e
-    // „inactiv": cursantul tocmai a fost înrolat pe grupa asta (ex. trecerea în
+    // Un cursant abia intrat în grupă (PRIMA lui înrolare pe acest curs e în
+    // fereastra de 21 zile) NU e „inactiv": tocmai a fost înrolat (ex. trecerea în
     // sezonul nou/vară) și n-a avut încă ocazia să vină. Altfel cardul lui apare
     // inactiv și — pe facultativ — oferă „Înrolare nouă" deși e deja înrolat.
-    const inrolareRecenta = Boolean(e.data_incepere && e.data_incepere >= cutoff)
+    const primaInrolare = primaInrolareByClient.get(e.client.id)
+    const inrolareRecenta = Boolean(primaInrolare && primaInrolare >= cutoff)
     let status: RosterStatus
     if (s === 'Prezent') status = 'prezent'
     else if (s === 'Absent' || s === 'Motivat') status = 'absent'
     else if (isPerSedintaFacultativ) status = 'absent'
-    else if (!hasRecent.has(e.id) && !inrolareRecenta) status = 'inactiv'
+    else if (!hasRecentClient.has(e.client.id) && !inrolareRecenta) status = 'inactiv'
     // Cursantii nebifati azi sunt implicit absenti (pana cineva ii marcheaza
     // prezent). Statusul `programat` (galben) e rezervat doar leads-urilor.
     else status = 'absent'
@@ -388,6 +479,89 @@ export async function getGrupaDashboard(params: {
     })
   }
 
+  // „Foști / de recuperat": au avut înrolare pe această grupă în ultimele 180 zile,
+  // dar niciuna nu acoperă luna afișată (s-au oprit) sau sunt reziliați. Ei NU intră
+  // în roster — rosterul rămâne strict lista de marcat prezența, altfel revin
+  // „fantomele" scoase deliberat mai sus. Se afișează separat, ca listă de recuperare.
+  const fostiCutoff = isoDaysAgo(FOSTI_DAYS)
+  const fostiEnr = await fetchAllRows<{
+    id: string
+    data_incepere: string | null
+    client: {
+      id: string
+      nume: string
+      prenume: string | null
+      foto: string | null
+      telefon: string | null
+    } | null
+  }>(() =>
+    supabase
+      .from('enrollments')
+      .select(
+        'id, data_incepere, client:clienti(id, nume, prenume, foto, telefon)',
+      )
+      .eq('cursul', params.cursId)
+      .gte('data_incepere', fostiCutoff)
+      .order('id'),
+  )
+
+  const fostiById = new Map<string, GrupaFostRow>()
+  const fostiEnrIds = new Map<string, string>() // enrollmentId -> clientId
+  for (const e of fostiEnr) {
+    if (!e.client) continue
+    if (byClient.has(e.client.id)) continue // e în rosterul lunii curente
+    fostiEnrIds.set(e.id, e.client.id)
+    const existing = fostiById.get(e.client.id)
+    if (existing) {
+      if ((e.data_incepere ?? '') > (existing.ultimaLuna ?? '')) {
+        existing.ultimaLuna = e.data_incepere
+      }
+      continue
+    }
+    fostiById.set(e.client.id, {
+      clientId: e.client.id,
+      nume: e.client.nume,
+      prenume: e.client.prenume,
+      poza: e.client.foto,
+      telefon: e.client.telefon,
+      ultimaLuna: e.data_incepere,
+      ultimaPrezenta: null,
+    })
+  }
+
+  const fostiIds = [...fostiEnrIds.keys()]
+  if (fostiIds.length) {
+    const prezFosti = (
+      await Promise.all(
+        chunk(fostiIds, IN_CHUNK).map((ids) =>
+          fetchAllRows<{ enrollment: string | null; data: string | null }>(() =>
+            supabase
+              .from('prezente')
+              .select('enrollment, data')
+              .in('enrollment', ids)
+              .eq('status', 'Prezent')
+              .order('enrollment'),
+          ),
+        ),
+      )
+    ).flat()
+    for (const p of prezFosti) {
+      const clientId = p.enrollment ? fostiEnrIds.get(p.enrollment) : undefined
+      if (!clientId || !p.data) continue
+      const row = fostiById.get(clientId)
+      if (row && (!row.ultimaPrezenta || p.data > row.ultimaPrezenta)) {
+        row.ultimaPrezenta = p.data
+      }
+    }
+  }
+
+  const fosti = Array.from(fostiById.values()).sort(
+    (a, b) =>
+      (b.ultimaPrezenta ?? b.ultimaLuna ?? '').localeCompare(
+        a.ultimaPrezenta ?? a.ultimaLuna ?? '',
+      ) || a.nume.localeCompare(b.nume, 'ro'),
+  )
+
   const roster: GrupaRosterRow[] = [
     ...Array.from(byClient.values()),
     ...leadRows,
@@ -416,6 +590,7 @@ export async function getGrupaDashboard(params: {
   return {
     ...baseHeader,
     roster,
+    fosti,
     counters,
   }
 }

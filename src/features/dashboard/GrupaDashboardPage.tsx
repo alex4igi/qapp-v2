@@ -7,7 +7,7 @@ import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { upsertPrezenta } from '@/features/prezente/api'
 import { updateLeadStatus } from '@/features/leads/api'
-import { formatRON } from '@/lib/format'
+import { formatRON, formatDate, formatMonth } from '@/lib/format'
 import { waLink } from '@/lib/phone'
 import { listSezoane } from '@/features/plati/api'
 import { getCursDatorii } from '@/features/cursuri/api'
@@ -16,6 +16,7 @@ import {
   getGrupaDashboard,
   type RosterStatus,
   type GrupaRosterRow,
+  type GrupaFostRow,
   type GrupaDashboard,
 } from './api'
 
@@ -340,6 +341,110 @@ function RosterColumns({
   )
 }
 
+/* ---------- foști cursanți: listă de recuperare ---------- */
+function FostiSection({
+  rows,
+  onReinrol,
+  navigate,
+}: {
+  rows: GrupaFostRow[]
+  onReinrol: (clientId: string) => void
+  navigate: (to: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  if (rows.length === 0) return null
+
+  return (
+    <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 px-4 py-3 text-left"
+        aria-expanded={open}
+      >
+        <span className="text-[13px] font-semibold text-ink">
+          Foști cursanți — de recuperat
+        </span>
+        <Badge tone="neutral">{rows.length}</Badge>
+        <span className="flex-1" />
+        <span className="text-xs text-muted">{open ? 'Ascunde' : 'Arată'}</span>
+      </button>
+
+      {open && (
+        <>
+          <div className="border-t border-line-2 px-4 py-2 text-xs text-muted">
+            Au fost pe această grupă în ultimele 6 luni, dar nu mai au înrolare pe
+            luna curentă — de aceea nu apar în roster și nu li se poate pune prezența.
+          </div>
+          {rows.map((f) => {
+            const name = [f.nume, f.prenume].filter(Boolean).join(' ')
+            const waHref = waLink(f.telefon, waParinteMessage(f.prenume || f.nume))
+            return (
+              <div
+                key={f.clientId}
+                className="flex items-center gap-3 border-t border-line-2 px-4 py-2.5"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-bg text-[11px] font-bold text-muted-2">
+                  {f.poza ? (
+                    <img src={f.poza} alt={name} className="h-full w-full object-cover" />
+                  ) : (
+                    initialsOf(f.nume, f.prenume)
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink">
+                    {name}
+                  </span>
+                  <span className="block text-[11px] text-muted">
+                    {f.ultimaPrezenta
+                      ? `ultima prezență ${formatDate(f.ultimaPrezenta)}`
+                      : f.ultimaLuna
+                        ? `ultima înrolare ${formatMonth(f.ultimaLuna)}`
+                        : '—'}
+                  </span>
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => onReinrol(f.clientId)}
+                  title="Înrolează din nou pe această grupă"
+                >
+                  Reînrolează
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/clienti/${f.clientId}`)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line bg-card text-muted-2"
+                  aria-label="Profil cursant"
+                  title="Profil cursant"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                    <circle cx="12" cy="8" r="3.4" />
+                    <path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+                  </svg>
+                </button>
+                {waHref && (
+                  <a
+                    href={waHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-success/30 bg-card text-success"
+                    aria-label="Scrie părintelui pe WhatsApp"
+                    title="Scrie părintelui pe WhatsApp"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="currentColor" aria-hidden="true">
+                      <path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.207zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                    </svg>
+                  </a>
+                )}
+              </div>
+            )
+          })}
+        </>
+      )}
+    </div>
+  )
+}
+
 export function GrupaDashboardPage() {
   const { cursId } = useParams<{ cursId: string }>()
   const navigate = useNavigate()
@@ -347,6 +452,8 @@ export function GrupaDashboardPage() {
   const queryClient = useQueryClient()
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
+  // Pre-selectează cursantul în modalul de înrolare (reînrolare din lista „foști").
+  const [addClientId, setAddClientId] = useState<string | null>(null)
   const [tab, setTab] = useState<'roster' | 'restantieri'>('roster')
   const [rosterView, setRosterView] = useState<RosterView>(() => {
     try {
@@ -638,6 +745,15 @@ export function GrupaDashboardPage() {
               </button>
             </div>
           )}
+
+          <FostiSection
+            rows={data.fosti}
+            onReinrol={(clientId) => {
+              setAddClientId(clientId)
+              setAddOpen(true)
+            }}
+            navigate={(to) => navigate(to)}
+          />
         </>
       )}
 
@@ -663,8 +779,10 @@ export function GrupaDashboardPage() {
         <EnrollmentForm
           open
           defaultCursId={cursId}
+          defaultClientId={addClientId ?? undefined}
           onClose={() => {
             setAddOpen(false)
+            setAddClientId(null)
             void queryClient.invalidateQueries({
               queryKey: ['grupa-dashboard', cursId, date],
             })
