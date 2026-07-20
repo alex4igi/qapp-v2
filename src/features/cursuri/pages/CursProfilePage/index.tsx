@@ -43,7 +43,6 @@ type TabId =
   | 'activi'
   | 'absenti'
   | 'restantieri'
-  | 'inactivi'
   | 'open'
   | 'fara-documente'
   | 'evenimente'
@@ -54,6 +53,7 @@ export function CursProfilePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<TabId>('activi')
+  const [inactiviOpen, setInactiviOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
@@ -97,7 +97,7 @@ export function CursProfilePage() {
   const inactiviQuery = useQuery({
     queryKey: ['curs', id, 'clienti-inactivi'],
     queryFn: () => getCursClientiInactivi(id!),
-    enabled: Boolean(id) && tab === 'inactivi',
+    enabled: Boolean(id) && tab === 'activi' && inactiviOpen,
   })
 
   const faraDocQuery = useQuery({
@@ -230,7 +230,6 @@ export function CursProfilePage() {
               { id: 'activi',      label: 'Clienți activi' },
               { id: 'absenti',     label: 'Absenți' },
               { id: 'restantieri', label: 'Restanțieri' },
-              { id: 'inactivi',    label: 'Clienți inactivi' },
               ...(curs.facultativ && curs.rezervari_online
                 ? [{ id: 'open', label: 'Sesiuni OPEN' }]
                 : []),
@@ -243,20 +242,54 @@ export function CursProfilePage() {
           />
 
           {tab === 'activi' && (
-            <ClientiActiviTab
-              loading={activiQuery.isLoading}
-              rows={activiQuery.data ?? []}
-              pretLunarPromo={curs.facultativ ? null : curs.pret_lunar_promo}
-              onRowClick={(cid) => navigate(`/clienti/${cid}`)}
-              onActivateReinscriere={(cid) =>
-                activeazaReinscriereMut.mutate(cid)
-              }
-              activatingClientId={
-                activeazaReinscriereMut.isPending
-                  ? activeazaReinscriereMut.variables ?? null
-                  : null
-              }
-            />
+            <>
+              <ClientiActiviTab
+                loading={activiQuery.isLoading}
+                rows={activiQuery.data ?? []}
+                pretLunarPromo={curs.facultativ ? null : curs.pret_lunar_promo}
+                onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+                onActivateReinscriere={(cid) =>
+                  activeazaReinscriereMut.mutate(cid)
+                }
+                activatingClientId={
+                  activeazaReinscriereMut.isPending
+                    ? activeazaReinscriereMut.variables ?? null
+                    : null
+                }
+              />
+
+              <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <button
+                  type="button"
+                  aria-expanded={inactiviOpen}
+                  onClick={() => setInactiviOpen((o) => !o)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-quasar-yellow/5"
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-quasar-black">
+                    <span
+                      className={`text-quasar-gray transition-transform ${inactiviOpen ? 'rotate-90' : ''}`}
+                    >
+                      ▶
+                    </span>
+                    Clienți inactivi
+                  </span>
+                  {inactiviOpen && !inactiviQuery.isLoading && (
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-quasar-gray">
+                      {inactiviQuery.data?.length ?? 0}
+                    </span>
+                  )}
+                </button>
+                {inactiviOpen && (
+                  <div className="border-t border-gray-200">
+                    <ClientiInactiviTab
+                      loading={inactiviQuery.isLoading}
+                      rows={inactiviQuery.data ?? []}
+                      onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+                    />
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           {tab === 'absenti' && (
@@ -273,14 +306,6 @@ export function CursProfilePage() {
               rows={restantieriQuery.data ?? []}
               onRowClick={(cid) => navigate(`/clienti/${cid}`)}
               onPayClick={(cid) => setPayClientId(cid)}
-            />
-          )}
-
-          {tab === 'inactivi' && (
-            <ClientiInactiviTab
-              loading={inactiviQuery.isLoading}
-              rows={inactiviQuery.data ?? []}
-              onRowClick={(cid) => navigate(`/clienti/${cid}`)}
             />
           )}
 
