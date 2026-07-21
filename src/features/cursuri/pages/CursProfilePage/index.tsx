@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Spinner, Tabs } from '@/components/ui'
+import { Button, Spinner, Tabs, WhatsAppIcon } from '@/components/ui'
 import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { listSezoane } from '@/features/plati/api'
@@ -14,7 +14,15 @@ import {
 import { ArchiveConfirmModal } from '@/features/shared/ArchiveConfirmModal'
 import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal'
 import { useAuth } from '@/hooks/useAuth'
-import { isAdminOrHigher, isManagerOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import {
+  canMesajGrupa,
+  isAdminOrHigher,
+  isFrontDeskOrHigher,
+  isManagerOrHigher,
+  isTeacher,
+} from '@/lib/rolesMatrix'
+import { waGroupLink } from '@/lib/phone'
+import { ComposeMesajGrupaModal } from '@/features/announcements/ComposeMesajGrupaModal'
 import { CursForm } from '../../CursForm'
 import {
   getCurs,
@@ -59,7 +67,9 @@ export function CursProfilePage() {
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [mesajOpen, setMesajOpen] = useState(false)
   const { role } = useAuth()
+  const canSendMesajGrupa = canMesajGrupa(role)
   const canArchive = isManagerOrHigher(role)
   const canDelete = isAdminOrHigher(role)
   // Scrierea pe cursuri e permisă doar manager+ (RLS cursuri_manager_update).
@@ -199,6 +209,23 @@ export function CursProfilePage() {
         title={curs.numele}
         actions={
           <>
+            {canSendMesajGrupa && (
+              <Button variant="secondary" onClick={() => setMesajOpen(true)}>
+                💬 Mesaj grupă
+              </Button>
+            )}
+            {waGroupLink(curs.link_whatsapp) && (
+              <a
+                href={waGroupLink(curs.link_whatsapp)!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100"
+                title="Deschide grupul de WhatsApp al grupei"
+              >
+                <WhatsAppIcon />
+                Grup WhatsApp
+              </a>
+            )}
             {canEdit && <Button onClick={() => setEditOpen(true)}>Editează</Button>}
             {canArchive && (
               <Button
@@ -310,6 +337,7 @@ export function CursProfilePage() {
             <RestantieriTab
               loading={restantieriQuery.isLoading}
               rows={restantieriQuery.data ?? []}
+              canPay={isFrontDeskOrHigher(role)}
               onRowClick={(cid) => navigate(`/clienti/${cid}`)}
               onPayClick={(cid) => setPayClientId(cid)}
             />
@@ -364,6 +392,15 @@ export function CursProfilePage() {
           open
           defaultClientId={payClientId}
           onClose={() => setPayClientId(null)}
+        />
+      )}
+
+      {mesajOpen && (
+        <ComposeMesajGrupaModal
+          open
+          cursId={curs.id}
+          cursNume={curs.numele}
+          onClose={() => setMesajOpen(false)}
         />
       )}
 

@@ -135,6 +135,12 @@ export function canViewAllLocatii(role: AppRole): boolean {
   return isManagerOrHigher(role)
 }
 
+// Cine trimite mesaje către membrii unei grupe (ajung în 🔔 din portal).
+// Recepția (front_desk) nu — oglindește gardul din RPC-ul send_anunt_client.
+export function canMesajGrupa(role: AppRole): boolean {
+  return isTeacher(role) || isManagerOrHigher(role)
+}
+
 // Doar owner promovează la admin/owner
 export function canManageRole(currentRole: AppRole, targetRole: AppRole): boolean {
   if (currentRole === 'owner') return true

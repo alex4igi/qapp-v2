@@ -40,3 +40,17 @@ export function waLink(
   const base = `https://wa.me/40${n}`
   return mesaj ? `${base}?text=${encodeURIComponent(mesaj)}` : base
 }
+
+// Link de invitație către grupul de WhatsApp al unei grupe (cursuri.link_whatsapp).
+// Câmpul e text liber completat din formularul de curs, deci refuzăm orice nu e
+// http(s) — altfel un `javascript:` scris în DB ar ajunge în href.
+export function waGroupLink(raw: string | null | undefined): string | null {
+  const s = raw?.trim()
+  if (!s) return null
+  try {
+    const u = new URL(s)
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.toString() : null
+  } catch {
+    return null
+  }
+}

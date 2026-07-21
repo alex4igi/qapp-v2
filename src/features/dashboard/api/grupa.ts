@@ -60,6 +60,7 @@ export type GrupaDashboard = {
   teacher: string | null
   sala: string | null
   facultativ: boolean
+  linkWhatsapp: string | null
   roster: GrupaRosterRow[]
   fosti: GrupaFostRow[]
   counters: {
@@ -85,7 +86,7 @@ export async function getGrupaDashboard(params: {
   const { data: curs, error: cursErr } = await supabase
     .from('cursuri')
     .select(
-      'id, numele, ora, facultativ, sala:sali(nume), teacher:teacheri!fk_cursuri_teacher(nume, prenume)',
+      'id, numele, ora, facultativ, link_whatsapp, sala:sali(nume), teacher:teacheri!fk_cursuri_teacher(nume, prenume)',
     )
     .eq('id', params.cursId)
     .single()
@@ -95,6 +96,7 @@ export async function getGrupaDashboard(params: {
     numele: string
     ora: string | null
     facultativ: boolean
+    link_whatsapp: string | null
     sala: { nume: string } | null
     teacher: { nume: string; prenume: string | null } | null
   }
@@ -192,6 +194,7 @@ export async function getGrupaDashboard(params: {
     ora: cursRow.ora,
     sala: cursRow.sala?.nume ?? null,
     facultativ: Boolean(cursRow.facultativ),
+    linkWhatsapp: cursRow.link_whatsapp,
     teacher: cursRow.teacher
       ? `${cursRow.teacher.nume} ${cursRow.teacher.prenume ?? ''}`.trim()
       : null,

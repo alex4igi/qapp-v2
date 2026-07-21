@@ -16,20 +16,30 @@ import { previewAnuntClient, sendAnuntClient } from './api'
 type Props = {
   open: boolean
   onClose: () => void
+  // Deschis din fișa unei grupe: grupa e fixă, fără selector.
+  cursId?: string
+  cursNume?: string
 }
 
 // Mesaj de la instructor/manager către membrii unei grupe. Ajunge în 🔔 din
 // portalul membrilor (canalul 'client'). One-way: fără răspuns.
-export function ComposeMesajGrupaModal({ open, onClose }: Props) {
+export function ComposeMesajGrupaModal({
+  open,
+  onClose,
+  cursId: fixedCursId,
+  cursNume,
+}: Props) {
   const queryClient = useQueryClient()
 
-  const [cursId, setCursId] = useState('')
+  const [pickedCursId, setPickedCursId] = useState('')
   const [titlu, setTitlu] = useState('')
   const [continut, setContinut] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState<number | null>(null)
 
-  const cursuriQ = useCursuriOptions({ enabled: open })
+  const cursId = fixedCursId ?? pickedCursId
+
+  const cursuriQ = useCursuriOptions({ enabled: open && !fixedCursId })
   const cursuri = cursuriQ.data ?? []
 
   const previewQ = useQuery({
@@ -39,7 +49,7 @@ export function ComposeMesajGrupaModal({ open, onClose }: Props) {
   })
 
   const reset = () => {
-    setCursId('')
+    setPickedCursId('')
     setTitlu('')
     setContinut('')
     setError(null)
@@ -135,19 +145,27 @@ export function ComposeMesajGrupaModal({ open, onClose }: Props) {
           răspunde — e doar pentru anunțuri (ex. „sâmbătă venim în tricou negru").
         </p>
 
-        <Field label="Grupă" htmlFor="curs" required>
-          {cursuriQ.isLoading ? (
-            <Spinner />
-          ) : (
-            <Select
-              id="curs"
-              options={cursuri}
-              placeholder="Alege grupa…"
-              value={cursId}
-              onChange={(e) => setCursId(e.target.value)}
-            />
-          )}
-        </Field>
+        {fixedCursId ? (
+          <Field label="Grupă">
+            <div className="rounded-xl bg-quasar-gray-light px-3 py-2 text-sm font-medium text-quasar-black">
+              {cursNume ?? 'Grupa curentă'}
+            </div>
+          </Field>
+        ) : (
+          <Field label="Grupă" htmlFor="curs" required>
+            {cursuriQ.isLoading ? (
+              <Spinner />
+            ) : (
+              <Select
+                id="curs"
+                options={cursuri}
+                placeholder="Alege grupa…"
+                value={cursId}
+                onChange={(e) => setPickedCursId(e.target.value)}
+              />
+            )}
+          </Field>
+        )}
 
         <Field label="Titlu" htmlFor="titlu" required>
           <TextInput

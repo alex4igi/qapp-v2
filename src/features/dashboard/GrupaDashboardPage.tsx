@@ -1,14 +1,17 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Spinner, Tabs, Badge, type BadgeTone } from '@/components/ui'
+import { Button, Spinner, Tabs, Badge, WhatsAppIcon, type BadgeTone } from '@/components/ui'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
+import { useAuth } from '@/hooks/useAuth'
+import { canMesajGrupa, isFrontDeskOrHigher } from '@/lib/rolesMatrix'
+import { ComposeMesajGrupaModal } from '@/features/announcements/ComposeMesajGrupaModal'
 import { upsertPrezenta } from '@/features/prezente/api'
 import { updateLeadStatus } from '@/features/leads/api'
 import { formatRON, formatDate, formatMonth } from '@/lib/format'
-import { waLink } from '@/lib/phone'
+import { waLink, waGroupLink } from '@/lib/phone'
 import { listSezoane } from '@/features/plati/api'
 import { getCursDatorii } from '@/features/cursuri/api'
 import { RestantieriTab } from '@/features/cursuri/pages/CursProfilePage/tabs/RestantieriTab'
@@ -66,12 +69,14 @@ const MCARD: Record<RosterStatus, McardStyle> = {
 
 function ClientCard({
   row,
+  canPay,
   onPay,
   onTogglePrezenta,
   onReactivate,
   togglePending,
 }: {
   row: GrupaRosterRow
+  canPay: boolean
   onPay: (clientId: string) => void
   onTogglePrezenta: (row: GrupaRosterRow) => void
   onReactivate: (row: GrupaRosterRow) => void
@@ -154,12 +159,17 @@ function ClientCard({
       {showPay && (
         <button
           type="button"
+          disabled={!canPay}
           onClick={(e) => {
             e.stopPropagation()
             onPay(row.refId)
           }}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow font-display text-[13px] font-extrabold text-ink"
-          title={`Plată restanță: ${formatRON(row.restanta)}`}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow font-display text-[13px] font-extrabold text-ink disabled:cursor-not-allowed disabled:opacity-45"
+          title={
+            canPay
+              ? `Plată restanță: ${formatRON(row.restanta)}`
+              : `Restanță ${formatRON(row.restanta)} — încasările le face recepția`
+          }
           aria-label={`Restanță ${formatRON(row.restanta)}`}
         >
           $
@@ -203,11 +213,13 @@ function ClientCard({
 /* ---------- roster: variantă Listă ---------- */
 function RosterList({
   rows,
+  canPay,
   onMemberClick,
   onPay,
   navigate,
 }: {
   rows: GrupaRosterRow[]
+  canPay: boolean
   onMemberClick: (row: GrupaRosterRow) => void
   onPay: (clientId: string) => void
   navigate: (to: string) => void
@@ -246,12 +258,13 @@ function RosterList({
             {!isLead && r.status !== 'inactiv' && r.restanta > 0 && (
               <button
                 type="button"
+                disabled={!canPay}
                 onClick={(e) => {
                   e.stopPropagation()
                   onPay(r.refId)
                 }}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-danger-bg text-sm font-bold text-danger ring-1 ring-danger/30 hover:bg-quasar-yellow hover:text-ink"
-                title="Plată restanță"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-danger-bg text-sm font-bold text-danger ring-1 ring-danger/30 hover:bg-quasar-yellow hover:text-ink disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-danger-bg disabled:hover:text-danger"
+                title={canPay ? 'Plată restanță' : 'Încasările le face recepția'}
               >
                 $
               </button>
@@ -344,10 +357,12 @@ function RosterColumns({
 /* ---------- foști cursanți: listă de recuperare ---------- */
 function FostiSection({
   rows,
+  canEnroll,
   onReinrol,
   navigate,
 }: {
   rows: GrupaFostRow[]
+  canEnroll: boolean
   onReinrol: (clientId: string) => void
   navigate: (to: string) => void
 }) {
@@ -403,13 +418,15 @@ function FostiSection({
                         : '—'}
                   </span>
                 </span>
-                <Button
-                  variant="secondary"
-                  onClick={() => onReinrol(f.clientId)}
-                  title="Înrolează din nou pe această grupă"
-                >
-                  Reînrolează
-                </Button>
+                {canEnroll && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => onReinrol(f.clientId)}
+                    title="Înrolează din nou pe această grupă"
+                  >
+                    Reînrolează
+                  </Button>
+                )}
                 <button
                   type="button"
                   onClick={() => navigate(`/clienti/${f.clientId}`)}
@@ -449,8 +466,15 @@ export function GrupaDashboardPage() {
   const { cursId } = useParams<{ cursId: string }>()
   const navigate = useNavigate()
   const { date } = useWorkingDate()
+  const { role } = useAuth()
+  // Înrolarea și încasarea sunt responsabilitatea front_desk/manager — teacherul
+  // nu vede acțiunile de înrolare și are plata dezactivată (RLS pe
+  // enrollments/incasari oricum îl blochează).
+  const canDeskActions = isFrontDeskOrHigher(role)
+  const canSendMesajGrupa = canMesajGrupa(role)
   const queryClient = useQueryClient()
   const [payClientId, setPayClientId] = useState<string | null>(null)
+  const [mesajOpen, setMesajOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   // Pre-selectează cursantul în modalul de înrolare (reînrolare din lista „foști").
   const [addClientId, setAddClientId] = useState<string | null>(null)
@@ -630,6 +654,23 @@ export function GrupaDashboardPage() {
           ‹ Program
         </Button>
         <div className="flex-1" />
+        {canSendMesajGrupa && (
+          <Button variant="secondary" onClick={() => setMesajOpen(true)}>
+            💬 Mesaj grupă
+          </Button>
+        )}
+        {waGroupLink(data.linkWhatsapp) && (
+          <a
+            href={waGroupLink(data.linkWhatsapp)!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100"
+            title="Deschide grupul de WhatsApp al grupei"
+          >
+            <WhatsAppIcon />
+            Grup WhatsApp
+          </a>
+        )}
         <Button variant="secondary" onClick={() => navigate(`/cursuri/${cursId}`)}>
           Editează grupa
         </Button>
@@ -709,6 +750,7 @@ export function GrupaDashboardPage() {
           ) : rosterView === 'list' ? (
             <RosterList
               rows={orderedRoster}
+              canPay={canDeskActions}
               onMemberClick={handleMemberClick}
               onPay={(id) => setPayClientId(id)}
               navigate={(to) => navigate(to)}
@@ -721,6 +763,7 @@ export function GrupaDashboardPage() {
                 <ClientCard
                   key={r.rowId}
                   row={r}
+                  canPay={canDeskActions}
                   onPay={(id) => setPayClientId(id)}
                   onTogglePrezenta={(row) => toggleMut.mutate(row)}
                   onReactivate={(row) => {
@@ -736,18 +779,21 @@ export function GrupaDashboardPage() {
                   }
                 />
               ))}
-              <button
-                type="button"
-                onClick={() => setAddOpen(true)}
-                className="flex items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-dashed border-line px-[13px] py-[11px] text-sm font-semibold text-muted transition-colors hover:border-quasar-yellow hover:text-ink"
-              >
-                + Adaugă cursant
-              </button>
+              {canDeskActions && (
+                <button
+                  type="button"
+                  onClick={() => setAddOpen(true)}
+                  className="flex items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-dashed border-line px-[13px] py-[11px] text-sm font-semibold text-muted transition-colors hover:border-quasar-yellow hover:text-ink"
+                >
+                  + Adaugă cursant
+                </button>
+              )}
             </div>
           )}
 
           <FostiSection
             rows={data.fosti}
+            canEnroll={canDeskActions}
             onReinrol={(clientId) => {
               setAddClientId(clientId)
               setAddOpen(true)
@@ -762,6 +808,7 @@ export function GrupaDashboardPage() {
           <RestantieriTab
             loading={restantieriQ.isLoading}
             rows={restantieriQ.data ?? []}
+            canPay={canDeskActions}
             onRowClick={(cid) => navigate(`/clienti/${cid}`)}
             onPayClick={(cid) => setPayClientId(cid)}
           />
@@ -773,6 +820,14 @@ export function GrupaDashboardPage() {
           open
           defaultClientId={payClientId}
           onClose={() => setPayClientId(null)}
+        />
+      )}
+      {mesajOpen && (
+        <ComposeMesajGrupaModal
+          open
+          cursId={data.cursId}
+          cursNume={data.cursNume}
+          onClose={() => setMesajOpen(false)}
         />
       )}
       {addOpen && (

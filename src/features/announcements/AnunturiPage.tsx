@@ -10,6 +10,7 @@ import {
   type Column,
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { canMesajGrupa } from '@/lib/rolesMatrix'
 import type { Anunt } from '@/types/db'
 import { ComposeAnuntModal } from './ComposeAnuntModal'
 import { ComposeMesajGrupaModal } from './ComposeMesajGrupaModal'
@@ -36,13 +37,7 @@ export function AnunturiPage() {
   const { user, role } = useAuth()
   const uid = user?.id ?? ''
 
-  // Cine poate trimite mesaje către membri (portal): instructor + conducere.
-  // Recepția (front_desk) nu — la fel ca gardul din send_anunt_client.
-  const canMesajGrupa =
-    role === 'teacher' ||
-    role === 'manager' ||
-    role === 'admin' ||
-    role === 'owner'
+  const canSendMesajGrupa = canMesajGrupa(role)
 
   const [tab, setTab] = useState<'primite' | 'trimise'>('primite')
   const [composeOpen, setComposeOpen] = useState(false)
@@ -153,7 +148,7 @@ export function AnunturiPage() {
         subtitle="Mesaje către echipă, livrate în notificări"
         actions={
           <div className="flex gap-2">
-            {canMesajGrupa && (
+            {canSendMesajGrupa && (
               <Button
                 variant="secondary"
                 onClick={() => setMesajGrupaOpen(true)}
