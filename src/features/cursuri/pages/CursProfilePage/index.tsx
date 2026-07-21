@@ -24,6 +24,7 @@ import {
   getCursClientiFaraDocumente,
   getCursDatorii,
   getCursFaraPrezenteRecente,
+  getCursTeacheri,
   activateReinscriere,
   toggleCursArchived,
   deleteCurs,
@@ -164,6 +165,11 @@ export function CursProfilePage() {
     queryKey: ['lookup', 'locatii'],
     queryFn: locatiiOptions,
     enabled: tab === 'detalii',
+  })
+  const cursTeacheri = useQuery({
+    queryKey: ['curs', id, 'teacheri'],
+    queryFn: () => getCursTeacheri(id!),
+    enabled: Boolean(id) && tab === 'detalii',
   })
 
   if (cursQuery.isLoading) return <Spinner />
@@ -335,6 +341,12 @@ export function CursProfilePage() {
             <DetaliiTab
               curs={curs}
               teacherLabel={labelOf(teacheri.data, curs.teacher)}
+              coInstructorLabel={labelOf(
+                teacheri.data,
+                cursTeacheri.data?.find(
+                  (t) => t.rol === 'asistent' && t.teacher_id !== curs.teacher,
+                )?.teacher_id ?? null,
+              )}
               salaLabel={labelOf(sali.data, curs.sala)}
               sezonLabel={labelOf(sezoane.data, curs.sezon)}
               locatieLabel={labelOf(locatii.data, curs.locatie)}

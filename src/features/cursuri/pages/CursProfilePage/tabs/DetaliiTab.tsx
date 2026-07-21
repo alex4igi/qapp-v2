@@ -24,6 +24,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 type Props = {
   curs: Curs
   teacherLabel: string
+  coInstructorLabel: string
   salaLabel: string
   sezonLabel: string
   locatieLabel: string
@@ -32,6 +33,7 @@ type Props = {
 export function DetaliiTab({
   curs,
   teacherLabel,
+  coInstructorLabel,
   salaLabel,
   sezonLabel,
   locatieLabel,
@@ -57,6 +59,9 @@ export function DetaliiTab({
         <DetailRow label="Nivel" value={curs.nivelul ?? ''} />
         <DetailRow label="Grupă vârstă" value={curs.varsta ?? ''} />
         <DetailRow label="Teacher" value={teacherLabel} />
+        {coInstructorLabel && (
+          <DetailRow label="Co-instructor" value={coInstructorLabel} />
+        )}
         <DetailRow label="Sezon" value={sezonLabel} />
         <DetailRow label="Locație" value={locatieLabel} />
         <DetailRow label="Sală" value={salaLabel} />
