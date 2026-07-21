@@ -27,9 +27,11 @@ import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import {
   LeadFilters,
   applyLeadFilters,
+  presetOf,
+  statusSetForPreset,
   EMPTY_LEAD_FILTERS,
-  STATUSURI_DE_SUNAT,
   type LeadFiltersValue,
+  type StatusPreset,
 } from './LeadFilters'
 import { LeadListView, ListaContoare } from './LeadListView'
 import { NurtureMatchBanner } from './NurtureMatchBanner'
@@ -55,12 +57,33 @@ const PLIATE_IMPLICIT: StatusLead[] = ['convertit', 'pierdut']
 export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
+  // Presetul de status e în URL, ca tabul „Nurture" să fie doar o scurtătură
+  // către ?vedere=lista&status=nurture — un singur cod, două uși de intrare.
+  const presetParam = searchParams.get('status')
   const [filters, setFilters] = useState<LeadFiltersValue>(() =>
     // Lista pornește pe cine chiar așteaptă un telefon, nu pe tot istoricul.
     mode === 'lista'
-      ? { ...EMPTY_LEAD_FILTERS, statusuri: [...STATUSURI_DE_SUNAT] }
+      ? { ...EMPTY_LEAD_FILTERS, statusuri: statusSetForPreset(presetParam) }
       : EMPTY_LEAD_FILTERS,
   )
+
+  // URL → filtre. Rulează și la navigarea între taburi, fiindcă LeadsPage
+  // schimbă doar parametrii: componenta nu se remontează.
+  useEffect(() => {
+    if (mode !== 'lista') return
+    const dorit = statusSetForPreset(presetParam)
+    setFilters((f) =>
+      presetOf(f.statusuri) === presetOf(dorit) ? f : { ...f, statusuri: dorit },
+    )
+  }, [presetParam, mode])
+
+  function setPreset(p: StatusPreset) {
+    const params = new URLSearchParams(searchParams)
+    if (p === 'custom') return setFilters((f) => ({ ...f }))
+    if (p === 'de_sunat') params.delete('status')
+    else params.set('status', p)
+    setSearchParams(params, { replace: true })
+  }
   const [pliate, setPliate] = useState<StatusLead[]>(PLIATE_IMPLICIT)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
@@ -286,6 +309,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
         value={filters}
         campanii={campaniiQuery.data ?? []}
         onChange={setFilters}
+        onPresetChange={setPreset}
         variant={mode}
         trailing={
           mode === 'lista' ? (

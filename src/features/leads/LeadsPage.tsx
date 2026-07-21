@@ -8,11 +8,16 @@ import { LeadReports } from './LeadReports'
 
 // Un singur rând de navigare. „Listă" și „Kanban" sunt două randări ale
 // aceluiași set, nu domenii diferite — de aceea stau lângă Rapoarte, nu sub el.
-// Nurture NU mai e tab: e o presetare de status în Listă, cu aceleași coloane.
+//
+// „Nurture" NU e o vedere separată (a fost, și dubla Lista): e o scurtătură
+// către Listă cu presetul de status pe Nurture. Rămâne totuși tab, fiindcă era
+// un punct de intrare intrat în reflex — redundanța de cod și cea de navigare
+// sunt lucruri diferite.
 const VIEWS = [
   { key: 'lista', label: '☰ Listă' },
   { key: 'kanban', label: '⬛ Kanban' },
   { key: 'rapoarte', label: '📊 Rapoarte' },
+  { key: 'nurture', label: '♻️ Nurture' },
 ] as const
 
 type View = (typeof VIEWS)[number]['key']
@@ -23,15 +28,24 @@ export function LeadsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Vederea stă în URL ca lista de sunat să poată fi pusă la favorite.
-  const param = searchParams.get('vedere')
-  const view: View = VIEWS.some((v) => v.key === param)
-    ? (param as View)
+  const vedere = searchParams.get('vedere')
+  const status = searchParams.get('status')
+  const view: View =
+    vedere === 'rapoarte' ? 'rapoarte'
+    : vedere === 'kanban' ? 'kanban'
+    : status === 'nurture' ? 'nurture'
     : 'lista'
 
   function setView(next: View) {
     const p = new URLSearchParams(searchParams)
-    if (next === 'lista') p.delete('vedere')
-    else p.set('vedere', next)
+    if (next === 'nurture') {
+      p.delete('vedere')
+      p.set('status', 'nurture')
+    } else {
+      p.delete('status')
+      if (next === 'lista') p.delete('vedere')
+      else p.set('vedere', next)
+    }
     setSearchParams(p, { replace: true })
   }
 
@@ -72,7 +86,7 @@ export function LeadsPage() {
       {view === 'rapoarte' ? (
         <LeadReports />
       ) : (
-        <KanbanBoard mode={view} />
+        <KanbanBoard mode={view === 'kanban' ? 'kanban' : 'lista'} />
       )}
       {addOpen && <LeadModal open onClose={() => setAddOpen(false)} />}
       {importOpen && (

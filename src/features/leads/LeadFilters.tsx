@@ -56,7 +56,7 @@ const CU_NURTURE = ALL_STATUS_COLUMNS.map((c) => c.status)
 
 // Presetările înlocuiesc rândul de 9 chips: owner-ul gândește în „pe cine sun",
 // nu în combinații de statusuri. „Personalizat" descoperă chips-urile la nevoie.
-type StatusPreset = 'de_sunat' | 'pipeline' | 'nurture' | 'custom'
+export type StatusPreset = 'de_sunat' | 'pipeline' | 'nurture' | 'custom'
 
 const STATUS_PRESETS: { value: StatusPreset; label: string; set: string[] }[] = [
   { value: 'de_sunat', label: 'De sunat', set: STATUSURI_DE_SUNAT },
@@ -64,7 +64,13 @@ const STATUS_PRESETS: { value: StatusPreset; label: string; set: string[] }[] = 
   { value: 'nurture', label: 'Cu Nurture', set: CU_NURTURE },
 ]
 
-function presetOf(statusuri: string[]): StatusPreset {
+export function statusSetForPreset(p: string | null): string[] {
+  return (
+    STATUS_PRESETS.find((x) => x.value === p)?.set ?? STATUSURI_DE_SUNAT
+  ).slice()
+}
+
+export function presetOf(statusuri: string[]): StatusPreset {
   const eq = (a: string[]) =>
     a.length === statusuri.length && a.every((s) => statusuri.includes(s))
   for (const p of STATUS_PRESETS) if (eq(p.set)) return p.value
@@ -159,6 +165,9 @@ type Props = {
   value: LeadFiltersValue
   campanii: SelectOption[]
   onChange: (next: LeadFiltersValue) => void
+  // Presetul de status trăiește în URL (tabul „Nurture" e o scurtătură către el),
+  // deci schimbarea lui se raportează în sus, nu se scrie direct în `statusuri`.
+  onPresetChange?: (preset: StatusPreset) => void
   variant?: 'kanban' | 'lista'
   // Conținut aliniat la dreapta pe ACELAȘI rând (contoare, export) — ca vederea
   // Listă să pornească cu o singură bară, nu cu trei.
@@ -169,6 +178,7 @@ export function LeadFilters({
   value,
   campanii,
   onChange,
+  onPresetChange,
   variant = 'kanban',
   trailing,
 }: Props) {
@@ -222,8 +232,9 @@ export function LeadFilters({
             ]}
             value={preset}
             onChange={(e) => {
-              const p = STATUS_PRESETS.find((x) => x.value === e.target.value)
-              if (p) set('statusuri', [...p.set])
+              const p = e.target.value as StatusPreset
+              if (onPresetChange) onPresetChange(p)
+              else set('statusuri', statusSetForPreset(p))
             }}
           />
         </div>
