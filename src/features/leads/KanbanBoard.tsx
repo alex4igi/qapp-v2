@@ -31,7 +31,7 @@ import {
   STATUSURI_DE_SUNAT,
   type LeadFiltersValue,
 } from './LeadFilters'
-import { LeadListView } from './LeadListView'
+import { LeadListView, ListaContoare } from './LeadListView'
 import { NurtureMatchBanner } from './NurtureMatchBanner'
 import { TodayPanel } from './TodayPanel'
 import {
@@ -48,13 +48,20 @@ import {
 
 type PipelineMode = 'kanban' | 'lista'
 
-export function KanbanBoard() {
+// Coloanele terminale sunt arhive, nu lucru zilnic — pliate implicit, ca cele
+// șase coloane lucrate să încapă fără scroll orizontal.
+const PLIATE_IMPLICIT: StatusLead[] = ['convertit', 'pierdut']
+
+export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [filters, setFilters] = useState<LeadFiltersValue>(EMPTY_LEAD_FILTERS)
-  // Modul e în URL (?mod=lista) ca lista de sunat să poată fi pusă la favorite.
-  const mode: PipelineMode =
-    searchParams.get('mod') === 'lista' ? 'lista' : 'kanban'
+  const [filters, setFilters] = useState<LeadFiltersValue>(() =>
+    // Lista pornește pe cine chiar așteaptă un telefon, nu pe tot istoricul.
+    mode === 'lista'
+      ? { ...EMPTY_LEAD_FILTERS, statusuri: [...STATUSURI_DE_SUNAT] }
+      : EMPTY_LEAD_FILTERS,
+  )
+  const [pliate, setPliate] = useState<StatusLead[]>(PLIATE_IMPLICIT)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
   const [addingToStatus, setAddingToStatus] = useState<string | null>(null)
@@ -111,16 +118,6 @@ export function KanbanBoard() {
     enabled: mode === 'lista',
   })
 
-  function setMode(next: PipelineMode) {
-    const params = new URLSearchParams(searchParams)
-    if (next === 'lista') params.set('mod', 'lista')
-    else params.delete('mod')
-    setSearchParams(params, { replace: true })
-    // Lista pornește pe cine chiar așteaptă un telefon, nu pe tot istoricul.
-    if (next === 'lista' && filters.statusuri.length === 0) {
-      setFilters((f) => ({ ...f, statusuri: [...STATUSURI_DE_SUNAT] }))
-    }
-  }
 
   const campaniiById = useMemo(() => {
     const map = new Map<string, string>()
@@ -181,9 +178,16 @@ export function KanbanBoard() {
     [leads, nurtureQuery.data, vreaNurture],
   )
 
+  // În Kanban filtrul de status se ignoră: coloana ESTE statusul, deci l-ar
+  // aplica doar golind coloane. Altfel presetul „De sunat" al Listei ar rămâne
+  // activ la comutare (componenta nu se remontează) și 4 coloane ar părea goale.
   const filtered = useMemo(
-    () => applyLeadFilters(baseLeads, filters),
-    [baseLeads, filters],
+    () =>
+      applyLeadFilters(
+        baseLeads,
+        mode === 'kanban' ? { ...filters, statusuri: [] } : filters,
+      ),
+    [baseLeads, filters, mode],
   )
 
   const statusMutation = useMutation({
@@ -278,52 +282,43 @@ export function KanbanBoard() {
 
   return (
     <>
-      <div className="mb-4 space-y-2">
-        <div className="flex rounded-lg border border-quasar-gray-light p-0.5 w-fit">
-          {([
-            { key: 'kanban', label: '⬛ Kanban' },
-            { key: 'lista', label: '☰ Listă' },
-          ] as const).map((m) => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => setMode(m.key)}
-              className={`rounded-md px-3 py-1 text-sm transition-colors ${
-                mode === m.key
-                  ? 'bg-quasar-yellow font-medium text-quasar-black'
-                  : 'text-quasar-gray hover:text-quasar-black'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-        <LeadFilters
-          value={filters}
-          campanii={campaniiQuery.data ?? []}
-          onChange={setFilters}
-          variant={mode === 'lista' ? 'lista' : 'kanban'}
-        />
-      </div>
+      <LeadFilters
+        value={filters}
+        campanii={campaniiQuery.data ?? []}
+        onChange={setFilters}
+        variant={mode}
+        trailing={
+          mode === 'lista' ? (
+            <ListaContoare
+              leads={filtered}
+              contactatiAzi={contactatiAzi}
+              campaniiById={campaniiById}
+              prezentaByLead={prezenteQuery.data}
+              filters={filters}
+              onFiltersChange={setFilters}
+            />
+          ) : null
+        }
+      />
 
       <NurtureMatchBanner search={filters.search} />
 
-      {/* Pe lista nefiltrată — „de lucrat azi" nu depinde de filtrele kanban. */}
-      <TodayPanel
-        leads={leads}
-        onLeadClick={setEditingLead}
-        onLogContact={setLogContactLead}
-      />
+      {/* Doar în Kanban: acolo e singura listă de lucru. În Listă ar duplica
+          sortarea după neglijență + contoarele din bara de sus. */}
+      {mode === 'kanban' && (
+        <TodayPanel
+          leads={leads}
+          onLeadClick={setEditingLead}
+          onLogContact={setLogContactLead}
+        />
+      )}
 
       {mode === 'lista' ? (
         <LeadListView
           leads={filtered}
-          totalLeads={baseLeads.length}
           campaniiById={campaniiById}
           prezentaByLead={prezenteQuery.data}
           contactatiAzi={contactatiAzi}
-          filters={filters}
-          onFiltersChange={setFilters}
           onLeadClick={setEditingLead}
           onLogContact={setLogContactLead}
         />
@@ -343,6 +338,14 @@ export function KanbanBoard() {
               column={column}
               leads={filtered.filter((l) => l.status === column.status)}
               campaniiById={campaniiById}
+              collapsed={pliate.includes(column.status)}
+              onToggleCollapse={() =>
+                setPliate((p) =>
+                  p.includes(column.status)
+                    ? p.filter((s) => s !== column.status)
+                    : [...p, column.status],
+                )
+              }
               onLeadClick={(lead) => setEditingLead(lead)}
               onAddLead={(status) => setAddingToStatus(status)}
               onLogContact={(lead) => setLogContactLead(lead)}

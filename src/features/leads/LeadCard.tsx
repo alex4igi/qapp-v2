@@ -3,9 +3,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { Link } from 'react-router-dom'
 import type { Lead } from '@/types/db'
 import { waLink } from '@/lib/phone'
-import { InteresBadge, GrupaBadge, SursaBadge, SubStatusBadge } from './Badges'
-import { isToday, waLeadMessage } from './constants'
-import { timpRelativ } from './LeadHistory'
+import { InteresBadge, SubStatusBadge } from './Badges'
+import { GRUPA_LABELS, isToday, waLeadMessage } from './constants'
 
 type Props = {
   lead: Lead
@@ -67,6 +66,12 @@ export function LeadCard({
     [lead.prenume, lead.nume].filter(Boolean).join(' ') || lead.nume
   const age = calcAge(lead.data_nasterii)
   const sursaNume = lead.sursa ? (campaniiById.get(lead.sursa) ?? null) : null
+  // Colapsate sub „+N", cu detaliul în tooltip.
+  const secundare = [
+    lead.grupa_varsta ? GRUPA_LABELS[lead.grupa_varsta] : null,
+    sursaNume,
+    lead.locatia ? `📍 ${lead.locatia}` : null,
+  ].filter(Boolean) as string[]
   // Client creat (din conversie) dar înrolarea nu e finalizată → lead-ul nu e
   // încă „convertit". Oferim reluarea direct de pe card.
   const needsEnrollment =
@@ -212,23 +217,27 @@ export function LeadCard({
               ⭐ DEJA CLIENT
             </span>
           ))}
-        {lead.interes && <InteresBadge interes={lead.interes} />}
-        {lead.grupa_varsta && <GrupaBadge grupa={lead.grupa_varsta} />}
-        {sursaNume && <SursaBadge sursa={sursaNume} />}
+        {/* Doar semnalele care schimbă decizia la telefon. Restul (sursă, grupă,
+            locație) sunt în tooltip și în fișă — cardul trebuie scanat, nu citit. */}
         {lead.sub_status && <SubStatusBadge subStatus={lead.sub_status} />}
         {(lead.nr_neprezentari ?? 0) >= 1 && (
-          <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
-            ❌ {lead.nr_neprezentari}{' '}
-            {lead.nr_neprezentari === 1 ? 'neprezentare' : 'neprezentări'}
+          <span
+            className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700"
+            title={`${lead.nr_neprezentari} neprezentări`}
+          >
+            ❌ {lead.nr_neprezentari}
+          </span>
+        )}
+        {lead.interes && <InteresBadge interes={lead.interes} />}
+        {secundare.length > 0 && (
+          <span
+            className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600"
+            title={secundare.join(' · ')}
+          >
+            +{secundare.length}
           </span>
         )}
       </div>
-
-      {lead.locatia && (
-        <div className="mt-2 flex items-center gap-1" {...listeners}>
-          <span className="text-xs text-quasar-gray">📍 {lead.locatia}</span>
-        </div>
-      )}
 
       {isContactatSubStatus
         ? lead.data_callback_dorit && (
@@ -281,13 +290,9 @@ export function LeadCard({
         </button>
       )}
 
-      <p
-        className="mt-1.5 text-[10px] text-quasar-gray"
-        suppressHydrationWarning
-        {...listeners}
-      >
-        Ultima acțiune: {timpRelativ(lead.updated)}
-      </p>
+      {/* „Ultima acțiune" a fost scoasă de pe card: măsura orice update al
+          rândului, nu un contact real, iar vederea Listă are coloana „Ultim
+          contact" care chiar înseamnă ceva. Rămâne în tooltipul numelui. */}
     </div>
   )
 }

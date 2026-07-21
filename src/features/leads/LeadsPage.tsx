@@ -1,15 +1,18 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { PageHeader, Button } from '@/components/ui'
 import { LeadModal } from './LeadModal'
 import { LeadImportModal } from './LeadImportModal'
 import { KanbanBoard } from './KanbanBoard'
 import { LeadReports } from './LeadReports'
-import { NurtureView } from './NurtureView'
 
+// Un singur rând de navigare. „Listă" și „Kanban" sunt două randări ale
+// aceluiași set, nu domenii diferite — de aceea stau lângă Rapoarte, nu sub el.
+// Nurture NU mai e tab: e o presetare de status în Listă, cu aceleași coloane.
 const VIEWS = [
-  { key: 'pipeline', label: 'Pipeline' },
-  { key: 'rapoarte', label: 'Rapoarte' },
-  { key: 'nurture', label: 'Nurture' },
+  { key: 'lista', label: '☰ Listă' },
+  { key: 'kanban', label: '⬛ Kanban' },
+  { key: 'rapoarte', label: '📊 Rapoarte' },
 ] as const
 
 type View = (typeof VIEWS)[number]['key']
@@ -17,7 +20,20 @@ type View = (typeof VIEWS)[number]['key']
 export function LeadsPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [view, setView] = useState<View>('pipeline')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Vederea stă în URL ca lista de sunat să poată fi pusă la favorite.
+  const param = searchParams.get('vedere')
+  const view: View = VIEWS.some((v) => v.key === param)
+    ? (param as View)
+    : 'lista'
+
+  function setView(next: View) {
+    const p = new URLSearchParams(searchParams)
+    if (next === 'lista') p.delete('vedere')
+    else p.set('vedere', next)
+    setSearchParams(p, { replace: true })
+  }
 
   return (
     <div>
@@ -42,7 +58,7 @@ export function LeadsPage() {
                 </button>
               ))}
             </div>
-            {view === 'pipeline' && (
+            {view !== 'rapoarte' && (
               <>
                 <Button variant="secondary" onClick={() => setImportOpen(true)}>
                   Import CSV
@@ -53,9 +69,11 @@ export function LeadsPage() {
           </div>
         }
       />
-      {view === 'pipeline' && <KanbanBoard />}
-      {view === 'rapoarte' && <LeadReports />}
-      {view === 'nurture' && <NurtureView />}
+      {view === 'rapoarte' ? (
+        <LeadReports />
+      ) : (
+        <KanbanBoard mode={view} />
+      )}
       {addOpen && <LeadModal open onClose={() => setAddOpen(false)} />}
       {importOpen && (
         <LeadImportModal open onClose={() => setImportOpen(false)} />

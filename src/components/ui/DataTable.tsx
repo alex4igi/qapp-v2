@@ -24,6 +24,10 @@ type Props<T> = {
   // Evidențiere per rând (ex: „sunat azi"); nu se poate exprima prin
   // Column.className, care nu vede rândul.
   rowClassName?: (row: T) => string | undefined
+  // Sortarea activă la prima randare. Preferă asta în locul pre-sortării
+  // rândurilor de către apelant: acolo tabelul nu știe după ce e ordonat, deci
+  // niciun antet nu se aprinde și criteriul devine invizibil pentru utilizator.
+  defaultSort?: { idx: number; dir?: SortDir }
 }
 
 function compareValues(
@@ -48,9 +52,10 @@ export function DataTable<T>({
   emptyMessage = 'Niciun rezultat.',
   maxRows,
   rowClassName,
+  defaultSort,
 }: Props<T>) {
-  const [sortIdx, setSortIdx] = useState<number | null>(null)
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [sortIdx, setSortIdx] = useState<number | null>(defaultSort?.idx ?? null)
+  const [sortDir, setSortDir] = useState<SortDir>(defaultSort?.dir ?? 'asc')
 
   function toggleSort(idx: number) {
     if (sortIdx === idx) {

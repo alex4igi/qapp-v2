@@ -27,8 +27,17 @@ export type UltimContactMeta = {
   // 0 = niciodată contactat. Deliberat NUMĂR, nu null: DataTable.compareValues
   // trimite valorile goale la coadă indiferent de direcție, deci un null ar
   // îngropa exact rândurile cele mai urgente la finalul tabelului.
+  // Folosit de etichetă și de filtrul „Niciodată contactat" — NU de sortare.
   ts: number
+  // Cheia de ordonare: ultimul contact sau, dacă nu există, data intrării.
+  // `ts` singur nu departajează necontactații (toți 0), iar ei sunt majoritatea
+  // — lista ar părea neordonată, cu cel mai vechi lead la coada blocului.
+  // Aceeași definiție ca „ultima activitate" din TodayPanel, ca vederile să nu
+  // spună două adevăruri despre același lead.
+  activityTs: number
   label: string
+  // Pentru necontactați: de când așteaptă. Face ordinea lizibilă în celulă.
+  intrat: string | null
   tone: UltimContactTone
   nr: number
 }
@@ -48,13 +57,27 @@ export function numeLead(l: Lead): string {
 export function ultimContactMeta(l: Lead, now = Date.now()): UltimContactMeta {
   const nr = l.nr_contactari ?? 0
   if (!l.ultima_contactare_la) {
-    return { ts: 0, label: 'Niciodată', tone: 'niciodata', nr }
+    return {
+      ts: 0,
+      activityTs: new Date(l.created).getTime(),
+      label: 'Niciodată',
+      intrat: timpRelativ(l.created),
+      tone: 'niciodata',
+      nr,
+    }
   }
   const ts = new Date(l.ultima_contactare_la).getTime()
   const zile = (now - ts) / DAY_MS
   const tone: UltimContactTone =
     zile > INACTIVE_DAYS ? 'inactiv' : zile > FOLLOWUP_DAYS ? 'atentie' : 'recent'
-  return { ts, label: timpRelativ(l.ultima_contactare_la), tone, nr }
+  return {
+    ts,
+    activityTs: ts,
+    label: timpRelativ(l.ultima_contactare_la),
+    intrat: null,
+    tone,
+    nr,
+  }
 }
 
 export type PrezentaLead = { rang: number; label: string; cls: string }
@@ -165,13 +188,18 @@ export function buildLeadColumns(opts: {
         return (
           <span className="whitespace-nowrap">
             <span className={TONE_CLS[m.tone]}>{m.label}</span>
+            {m.intrat && (
+              <span className="ml-1 text-xs text-quasar-gray">
+                · intrat {m.intrat}
+              </span>
+            )}
             {m.nr > 0 && (
               <span className="ml-1 text-xs text-quasar-gray">· {m.nr}×</span>
             )}
           </span>
         )
       },
-      sortValue: (l) => ultimContactMeta(l, now).ts,
+      sortValue: (l) => ultimContactMeta(l, now).activityTs,
     },
     prezenta: {
       header: 'Demo',

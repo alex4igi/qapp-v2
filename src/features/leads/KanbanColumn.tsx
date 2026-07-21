@@ -18,6 +18,8 @@ type Props = {
   column: PipelineColumn
   leads: Lead[]
   campaniiById: Map<string, string>
+  collapsed?: boolean
+  onToggleCollapse?: () => void
   onLeadClick: (lead: Lead) => void
   onAddLead: (status: string) => void
   onLogContact: (lead: Lead) => void
@@ -87,6 +89,8 @@ export function KanbanColumn({
   column,
   leads,
   campaniiById,
+  collapsed = false,
+  onToggleCollapse,
   onLeadClick,
   onAddLead,
   onLogContact,
@@ -96,6 +100,32 @@ export function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: column.status })
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [showArchived, setShowArchived] = useState(false)
+
+  // Pliată: bandă îngustă, dar TOT droppable — altfel „trage în Convertit" ar
+  // înceta să funcționeze exact pentru coloanele pe care le pliem.
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        ref={setNodeRef}
+        onClick={onToggleCollapse}
+        title={`${column.label} (${leads.length}) — click pentru a desface`}
+        className={`flex w-10 shrink-0 cursor-pointer flex-col items-center gap-2 rounded-xl py-2.5 transition-all ${column.header} ${
+          isOver ? 'w-24 ring-2 ring-quasar-yellow' : 'opacity-80 hover:opacity-100'
+        }`}
+      >
+        <span className="rounded-full bg-white/25 px-1.5 py-0.5 text-xs font-medium text-white">
+          {leads.length}
+        </span>
+        <span
+          className="text-sm font-semibold whitespace-nowrap text-white"
+          style={{ writingMode: 'vertical-rl' }}
+        >
+          {column.label}
+        </span>
+      </button>
+    )
+  }
 
   // Coloana 'convertit': lead-urile cu data_conversie > 3 luni sunt arhivate.
   const isArchived = (l: Lead) =>
@@ -133,6 +163,28 @@ export function KanbanColumn({
           </span>
         </div>
         <div className="flex items-center gap-0.5">
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+              title={`Pliază ${column.label}`}
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                />
+              </svg>
+            </button>
+          )}
           {column.status === 'nurture' && leads.length > 0 && (
             <button
               type="button"
