@@ -2,6 +2,7 @@ import { OptOutSection } from '@/features/opt-out/OptOutSection'
 import { PortalAccountSection } from '@/components/PortalAccountSection'
 import type { getClient } from '../../../api'
 import { DetailRow, Section } from '../helpers'
+import { FACTURARE_LA_CERERE_ENABLED } from '@/features/facturare/flags'
 import { FacturareClientSection } from './FacturareClientSection'
 
 type Props = {
@@ -52,7 +53,7 @@ export function DatePersonaleTab({ client, familia, teacherMode = false }: Props
       <Section title="Altele">
         <DetailRow label="Link contract" value={client.link_contract ?? ''} />
       </Section>
-      <FacturareClientSection client={client} />
+      {FACTURARE_LA_CERERE_ENABLED && <FacturareClientSection client={client} />}
       <OptOutSection
         entity="client"
         id={client.id}

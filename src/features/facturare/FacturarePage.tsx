@@ -3,11 +3,12 @@ import { PageHeader, Tabs } from '@/components/ui'
 import { BancaTab } from './BancaTab'
 import { PortalTab } from './PortalTab'
 import { ClientiTab } from './ClientiTab'
+import { FACTURARE_LA_CERERE_ENABLED } from './flags'
 
 const TABS = [
   { id: 'banca', label: 'Transferuri bancare' },
   { id: 'portal', label: 'Plăți portal' },
-  { id: 'clienti', label: 'Clienți (la cerere)' },
+  ...(FACTURARE_LA_CERERE_ENABLED ? [{ id: 'clienti', label: 'Clienți (la cerere)' }] : []),
 ]
 
 export function FacturarePage() {

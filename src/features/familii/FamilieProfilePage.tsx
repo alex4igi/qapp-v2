@@ -27,6 +27,7 @@ import {
 import { listSezoane } from '@/features/plati/api'
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
 import { PortalAccountSection } from '@/components/PortalAccountSection'
+import { FACTURARE_LA_CERERE_ENABLED } from '@/features/facturare/flags'
 
 function calcAge(dataNasterii: string | null): number | null {
   if (!dataNasterii) return null
@@ -480,7 +481,7 @@ function DatePersonaleTab({ familie }: { familie: Familie }) {
           </div>
         </Section>
       )}
-      <FirmaFacturareSection familie={familie} />
+      {FACTURARE_LA_CERERE_ENABLED && <FirmaFacturareSection familie={familie} />}
       <OptOutSection
         entity="familie"
         id={familie.id}
