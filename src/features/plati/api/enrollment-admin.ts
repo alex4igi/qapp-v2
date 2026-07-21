@@ -375,11 +375,15 @@ export async function getMotivareAbsentaContext(
   const sedintePerSapt = row.cursul?.zile?.length ?? 0
   const prag = 2 * sedintePerSapt
 
+  // Trebuie să numere EXACT ce numără aproba_motivare_absenta (migrația
+  // 20260621180000): 'Absent' + 'Motivat'. Prima aprobare pe lună transformă
+  // absențele în 'Motivat', deci filtrul pe 'Absent' arăta 0 la a doua aprobare
+  // („sub prag, fără scutire") în timp ce DB-ul acorda scutirea.
   const { count, error: pErr } = await supabase
     .from('prezente')
     .select('id', { count: 'exact', head: true })
     .eq('enrollment', enrollmentId)
-    .eq('status', 'Absent')
+    .in('status', ['Absent', 'Motivat'])
     .gte('data', luna)
     .lte('data', lunaEnd)
   if (pErr) throw pErr
