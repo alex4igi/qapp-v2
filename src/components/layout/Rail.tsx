@@ -429,6 +429,7 @@ export function Rail(): ReactNode {
     <div
       className={[
         'group relative shrink-0',
+        'motion-safe:transition-[width] motion-safe:duration-150 motion-safe:ease-out',
         collapsed ? 'w-[64px]' : 'w-[236px]',
       ].join(' ')}
     >
