@@ -668,6 +668,11 @@ export type Database = {
           created: string
           data_nasterii: string | null
           email: string | null
+          factura_lunara: boolean
+          factura_lunara_de_la: string | null
+          facturare_pf_adresa: string | null
+          facturare_pf_cnp: string | null
+          facturare_pf_nume: string | null
           familia: string | null
           foto: string | null
           id: string
@@ -692,6 +697,11 @@ export type Database = {
           created?: string
           data_nasterii?: string | null
           email?: string | null
+          factura_lunara?: boolean
+          factura_lunara_de_la?: string | null
+          facturare_pf_adresa?: string | null
+          facturare_pf_cnp?: string | null
+          facturare_pf_nume?: string | null
           familia?: string | null
           foto?: string | null
           id?: string
@@ -716,6 +726,11 @@ export type Database = {
           created?: string
           data_nasterii?: string | null
           email?: string | null
+          factura_lunara?: boolean
+          factura_lunara_de_la?: string | null
+          facturare_pf_adresa?: string | null
+          facturare_pf_cnp?: string | null
+          facturare_pf_nume?: string | null
           familia?: string | null
           foto?: string | null
           id?: string
@@ -8369,6 +8384,14 @@ export type Database = {
       }
       evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
       expire_open_holds: { Args: never; Returns: number }
+      fgo_line_for_datorie: {
+        Args: { p_datorie: string; p_suma: number }
+        Returns: Json
+      }
+      fgo_line_for_enrollment: {
+        Args: { p_enrollment: string; p_suma: number }
+        Returns: Json
+      }
       get_absente_consecutive: {
         Args: { p_locatie?: string; p_prag?: number }
         Returns: {
@@ -8469,6 +8492,19 @@ export type Database = {
           activi: number
           locatie_id: string
           locatie_nume: string
+        }[]
+      }
+      get_clienti_pending_incasari: {
+        Args: never
+        Returns: {
+          certain: boolean
+          client_id: string
+          client_nume: string
+          data: string
+          incasare_id: string
+          linii: Json
+          metoda: string
+          suma: number
         }[]
       }
       get_colectare_dso: {
@@ -8643,6 +8679,29 @@ export type Database = {
           varsta: Database["public"]["Enums"]["varsta_curs"]
           zile: Database["public"]["Enums"]["zi_saptamana"][]
         }[]
+      }
+      get_grupe_sezon_client: {
+        Args: { p_client: string; p_sezon?: string }
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          data_final: string
+          data_incepere: string
+          instructori: string[]
+          locatie_nume: string
+          luni: number
+          nivel: Database["public"]["Enums"]["nivel_curs"]
+          ora: string
+          sala: string
+          stil: string
+          tip_plata: Database["public"]["Enums"]["tip_plata"]
+          varsta: Database["public"]["Enums"]["varsta_curs"]
+          zile: Database["public"]["Enums"]["zi_saptamana"][]
+        }[]
+      }
+      get_incasare_invoice_lines: {
+        Args: { p_incasare_id: string }
+        Returns: Json
       }
       get_incasari_per_sezon: {
         Args: never
@@ -8841,6 +8900,11 @@ export type Database = {
           client_id: string
           data_nasterii: string
           email: string
+          factura_lunara: boolean
+          factura_lunara_de_la: string
+          facturare_pf_adresa: string
+          facturare_pf_cnp: string
+          facturare_pf_nume: string
           marime_tricou: string
           nume: string
           prenume: string
@@ -9113,6 +9177,14 @@ export type Database = {
           suma_recuperata: number
           user_id: string
           volum_clasa: string
+        }[]
+      }
+      get_sezoane_inrolari_client: {
+        Args: { p_client: string }
+        Returns: {
+          nr_cursuri: number
+          sezon_id: string
+          sezon_nume: string
         }[]
       }
       get_sezon_curent_client: {
@@ -9597,6 +9669,10 @@ export type Database = {
         Args: {
           p_client: string
           p_email?: string
+          p_factura_lunara?: boolean
+          p_facturare_pf_adresa?: string
+          p_facturare_pf_cnp?: string
+          p_facturare_pf_nume?: string
           p_marime_tricou?: string
           p_telefon?: string
           p_telefonul_2?: string
@@ -9691,7 +9767,7 @@ export type Database = {
         | "Marcata"
         | "Eroare"
         | "Ignorata"
-      factura_fgo_sursa: "banca" | "portal"
+      factura_fgo_sursa: "banca" | "portal" | "client"
       grupa_lead:
         | "Tiny"
         | "Junior"
@@ -9963,7 +10039,7 @@ export const Constants = {
         "Eroare",
         "Ignorata",
       ],
-      factura_fgo_sursa: ["banca", "portal"],
+      factura_fgo_sursa: ["banca", "portal", "client"],
       grupa_lead: ["Tiny", "Junior", "Varsity", "Teens", "Students", "Adults"],
       interes_lead: [
         "Street Dance",

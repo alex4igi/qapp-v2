@@ -3,60 +3,69 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, DataTable, Spinner, type Column } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
 import { EmitFacturaModal, type LineDraft } from './EmitFacturaModal'
-import {
-  emitePortal,
-  listFacturi,
-  listPortalPending,
-  retryPortal,
-  type PortalPendingRow,
-} from './api'
+import { emiteClient, listClientiPending, listFacturi, type ClientPendingRow } from './api'
 import type { FacturaRow } from './types'
 
 const fmt = (n: number) =>
   n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-export function PortalTab() {
+// Facturare „la cerere": încasările clienților cu marcajul „vrea factură lunară"
+// (setat pe fișa clientului sau din portal), indiferent de metodă, fără factură emisă.
+export function ClientiTab() {
   const queryClient = useQueryClient()
-  const [confirmRow, setConfirmRow] = useState<PortalPendingRow | null>(null)
+  const [confirmRow, setConfirmRow] = useState<ClientPendingRow | null>(null)
   const [lines, setLines] = useState<LineDraft[]>([])
   const [emitError, setEmitError] = useState<string | null>(null)
 
   const facturi = useQuery({
-    queryKey: ['facturi-fgo', 'portal'],
-    queryFn: () => listFacturi('portal'),
+    queryKey: ['facturi-fgo', 'client'],
+    queryFn: () => listFacturi('client'),
   })
   const pending = useQuery({
-    queryKey: ['facturi-fgo', 'portal-pending'],
-    queryFn: () => listPortalPending(),
+    queryKey: ['facturi-fgo', 'client-pending'],
+    queryFn: () => listClientiPending(),
   })
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'portal'] })
-    queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'portal-pending'] })
+    queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'client'] })
+    queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'client-pending'] })
   }
 
-  const retry = useMutation({
-    mutationFn: (orderRef: string) => retryPortal(orderRef),
-    onSuccess: () => invalidate(),
-  })
-
-  const openEmit = (r: PortalPendingRow) => {
+  const openEmit = (r: ClientPendingRow) => {
     setEmitError(null)
-    setLines(r.linii.map((l) => ({ denumire: l.denumire, suma: l.suma })))
+    setLines(
+      r.linii.length
+        ? r.linii.map((l) => ({ denumire: l.denumire, suma: l.suma }))
+        : [{ denumire: '', suma: r.suma }],
+    )
     setConfirmRow(r)
   }
 
   const emit = useMutation({
-    mutationFn: () => emitePortal(confirmRow!.order_ref, lines),
-    onSuccess: () => {
+    mutationFn: () => emiteClient(confirmRow!.incasare_id, lines),
+    onSuccess: ({ result }) => {
+      if (result.status === 'eroare') {
+        setEmitError(result.error ?? 'Eroare la emitere.')
+        invalidate()
+        return
+      }
       setConfirmRow(null)
       invalidate()
     },
     onError: (e: unknown) => setEmitError(humanizeError(e, 'Eroare la emitere.')),
   })
 
+  const reemit = useMutation({
+    mutationFn: (r: FacturaRow) =>
+      emiteClient(
+        r.incasare_id!,
+        (r.linii ?? []).map((l) => ({ denumire: l.articol ?? '', suma: l.suma })),
+      ),
+    onSuccess: () => invalidate(),
+  })
+
   const rows = facturi.data ?? []
-  const pendingRows = pending.data?.items ?? []
+  const pendingRows = pending.data ?? []
 
   const columns: Column<FacturaRow>[] = [
     { header: 'Data', cell: (r) => r.data_tranzactie, sortValue: (r) => r.data_tranzactie },
@@ -83,12 +92,12 @@ export function PortalTab() {
       header: '',
       className: 'text-right',
       cell: (r) =>
-        r.status === 'Eroare' ? (
+        r.status === 'Eroare' && r.incasare_id ? (
           <Button
             variant="secondary"
             className="text-xs"
-            disabled={retry.isPending}
-            onClick={() => retry.mutate(r.ref)}
+            disabled={reemit.isPending}
+            onClick={() => reemit.mutate(r)}
           >
             Reemite
           </Button>
@@ -96,14 +105,15 @@ export function PortalTab() {
     },
   ]
 
-  const pendingColumns: Column<PortalPendingRow>[] = [
+  const pendingColumns: Column<ClientPendingRow>[] = [
     { header: 'Data', cell: (r) => r.data, sortValue: (r) => r.data },
     { header: 'Client', cell: (r) => r.client_nume, sortValue: (r) => r.client_nume },
+    { header: 'Metodă', cell: (r) => r.metoda, sortValue: (r) => r.metoda },
     {
       header: 'Descriere',
       cell: (r) => (
         <span>
-          {r.descriere}
+          {r.linii.length ? r.linii.map((l) => l.denumire).join('; ') : 'Necunoscut'}
           {!r.certain && (
             <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
               alege articolul
@@ -131,28 +141,27 @@ export function PortalTab() {
 
   return (
     <div className="space-y-6">
-      {pendingRows.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-ink">De facturat ({pendingRows.length})</h3>
-          <p className="text-sm text-muted">
-            Plăți online confirmate care nu au fost facturate automat. Cazurile clare se
-            facturează singure la confirmarea plății; cele marcate „alege articolul" au
-            nevoie de articolul FGO ales de recepție înainte de emitere.
-          </p>
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-ink">De facturat ({pendingRows.length})</h3>
+        <p className="text-sm text-muted">
+          Încasările clienților cu marcajul „vrea factură lunară" (setat pe fișa clientului),
+          de la data activării încolo, care nu au încă factură. Atenție: un transfer bancar
+          facturat aici va apărea și în extras — acolo se apasă „Ignoră".
+        </p>
+        {pending.isLoading ? (
+          <Spinner />
+        ) : (
           <DataTable
             columns={pendingColumns}
             rows={pendingRows}
-            rowKey={(r) => r.order_ref}
-            emptyMessage=""
+            rowKey={(r) => r.incasare_id}
+            emptyMessage="Nimic de facturat — nicio încasare nouă la clienții cu factură lunară."
           />
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="space-y-3">
-        <p className="text-sm text-muted">
-          Facturile pentru plățile online (portal Netopia) se emit automat la confirmarea
-          plății. Aici vezi rezultatul; cele cu eroare pot fi reemise.
-        </p>
+        <h3 className="text-sm font-semibold text-ink">Facturi emise la cerere</h3>
         {facturi.isLoading ? (
           <Spinner />
         ) : (
@@ -160,7 +169,7 @@ export function PortalTab() {
             columns={columns}
             rows={rows}
             rowKey={(r) => r.ref}
-            emptyMessage="Nicio factură din portal încă."
+            emptyMessage="Nicio factură emisă la cerere încă."
           />
         )}
       </div>

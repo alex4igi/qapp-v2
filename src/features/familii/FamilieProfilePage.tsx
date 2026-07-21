@@ -1,20 +1,27 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
+  Checkbox,
+  Field,
   Spinner,
   Select,
   Tabs,
+  TextInput,
 } from '@/components/ui'
 import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
 import type { Client, Familie } from '@/types/db'
+import { useAuth } from '@/hooks/useAuth'
+import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
+import { humanizeError } from '@/lib/errorMessage'
 import { FamilieForm } from './FamilieForm'
 import { AddMembersModal } from './AddMembersModal'
 import {
   getFamilie,
   getFamilieMembers,
   getFamilieInrolariSezon,
+  updateFamilie,
   type FamilieInrolareSezon,
 } from './api'
 import { listSezoane } from '@/features/plati/api'
@@ -473,6 +480,7 @@ function DatePersonaleTab({ familie }: { familie: Familie }) {
           </div>
         </Section>
       )}
+      <FirmaFacturareSection familie={familie} />
       <OptOutSection
         entity="familie"
         id={familie.id}
@@ -489,6 +497,109 @@ function DatePersonaleTab({ familie }: { familie: Familie }) {
         nameHint={familie.nume_familie}
         invalidateKey={['familie', familie.id]}
       />
+    </div>
+  )
+}
+
+// Datele de facturare pe firmă — introduse de familie din portal (Profil) sau de
+// recepție de aici. Când sunt active, TOATE facturile membrilor familiei ies pe firmă
+// (au prioritate față de datele PF de pe fișa clientului).
+function FirmaFacturareSection({ familie }: { familie: Familie }) {
+  const { role } = useAuth()
+  const canEdit = isFrontDeskOrHigher(role)
+  const queryClient = useQueryClient()
+
+  const [peFirma, setPeFirma] = useState(familie.factura_pe_firma ?? false)
+  const [denumire, setDenumire] = useState(familie.firma_denumire ?? '')
+  const [cif, setCif] = useState(familie.firma_cif ?? '')
+  const [regCom, setRegCom] = useState(familie.firma_reg_com ?? '')
+  const [adresa, setAdresa] = useState(familie.firma_adresa ?? '')
+  const [banca, setBanca] = useState(familie.firma_banca ?? '')
+  const [iban, setIban] = useState(familie.firma_iban ?? '')
+  const [error, setError] = useState<string | null>(null)
+
+  const norm = (s: string) => s.trim() || null
+  const dirty =
+    peFirma !== (familie.factura_pe_firma ?? false) ||
+    norm(denumire) !== (familie.firma_denumire ?? null) ||
+    norm(cif) !== (familie.firma_cif ?? null) ||
+    norm(regCom) !== (familie.firma_reg_com ?? null) ||
+    norm(adresa) !== (familie.firma_adresa ?? null) ||
+    norm(banca) !== (familie.firma_banca ?? null) ||
+    norm(iban) !== (familie.firma_iban ?? null)
+  const incomplete = peFirma && (!denumire.trim() || !cif.trim())
+
+  const save = useMutation({
+    mutationFn: () =>
+      updateFamilie(familie.id, {
+        factura_pe_firma: peFirma,
+        firma_denumire: norm(denumire),
+        firma_cif: norm(cif),
+        firma_reg_com: norm(regCom),
+        firma_adresa: norm(adresa),
+        firma_banca: norm(banca),
+        firma_iban: norm(iban),
+      }),
+    onSuccess: () => {
+      setError(null)
+      void queryClient.invalidateQueries({ queryKey: ['familie', familie.id] })
+    },
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
+  })
+
+  return (
+    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
+      <h2 className="mb-1 text-sm font-bold text-ink">Date facturare firmă</h2>
+      <p className="mb-3 text-xs text-muted">
+        Completate de familie din portal sau de recepție. Cu bifa activă și CIF completat,
+        facturile FGO ale membrilor ies pe firmă.
+      </p>
+      <div className="space-y-3">
+        <Checkbox
+          label="Factură pe firmă"
+          checked={peFirma}
+          onChange={(e) => setPeFirma(e.target.checked)}
+          disabled={!canEdit}
+        />
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="Denumire firmă">
+            <TextInput value={denumire} onChange={(e) => setDenumire(e.target.value)} disabled={!canEdit} />
+          </Field>
+          <Field label="CIF">
+            <TextInput value={cif} onChange={(e) => setCif(e.target.value)} disabled={!canEdit} />
+          </Field>
+          <Field label="Reg. Com.">
+            <TextInput value={regCom} onChange={(e) => setRegCom(e.target.value)} disabled={!canEdit} />
+          </Field>
+          <Field label="Adresă firmă">
+            <TextInput value={adresa} onChange={(e) => setAdresa(e.target.value)} disabled={!canEdit} />
+          </Field>
+          <Field label="Bancă">
+            <TextInput value={banca} onChange={(e) => setBanca(e.target.value)} disabled={!canEdit} />
+          </Field>
+          <Field label="IBAN">
+            <TextInput value={iban} onChange={(e) => setIban(e.target.value)} disabled={!canEdit} />
+          </Field>
+        </div>
+        {incomplete && (
+          <p className="text-xs text-amber-700">
+            Pentru factură pe firmă e nevoie cel puțin de denumire și CIF — altfel facturile
+            ies în continuare pe persoană fizică.
+          </p>
+        )}
+        {canEdit && (
+          <div className="flex items-center gap-3">
+            <Button
+              variant="primary"
+              disabled={!dirty || save.isPending}
+              onClick={() => save.mutate()}
+            >
+              {save.isPending ? 'Se salvează…' : 'Salvează'}
+            </Button>
+            {error && <span className="text-xs text-red-700">{error}</span>}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

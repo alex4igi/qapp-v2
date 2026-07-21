@@ -2,7 +2,8 @@
 // Apelat de `netopia-webhook` (respectă toggle-ul) și de acțiunea de retry din `autofgo` (force).
 // Idempotent pe netopia_orders.fgo_emitat. Niciodată nu aruncă către apelant — întoarce un rezultat.
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { emitInvoice, type FgoClient, type FgoFirma, type FgoLine } from './fgo.ts'
+import { emitInvoice, type FgoFirma, type FgoLine } from './fgo.ts'
+import { buildFgoClientForClient } from './fgo-client.ts'
 
 // CUI-ul firmei pe care e contractul Netopia (Quasar Dance Studio SRL).
 const NETOPIA_CUI = Deno.env.get('NETOPIA_FGO_CUI') || '49361270'
@@ -12,11 +13,6 @@ type PortalInvoiceResult = {
   status: 'emisa' | 'idempotent' | 'eroare' | 'off' | 'skip' | 'manual'
   factura?: string | null
   error?: string
-}
-
-function fullName(c: { nume?: string | null; prenume?: string | null } | null): string {
-  if (!c) return ''
-  return [c.nume, c.prenume].filter(Boolean).join(' ').trim()
 }
 
 function today(): string {
@@ -45,32 +41,11 @@ export async function emitPortalInvoice(
   if (!firmaRow) return { status: 'skip', error: 'firma_missing' }
   if (!opts.force && !firmaRow.auto_factura_portal) return { status: 'off' }
 
-  // Client + date de facturare (PJ dacă familia are factură pe firmă, altfel PF).
-  const { data: client } = await admin
-    .from('clienti')
-    .select('id, nume, prenume, familia')
-    .eq('id', order.client_id)
-    .maybeSingle()
-
-  let fgoClient: FgoClient = { tip: 'PF', denumire: fullName(client) || 'Client' }
-  let familiaId: string | null = null
-  if (client?.familia) {
-    const { data: fam } = await admin
-      .from('familii')
-      .select('id, nume_familie, factura_pe_firma, firma_denumire, firma_cif, firma_reg_com, firma_adresa')
-      .eq('id', client.familia)
-      .maybeSingle()
-    familiaId = fam?.id ?? null
-    if (fam?.factura_pe_firma && fam.firma_cif) {
-      fgoClient = {
-        tip: 'PJ',
-        denumire: fam.firma_denumire || fam.nume_familie || 'Firmă',
-        cui: fam.firma_cif,
-        regCom: fam.firma_reg_com,
-        adresa: fam.firma_adresa,
-      }
-    }
-  }
+  // Client + date de facturare — precedența unitară (PJ familie > PF alternativ > PF nume).
+  const { fgoClient, familiaId, clientNume } = await buildFgoClientForClient(
+    admin,
+    order.client_id as string | null,
+  )
 
   // Liniile facturii. La emiterea manuală (recepție) vin gata alese; altfel se
   // construiesc din RPC-ul comun cu preview-ul din „De facturat".
@@ -124,7 +99,7 @@ export async function emitPortalInvoice(
         ref: orderRef,
         sursa: 'portal',
         firma_cui: firma.cui,
-        client_nume: fullName(client),
+        client_nume: clientNume,
         suma: order.amount,
         data_tranzactie: today(),
         descriere,
@@ -147,7 +122,7 @@ export async function emitPortalInvoice(
         ref: orderRef,
         sursa: 'portal',
         firma_cui: firma.cui,
-        client_nume: fullName(client),
+        client_nume: clientNume,
         suma: order.amount,
         data_tranzactie: today(),
         descriere,

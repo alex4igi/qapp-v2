@@ -10,6 +10,7 @@ import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { createHash } from 'node:crypto'
 import { emitInvoice, type FgoClient, type FgoFirma } from '../_shared/fgo.ts'
 import { emitPortalInvoice } from '../_shared/portal-invoice.ts'
+import { emitClientInvoice } from '../_shared/client-invoice.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,6 +68,21 @@ Deno.serve(async (req) => {
     }
     if (action === 'portal_pending') {
       return await handlePortalPending(admin)
+    }
+    if (action === 'emite_client') {
+      // Emitere „la cerere" pe o încasare (tab Clienți): liniile sunt alese în UI.
+      // dryRun întoarce preview-ul (firmă/client/linii) fără POST la FGO și fără scrieri.
+      const linii = (body.linii ?? []) as { denumire: string; suma: number }[]
+      if (!Array.isArray(linii) || !linii.length) return json({ error: 'linii obligatorii' }, 400)
+      const lines = linii
+        .filter((l) => l.denumire && Number(l.suma) > 0)
+        .map((l) => ({ denumire: String(l.denumire), pretTotal: Number(l.suma) }))
+      if (!lines.length) return json({ error: 'liniile trebuie să aibă articol și sumă' }, 400)
+      const r = await emitClientInvoice(admin, body.incasareId as string, {
+        lines,
+        dryRun: body.dryRun === true,
+      })
+      return json({ result: r })
     }
 
     return json({ error: 'acțiune necunoscută' }, 400)

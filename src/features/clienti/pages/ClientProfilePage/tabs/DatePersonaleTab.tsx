@@ -2,6 +2,7 @@ import { OptOutSection } from '@/features/opt-out/OptOutSection'
 import { PortalAccountSection } from '@/components/PortalAccountSection'
 import type { getClient } from '../../../api'
 import { DetailRow, Section } from '../helpers'
+import { FacturareClientSection } from './FacturareClientSection'
 
 type Props = {
   client: Awaited<ReturnType<typeof getClient>>
@@ -51,6 +52,7 @@ export function DatePersonaleTab({ client, familia, teacherMode = false }: Props
       <Section title="Altele">
         <DetailRow label="Link contract" value={client.link_contract ?? ''} />
       </Section>
+      <FacturareClientSection client={client} />
       <OptOutSection
         entity="client"
         id={client.id}

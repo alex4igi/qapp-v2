@@ -82,6 +82,39 @@ export const emitePortal = (orderRef: string, linii: { denumire: string; suma: n
     { orderRef, linii },
   )
 
+// „De facturat" (tab Clienți): încasările clienților cu marcajul „factură lunară",
+// de la data activării încolo, care nu au încă factură în registru.
+export type ClientPendingRow = {
+  incasare_id: string
+  client_id: string
+  client_nume: string
+  data: string
+  metoda: string
+  suma: number
+  linii: PortalPendingLine[]
+  certain: boolean
+}
+
+export async function listClientiPending(): Promise<ClientPendingRow[]> {
+  const { data, error } = await supabase.rpc('get_clienti_pending_incasari')
+  if (error) throw error
+  return ((data ?? []) as unknown[]).map((r) => {
+    const row = r as Omit<ClientPendingRow, 'linii'> & { linii: unknown }
+    return { ...row, linii: (row.linii ?? []) as PortalPendingLine[] }
+  })
+}
+
+// Emitere „la cerere" pe o încasare; dryRun întoarce doar preview-ul (fără factură reală).
+export const emiteClient = (
+  incasareId: string,
+  linii: { denumire: string; suma: number }[],
+  dryRun = false,
+) =>
+  invoke<{ result: { status: string; factura?: string | null; error?: string; preview?: unknown } }>(
+    'emite_client',
+    { incasareId, linii, dryRun },
+  )
+
 // Ordine deterministă: data_tranzactie e doar ziua, deci fără tie-break rândurile din
 // aceeași zi se reamestecă la fiecare UPDATE (Postgres mută fizic rândul). created + ref
 // nu se schimbă niciodată → poziția rămâne fixă după orice procedură.

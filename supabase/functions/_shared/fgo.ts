@@ -14,9 +14,16 @@ export type FgoFirma = {
   localitate?: string | null
 }
 
-// Client de facturat: persoană fizică (nume) sau persoană juridică (firmă).
+// Client de facturat: persoană fizică (nume + opțional CNP/adresă) sau persoană juridică (firmă).
 export type FgoClient =
-  | { tip: 'PF'; denumire: string; judet?: string | null; localitate?: string | null }
+  | {
+      tip: 'PF'
+      denumire: string
+      cnp?: string | null
+      adresa?: string | null
+      judet?: string | null
+      localitate?: string | null
+    }
   | {
       tip: 'PJ'
       denumire: string
@@ -81,6 +88,10 @@ export async function emitInvoice(
   if (client.tip === 'PJ') {
     params.set('Client[CUI]', client.cui)
     if (client.regCom) params.set('Client[NrRegCom]', client.regCom)
+    if (client.adresa) params.set('Client[Adresa]', client.adresa)
+  } else {
+    // PF: FGO acceptă CNP în Client[CodUnic] (factură pe altă persoană decât cursantul).
+    if (client.cnp) params.set('Client[CodUnic]', client.cnp)
     if (client.adresa) params.set('Client[Adresa]', client.adresa)
   }
 

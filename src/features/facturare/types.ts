@@ -1,4 +1,4 @@
-export type FacturaSursa = 'banca' | 'portal'
+export type FacturaSursa = 'banca' | 'portal' | 'client'
 export type FacturaStatus =
   | 'Pending'
   | 'Matched'
