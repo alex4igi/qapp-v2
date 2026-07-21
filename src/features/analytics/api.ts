@@ -184,17 +184,27 @@ export type AbsentaRow = {
   client_nume: string
   curs_id: string
   curs_nume: string
-  absente_consecutive: number
+  // Câte ședințe a ținut GRUPA de la ultimul semnal al cursantului — nu numărul
+  // de absențe bifate. 81,8% din ședințe n-au niciun absent marcat, deci
+  // numărarea rândurilor 'Absent' rata aproape toți cursanții care pleacă.
+  sedinte_ratate: number
+  lectii_pe_saptamana: number
+  zile_tacere: number
   ultima_prezenta: string | null
+  // Grupa/grupele unde a fost prezent MAI RECENT decât aici. Nu dovedește o
+  // mutare formală — doar unde vine omul acum, ca recepția să nu sune degeaba.
+  vine_la: string | null
 }
 
+// Pragul e în SĂPTĂMÂNI de tăcere: RPC-ul îl înmulțește cu lecțiile/săptămână
+// ale grupei (2×/săpt → 4 ședințe ratate, 1×/săpt → 2).
 export async function getAbsenteConsecutive(
   locatieId: string | null,
-  prag = 2,
+  saptamani = 2,
 ): Promise<AbsentaRow[]> {
   const { data, error } = await supabase.rpc('get_absente_consecutive', {
     p_locatie: locatieId ?? undefined,
-    p_prag: prag,
+    p_saptamani: saptamani,
   })
   if (error) throw error
   return ((data ?? []) as AbsentaRow[]).map((r) => ({
@@ -202,8 +212,11 @@ export async function getAbsenteConsecutive(
     client_nume: r.client_nume ?? '',
     curs_id: String(r.curs_id),
     curs_nume: r.curs_nume ?? '',
-    absente_consecutive: Number(r.absente_consecutive ?? 0),
+    sedinte_ratate: Number(r.sedinte_ratate ?? 0),
+    lectii_pe_saptamana: Math.max(Number(r.lectii_pe_saptamana ?? 1), 1),
+    zile_tacere: Number(r.zile_tacere ?? 0),
     ultima_prezenta: r.ultima_prezenta ?? null,
+    vine_la: r.vine_la ?? null,
   }))
 }
 

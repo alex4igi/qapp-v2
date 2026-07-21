@@ -167,7 +167,7 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
                 label="Elevi în risc"
                 value={p.risc.elevi ?? '—'}
                 polaritateInversa
-                hint="2+ absențe consecutive neanunțate · de contactat în 48h"
+                hint="au ratat 2+ săptămâni de ședințe, neanunțat · de contactat în 48h"
               />
               <a href="#sec-risc" className="mt-1.5 inline-block text-xs text-quasar-gray underline hover:text-quasar-black">
                 Vezi lista în secțiunea 3 ↓

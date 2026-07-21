@@ -7,14 +7,15 @@ function formatData(d: string | null): string {
   return `${day}.${m}.${y.slice(2)}`
 }
 
-// Cursanți cu absențe consecutive — flag de intervenție înainte să plece.
+// Cursanți care au încetat să vină — ședințe ținute de grupă de la ultimul lor
+// semnal. Flag de intervenție înainte să plece de tot.
 export function AbsenteConsecutiveTable({ rows }: { rows: AbsentaRow[] }) {
   const navigate = useNavigate()
 
   if (rows.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-quasar-gray">
-        Niciun cursant cu absențe consecutive peste prag. 🎉
+        Niciun cursant peste prag — toți vin constant. 🎉
       </p>
     )
   }
@@ -26,7 +27,7 @@ export function AbsenteConsecutiveTable({ rows }: { rows: AbsentaRow[] }) {
           <tr className="border-b border-quasar-gray-light text-left text-xs uppercase tracking-wide text-quasar-gray">
             <th className="px-3 py-2 font-medium">Cursant</th>
             <th className="px-3 py-2 font-medium">Grupă</th>
-            <th className="px-3 py-2 text-center font-medium">Absențe</th>
+            <th className="px-3 py-2 text-center font-medium">Ratate / tăcere</th>
             <th className="px-3 py-2 text-right font-medium">Ultima prezență</th>
           </tr>
         </thead>
@@ -41,16 +42,27 @@ export function AbsenteConsecutiveTable({ rows }: { rows: AbsentaRow[] }) {
               <td className="px-3 py-2 font-medium text-quasar-black">
                 {r.client_nume}
               </td>
-              <td className="px-3 py-2 text-quasar-gray">{r.curs_nume}</td>
+              <td className="px-3 py-2 text-quasar-gray">
+                {r.curs_nume}
+                {r.vine_la && (
+                  <span className="mt-0.5 block text-[11px] font-medium text-blue-700">
+                    ↪ vine la: {r.vine_la}
+                  </span>
+                )}
+              </td>
               <td className="px-3 py-2 text-center">
                 <span
                   className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    r.absente_consecutive >= 3
+                    r.zile_tacere >= 21
                       ? 'bg-red-100 text-red-700'
                       : 'bg-amber-100 text-amber-700'
                   }`}
+                  title={`Grupa are ${r.lectii_pe_saptamana} ședințe pe săptămână`}
                 >
-                  {r.absente_consecutive}×
+                  {r.sedinte_ratate}×
+                </span>
+                <span className="mt-0.5 block text-[11px] text-quasar-gray">
+                  {r.zile_tacere} zile
                 </span>
               </td>
               <td className="px-3 py-2 text-right text-quasar-gray">

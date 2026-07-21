@@ -80,8 +80,8 @@ function AbsenteRiscSection({ rows }: { rows: AbsentaRisc[] }) {
         {rows.length > 0 && <Badge tone="danger">{rows.length}</Badge>}
       </div>
       <p className="mb-3 text-sm text-muted">
-        Cursanți cu absențe consecutive la grupele tale — sună/scrie părintele
-        înainte să plece.
+        Cursanți care au ratat cel puțin 2 săptămâni de ședințe la grupele tale —
+        sună/scrie părintele înainte să plece.
       </p>
       {rows.length === 0 ? (
         <p className="rounded-lg bg-success-bg/40 px-3 py-4 text-center text-sm text-ink">
@@ -94,14 +94,20 @@ function AbsenteRiscSection({ rows }: { rows: AbsentaRisc[] }) {
               key={`${r.client_id}-${r.curs_id}`}
               className="flex items-center gap-3 border-t border-line-2 px-3 py-2.5 first:border-t-0"
             >
-              <Badge tone="danger">{r.absente_consecutive} abs.</Badge>
+              <Badge tone="danger">{r.sedinte_ratate} ratate</Badge>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-ink">
                   {r.client_nume}
                 </span>
                 <span className="block truncate text-xs text-muted">
-                  {r.curs_nume} · ultima prezență {formatData(r.ultima_prezenta)}
+                  {r.curs_nume} · {r.zile_tacere} zile · ultima prezență{' '}
+                  {formatData(r.ultima_prezenta)}
                 </span>
+                {r.vine_la && (
+                  <span className="block truncate text-xs font-medium text-success">
+                    ↪ vine la: {r.vine_la}
+                  </span>
+                )}
               </span>
             </div>
           ))}

@@ -8404,25 +8404,29 @@ export type Database = {
       get_absente_consecutive: {
         Args: { p_locatie?: string; p_saptamani?: number }
         Returns: {
-          absente_consecutive: number
           client_id: string
           client_nume: string
           curs_id: string
           curs_nume: string
           lectii_pe_saptamana: number
+          sedinte_ratate: number
           ultima_prezenta: string
+          vine_la: string
+          zile_tacere: number
         }[]
       }
       get_absente_risc_teacher: {
         Args: { p_saptamani?: number }
         Returns: {
-          absente_consecutive: number
           client_id: string
           client_nume: string
           curs_id: string
           curs_nume: string
           lectii_pe_saptamana: number
+          sedinte_ratate: number
           ultima_prezenta: string
+          vine_la: string
+          zile_tacere: number
         }[]
       }
       get_anunturi_client: {

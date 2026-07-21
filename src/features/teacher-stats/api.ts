@@ -10,13 +10,20 @@ export type AbsentaRisc = {
   client_nume: string
   curs_id: string
   curs_nume: string
-  absente_consecutive: number
+  // Ședințe ținute de grupă de la ultimul semnal al cursantului — vezi
+  // AbsentaRow (analytics/api.ts) pentru de ce nu numărăm absențe bifate.
+  sedinte_ratate: number
+  lectii_pe_saptamana: number
+  zile_tacere: number
   ultima_prezenta: string | null
+  // Vezi AbsentaRow (analytics/api.ts) — unde vine cursantul acum, dacă vine.
+  vine_la: string | null
 }
 
-export async function getAbsenteRisc(prag = 2): Promise<AbsentaRisc[]> {
+// Pragul e în SĂPTĂMÂNI de tăcere — vezi getAbsenteConsecutive (analytics/api.ts).
+export async function getAbsenteRisc(saptamani = 2): Promise<AbsentaRisc[]> {
   const { data, error } = await supabase.rpc('get_absente_risc_teacher', {
-    p_prag: prag,
+    p_saptamani: saptamani,
   })
   if (error) throw error
   return (data as AbsentaRisc[]) ?? []
