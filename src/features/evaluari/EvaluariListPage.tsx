@@ -13,6 +13,7 @@ import {
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { useAuth } from '@/hooks/useAuth'
+import { sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import type { Evaluare } from '@/types/db'
 import { EvaluareForm } from './EvaluareForm'
 import {
@@ -46,9 +47,28 @@ export function EvaluariListPage() {
   const [search, setSearch] = useState('')
   const [cursId, setCursId] = useState('')
   const [teacherId, setTeacherId] = useState('')
+  const [sezonFilter, setSezonFilter] = useState('')
+  const [sezonInit, setSezonInit] = useState(false)
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Evaluare | null>(null)
+
+  const sezoaneQ = useQuery({
+    queryKey: ['lookup', 'sezoane'],
+    queryFn: sezoaneOptions,
+  })
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
+  // Default = sezonul activ; „Toate sezoanele" rămâne disponibil pentru istoric.
+  useEffect(() => {
+    if (!sezonInit && sezonActivQ.isSuccess) {
+      setSezonFilter(sezonActivQ.data ?? '')
+      setSezonInit(true)
+    }
+  }, [sezonInit, sezonActivQ.isSuccess, sezonActivQ.data])
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -71,12 +91,15 @@ export function EvaluariListPage() {
 
   const teacheriQ = useTeacheriOptions({ enabled: !isTeacher })
 
-  const cursuriAllQ = useCursuriOptions({ enabled: !isTeacher && !teacherId })
+  const cursuriAllQ = useCursuriOptions({
+    enabled: !isTeacher && !teacherId && sezonInit,
+    sezonId: sezonFilter || null,
+  })
 
   const cursuriForTeacherQ = useQuery({
-    queryKey: ['lookup', 'cursuri-by-teacher', effectiveTeacherId],
-    queryFn: () => cursuriByTeacher(effectiveTeacherId),
-    enabled: Boolean(effectiveTeacherId),
+    queryKey: ['lookup', 'cursuri-by-teacher', effectiveTeacherId, sezonFilter],
+    queryFn: () => cursuriByTeacher(effectiveTeacherId, sezonFilter || null),
+    enabled: Boolean(effectiveTeacherId) && sezonInit,
   })
 
   const cursuriOpts = effectiveTeacherId
@@ -84,16 +107,20 @@ export function EvaluariListPage() {
     : (cursuriAllQ.data ?? [])
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['evaluari', { search, cursId, teacherId: effectiveTeacherId, page }],
+    queryKey: [
+      'evaluari',
+      { search, cursId, teacherId: effectiveTeacherId, sezonId: sezonFilter, page },
+    ],
     queryFn: () =>
       listEvaluari({
         search,
         cursId,
         teacherId: effectiveTeacherId,
+        sezonId: sezonFilter,
         page,
       }),
     placeholderData: keepPreviousData,
-    enabled: !isTeacher || Boolean(teacherIdQ.data),
+    enabled: (!isTeacher || Boolean(teacherIdQ.data)) && sezonInit,
   })
 
   const totalPages = useMemo(
@@ -194,6 +221,18 @@ export function EvaluariListPage() {
             placeholder="Caută cursant…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
+        <div className="w-52">
+          <Select
+            placeholder="Toate sezoanele"
+            options={sezoaneQ.data ?? []}
+            value={sezonFilter}
+            onChange={(e) => {
+              setSezonFilter(e.target.value)
+              setCursId('')
+              setPage(0)
+            }}
           />
         </div>
         {!isTeacher && (

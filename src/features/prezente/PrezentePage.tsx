@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Field, Select, DateInput, Spinner } from '@/components/ui'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
+import { sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import type { StatusPrezenta } from '@/types/db'
 import {
   getCursRoster,
@@ -54,8 +55,31 @@ export function PrezentePage() {
   const queryClient = useQueryClient()
   const [cursId, setCursId] = useState('')
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10))
+  const [sezonFilter, setSezonFilter] = useState('')
+  const [sezonInit, setSezonInit] = useState(false)
 
-  const cursuri = useCursuriOptions()
+  const sezoaneQ = useQuery({
+    queryKey: ['lookup', 'sezoane'],
+    queryFn: sezoaneOptions,
+  })
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+  })
+
+  // Default = sezonul activ; userul poate comuta pe un sezon vechi pentru
+  // consultarea/corectarea prezențelor istorice.
+  useEffect(() => {
+    if (!sezonInit && sezonActivQ.isSuccess) {
+      setSezonFilter(sezonActivQ.data ?? '')
+      setSezonInit(true)
+    }
+  }, [sezonInit, sezonActivQ.isSuccess, sezonActivQ.data])
+
+  const cursuri = useCursuriOptions({
+    enabled: sezonInit,
+    sezonId: sezonFilter || null,
+  })
 
   const roster = useQuery({
     queryKey: ['prezente', 'roster', cursId, data],
@@ -105,6 +129,20 @@ export function PrezentePage() {
       <PageHeader title="Prezențe" subtitle="Marchează prezența pe ședință" />
 
       <div className="mb-5 flex flex-wrap gap-4">
+        <div className="w-56">
+          <Field label="Sezon" htmlFor="sezon">
+            <Select
+              id="sezon"
+              placeholder="Toate sezoanele"
+              options={sezoaneQ.data ?? []}
+              value={sezonFilter}
+              onChange={(e) => {
+                setSezonFilter(e.target.value)
+                setCursId('')
+              }}
+            />
+          </Field>
+        </div>
         <div className="w-64">
           <Field label="Curs" htmlFor="curs">
             <Select

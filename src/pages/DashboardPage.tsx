@@ -36,10 +36,11 @@ export function DashboardPage() {
     setParams(next, { replace: true })
   }
 
-  // Pentru teacher: lista de curs IDs asociate via cursuri_teacheri M:N
+  // Pentru teacher: lista de curs IDs asociate via cursuri_teacheri M:N.
+  // Fără filtru de sezon aici — query-ul de cursuri filtrează el pe sezonul activ.
   const teacherCursuriQ = useQuery({
     queryKey: ['lookup', 'cursuri', 'teacher'],
-    queryFn: cursuriOptionsForCurrentTeacher,
+    queryFn: () => cursuriOptionsForCurrentTeacher(),
     enabled: teacherMode,
   })
   const teacherCursIds = teacherMode

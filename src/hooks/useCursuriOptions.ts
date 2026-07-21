@@ -9,39 +9,44 @@ import {
 } from '@/lib/lookups'
 
 // Sursă unică pentru selectoarele de curs din toată aplicația:
-// - teacher → doar cursurile lui (deja un set mic);
-// - restul → cursurile sezonului activ, filtrate după locație.
+// - teacher → doar cursurile lui, din sezonul cerut (fără filtru de sezon lista
+//   acumulează clonele din toate sezoanele — reînscrieri);
+// - restul → cursurile sezonului, filtrate după locație.
 // Fără sezon activ, cade înapoi pe „toate" (sezonId=null) ca să nu golim dropdown-ul.
 // locatieId: omis → locația globală din header; prezent (string gol/null) → acel filtru
 // (gol/null = toate locațiile) — pentru paginile cu selector propriu de locație.
+// sezonId: omis → sezonul activ; prezent (string gol/null) → acel filtru
+// (gol/null = toate sezoanele) — pentru paginile cu selector propriu de sezon.
 export function useCursuriOptions(opts?: {
   enabled?: boolean
   locatieId?: string | null
+  sezonId?: string | null
 }) {
   const { role } = useAuth()
   const working = useWorkingLocatie()
   const teacherMode = isTeacher(role)
   const locatieId =
     opts && 'locatieId' in opts ? opts.locatieId || null : working.locatieId
+  const hasSezonOverride = Boolean(opts && 'sezonId' in opts)
 
   const sezonQ = useQuery({
     queryKey: ['lookup', 'sezon-activ'],
     queryFn: sezonActivId,
-    enabled: !teacherMode,
+    enabled: !hasSezonOverride,
   })
-  const sezonId = sezonQ.data ?? null
+  const sezonId = hasSezonOverride ? opts!.sezonId || null : sezonQ.data ?? null
 
   return useQuery({
     queryKey: [
       'lookup',
       'cursuri',
       teacherMode ? 'teacher' : locatieId ?? 'all',
-      teacherMode ? null : sezonId,
+      sezonId,
     ],
     queryFn: () =>
       teacherMode
-        ? cursuriOptionsForCurrentTeacher()
+        ? cursuriOptionsForCurrentTeacher(sezonId)
         : cursuriOptions(locatieId, sezonId),
-    enabled: (opts?.enabled ?? true) && (teacherMode || sezonQ.isSuccess),
+    enabled: (opts?.enabled ?? true) && (hasSezonOverride || sezonQ.isSuccess),
   })
 }

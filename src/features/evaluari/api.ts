@@ -16,6 +16,7 @@ export type EvaluariListParams = {
   search: string
   cursId: string
   teacherId: string
+  sezonId: string
   page: number
 }
 
@@ -28,6 +29,7 @@ export async function listEvaluari({
   search,
   cursId,
   teacherId,
+  sezonId,
   page,
 }: EvaluariListParams): Promise<EvaluariListResult> {
   const from = page * PAGE_SIZE
@@ -45,6 +47,8 @@ export async function listEvaluari({
 
   if (cursId) query = query.eq('cursul', cursId)
   if (teacherId) query = query.eq('teacher', teacherId)
+  // sezon_id e derivat de trigger din cursuri.sezon (migrația 20260717110000).
+  if (sezonId) query = query.eq('sezon_id', sezonId)
 
   const { data, error, count } = await query
   if (error) throw error
@@ -118,15 +122,19 @@ export async function getCurrentTeacherId(): Promise<string | null> {
   return data?.id ?? null
 }
 
-// Cursurile predate de un anumit instructor.
+// Cursurile predate de un anumit instructor. Cu `sezonId`, doar cele din acel
+// sezon — altfel lista acumulează clonele din toate sezoanele (reînscrieri).
 export async function cursuriByTeacher(
   teacherId: string,
+  sezonId?: string | null,
 ): Promise<SelectOption[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('cursuri')
     .select('id, numele')
     .eq('teacher', teacherId)
     .order('numele', { ascending: true })
+  if (sezonId) query = query.eq('sezon', sezonId)
+  const { data, error } = await query
   if (error) throw error
   return (data ?? []).map((c) => ({ value: c.id, label: c.numele }))
 }

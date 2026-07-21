@@ -15,6 +15,7 @@ import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
+import { sezonActivId } from '@/lib/lookups'
 import type { Evaluare, InsertDto, UpdateDto } from '@/types/db'
 import {
   createEvaluare,
@@ -93,10 +94,20 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
 
   const cursuriAllQ = useCursuriOptions({ enabled: !isTeacher && !form.teacher })
 
+  // Evaluare nouă → doar cursurile sezonului activ (altfel teacherul poate
+  // evalua din greșeală pe clona cursului dintr-un sezon vechi). La editare
+  // păstrăm toate sezoanele ca să rămână selectabil cursul evaluării existente.
+  const sezonActivQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ'],
+    queryFn: sezonActivId,
+    enabled: !isEdit,
+  })
+  const sezonNouId = isEdit ? null : sezonActivQ.data ?? null
+
   const cursuriByTeacherQ = useQuery({
-    queryKey: ['lookup', 'cursuri-by-teacher', form.teacher],
-    queryFn: () => cursuriByTeacher(form.teacher),
-    enabled: Boolean(form.teacher),
+    queryKey: ['lookup', 'cursuri-by-teacher', form.teacher, sezonNouId],
+    queryFn: () => cursuriByTeacher(form.teacher, sezonNouId),
+    enabled: Boolean(form.teacher) && (isEdit || sezonActivQ.isSuccess),
   })
 
   const cursuriOpts =

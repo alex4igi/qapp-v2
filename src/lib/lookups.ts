@@ -147,15 +147,21 @@ export async function cursuriOptions(
 
 // Listă cursuri asociate teacher-ului curent (via cursuri_teacheri M:N).
 // Folosit în UI pentru teacher (PrezentePage, CursuriListPage când role=teacher).
-export async function cursuriOptionsForCurrentTeacher(): Promise<SelectOption[]> {
+// Cu `sezonId`, doar cursurile acelui sezon — altfel lista acumulează clonele
+// din toate sezoanele (reînscrieri).
+export async function cursuriOptionsForCurrentTeacher(
+  sezonId?: string | null,
+): Promise<SelectOption[]> {
   // Identifică teacher_id-ul curent
   const { data: tIds } = await supabase.rpc('current_teacher_id')
   const teacherId = (tIds as unknown as string | null) ?? null
   if (!teacherId) return []
-  const { data, error } = await supabase
+  let q = supabase
     .from('cursuri_teacheri')
-    .select('curs_id, cursuri:cursuri!cursuri_teacheri_curs_id_fkey(id, numele)')
+    .select('curs_id, cursuri:cursuri!cursuri_teacheri_curs_id_fkey!inner(id, numele)')
     .eq('teacher_id', teacherId)
+  if (sezonId) q = q.eq('cursuri.sezon', sezonId)
+  const { data, error } = await q
   if (error) throw error
   type Row = { cursuri: { id: string; numele: string } | null }
   const rows = (data as unknown as Row[]) ?? []

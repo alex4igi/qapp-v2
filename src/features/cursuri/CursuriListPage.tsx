@@ -77,10 +77,11 @@ export function CursuriListPage() {
   const [sezonFilter, setSezonFilter] = useState('')
   const [sezonInit, setSezonInit] = useState(false)
 
-  // Pentru teacher: limităm la cursurile asociate (via cursuri_teacheri M:N)
+  // Pentru teacher: limităm la cursurile asociate (via cursuri_teacheri M:N).
+  // Fără filtru de sezon aici — pagina are selector propriu care se intersectează.
   const teacherCursuriQ = useQuery({
     queryKey: ['lookup', 'cursuri', 'teacher'],
-    queryFn: cursuriOptionsForCurrentTeacher,
+    queryFn: () => cursuriOptionsForCurrentTeacher(),
     enabled: teacherMode,
   })
   const teacherCursIds = teacherMode
