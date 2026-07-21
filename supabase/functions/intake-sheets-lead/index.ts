@@ -5,13 +5,15 @@
 //   POST cu header `x-sheets-secret` = SHEETS_INTAKE_SECRET.
 //   Body: { rows: SheetRow[], status?: 'nou' | 'nurture' }
 //
-// Dedup: pe markerul `metasheet:<id>` din observații (id-ul liniei Meta) +
-//   pe telefon (insertLead). Idempotent la re-rulări.
+// Dedup: pe `leads.extern_id` (id-ul liniei Meta) + pe telefon (insertLead).
+//   Idempotent la re-rulări. Marcajul stătea în `observatii` până în
+//   20260722120000, unde bloca notița recepției cu text de import.
 import {
   serviceClient,
   resolveCampanie,
   insertLead,
   mapLocatie,
+  parseVarsta,
 } from '../_shared/intake.ts'
 
 type SheetRow = {
@@ -60,11 +62,12 @@ Deno.serve(async (req) => {
     const seen = new Set<string>()
     const { data: existing } = await supabase
       .from('leads')
-      .select('observatii')
-      .like('observatii', '%metasheet:%')
+      .select('extern_id')
+      .not('extern_id', 'is', null)
+    // extern_id conține id-ul brut („l:167…"), fără prefixul vechi de marcaj.
     for (const row of existing ?? []) {
-      const m = (row.observatii as string | null)?.match(/metasheet:(\S+)/)
-      if (m) seen.add(m[1])
+      const id = row.extern_id as string | null
+      if (id) seen.add(id)
     }
 
     let created = 0
@@ -77,21 +80,17 @@ Deno.serve(async (req) => {
       }
 
       // Dedup pe id-ul liniei Meta.
-      const marker = r.id ? `metasheet:${r.id}` : null
       if (r.id && seen.has(r.id)) {
         skipped++
         continue
       }
       if (r.id) seen.add(r.id) // evită dubluri în același batch
 
-      const note: string[] = []
-      if (marker) {
-        const src = r.platform === 'ig' ? 'Instagram' : 'Facebook'
-        note.push(`Meta Lead Ads (${src}) ${marker}`)
-      }
-      if (r.campaign) note.push(`Campanie: ${r.campaign}`)
-      if (r.ad_name) note.push(`Ad: ${r.ad_name}`)
-      if (r.varsta) note.push(`Vârstă declarată: ${r.varsta.replace(/_/g, ' ')}`)
+      // `observatii` rămâne GOALĂ la import: e spațiul recepției pentru ce s-a
+      // discutat la telefon. Campania e deja în utm_campaign, id-ul în
+      // extern_id, iar vârsta declarată se mapează pe grupa_varsta / varsta —
+      // datele tehnice ale reclamei se iau din Meta, nu din CRM.
+      const { grupa, ani } = parseVarsta(r.varsta)
 
       const result = await insertLead(
         supabase,
@@ -101,7 +100,9 @@ Deno.serve(async (req) => {
           telefon: r.phone,
           email: r.email,
           locatia: normLocatie(r.locatie),
-          observatii: note.join('\n'),
+          grupa_varsta: grupa,
+          varsta: ani,
+          extern_id: r.id ?? null,
           utm_source: 'meta',
           utm_medium: 'lead_ads_sheet',
           utm_campaign: r.campaign ?? null,

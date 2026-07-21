@@ -53,12 +53,12 @@ Deno.serve(async (req) => {
         }
 
         // Dedup pe leadgen_id — Meta retrimite webhook-ul la timeout/retry.
-        // Markerul `leadgen:<id>` din observații e gardul idempotent.
-        const marker = `leadgen:${leadgenId}`
+        // Gardul idempotent e `leads.extern_id` (era în observații până în
+        // migrația 20260722120000, unde bloca notița recepției).
         const { data: existing } = await supabase
           .from('leads')
           .select('id')
-          .like('observatii', `%${marker}%`)
+          .eq('extern_id', leadgenId)
           .limit(1)
           .maybeSingle()
         if (existing) {
@@ -81,12 +81,11 @@ Deno.serve(async (req) => {
         const data = await res.json()
         const parsed = parseLeadFields(data.field_data ?? [])
 
-        const note = [
-          `Meta Lead Ads (form ${data.form_id ?? change.value?.form_id ?? '?'}) ${marker}`,
-        ]
-        if (data.campaign_name) note.push(`Campanie: ${data.campaign_name}`)
-        if (data.ad_name) note.push(`Ad: ${data.ad_name}`)
-        note.push(...parsed.notes)
+        // Doar răspunsurile din formular care n-au putut fi mapate pe câmpuri —
+        // alea sunt informație despre om. Marcajul, campania și numele reclamei
+        // NU intră în observații: `observatii` e notița recepției, iar datele
+        // tehnice ale reclamei se iau din Meta.
+        const note = [...parsed.notes]
 
         const sursaId = await resolveCampanie(supabase, 'Meta Ads')
         const result = await insertLead(
@@ -101,6 +100,7 @@ Deno.serve(async (req) => {
             grupa_varsta: parsed.grupa_varsta,
             data_nasterii: parsed.data_nasterii,
             observatii: note.join('\n'),
+            extern_id: leadgenId,
             utm_source: 'meta',
             utm_medium: 'lead_ads',
             utm_campaign: data.campaign_name ?? data.campaign_id ?? null,

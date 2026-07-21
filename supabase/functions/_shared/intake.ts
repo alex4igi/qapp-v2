@@ -166,6 +166,37 @@ async function clientHasHistory(
   return (pay ?? 0) > 0
 }
 
+// Vârsta declarată în formularul Meta („4-6", „11 ani", „25+ ani") → grupa
+// canonică + vârsta exactă când e dată. Aceeași mapare ca backfill-ul din
+// migrația 20260722120000; dacă se schimbă una, se schimbă și cealaltă.
+// Intervalele care traversează două grupe merg la cea majoritară.
+export function parseVarsta(
+  v: string | null | undefined,
+): { grupa: string | null; ani: number | null } {
+  const raw = (v ?? '').replace(/_/g, ' ').trim()
+  if (!raw) return { grupa: null, ani: null }
+
+  const exact = raw.match(/^(\d{1,2}) ani/)
+  const ani = exact ? Number(exact[1]) : null
+
+  const grupa =
+    /^4-6/.test(raw) ? 'Tiny'
+    : /^7-10/.test(raw) ? 'Junior'
+    : /^11-1[45]/.test(raw) ? 'Varsity'
+    : /^1[56]-18/.test(raw) ? 'Teens'
+    : /^19-25/.test(raw) ? 'Students'
+    : /^25\+/.test(raw) ? 'Adults'
+    : ani == null ? null
+    : ani <= 6 ? 'Tiny'
+    : ani <= 10 ? 'Junior'
+    : ani <= 14 ? 'Varsity'
+    : ani <= 19 ? 'Teens'
+    : ani <= 25 ? 'Students'
+    : 'Adults'
+
+  return { grupa, ani }
+}
+
 export type IntakeLead = {
   nume: string
   prenume?: string | null
@@ -175,8 +206,12 @@ export type IntakeLead = {
   data_nasterii?: string | null
   interes?: string | null
   grupa_varsta?: string | null
+  varsta?: number | null
   locatia?: string | null
   observatii?: string | null
+  // ID-ul la sursa externă (Meta). Cheie de dedup — stă în coloana lui, NU în
+  // observații: acolo bloca notița recepției cu text de import.
+  extern_id?: string | null
   utm_source?: string | null
   utm_medium?: string | null
   utm_campaign?: string | null
@@ -236,12 +271,14 @@ export async function insertLead(
       data_nasterii: dataNasterii,
       interes,
       grupa_varsta: safeEnum(lead.grupa_varsta, GRUPA_VALUES),
+      varsta: lead.varsta ?? null,
       locatia,
       sursa: sursaId,
       id_client: match?.id ?? null,
       deja_client: !!match,
       status: opts?.status ?? 'nou',
       observatii: note.length ? note.join('\n') : null,
+      extern_id: lead.extern_id?.trim() || null,
       utm_source: lead.utm_source?.trim() || null,
       utm_medium: lead.utm_medium?.trim() || null,
       utm_campaign: lead.utm_campaign?.trim() || null,

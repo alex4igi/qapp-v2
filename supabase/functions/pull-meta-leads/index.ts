@@ -56,15 +56,16 @@ Deno.serve(async (req) => {
   const errors: string[] = []
 
   try {
-    // Dedup în masă pe markerul `leadgen:<id>` (o singură interogare, ca la sheets).
+    // Dedup în masă pe `leads.extern_id` (o singură interogare, ca la sheets).
+    // Era markerul din observații până în migrația 20260722120000.
     const seen = new Set<string>()
     const { data: existing } = await supabase
       .from('leads')
-      .select('observatii')
-      .like('observatii', '%leadgen:%')
+      .select('extern_id')
+      .not('extern_id', 'is', null)
     for (const row of existing ?? []) {
-      const m = (row.observatii as string | null)?.match(/leadgen:(\S+)/)
-      if (m) seen.add(m[1])
+      const id = row.extern_id as string | null
+      if (id) seen.add(id)
     }
 
     const sursaId = await resolveCampanie(supabase, 'Meta Ads')
@@ -112,10 +113,11 @@ Deno.serve(async (req) => {
             seen.add(lead.id)
 
             const parsed = parseLeadFields(lead.field_data ?? [])
-            const note: string[] = [`Meta Lead Ads (form ${form.id}) leadgen:${lead.id}`]
-            if (lead.campaign_name) note.push(`Campanie: ${lead.campaign_name}`)
-            if (lead.ad_name) note.push(`Ad: ${lead.ad_name}`)
-            note.push(...parsed.notes)
+            // Doar răspunsurile nemapate din formular — alea sunt despre om.
+            // Marcajul merge în extern_id, campania în utm_campaign; numele
+            // reclamei nu se stochează (se ia din Meta). `observatii` rămâne a
+            // recepției.
+            const note: string[] = [...parsed.notes]
 
             const result = await insertLead(
               supabase,
@@ -129,6 +131,7 @@ Deno.serve(async (req) => {
                 grupa_varsta: parsed.grupa_varsta,
                 data_nasterii: parsed.data_nasterii,
                 observatii: note.join('\n'),
+                extern_id: lead.id,
                 utm_source: 'meta',
                 utm_medium: 'lead_ads',
                 utm_campaign: lead.campaign_name ?? lead.campaign_id ?? null,
