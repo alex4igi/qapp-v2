@@ -137,6 +137,38 @@ export async function listInchirieriNeachitate(params: {
     .filter((r) => r.rest > 0.004)
 }
 
+export type InchiriereMea = {
+  id: string
+  data: string
+  ora_start: string
+  ora_final: string
+  pret: number | null
+  status_plata: Enums<'status_plata_inchiriere'>
+  sala_nume: string | null
+}
+
+// Rezervările unui teacher (self-service): de la `fromIso` încolo.
+export async function listInchirieriByTeacher(
+  teacherId: string,
+  fromIso: string,
+): Promise<InchiriereMea[]> {
+  const { data, error } = await supabase
+    .from('inchirieri')
+    .select('id, data, ora_start, ora_final, pret, status_plata, sala_rel:sali(nume)')
+    .eq('teacher', teacherId)
+    .gte('data', fromIso)
+    .order('data', { ascending: true })
+    .order('ora_start', { ascending: true })
+  if (error) throw error
+  type Row = Omit<InchiriereMea, 'sala_nume'> & {
+    sala_rel: { nume: string | null } | null
+  }
+  return ((data ?? []) as unknown as Row[]).map(({ sala_rel, ...r }) => ({
+    ...r,
+    sala_nume: sala_rel?.nume ?? null,
+  }))
+}
+
 // Nume afișabil al chiriașului pentru eticheta din calendar.
 export function renterLabel(r: InchiriereCalendar): string {
   if (r.teacher_rel) return `${r.teacher_rel.nume ?? ''} ${r.teacher_rel.prenume ?? ''}`.trim()

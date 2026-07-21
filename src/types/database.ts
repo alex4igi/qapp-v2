@@ -8402,24 +8402,26 @@ export type Database = {
         Returns: Json
       }
       get_absente_consecutive: {
-        Args: { p_locatie?: string; p_prag?: number }
+        Args: { p_locatie?: string; p_saptamani?: number }
         Returns: {
           absente_consecutive: number
           client_id: string
           client_nume: string
           curs_id: string
           curs_nume: string
+          lectii_pe_saptamana: number
           ultima_prezenta: string
         }[]
       }
       get_absente_risc_teacher: {
-        Args: { p_prag?: number }
+        Args: { p_saptamani?: number }
         Returns: {
           absente_consecutive: number
           client_id: string
           client_nume: string
           curs_id: string
           curs_nume: string
+          lectii_pe_saptamana: number
           ultima_prezenta: string
         }[]
       }

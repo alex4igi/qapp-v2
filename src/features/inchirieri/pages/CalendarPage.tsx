@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { PageHeader, Spinner } from '@/components/ui'
+import { Modal, PageHeader, Spinner } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { saliOptions } from '@/lib/lookups'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
+import { InchiriereTab } from '@/features/plati/modals/PlataNouaModal/InchiriereTab'
 import { RoomLocationFilter } from '../components/RoomLocationFilter'
 import { WeekNav } from '../components/WeekNav'
 import { WeekGrid } from '../components/WeekGrid'
 import { TodayPanel } from '../components/TodayPanel'
 import { NeachitatePanel } from '../components/NeachitatePanel'
+import { RezervarileMelePanel } from '../components/RezervarileMelePanel'
 import { EditInchiriereModal } from '../components/EditInchiriereModal'
 import { useWeekOccupancy } from '../hooks/useWeekOccupancy'
 import { mondayOf, todayIso } from '../week'
@@ -18,7 +21,13 @@ import { OCCUP_LEGEND, OCCUP_STYLE } from '../constants'
 type BookingPrefill = { locatie: string; sala: string; data: string; oraStart: string }
 
 export function CalendarPage() {
-  const { locatieId: workLocatie } = useWorkingLocatie()
+  const { role } = useAuth()
+  const teacherMode = role === 'teacher'
+  const {
+    locatieId: workLocatie,
+    locatieNume: workLocatieNume,
+    locked: locatieLocked,
+  } = useWorkingLocatie()
   const { date: workDate } = useWorkingDate()
 
   const [locatie, setLocatie] = useState(workLocatie ?? '')
@@ -26,6 +35,10 @@ export function CalendarPage() {
   const [mondayIso, setMondayIso] = useState(() => mondayOf(workDate || todayIso()))
   const [booking, setBooking] = useState<BookingPrefill | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
+
+  // „Rezervi doar la locația ta": staff legat de o locație poate VEDEA orice
+  // locație, dar rezervă doar la a lui (dublat de politica RLS de insert).
+  const canBookHere = !locatieLocked || !workLocatie || locatie === workLocatie
 
   // Auto-selectează prima sală când se schimbă locația.
   const saliQ = useQuery({
@@ -48,7 +61,11 @@ export function CalendarPage() {
     <div>
       <PageHeader
         title="Închirieri săli"
-        subtitle="Calendar ocupare (cursuri + închirieri) — click pe un slot liber pentru a rezerva."
+        subtitle={
+          teacherMode
+            ? 'Calendar ocupare — click pe un slot liber pentru a-ți rezerva sala.'
+            : 'Calendar ocupare (cursuri + închirieri) — click pe un slot liber pentru a rezerva.'
+        }
       />
 
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
@@ -75,6 +92,13 @@ export function CalendarPage() {
         ))}
       </div>
 
+      {!canBookHere && (
+        <p className="mb-2 rounded-md border border-warn/50 bg-warn/10 p-2 text-sm text-ink">
+          Vizualizezi altă locație — rezervările se fac doar la locația ta
+          {workLocatieNume ? ` (${workLocatieNume})` : ''}.
+        </p>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
         <div className="rounded-lg border border-line bg-card p-2">
           {!locatie || !sala ? (
@@ -88,28 +112,42 @@ export function CalendarPage() {
               days={days}
               byDate={byDate}
               todayIso={today}
-              onFree={(dateIso, oraStart) =>
+              onFree={(dateIso, oraStart) => {
+                if (!canBookHere) return
                 setBooking({ locatie, sala, data: dateIso, oraStart })
-              }
+              }}
               onRental={(id) => setEditId(id)}
             />
           )}
         </div>
 
         <div className="space-y-4">
-          <TodayPanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
-          <NeachitatePanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
+          {teacherMode ? (
+            <RezervarileMelePanel onRental={(id) => setEditId(id)} />
+          ) : (
+            <>
+              <TodayPanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
+              <NeachitatePanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
+            </>
+          )}
         </div>
       </div>
 
-      {booking && (
-        <PlataNouaModal
-          open
-          onClose={() => setBooking(null)}
-          defaultTip="Inchiriere"
-          defaultInchiriere={booking}
-        />
-      )}
+      {booking &&
+        (teacherMode ? (
+          // Teacherul nu primește modalul complet de Plată nouă (taburi de
+          // încasare) — doar formularul de rezervare, în modul lui restrâns.
+          <Modal open title="Rezervare sală" onClose={() => setBooking(null)} size="xl">
+            <InchiriereTab onClose={() => setBooking(null)} defaultInchiriere={booking} />
+          </Modal>
+        ) : (
+          <PlataNouaModal
+            open
+            onClose={() => setBooking(null)}
+            defaultTip="Inchiriere"
+            defaultInchiriere={booking}
+          />
+        ))}
 
       {editId && (
         <EditInchiriereModal inchiriereId={editId} onClose={() => setEditId(null)} />

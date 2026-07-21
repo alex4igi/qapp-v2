@@ -13,6 +13,9 @@ import {
 import { clientiOptions, locatiiOptions, saliOptions } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
+import { useAuth } from '@/hooks/useAuth'
+import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
+import { isPrivileged } from '@/lib/rolesMatrix'
 import { formatRON } from '@/lib/format'
 import { computePret, computeOraFinal, type TarifBracket } from '@/lib/inchirieriPricing'
 import type { Enums } from '@/types/db'
@@ -49,11 +52,31 @@ const RENTER_LABEL: Record<RenterKind, string> = {
   guest: 'Guest',
 }
 
+const PILL_ON =
+  'rounded-[10px] border px-3 py-2 text-[13px] font-semibold transition-colors border-quasar-yellow bg-quasar-yellow text-ink'
+const PILL_OFF =
+  'rounded-[10px] border px-3 py-2 text-[13px] font-semibold transition-colors border-line bg-card text-muted-2 hover:border-quasar-yellow/60 hover:text-ink'
+
 export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
   const queryClient = useQueryClient()
-  const { locatieId: workLocatieId, locatieNume } = useWorkingLocatie()
+  const { role } = useAuth()
+  // Teacher: rezervă doar pentru el, fără încasare (plata se face la recepție).
+  // Garanțiile tari sunt în DB (politici RLS + trigger-gard pe inchirieri).
+  const teacherMode = role === 'teacher'
+  const privileged = isPrivileged(role)
+  const { teacherId: ownTeacherId, loading: ownTeacherLoading } = useCurrentTeacherId()
+  const {
+    locatieId: workLocatieId,
+    locatieNume,
+    locked: locatieLocked,
+  } = useWorkingLocatie()
 
-  const [locatie, setLocatie] = useState(defaultInchiriere?.locatie ?? workLocatieId ?? '')
+  // Staff legat de o locație rezervă doar acolo (regulă „rezervi doar la locația ta").
+  const [locatie, setLocatie] = useState(
+    locatieLocked
+      ? (workLocatieId ?? '')
+      : (defaultInchiriere?.locatie ?? workLocatieId ?? ''),
+  )
   const [sala, setSala] = useState(defaultInchiriere?.sala ?? '')
   const [data, setData] = useState(defaultInchiriere?.data ?? todayIso())
   const [oraStart, setOraStart] = useState(defaultInchiriere?.oraStart ?? '')
@@ -65,6 +88,10 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
   const [clientId, setClientId] = useState('')
   const [guestNume, setGuestNume] = useState('')
   const [guestTel, setGuestTel] = useState('')
+
+  // Preț manual (proiecte speciale) — doar manager+; ocolește grila de tarife.
+  const [pretManualOn, setPretManualOn] = useState(false)
+  const [manualPret, setManualPret] = useState('')
 
   const [incasat, setIncasat] = useState('')
   const [incasatTouched, setIncasatTouched] = useState(false)
@@ -81,7 +108,11 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
     enabled: Boolean(locatie),
   })
   const teacheriQ = useTeacheriOptions()
-  const clientiQ = useQuery({ queryKey: ['lookup', 'clienti'], queryFn: clientiOptions })
+  const clientiQ = useQuery({
+    queryKey: ['lookup', 'clienti'],
+    queryFn: clientiOptions,
+    enabled: !teacherMode,
+  })
   const tarifeQ = useQuery({ queryKey: ['tarife-inchiriere'], queryFn: listTarifeInchiriere })
 
   const salaNume = useMemo(
@@ -89,22 +120,39 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
     [saliQ.data, sala],
   )
 
-  const tier: Enums<'tier_inchiriere'> = renterKind === 'teacher' ? 'staff' : 'client'
-  const isFreePractice = renterKind === 'teacher' && teacherFree
+  // Teacherul rezervă doar pe propriul profil.
+  const effTeacherId = teacherMode ? (ownTeacherId ?? '') : teacherId
+
+  const manualMode = privileged && pretManualOn
+  const tier: Enums<'tier_inchiriere'> = manualMode
+    ? 'manual'
+    : renterKind === 'teacher'
+      ? 'staff'
+      : 'client'
+  const isFreePractice = !manualMode && renterKind === 'teacher' && teacherFree
 
   const tarif = useMemo<TarifBracket | null>(() => {
     const row = tarifeQ.data?.find((t) => t.sala === sala && t.tier === tier)
     return row ?? null
   }, [tarifeQ.data, sala, tier])
 
-  const pret = isFreePractice ? 0 : computePret(tarif, durataMin)
+  const manualPretNum =
+    manualPret.trim() === '' ? null : Math.max(0, Number(manualPret) || 0)
+  const pret = manualMode
+    ? manualPretNum
+    : isFreePractice
+      ? 0
+      : computePret(tarif, durataMin)
   const oraFinal = computeOraFinal(oraStart, durataMin)
-  const tarifLipsa = !isFreePractice && sala !== '' && pret == null
+  const tarifLipsa = !manualMode && !isFreePractice && sala !== '' && pret == null
 
   // Default „Încasează acum" = prețul, până când recepția îl editează.
+  // Teacherul nu încasează niciodată — rezervarea lui rămâne neachitată.
   const pretNum = pret ?? 0
   const incasatDefault = incasatTouched ? incasat : pretNum > 0 ? String(pretNum) : '0'
-  const collected = Math.min(Math.max(0, Number(incasatDefault) || 0), pretNum)
+  const collected = teacherMode
+    ? 0
+    : Math.min(Math.max(0, Number(incasatDefault) || 0), pretNum)
   const rest = Math.max(0, pretNum - collected)
 
   // Verificare conflict live (interval overlap cu cursuri + închirieri).
@@ -116,12 +164,19 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
   })
   const conflict = conflictQ.data ?? null
 
-  const tierLabel = isFreePractice ? 'Gratis (antrenament)' : tier === 'staff' ? 'Staff' : 'Client'
+  const tierLabel = manualMode
+    ? 'Manual (proiect)'
+    : isFreePractice
+      ? 'Gratis (antrenament)'
+      : tier === 'staff'
+        ? 'Staff'
+        : 'Client'
   const renterName = useMemo(() => {
-    if (renterKind === 'teacher') return teacheriQ.data?.find((t) => t.value === teacherId)?.label ?? ''
+    if (renterKind === 'teacher')
+      return teacheriQ.data?.find((t) => t.value === effTeacherId)?.label ?? ''
     if (renterKind === 'client') return clientiQ.data?.find((c) => c.value === clientId)?.label ?? ''
     return guestNume.trim()
-  }, [renterKind, teacherId, clientId, guestNume, teacheriQ.data, clientiQ.data])
+  }, [renterKind, effTeacherId, clientId, guestNume, teacheriQ.data, clientiQ.data])
 
   const reset = () => {
     setSala('')
@@ -133,6 +188,8 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
     setClientId('')
     setGuestNume('')
     setGuestTel('')
+    setPretManualOn(false)
+    setManualPret('')
     setIncasat('')
     setIncasatTouched(false)
     setMetoda('Cash')
@@ -157,8 +214,18 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
 
       let renter: InchiriereRenter
       if (renterKind === 'teacher') {
-        if (!teacherId) throw new Error('Alege teacherul.')
-        renter = { kind: 'teacher', teacherId, freePractice: teacherFree }
+        if (!effTeacherId) {
+          throw new Error(
+            teacherMode
+              ? 'Contul tău nu e legat de un profil de instructor — cere unui manager să facă legătura din fișa ta.'
+              : 'Alege teacherul.',
+          )
+        }
+        renter = {
+          kind: 'teacher',
+          teacherId: effTeacherId,
+          freePractice: isFreePractice,
+        }
       } else if (renterKind === 'client') {
         if (!clientId) throw new Error('Alege clientul.')
         renter = { kind: 'client', clientId }
@@ -168,7 +235,10 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
         renter = { kind: 'guest', nume: guestNume, tel: guestTel }
       }
 
-      if (!isFreePractice && pret == null) {
+      if (manualMode && pret == null) {
+        throw new Error('Introdu prețul manual (RON).')
+      }
+      if (!manualMode && !isFreePractice && pret == null) {
         throw new Error('Tarif nesetat pentru această sală — completează-l în Setări.')
       }
       // Guest (walk-in fără cont) achită integral pe loc; doar teacher/client pot amâna.
@@ -210,7 +280,7 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
   })
 
   const renterValid =
-    (renterKind === 'teacher' && Boolean(teacherId)) ||
+    (renterKind === 'teacher' && Boolean(effTeacherId)) ||
     (renterKind === 'client' && Boolean(clientId)) ||
     (renterKind === 'guest' && Boolean(guestNume.trim() && guestTel.trim()))
   const canSave =
@@ -227,6 +297,7 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
           <Select
             options={locatiiQ.data ?? []}
             value={locatie}
+            disabled={locatieLocked}
             onChange={(e) => {
               setLocatie(e.target.value)
               setSala('')
@@ -262,12 +333,7 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
               key={d}
               type="button"
               onClick={() => setDurataMin(d)}
-              className={[
-                'rounded-[10px] border px-3 py-2 text-[13px] font-semibold transition-colors',
-                durataMin === d
-                  ? 'border-quasar-yellow bg-quasar-yellow text-ink'
-                  : 'border-line bg-card text-muted-2 hover:border-quasar-yellow/60 hover:text-ink',
-              ].join(' ')}
+              className={durataMin === d ? PILL_ON : PILL_OFF}
             >
               {d} min
             </button>
@@ -294,85 +360,143 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
       )}
 
       {/* Chiriaș */}
-      <Field label="Cine închiriază">
-        <div className="flex flex-wrap gap-1.5">
-          {(['teacher', 'client', 'guest'] as RenterKind[]).map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setRenterKind(k)}
-              className={[
-                'rounded-[10px] border px-3 py-2 text-[13px] font-semibold transition-colors',
-                renterKind === k
-                  ? 'border-quasar-yellow bg-quasar-yellow text-ink'
-                  : 'border-line bg-card text-muted-2 hover:border-quasar-yellow/60 hover:text-ink',
-              ].join(' ')}
-            >
-              {RENTER_LABEL[k]}
-            </button>
-          ))}
-        </div>
-      </Field>
-
-      {renterKind === 'teacher' && (
+      {teacherMode ? (
         <div className="space-y-3 rounded-md border border-line p-3">
-          <Field label="Teacher" required>
-            <Combobox
-              placeholder="Caută teacher…"
-              options={teacheriQ.data ?? []}
-              value={teacherId}
-              onChange={setTeacherId}
-            />
-          </Field>
+          <div className="text-sm text-ink">
+            Rezervi pentru tine:{' '}
+            <strong>
+              {renterName ||
+                (ownTeacherLoading
+                  ? 'se încarcă…'
+                  : 'contul nu e legat de un profil de instructor')}
+            </strong>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={() => setTeacherFree(true)}
-              className={[
-                'rounded-[10px] border px-3 py-2 text-[13px] font-semibold transition-colors',
-                teacherFree
-                  ? 'border-quasar-yellow bg-quasar-yellow text-ink'
-                  : 'border-line bg-card text-muted-2 hover:border-quasar-yellow/60 hover:text-ink',
-              ].join(' ')}
+              className={teacherFree ? PILL_ON : PILL_OFF}
             >
               Antrenament individual (gratis)
             </button>
             <button
               type="button"
               onClick={() => setTeacherFree(false)}
-              className={[
-                'rounded-[10px] border px-3 py-2 text-[13px] font-semibold transition-colors',
-                !teacherFree
-                  ? 'border-quasar-yellow bg-quasar-yellow text-ink'
-                  : 'border-line bg-card text-muted-2 hover:border-quasar-yellow/60 hover:text-ink',
-              ].join(' ')}
+              className={!teacherFree ? PILL_ON : PILL_OFF}
             >
               Închiriere plătită (tarif Staff)
             </button>
           </div>
+          {!teacherFree && (
+            <p className="text-xs text-muted">
+              Plata se înregistrează la recepție — rezervarea rămâne „neachitat" până
+              atunci.
+            </p>
+          )}
         </div>
+      ) : (
+        <>
+          <Field label="Cine închiriază">
+            <div className="flex flex-wrap gap-1.5">
+              {(['teacher', 'client', 'guest'] as RenterKind[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setRenterKind(k)}
+                  className={renterKind === k ? PILL_ON : PILL_OFF}
+                >
+                  {RENTER_LABEL[k]}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          {renterKind === 'teacher' && (
+            <div className="space-y-3 rounded-md border border-line p-3">
+              <Field label="Teacher" required>
+                <Combobox
+                  placeholder="Caută teacher…"
+                  options={teacheriQ.data ?? []}
+                  value={teacherId}
+                  onChange={setTeacherId}
+                />
+              </Field>
+              {!manualMode && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setTeacherFree(true)}
+                    className={teacherFree ? PILL_ON : PILL_OFF}
+                  >
+                    Antrenament individual (gratis)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTeacherFree(false)}
+                    className={!teacherFree ? PILL_ON : PILL_OFF}
+                  >
+                    Închiriere plătită (tarif Staff)
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {renterKind === 'client' && (
+            <Field label="Client" required>
+              <Combobox
+                placeholder="Caută client (nume sau telefon)…"
+                options={clientiQ.data ?? []}
+                value={clientId}
+                onChange={setClientId}
+              />
+            </Field>
+          )}
+
+          {renterKind === 'guest' && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Nume guest" required>
+                <TextInput value={guestNume} onChange={(e) => setGuestNume(e.target.value)} />
+              </Field>
+              <Field label="Telefon guest" required>
+                <TextInput value={guestTel} onChange={(e) => setGuestTel(e.target.value)} />
+              </Field>
+            </div>
+          )}
+        </>
       )}
 
-      {renterKind === 'client' && (
-        <Field label="Client" required>
-          <Combobox
-            placeholder="Caută client (nume sau telefon)…"
-            options={clientiQ.data ?? []}
-            value={clientId}
-            onChange={setClientId}
-          />
+      {/* Preț manual (proiecte) — doar manager+ */}
+      {privileged && (
+        <Field label="Tarif">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPretManualOn(false)}
+              className={!pretManualOn ? PILL_ON : PILL_OFF}
+            >
+              Din grilă
+            </button>
+            <button
+              type="button"
+              onClick={() => setPretManualOn(true)}
+              className={pretManualOn ? PILL_ON : PILL_OFF}
+            >
+              Preț manual (proiect)
+            </button>
+            {manualMode && (
+              <TextInput
+                type="number"
+                min={0}
+                step="0.01"
+                className="w-32"
+                placeholder="RON"
+                value={manualPret}
+                onChange={(e) => setManualPret(e.target.value)}
+              />
+            )}
+          </div>
         </Field>
-      )}
-
-      {renterKind === 'guest' && (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Nume guest" required>
-            <TextInput value={guestNume} onChange={(e) => setGuestNume(e.target.value)} />
-          </Field>
-          <Field label="Telefon guest" required>
-            <TextInput value={guestTel} onChange={(e) => setGuestTel(e.target.value)} />
-          </Field>
-        </div>
       )}
 
       {tarifLipsa && (
@@ -381,8 +505,8 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
         </p>
       )}
 
-      {/* Plată */}
-      {!isFreePractice && pret != null && (
+      {/* Plată — teacherul nu încasează (plata se face la recepție) */}
+      {!teacherMode && !isFreePractice && pret != null && (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Field label="Încasează acum (RON)">
             <TextInput
@@ -456,11 +580,13 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
             ? 'Se salvează…'
             : isFreePractice
               ? 'Rezervă (gratis)'
-              : rest > 0
-                ? renterKind === 'client'
-                  ? 'Rezervă + datorie'
-                  : 'Rezervă + neachitat'
-                : 'Rezervă + încasează'}
+              : teacherMode
+                ? 'Rezervă — plata la recepție'
+                : rest > 0
+                  ? renterKind === 'client'
+                    ? 'Rezervă + datorie'
+                    : 'Rezervă + neachitat'
+                  : 'Rezervă + încasează'}
         </Button>
       </div>
     </div>

@@ -170,6 +170,13 @@ export interface CreateInchiriereParams {
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
+// 23P01 = exclusion constraint `inchirieri_no_overlap`: altă tranzacție a prins
+// slotul între verificarea client-side de conflict și insert/update.
+const mapInchiriereError = (e: { code?: string }): unknown =>
+  e && typeof e === 'object' && 'code' in e && e.code === '23P01'
+    ? new Error('Interval ocupat — altcineva tocmai a rezervat acest slot.')
+    : e
+
 export async function createInchiriere(
   params: CreateInchiriereParams,
 ): Promise<Inchiriere> {
@@ -232,7 +239,7 @@ export async function createInchiriere(
     .insert(insert)
     .select('*')
     .single()
-  if (error) throw error
+  if (error) throw mapInchiriereError(error)
 
   // 3) Încasări (dacă s-a încasat ceva). Categorie 'Inchiriere'; legate de datorie
   //    când e plată parțială de client.
@@ -328,7 +335,7 @@ export async function updateInchiriere(
       updated: new Date().toISOString(),
     })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw mapInchiriereError(error)
 }
 
 // Ajustare preț la editare, cu reconciliere automată a banilor (datorie/credit).

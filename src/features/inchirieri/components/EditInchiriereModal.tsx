@@ -18,6 +18,9 @@ import {
   resolveTenders,
   type MetodaSel,
 } from '@/features/plati/modals/PlataNouaModal/MetodaPlataField'
+import { useAuth } from '@/hooks/useAuth'
+import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
+import { isPrivileged } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 
@@ -32,6 +35,10 @@ type Props = {
 
 export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
   const queryClient = useQueryClient()
+  const { role } = useAuth()
+  const teacherRole = role === 'teacher'
+  const privileged = isPrivileged(role)
+  const { teacherId: ownTeacherId } = useCurrentTeacherId()
   const { locatieId: workLocatieId } = useWorkingLocatie()
   const { date: workingDate } = useWorkingDate()
   const [data, setData] = useState('')
@@ -43,6 +50,7 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
   const [collectMetoda, setCollectMetoda] = useState<MetodaSel>('Cash')
   const [collectCash, setCollectCash] = useState('')
   const [collectCard, setCollectCard] = useState('')
+  const [manualPretEdit, setManualPretEdit] = useState('')
 
   const detailQ = useQuery({
     queryKey: ['inchiriere-detail', inchiriereId],
@@ -50,9 +58,21 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
   })
   const d = detailQ.data
 
+  // Teacherul poate acționa doar pe rezervările lui, doar înainte de start și
+  // doar fără bani încasați pe ele (oglinda politicilor RLS + trigger-gard).
+  const ownRental = Boolean(d?.teacher && ownTeacherId && d.teacher === ownTeacherId)
+  const readOnly = teacherRole && !ownRental
+  const started = d
+    ? new Date(`${d.data}T${d.ora_start}`) <= new Date()
+    : false
+  const teacherLocked = teacherRole && ownRental && started
+  const canCancel =
+    !teacherRole || (ownRental && !started && (d?.incasat ?? 0) <= 0.004)
+  const canMove = !readOnly && !teacherLocked
+
   const rest = d ? round2((d.pret ?? 0) - d.incasat) : 0
   const canCollect = Boolean(
-    d && (d.pret ?? 0) > 0 && d.status_plata !== 'achitat' && rest > 0.004,
+    !teacherRole && d && (d.pret ?? 0) > 0 && d.status_plata !== 'achitat' && rest > 0.004,
   )
 
   useEffect(() => {
@@ -61,6 +81,7 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
     setOraStart(d.ora_start.slice(0, 5))
     setDurataMin(d.durata_min)
     setCollectAmount(String(round2((d.pret ?? 0) - d.incasat)))
+    setManualPretEdit(String(d.pret ?? 0))
   }, [d])
 
   const oraFinal = computeOraFinal(oraStart, durataMin)
@@ -75,36 +96,52 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
         durataMin,
         excludeId: inchiriereId,
       }),
-    enabled: Boolean(d?.sala && data && oraStart && durataMin),
+    enabled: Boolean(d?.sala && data && oraStart && durataMin && canMove),
   })
   const conflict = conflictQ.data ?? null
 
   // Recalcul preț: durata schimbă treapta de tarif. Închirierile gratis (pret 0 —
-  // antrenament staff) rămân gratis. tier + sala sunt fixe (nu se editează aici).
+  // antrenament staff) rămân gratis; cele cu tier 'manual' NU se recalculează din
+  // grilă — prețul e stabilit de manager. tier + sala sunt fixe (nu se editează aici).
   const tarifeQ = useQuery({ queryKey: ['tarife-inchiriere'], queryFn: listTarifeInchiriere })
   const isFree = !d?.pret
+  const isManual = d?.tier === 'manual'
   const tarif = useMemo<TarifBracket | null>(
     () => tarifeQ.data?.find((t) => t.sala === d?.sala && t.tier === d?.tier) ?? null,
     [tarifeQ.data, d?.sala, d?.tier],
   )
-  const newPret = isFree ? 0 : computePret(tarif, durataMin)
-  const pretLipsa = !isFree && newPret == null // treaptă neconfigurată pt noua durată
-  const priceChanged = !isFree && newPret != null && newPret !== d?.pret
+  const newPret = isFree || isManual ? (d?.pret ?? 0) : computePret(tarif, durataMin)
+  const pretLipsa = !isFree && !isManual && newPret == null // treaptă neconfigurată pt noua durată
+  const priceChanged = !isFree && !isManual && newPret != null && newPret !== d?.pret
   // Editarea efectivă a duratei (nu simpla deschidere a modalului) e ce justifică
   // banner-ul „preț recalculat".
   const durationEdited = Boolean(d && durataMin !== d.durata_min)
   // Drift de preț: prețul STOCAT nu corespunde tarifului pentru durata SALVATĂ (nu
   // cea din formular) — ex. o închiriere scurtată fără să se aplice recalculul.
-  // Blocăm încasarea unei sume greșite până la o corecție explicită.
-  const savedDurationPret = isFree ? 0 : computePret(tarif, d?.durata_min ?? 0)
+  // Blocăm încasarea unei sume greșite până la o corecție explicită. Nu se aplică
+  // prețurilor manuale — acolo grila nu are autoritate.
+  const savedDurationPret =
+    isFree || isManual ? (d?.pret ?? 0) : computePret(tarif, d?.durata_min ?? 0)
   const priceDrift = Boolean(
-    !isFree && d && savedDurationPret != null && savedDurationPret !== d.pret,
+    !isFree && !isManual && d && savedDurationPret != null && savedDurationPret !== d.pret,
   )
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['inchirieri'] })
     void queryClient.invalidateQueries({ queryKey: ['plati'] })
     void queryClient.invalidateQueries({ queryKey: ['datorii'] })
+  }
+
+  const alertNoAccountDiff = (res: { has_account: boolean; rest: number }) => {
+    // Teacher/guest n-au cont → diferența de bani se reglează manual din Plăți.
+    if (!res.has_account && Math.abs(res.rest) > 0.004) {
+      const dif = formatRON(Math.abs(res.rest))
+      alert(
+        res.rest > 0
+          ? `Prețul a crescut. Chiriașul (fără cont) mai are de plată ${dif} — încaseaz-o din Plăți.`
+          : `Prețul a scăzut. Chiriașul (fără cont) a plătit ${dif} în plus — fă restituirea din Plăți.`,
+      )
+    }
   }
 
   const move = useMutation({
@@ -119,15 +156,7 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
     },
     onSuccess: (res) => {
       invalidate()
-      // Teacher/guest n-au cont → diferența de bani se reglează manual din Plăți.
-      if (res && !res.has_account && Math.abs(res.rest) > 0.004) {
-        const dif = formatRON(Math.abs(res.rest))
-        alert(
-          res.rest > 0
-            ? `Prețul a crescut. Chiriașul (fără cont) mai are de plată ${dif} — încaseaz-o din Plăți.`
-            : `Prețul a scăzut. Chiriașul (fără cont) a plătit ${dif} în plus — fă restituirea din Plăți.`,
-        )
-      }
+      if (res) alertNoAccountDiff(res)
       onClose()
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
@@ -177,6 +206,21 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la corecția prețului.')),
   })
 
+  // Ajustarea prețului manual (doar manager+, doar tier 'manual').
+  const saveManualPret = useMutation({
+    mutationFn: async () => {
+      const val = round2(Number(manualPretEdit))
+      if (!Number.isFinite(val) || val < 0) throw new Error('Preț invalid.')
+      return await adjustInchirierePrice(inchiriereId, val)
+    },
+    onSuccess: (res) => {
+      invalidate()
+      void queryClient.invalidateQueries({ queryKey: ['inchiriere-detail', inchiriereId] })
+      alertNoAccountDiff(res)
+    },
+    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvarea prețului.')),
+  })
+
   const remove = useMutation({
     mutationFn: () => cancelInchiriere(inchiriereId),
     onSuccess: (res) => {
@@ -194,32 +238,44 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
     : d?.client_rel
       ? `${d.client_rel.nume ?? ''} ${d.client_rel.prenume ?? ''}`.trim()
       : (d?.guest_nume ?? '—')
-  const tierLabel = !d?.pret ? 'Gratis' : d.tier === 'staff' ? 'Staff' : 'Client'
+  const tierLabel = !d?.pret
+    ? isManual
+      ? 'Manual (proiect)'
+      : 'Gratis'
+    : isManual
+      ? 'Manual (proiect)'
+      : d.tier === 'staff'
+        ? 'Staff'
+        : 'Client'
 
   return (
     <Modal
       open
-      title="Închiriere"
+      title={readOnly ? 'Închiriere (doar vizualizare)' : 'Închiriere'}
       onClose={onClose}
       footer={
         <>
-          <Button
-            variant="danger"
-            className="mr-auto"
-            disabled={remove.isPending}
-            onClick={() => (confirmCancel ? remove.mutate() : setConfirmCancel(true))}
-          >
-            {confirmCancel ? 'Sigur anulezi?' : 'Anulează închirierea'}
-          </Button>
+          {canCancel && (
+            <Button
+              variant="danger"
+              className="mr-auto"
+              disabled={remove.isPending}
+              onClick={() => (confirmCancel ? remove.mutate() : setConfirmCancel(true))}
+            >
+              {confirmCancel ? 'Sigur anulezi?' : 'Anulează închirierea'}
+            </Button>
+          )}
           <Button variant="secondary" onClick={onClose}>
             Închide
           </Button>
-          <Button
-            onClick={() => move.mutate()}
-            disabled={move.isPending || Boolean(conflict) || pretLipsa}
-          >
-            {move.isPending ? 'Se salvează…' : 'Salvează mutarea'}
-          </Button>
+          {canMove && (
+            <Button
+              onClick={() => move.mutate()}
+              disabled={move.isPending || Boolean(conflict) || pretLipsa}
+            >
+              {move.isPending ? 'Se salvează…' : 'Salvează mutarea'}
+            </Button>
+          )}
         </>
       }
     >
@@ -233,123 +289,176 @@ export function EditInchiriereModal({ inchiriereId, onClose }: Props) {
               {d.pret ? formatRON(d.pret) : '0 lei'}
             </div>
             <div className="text-muted">
-              {renterName} · status {d.status_plata}
-              {d.guest_tel ? ` · ${d.guest_tel}` : ''}
+              {renterName}
+              {!readOnly && <> · status {d.status_plata}</>}
+              {!readOnly && d.guest_tel ? ` · ${d.guest_tel}` : ''}
             </div>
-            {d.observatii && <div className="mt-1 text-muted">{d.observatii}</div>}
+            {!readOnly && d.observatii && (
+              <div className="mt-1 text-muted">{d.observatii}</div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Data">
-              <DateInput value={data} onChange={(e) => setData(e.target.value)} />
-            </Field>
-            <Field label="Ora start">
-              <TextInput
-                type="time"
-                step={1800}
-                value={oraStart}
-                onChange={(e) => setOraStart(e.target.value)}
-              />
-            </Field>
-          </div>
-
-          <Field label="Durată">
-            <div className="flex items-center gap-2">
-              <Select
-                className="w-40"
-                options={DURATE.map((x) => ({ value: String(x), label: `${x} min` }))}
-                value={String(durataMin)}
-                onChange={(e) => setDurataMin(Number(e.target.value))}
-              />
-              {oraFinal && (
-                <span className="text-sm text-muted">
-                  → {oraStart}–{oraFinal}
-                </span>
+          {readOnly ? (
+            <p className="rounded-md border border-line bg-surface p-2 text-sm text-muted">
+              Rezervarea nu îți aparține — modificările se fac la recepție.
+            </p>
+          ) : (
+            <>
+              {teacherLocked && (
+                <p className="rounded-md border border-line bg-surface p-2 text-sm text-muted">
+                  Rezervarea a început deja — modificările sau anularea se fac la
+                  recepție.
+                </p>
               )}
-            </div>
-          </Field>
-
-          {durationEdited && priceChanged && newPret != null && (
-            <p className="rounded-md border border-warn/40 bg-warn/10 p-2 text-sm text-ink">
-              Preț recalculat: <span className="font-semibold">{formatRON(newPret)}</span>{' '}
-              <span className="text-muted">(era {formatRON(d.pret ?? 0)})</span>
-              {d.client && (
-                <span className="text-muted">
-                  {' '}· diferența se reglează automat pe contul clientului
-                </span>
+              {teacherRole && ownRental && !started && (d.incasat ?? 0) > 0.004 && (
+                <p className="rounded-md border border-line bg-surface p-2 text-sm text-muted">
+                  Există bani încasați pe această rezervare — anularea se face la
+                  recepție.
+                </p>
               )}
-            </p>
-          )}
 
-          {priceDrift && !durationEdited && savedDurationPret != null && (
-            <div className="space-y-2 rounded-md border border-warn/50 bg-warn/10 p-3 text-sm">
-              <p className="text-ink">
-                Prețul stocat (<span className="font-semibold">{formatRON(d.pret ?? 0)}</span>) nu
-                corespunde tarifului pentru {d.durata_min} min pe această sală
-                (<span className="font-semibold">{formatRON(savedDurationPret)}</span>). Corectează
-                prețul înainte de încasare.
-              </p>
-              <div className="flex justify-end">
-                <Button onClick={() => correctPrice.mutate()} disabled={correctPrice.isPending}>
-                  {correctPrice.isPending
-                    ? 'Se corectează…'
-                    : `Corectează prețul la ${formatRON(savedDurationPret)}`}
-                </Button>
-              </div>
-            </div>
-          )}
+              {canMove && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Data">
+                      <DateInput value={data} onChange={(e) => setData(e.target.value)} />
+                    </Field>
+                    <Field label="Ora start">
+                      <TextInput
+                        type="time"
+                        step={1800}
+                        value={oraStart}
+                        onChange={(e) => setOraStart(e.target.value)}
+                      />
+                    </Field>
+                  </div>
 
-          {pretLipsa && (
-            <p className="rounded-md border border-danger/40 bg-danger/10 p-2 text-sm font-medium text-danger">
-              Tarif neconfigurat pentru {durataMin} min pe această sală — nu pot recalcula prețul.
-            </p>
-          )}
+                  <Field label="Durată">
+                    <div className="flex items-center gap-2">
+                      <Select
+                        className="w-40"
+                        options={DURATE.map((x) => ({ value: String(x), label: `${x} min` }))}
+                        value={String(durataMin)}
+                        onChange={(e) => setDurataMin(Number(e.target.value))}
+                      />
+                      {oraFinal && (
+                        <span className="text-sm text-muted">
+                          → {oraStart}–{oraFinal}
+                        </span>
+                      )}
+                    </div>
+                  </Field>
+                </>
+              )}
 
-          {conflict && (
-            <p className="rounded-md border border-danger/40 bg-danger/10 p-2 text-sm font-medium text-danger">
-              Interval ocupat — {conflict.kind === 'curs' ? 'curs' : 'închiriere'}: {conflict.label}{' '}
-              ({conflict.ora_start}–{conflict.ora_final})
-            </p>
-          )}
+              {durationEdited && priceChanged && newPret != null && (
+                <p className="rounded-md border border-warn/40 bg-warn/10 p-2 text-sm text-ink">
+                  Preț recalculat: <span className="font-semibold">{formatRON(newPret)}</span>{' '}
+                  <span className="text-muted">(era {formatRON(d.pret ?? 0)})</span>
+                  {d.client && (
+                    <span className="text-muted">
+                      {' '}· diferența se reglează automat pe contul clientului
+                    </span>
+                  )}
+                </p>
+              )}
 
-          {canCollect && !priceDrift && (
-            <div className="space-y-2 rounded-md border border-quasar-yellow/60 bg-quasar-yellow/10 p-3">
-              <div className="text-sm font-semibold text-ink">
-                Rest de încasat: {formatRON(rest)}
-                {d.incasat > 0.004 && (
-                  <span className="ml-1 font-normal text-muted">
-                    (încasat până acum {formatRON(d.incasat)})
-                  </span>
-                )}
-              </div>
-              <Field label="Încasează acum (RON)">
-                <TextInput
-                  type="number"
-                  min={0}
-                  max={rest || undefined}
-                  step="0.01"
-                  value={collectAmount}
-                  onChange={(e) => setCollectAmount(e.target.value)}
-                />
-              </Field>
-              <MetodaPlataField
-                metoda={collectMetoda}
-                onMetoda={setCollectMetoda}
-                total={round2(Number(collectAmount) || 0)}
-                cash={collectCash}
-                card={collectCard}
-                onCash={setCollectCash}
-                onCard={setCollectCard}
-              />
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => collect.mutate()}
-                  disabled={collect.isPending || !(Number(collectAmount) > 0)}
-                >
-                  {collect.isPending ? 'Se încasează…' : 'Încasează'}
-                </Button>
-              </div>
-            </div>
+              {isManual && privileged && (
+                <div className="space-y-2 rounded-md border border-quasar-yellow/60 bg-quasar-yellow/10 p-3">
+                  <div className="text-sm font-semibold text-ink">Preț manual (proiect)</div>
+                  <div className="flex items-center gap-2">
+                    <TextInput
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      className="w-32"
+                      value={manualPretEdit}
+                      onChange={(e) => setManualPretEdit(e.target.value)}
+                    />
+                    <Button
+                      onClick={() => saveManualPret.mutate()}
+                      disabled={
+                        saveManualPret.isPending ||
+                        round2(Number(manualPretEdit)) === round2(d.pret ?? 0)
+                      }
+                    >
+                      {saveManualPret.isPending ? 'Se salvează…' : 'Salvează prețul'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {!teacherRole && priceDrift && !durationEdited && savedDurationPret != null && (
+                <div className="space-y-2 rounded-md border border-warn/50 bg-warn/10 p-3 text-sm">
+                  <p className="text-ink">
+                    Prețul stocat (<span className="font-semibold">{formatRON(d.pret ?? 0)}</span>) nu
+                    corespunde tarifului pentru {d.durata_min} min pe această sală
+                    (<span className="font-semibold">{formatRON(savedDurationPret)}</span>). Corectează
+                    prețul înainte de încasare.
+                  </p>
+                  <div className="flex justify-end">
+                    <Button onClick={() => correctPrice.mutate()} disabled={correctPrice.isPending}>
+                      {correctPrice.isPending
+                        ? 'Se corectează…'
+                        : `Corectează prețul la ${formatRON(savedDurationPret)}`}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {pretLipsa && (
+                <p className="rounded-md border border-danger/40 bg-danger/10 p-2 text-sm font-medium text-danger">
+                  Tarif neconfigurat pentru {durataMin} min pe această sală — nu pot recalcula prețul.
+                </p>
+              )}
+
+              {conflict && (
+                <p className="rounded-md border border-danger/40 bg-danger/10 p-2 text-sm font-medium text-danger">
+                  Interval ocupat — {conflict.kind === 'curs' ? 'curs' : 'închiriere'}: {conflict.label}{' '}
+                  ({conflict.ora_start}–{conflict.ora_final})
+                </p>
+              )}
+
+              {canCollect && !priceDrift && (
+                <div className="space-y-2 rounded-md border border-quasar-yellow/60 bg-quasar-yellow/10 p-3">
+                  <div className="text-sm font-semibold text-ink">
+                    Rest de încasat: {formatRON(rest)}
+                    {d.incasat > 0.004 && (
+                      <span className="ml-1 font-normal text-muted">
+                        (încasat până acum {formatRON(d.incasat)})
+                      </span>
+                    )}
+                  </div>
+                  <Field label="Încasează acum (RON)">
+                    <TextInput
+                      type="number"
+                      min={0}
+                      max={rest || undefined}
+                      step="0.01"
+                      value={collectAmount}
+                      onChange={(e) => setCollectAmount(e.target.value)}
+                    />
+                  </Field>
+                  <MetodaPlataField
+                    metoda={collectMetoda}
+                    onMetoda={setCollectMetoda}
+                    total={round2(Number(collectAmount) || 0)}
+                    cash={collectCash}
+                    card={collectCard}
+                    onCash={setCollectCash}
+                    onCard={setCollectCard}
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() => collect.mutate()}
+                      disabled={collect.isPending || !(Number(collectAmount) > 0)}
+                    >
+                      {collect.isPending ? 'Se încasează…' : 'Încasează'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
