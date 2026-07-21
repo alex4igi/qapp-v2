@@ -423,43 +423,33 @@ export function Rail(): ReactNode {
   const [collapsed, setCollapsed] = useCollapsed()
   const expand = () => setCollapsed(false)
 
-  const toggle = (
-    <button
-      type="button"
-      onClick={() => setCollapsed((v) => !v)}
-      title={collapsed ? 'Afișează meniul' : 'Ascunde meniul'}
-      aria-label={collapsed ? 'Afișează meniul' : 'Ascunde meniul'}
-      aria-expanded={!collapsed}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rail-muted transition-colors hover:bg-rail-2 hover:text-white"
-    >
-      <span aria-hidden>{collapsed ? '»' : '«'}</span>
-    </button>
-  )
-
   return (
-    <aside
+    // Wrapper fără overflow: butonul de pe muchie iese pe jumătate din rail,
+    // iar aside-ul (care scrollează) l-ar tăia dacă ar sta înăuntru.
+    <div
       className={[
-        'flex shrink-0 flex-col overflow-y-auto overflow-x-hidden bg-rail py-5 text-white [scrollbar-gutter:stable]',
-        collapsed
-          ? 'w-[64px] min-w-[64px] max-w-[64px] px-2'
-          : 'w-[236px] min-w-[236px] max-w-[236px] px-4',
+        'group relative shrink-0',
+        collapsed ? 'w-[64px]' : 'w-[236px]',
       ].join(' ')}
     >
-      {collapsed ? (
-        <div className="mb-4 flex flex-col items-center gap-2">
-          <Link to="/" className="flex items-center" title="Acasă">
+      <aside
+        className={[
+          'flex h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-rail py-5 text-white',
+          // Gutter-ul de scrollbar ar mânca 15px din cei 64 și ar turti iconurile.
+          collapsed ? 'px-2' : 'px-4 [scrollbar-gutter:stable]',
+        ].join(' ')}
+      >
+        {collapsed ? (
+          <Link to="/" className="mb-5 flex justify-center" title="Acasă">
             <img
-              src="/logo-q-a-l-contur.png"
+              src="/favicon.png"
               alt="Quasar Dance"
-              className="h-8 w-auto max-w-full select-none object-contain"
+              className="h-9 w-9 shrink-0 select-none"
               draggable={false}
             />
           </Link>
-          {toggle}
-        </div>
-      ) : (
-        <div className="mb-5 flex items-center gap-2 px-1.5">
-          <Link to="/" className="flex min-w-0 flex-1 items-center" title="Acasă">
+        ) : (
+          <Link to="/" className="mb-5 flex items-center px-1.5" title="Acasă">
             <img
               src="/logo-q-a-l-contur.png"
               alt="Quasar Dance"
@@ -467,16 +457,26 @@ export function Rail(): ReactNode {
               draggable={false}
             />
           </Link>
-          {toggle}
-        </div>
-      )}
+        )}
 
-      <RailNav collapsed={collapsed} onExpand={expand} />
+        <RailNav collapsed={collapsed} onExpand={expand} />
 
-      <div className="flex-1" />
+        <div className="flex-1" />
 
-      <RailActions collapsed={collapsed} />
-      <RailAccount collapsed={collapsed} onExpand={expand} />
-    </aside>
+        <RailActions collapsed={collapsed} />
+        <RailAccount collapsed={collapsed} onExpand={expand} />
+      </aside>
+
+      <button
+        type="button"
+        onClick={() => setCollapsed((v) => !v)}
+        title={collapsed ? 'Afișează meniul' : 'Ascunde meniul'}
+        aria-label={collapsed ? 'Afișează meniul' : 'Ascunde meniul'}
+        aria-expanded={!collapsed}
+        className="absolute right-0 top-1/2 z-30 flex h-7 w-7 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-rail-line bg-rail text-sm leading-none text-rail-muted shadow-md transition-colors hover:bg-rail-2 hover:text-white"
+      >
+        <span aria-hidden>{collapsed ? '›' : '‹'}</span>
+      </button>
+    </div>
   )
 }
