@@ -162,7 +162,8 @@ export async function getReadReceipts(
 }
 
 // ---- Opțiuni locații constrânse pe scopul expeditorului ----
-// admin/owner → toate; manager/front_desk → locația proprie; teacher → locațiile unde predă.
+// admin/owner → toate; manager/front_desk → locația proprie (sau toate, dacă n-au una
+// fixă = multi-locație); teacher → locațiile unde predă.
 export async function myAnuntLocatieOptions(
   role: AppRole,
   locatieId: string | null,
@@ -195,6 +196,7 @@ export async function myAnuntLocatieOptions(
     return all.filter((o) => set.has(o.value))
   }
 
-  // manager, front_desk
-  return locatieId ? all.filter((o) => o.value === locatieId) : []
+  // manager, front_desk: locație fixă → doar ea. Fără locație = lucrează la mai multe
+  // locații (basculează din header) → poate trimite oriunde.
+  return locatieId ? all.filter((o) => o.value === locatieId) : all
 }
