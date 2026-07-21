@@ -14,6 +14,9 @@ type Props = {
   sezonValue: string
   onSezonChange: (id: string) => void
   cursuri: { id: string; nume: string }[]
+  // Înrolarea e responsabilitatea front_desk/manager — pentru teacher butonul
+  // nu se afișează (RLS pe enrollments oricum îl blochează).
+  canEnroll: boolean
   onEnroll: () => void
 }
 
@@ -41,6 +44,7 @@ export function ClientSidebar({
   sezonValue,
   onSezonChange,
   cursuri,
+  canEnroll,
   onEnroll,
 }: Props) {
   return (
@@ -104,9 +108,11 @@ export function ClientSidebar({
           )}
         </div>
       </dl>
-      <Button variant="secondary" className="mt-4 w-full" onClick={onEnroll}>
-        + Înrolează la curs
-      </Button>
+      {canEnroll && (
+        <Button variant="secondary" className="mt-4 w-full" onClick={onEnroll}>
+          + Înrolează la curs
+        </Button>
+      )}
     </aside>
   )
 }

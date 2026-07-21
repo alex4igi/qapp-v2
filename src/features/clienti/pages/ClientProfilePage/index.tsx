@@ -338,7 +338,15 @@ export function ClientProfilePage() {
                 WhatsApp
               </a>
             )}
-            <Button onClick={() => setEditOpen(true)}>Editează</Button>
+            {/* Teacherul citește profilul dar nu-l modifică (RLS blochează oricum
+                UPDATE pe clienti) — butonul rămâne vizibil, dezactivat. */}
+            <Button
+              onClick={() => setEditOpen(true)}
+              disabled={teacherMode}
+              title={teacherMode ? 'Datele clientului le modifică recepția' : undefined}
+            >
+              Editează
+            </Button>
           </>
         }
         sidebar={
@@ -357,6 +365,7 @@ export function ClientProfilePage() {
           sezonValue={effectiveSezonId}
           onSezonChange={setSezonId}
           cursuri={cursuriSezon}
+          canEnroll={isFrontDeskOrHigher(role)}
           onEnroll={() => setEnrollOpen(true)}
           />
         }

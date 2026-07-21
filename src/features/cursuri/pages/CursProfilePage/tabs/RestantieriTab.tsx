@@ -5,11 +5,14 @@ import { fullName } from '../helpers'
 type Props = {
   loading: boolean
   rows: CursDatorieRow[]
+  // Încasarea e responsabilitatea front_desk/manager — pentru teacher butonul
+  // rămâne vizibil dar dezactivat.
+  canPay?: boolean
   onRowClick: (clientId: string) => void
   onPayClick: (clientId: string) => void
 }
 
-export function RestantieriTab({ loading, rows, onRowClick, onPayClick }: Props) {
+export function RestantieriTab({ loading, rows, canPay = true, onRowClick, onPayClick }: Props) {
   if (loading) return <div className="mt-4"><Spinner /></div>
   if (rows.length === 0) {
     return (
@@ -50,8 +53,10 @@ export function RestantieriTab({ loading, rows, onRowClick, onPayClick }: Props)
               <td className="px-3 py-2 text-right">
                 <button
                   type="button"
+                  disabled={!canPay}
                   onClick={() => onPayClick(r.clientId)}
-                  className="rounded-full bg-quasar-yellow px-3 py-1 text-xs font-bold text-quasar-black transition-colors hover:bg-quasar-yellow/80"
+                  className="rounded-full bg-quasar-yellow px-3 py-1 text-xs font-bold text-quasar-black transition-colors hover:bg-quasar-yellow/80 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-quasar-yellow"
+                  title={canPay ? undefined : 'Încasările le face recepția'}
                 >
                   Plată nouă
                 </button>
