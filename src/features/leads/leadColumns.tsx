@@ -2,13 +2,7 @@ import type { Lead } from '@/types/db'
 import type { Column } from '@/components/ui'
 import { formatDate } from '@/lib/format'
 import { waLink } from '@/lib/phone'
-import {
-  StatusBadge,
-  SubStatusBadge,
-  InteresBadge,
-  GrupaBadge,
-  SursaBadge,
-} from './Badges'
+import { StatusBadge, SubStatusBadge, SursaBadge } from './Badges'
 import {
   DAY_MS,
   FOLLOWUP_DAYS,
@@ -130,11 +124,14 @@ export function buildLeadColumns(opts: {
       cell: (l) => (
         <span className="flex items-center gap-1.5">
           {l.flag_reminder && <span title="Marcat pentru revenire">⚑</span>}
-          <span className="font-medium">{numeLead(l)}</span>
+          <span className="truncate font-medium" title={numeLead(l)}>
+            {numeLead(l)}
+          </span>
           {l.deja_client && <span title="Deja client">🔁</span>}
         </span>
       ),
       sortValue: (l) => numeLead(l),
+      className: 'max-w-[16rem]',
     },
     telefon: {
       header: 'Telefon',
@@ -170,16 +167,18 @@ export function buildLeadColumns(opts: {
       header: 'Locație',
       cell: (l) => l.locatia ?? '—',
       sortValue: (l) => l.locatia,
+      className: 'whitespace-nowrap',
     },
     status: {
       header: 'Status',
       cell: (l) => (
-        <span className="flex flex-wrap items-center gap-1">
+        <span className="flex items-center gap-1">
           <StatusBadge status={l.status} />
           <SubStatusBadge subStatus={l.sub_status} />
         </span>
       ),
       sortValue: (l) => l.status,
+      className: 'whitespace-nowrap',
     },
     ultimContact: {
       header: 'Ultim contact',
@@ -208,16 +207,24 @@ export function buildLeadColumns(opts: {
         return <span className={p.cls}>{p.label}</span>
       },
       sortValue: (l) => prezentaLead(l, prezentaByLead).rang,
+      className: 'whitespace-nowrap',
     },
+    // Text compact, nu badge-uri: două badge-uri într-o coloană îngustă se rup
+    // pe 2-3 linii și dublează înălțimea fiecărui rând din tabel.
     interes: {
       header: 'Interes / Grupă',
-      cell: (l) => (
-        <span className="flex flex-wrap items-center gap-1">
-          <InteresBadge interes={l.interes} />
-          <GrupaBadge grupa={l.grupa_varsta} />
-        </span>
-      ),
+      cell: (l) => {
+        const t = [l.interes, l.grupa_varsta].filter(Boolean).join(' · ')
+        return t ? (
+          <span className="text-quasar-gray" title={t}>
+            {t}
+          </span>
+        ) : (
+          <span className="text-quasar-gray">—</span>
+        )
+      },
       sortValue: (l) => l.interes,
+      className: 'whitespace-nowrap',
     },
     observatii: {
       header: 'Notiță',
@@ -227,7 +234,7 @@ export function buildLeadColumns(opts: {
         return (
           <span
             title={l.observatii ?? undefined}
-            className="block max-w-[22rem] truncate text-quasar-gray"
+            className="block max-w-[18rem] truncate text-quasar-gray"
           >
             {nota}
           </span>
