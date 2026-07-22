@@ -22,6 +22,32 @@ const fmt = (n: number) =>
 
 const isFacturat = (r: FacturaRow) => r.status === 'Emisa' || r.status === 'Marcata'
 
+// Secțiunile goale se ascund: „De facturat (0)" cu tabel gol e zgomot, nu informație.
+function Sectiune({
+  titlu,
+  explicatie,
+  rows,
+  columns,
+}: {
+  titlu: string
+  explicatie: string
+  rows: FacturaRow[]
+  columns: Column<FacturaRow>[]
+}) {
+  if (rows.length === 0) return null
+  return (
+    <section className="space-y-2">
+      <div>
+        <h3 className="text-sm font-semibold text-ink">
+          {titlu} <span className="font-normal text-muted">({rows.length})</span>
+        </h3>
+        <p className="text-xs text-muted">{explicatie}</p>
+      </div>
+      <DataTable columns={columns} rows={rows} rowKey={(r) => r.ref} />
+    </section>
+  )
+}
+
 async function readCsv(file: File): Promise<string> {
   const buf = await file.arrayBuffer()
   let text = new TextDecoder('utf-8').decode(buf)
@@ -54,7 +80,20 @@ export function BancaTab() {
     queryFn: () => listBancaIstoric(),
   })
 
-  const rows = pending.data ?? []
+  // Lista amestecă două joburi diferite (înregistrarea plății și emiterea facturii), iar
+  // un rând iese abia când ambele sunt gata. Nedespărțite, cele două arătau ca un tabel
+  // instabil: facturezi trei rânduri la rând și dispar doar cele care aveau deja plata.
+  // Fiecare secțiune numește exact ce a mai rămas de făcut.
+  const { nou, deFacturat, dePlata } = useMemo(() => {
+    const all = pending.data ?? []
+    return {
+      nou: all.filter((r) => !isFacturat(r) && !r.platit_la),
+      deFacturat: all.filter((r) => !isFacturat(r) && r.platit_la),
+      dePlata: all.filter((r) => isFacturat(r) && !r.platit_la),
+    }
+  }, [pending.data])
+  const total = nou.length + deFacturat.length + dePlata.length
+
   const matchOf = (r: FacturaRow): MatchSuggestion | null => matches[r.ref] ?? null
 
   const invalidate = () =>
@@ -245,13 +284,35 @@ export function BancaTab() {
 
       {pending.isLoading ? (
         <Spinner />
+      ) : total === 0 ? (
+        <div className="rounded-2xl border border-line bg-card px-4 py-6 text-center text-sm text-muted">
+          Nicio încasare de procesat. Încarcă un extras de cont.
+        </div>
       ) : (
-        <DataTable
-          columns={columns}
-          rows={rows}
-          rowKey={(r) => r.ref}
-          emptyMessage="Nicio încasare de procesat. Încarcă un extras de cont."
-        />
+        <div className="space-y-6">
+          <Sectiune
+            titlu="Nou din extras"
+            explicatie="Nici plata înregistrată, nici factura emisă — de făcut amândouă."
+            rows={nou}
+            columns={columns}
+          />
+          <Sectiune
+            titlu="De facturat"
+            explicatie="Plata e înregistrată în CRM. Mai lipsește doar factura."
+            rows={deFacturat}
+            columns={columns}
+          />
+          <Sectiune
+            titlu="De înregistrat plata"
+            explicatie="Factura e deja emisă. Mai lipsește doar înregistrarea plății în CRM."
+            rows={dePlata}
+            columns={columns}
+          />
+          <p className="text-xs text-muted">
+            Un transfer iese din listă abia când e <strong>și</strong> înregistrat ca plată,{' '}
+            <strong>și</strong> facturat. După aceea îl găsești în Istoric.
+          </p>
+        </div>
       )}
 
       {(recent.data ?? []).length > 0 && (
