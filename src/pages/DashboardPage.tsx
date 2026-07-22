@@ -6,7 +6,7 @@ import { saliOptions, cursuriOptionsForCurrentTeacher } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { isTeacher } from '@/lib/rolesMatrix'
+import { hasTeacherLens, isTeacher } from '@/lib/rolesMatrix'
 import {
   getDashboardCourses,
   getDashboardChart,
@@ -21,8 +21,11 @@ import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
 import { InchirieriAziCard } from '@/features/dashboard/InchirieriAziCard'
 
 export function DashboardPage() {
-  const { role } = useAuth()
+  const { role, teacherId } = useAuth()
   const teacherMode = isTeacher(role)
+  // Cine predă fără să fie teacher pur (manager/recepție) primește dashboard-ul
+  // complet PLUS o secțiune cu grupele lui de azi — aditiv, nu în locul lui.
+  const teacherLens = hasTeacherLens(role, teacherId) && !teacherMode
   const { date } = useWorkingDate()
   const { locatieId } = useWorkingLocatie()
   const [params, setParams] = useSearchParams()
@@ -41,8 +44,10 @@ export function DashboardPage() {
   const teacherCursuriQ = useQuery({
     queryKey: ['lookup', 'cursuri', 'teacher'],
     queryFn: () => cursuriOptionsForCurrentTeacher(),
-    enabled: teacherMode,
+    enabled: teacherMode || teacherLens,
   })
+  // Filtrul de query rămâne doar pentru teacher pur; pentru ceilalți lista completă
+  // se încarcă la fel ca înainte, iar grupele proprii se extrag din ea mai jos.
   const teacherCursIds = teacherMode
     ? (teacherCursuriQ.data ?? []).map((o) => o.value)
     : null
@@ -84,6 +89,14 @@ export function DashboardPage() {
       (coursesQ.data ?? []).map((c) => ({ id: c.id, numele: c.numele })),
     [coursesQ.data],
   )
+
+  // Grupele proprii din ziua curentă, extrase din lista deja încărcată (fără fetch
+  // în plus). Respectă filtrul de locație/sală ca restul paginii.
+  const myCoursesToday = useMemo(() => {
+    if (!teacherLens) return []
+    const mine = new Set((teacherCursuriQ.data ?? []).map((o) => o.value))
+    return (coursesQ.data ?? []).filter((c) => mine.has(c.id))
+  }, [teacherLens, teacherCursuriQ.data, coursesQ.data])
 
   // Chart doar pentru staff — pe luna curentă (YYYY-MM)
   const lunaCurenta = date.slice(0, 7)
@@ -137,6 +150,21 @@ export function DashboardPage() {
               <EventDashboardCard key={e.id} event={e} />
             ))}
           </div>
+        </div>
+      )}
+
+      {myCoursesToday.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-2 text-sm font-semibold text-quasar-black">
+            Grupele mele azi
+          </h2>
+          <DailyAgenda
+            courses={myCoursesToday}
+            loading={false}
+            isError={false}
+            salaId={salaId}
+            emptyMessage="Nicio grupă a ta programată azi."
+          />
         </div>
       )}
 

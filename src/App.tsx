@@ -80,13 +80,29 @@ function App() {
             </Route>
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/salariul-meu']} />}>
+          {/* Rutele „mele" de instructor — gardate pe profilul legat, nu pe rol,
+              ca un manager care predă să le vadă. */}
+          <Route
+            element={
+              <ProtectedRoute
+                allowedRoles={ROUTE_ACCESS['/salariul-meu']}
+                requiresTeacherProfile
+              />
+            }
+          >
             <Route element={<AppLayout />}>
               <Route path="salariul-meu" element={<SalariulMeuPage />} />
             </Route>
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/grupele-mele']} />}>
+          <Route
+            element={
+              <ProtectedRoute
+                allowedRoles={ROUTE_ACCESS['/grupele-mele']}
+                requiresTeacherProfile
+              />
+            }
+          >
             <Route element={<AppLayout />}>
               <Route path="grupele-mele" element={<GrupeleMelePage />} />
             </Route>

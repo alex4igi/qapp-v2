@@ -23,7 +23,7 @@ export function TeacherProfilePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { role } = useAuth()
+  const { role, teacherId: ownTeacherId } = useAuth()
   const [tab, setTab] = useState<'cursuri' | 'salarii' | 'personale' | 'evaluari'>(
     'cursuri',
   )
@@ -55,9 +55,9 @@ export function TeacherProfilePage() {
   const teacher = teacherQuery.data
   const fullName = `${teacher.nume} ${teacher.prenume ?? ''}`.trim()
 
-  // Salariile: vizibile doar adminului și (în viitor) teacher-ului logat pe profilul lui.
-  // Manager + Front desk → tab Salarii ascuns.
-  const canSeeSalarii = isAdminOrHigher(role) || role === 'teacher'
+  // Salariile: adminului (oricare profil) + oricui pe PROPRIUL profil de instructor.
+  // Un manager care predă își vede salariul lui, dar nu pe al colegilor.
+  const canSeeSalarii = isAdminOrHigher(role) || teacher.id === ownTeacherId
   const canEditPersonale = isManagerOrHigher(role)
   const canArchive = isManagerOrHigher(role)
   const canDelete = isAdminOrHigher(role)

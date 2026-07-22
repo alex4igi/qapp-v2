@@ -13,6 +13,7 @@ import {
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { useAuth } from '@/hooks/useAuth'
+import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
 import { sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import type { Evaluare } from '@/types/db'
 import { EvaluareForm } from './EvaluareForm'
@@ -49,6 +50,7 @@ export function EvaluariListPage() {
   const [teacherId, setTeacherId] = useState('')
   const [sezonFilter, setSezonFilter] = useState('')
   const [sezonInit, setSezonInit] = useState(false)
+  const [teacherInit, setTeacherInit] = useState(false)
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Evaluare | null>(null)
@@ -77,6 +79,17 @@ export function EvaluariListPage() {
     }, 300)
     return () => clearTimeout(t)
   }, [searchInput])
+
+  // Cine predă fără să fie teacher pur (manager/recepție) pornește filtrat pe el,
+  // dar poate alege liber alt instructor — spre deosebire de teacherul pur, care
+  // rămâne forțat pe al lui.
+  const { teacherId: ownTeacherId, loading: ownTeacherLoading } =
+    useCurrentTeacherId()
+  useEffect(() => {
+    if (teacherInit || isTeacher || ownTeacherLoading) return
+    if (ownTeacherId) setTeacherId(ownTeacherId)
+    setTeacherInit(true)
+  }, [teacherInit, isTeacher, ownTeacherLoading, ownTeacherId])
 
   // Pentru teacher: filtrăm automat pe teacher_id-ul lui.
   const teacherIdQ = useQuery({

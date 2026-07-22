@@ -31,7 +31,6 @@ export function CreateUserModal({ open, roleOptions, locatii, onClose, onSuccess
   const teacheriQ = useQuery({
     queryKey: ['lookup', 'teacheri'],
     queryFn: () => teacheriOptions(),
-    enabled: role === 'teacher',
   })
 
   const create = useMutation({
@@ -40,7 +39,7 @@ export function CreateUserModal({ open, roleOptions, locatii, onClose, onSuccess
         email: email.trim(),
         password,
         role,
-        teacherId: role === 'teacher' ? teacherId || null : null,
+        teacherId: teacherId || null,
         locatieId: locatieId || null,
       }),
     onSuccess: () => {
@@ -106,17 +105,17 @@ export function CreateUserModal({ open, roleOptions, locatii, onClose, onSuccess
             onChange={(e) => setRole(e.target.value as UserRole)}
           />
         </Field>
-        {role === 'teacher' && (
-          <Field label="Leagă de profesor (opțional)" htmlFor="u-teacher">
-            <Select
-              id="u-teacher"
-              placeholder="— niciunul —"
-              options={teacheriQ.data ?? []}
-              value={teacherId}
-              onChange={(e) => setTeacherId(e.target.value)}
-            />
-          </Field>
-        )}
+        {/* Ortogonal rolului: oricine poate preda (un manager care ține grupe,
+            o recepționeră care predă). Legătura nu schimbă rolul. */}
+        <Field label="Leagă de instructor (opțional)" htmlFor="u-teacher">
+          <Select
+            id="u-teacher"
+            placeholder="— nu predă —"
+            options={teacheriQ.data ?? []}
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value)}
+          />
+        </Field>
         <Field
           label={
             role === 'front_desk'

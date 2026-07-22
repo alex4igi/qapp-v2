@@ -1,11 +1,18 @@
 // Edge Function: management cont utilizator.
-// Acțiuni: list, create, delete, setLocatie, update_role, reset_password, link_teacher.
+// Acțiuni: list, create, delete, setLocatie, update_role, reset_password,
+//          link_teacher, unlink_teacher.
 //
 // Reguli RBAC:
 // - owner: poate orice (tot + manage owner/admin)
 // - admin: poate manage {manager, front_desk, teacher} oriunde; NU poate atinge owner/admin
 // - manager: poate manage {front_desk, teacher} doar la locația lui
 // - protecții: nu se șterge/degrada ultimul owner; nu se șterge/degrada ultimul admin
+//
+// Rol vs. profil de instructor sunt ORTOGONALE: rolul dă permisiunile, legătura
+// cu `teacheri` spune că omul predă (grupe, salariu de instructor). Un manager
+// care predă are role='manager' ȘI un rând `teacheri` legat — link_teacher NU
+// mai suprascrie rolul. Consecință utilă: canManageRole(manager, manager)=false,
+// deci un manager nu se poate lega singur de un profil purtător de salariu.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -47,6 +54,10 @@ type LinkTeacherPayload = {
   userId: string
   teacherId: string
 }
+type UnlinkTeacherPayload = {
+  action: 'unlink_teacher'
+  userId: string
+}
 type Payload =
   | ListPayload
   | CreatePayload
@@ -55,6 +66,7 @@ type Payload =
   | UpdateRolePayload
   | ResetPasswordPayload
   | LinkTeacherPayload
+  | UnlinkTeacherPayload
 
 type AppMeta = { role?: string; locatie_id?: string | null }
 
@@ -105,13 +117,30 @@ Deno.serve(async (req) => {
       })
       if (error) return json({ error: error.message }, 500)
 
+      // Profilul de instructor e ortogonal rolului — îl atașăm la fiecare cont ca
+      // UI-ul să poată arăta „Predă" pe un manager, nu doar pe un teacher.
+      const { data: teacheriRows } = await admin
+        .from('teacheri')
+        .select('id, nume, prenume, auth_user_id')
+        .not('auth_user_id', 'is', null)
+      const teacherByUser = new Map<string, { id: string; nume: string }>()
+      for (const t of teacheriRows ?? []) {
+        teacherByUser.set(t.auth_user_id as string, {
+          id: t.id as string,
+          nume: [t.nume, t.prenume].filter(Boolean).join(' '),
+        })
+      }
+
       let users = data.users.map((u) => {
         const meta = (u.app_metadata ?? {}) as AppMeta
+        const teacher = teacherByUser.get(u.id) ?? null
         return {
           id: u.id,
           email: u.email,
           role: (meta.role as Role) ?? 'front_desk',
           locatie_id: meta.locatie_id ?? null,
+          teacher_id: teacher?.id ?? null,
+          teacher_nume: teacher?.nume ?? null,
           created_at: u.created_at,
           last_sign_in_at: u.last_sign_in_at,
         }
@@ -169,12 +198,14 @@ Deno.serve(async (req) => {
       })
       if (error) return json({ error: error.message }, 400)
 
-      if (body.role === 'teacher' && body.teacherId) {
+      // Legarea de un profil de instructor e permisă la orice rol (un manager
+      // sau o recepționeră poate preda).
+      if (body.teacherId) {
         const { error: linkErr } = await admin
           .from('teacheri')
           .update({ auth_user_id: data.user.id })
           .eq('id', body.teacherId)
-        if (linkErr) return json({ error: `cont creat, dar legarea de profesor a eșuat: ${linkErr.message}` }, 500)
+        if (linkErr) return json({ error: `cont creat, dar legarea de instructor a eșuat: ${linkErr.message}` }, 500)
       }
 
       return json({ user: { id: data.user.id, email: data.user.email } })
@@ -353,16 +384,24 @@ Deno.serve(async (req) => {
         return json({ error: 'cont la altă locație' }, 403)
       }
 
-      // Contul trebuie să fie (sau să devină) teacher ca să aibă sens legarea.
-      if (targetRole !== 'teacher') {
-        if (!canManageRole(callerRole, 'teacher')) {
-          return json({ error: 'nu poți seta rolul teacher pe acest cont' }, 403)
-        }
-        const { error: roleErr } = await admin.auth.admin.updateUserById(
-          body.userId,
-          { app_metadata: { ...targetMeta, role: 'teacher' } },
+      // Rolul rămâne neatins: „predă" e o proprietate a contului, nu un rol.
+      // Un manager care predă rămâne manager și primește în plus grupele lui.
+
+      // Un profil de instructor aparține unui singur cont (unique parțial pe
+      // teacheri.auth_user_id) — dacă e deja al altcuiva, refuzăm explicit în loc
+      // să-l furăm tăcut.
+      const { data: existing, error: existingErr } = await admin
+        .from('teacheri')
+        .select('auth_user_id')
+        .eq('id', body.teacherId)
+        .maybeSingle()
+      if (existingErr) return json({ error: existingErr.message }, 500)
+      if (!existing) return json({ error: 'instructorul nu există' }, 404)
+      if (existing.auth_user_id && existing.auth_user_id !== body.userId) {
+        return json(
+          { error: 'instructorul e deja legat de alt cont — dezleagă-l întâi' },
+          409,
         )
-        if (roleErr) return json({ error: roleErr.message }, 400)
       }
 
       // Un cont = un singur profil de instructor: dezlegăm alte rânduri.
@@ -377,6 +416,33 @@ Deno.serve(async (req) => {
         .update({ auth_user_id: body.userId })
         .eq('id', body.teacherId)
       if (linkErr) return json({ error: linkErr.message }, 500)
+
+      return json({ ok: true })
+    }
+
+    if (body.action === 'unlink_teacher') {
+      if (!body.userId) return json({ error: 'userId obligatoriu' }, 400)
+
+      const target = await admin.auth.admin.getUserById(body.userId)
+      if (target.error) return json({ error: target.error.message }, 400)
+      const targetMeta = (target.data.user?.app_metadata ?? {}) as AppMeta
+      const targetRole = targetMeta.role ?? 'front_desk'
+      const targetLocatie = targetMeta.locatie_id ?? null
+
+      if (!canManageRole(callerRole, targetRole)) {
+        return json({ error: `nu poți modifica un cont ${targetRole}` }, 403)
+      }
+      if (callerRole === 'manager' && targetLocatie !== callerLocatie) {
+        return json({ error: 'cont la altă locație' }, 403)
+      }
+
+      // Dezlegăm doar contul, nu ștergem profilul: istoricul de salarii și
+      // legăturile cu grupele rămân pe rândul din `teacheri`.
+      const { error } = await admin
+        .from('teacheri')
+        .update({ auth_user_id: null })
+        .eq('auth_user_id', body.userId)
+      if (error) return json({ error: error.message }, 500)
 
       return json({ ok: true })
     }

@@ -1,5 +1,6 @@
 import { Button, Field, Modal, Select, type SelectOption } from '@/components/ui'
-import { ROLE_LABEL, type UserRow } from '../../utilizatoriApi'
+import { roleLabel } from '@/lib/rolesMatrix'
+import { type UserRow } from '../../utilizatoriApi'
 
 type Props = {
   user: UserRow
@@ -48,7 +49,10 @@ export function EditLocatieModal({
       <div className="space-y-3">
         <p className="text-sm text-quasar-gray">
           Cont: <strong className="text-quasar-black">{user.email}</strong>
-          {' · '}rol: <strong className="text-quasar-black">{ROLE_LABEL[user.role]}</strong>
+          {' · '}rol:{' '}
+          <strong className="text-quasar-black">
+            {roleLabel(user.role, user.teacher_id)}
+          </strong>
         </p>
         <Field label="Locație implicită" htmlFor="edit-locatie">
           <Select

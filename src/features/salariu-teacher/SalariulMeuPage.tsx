@@ -2,15 +2,10 @@ import { humanizeError } from '@/lib/errorMessage'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
-import { supabase } from '@/lib/supabase'
+import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
 import { listSalariiTeacher } from '@/features/teacheri/api'
 import { formatRON } from '@/lib/format'
 import type { SalariuTeacher } from '@/types/db'
-
-async function getMyTeacherId(): Promise<string | null> {
-  const { data } = await supabase.rpc('current_teacher_id')
-  return (data as unknown as string | null) ?? null
-}
 
 const RO_LUNI = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
@@ -112,12 +107,10 @@ function SalariuCard({ s }: { s: SalariuTeacher }) {
 }
 
 export function SalariulMeuPage() {
-  const teacherIdQ = useQuery({
-    queryKey: ['my-teacher-id'],
-    queryFn: getMyTeacherId,
-  })
-
-  const teacherId = teacherIdQ.data ?? ''
+  // Profilul vine din context (rezolvat o dată la login) — nu depinde de rol,
+  // deci pagina merge și pentru un manager care predă.
+  const { teacherId: myTeacherId, loading: teacherLoading } = useCurrentTeacherId()
+  const teacherId = myTeacherId ?? ''
 
   const salariiQ = useQuery({
     queryKey: ['my-salarii', teacherId],
@@ -125,8 +118,8 @@ export function SalariulMeuPage() {
     enabled: Boolean(teacherId),
   })
 
-  if (teacherIdQ.isLoading) return <Spinner />
-  if (!teacherIdQ.data) {
+  if (teacherLoading) return <Spinner />
+  if (!myTeacherId) {
     return (
       <div>
         <PageHeader title="Salariul meu" />

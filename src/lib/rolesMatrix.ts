@@ -9,7 +9,6 @@ export const PRIVILEGED: AppRole[] = ['owner', 'admin', 'manager']
 export const ADMIN_OR_OWNER: AppRole[] = ['owner', 'admin']
 export const OWNER_ONLY: AppRole[] = ['owner']
 export const WITH_TEACHER: AppRole[] = [...ALL_STAFF, 'teacher']
-export const TEACHER_ONLY: AppRole[] = ['teacher']
 
 // Matrice rută → roluri permise
 // Notă: gating-ul de acțiuni (create/edit/delete) intern paginii se face
@@ -70,10 +69,11 @@ export const ROUTE_ACCESS = {
   '/oferta-publica': PRIVILEGED,
   '/setari': PRIVILEGED,
   '/opt-out': PRIVILEGED,
-  '/salariul-meu': TEACHER_ONLY,
-  // Hub personal de statistici pe grupele instructorului (RPC-uri scoped pe
-  // current_teacher_id() — pentru non-teacher ar fi gol, deci teacher-only).
-  '/grupele-mele': TEACHER_ONLY,
+  // Rutele „mele" de instructor: deschise oricărui rol, dar condiționate de
+  // existența unui profil legat (vezi REQUIRES_TEACHER_PROFILE). Un manager care
+  // predă le vede; un manager care nu predă, nu.
+  '/salariul-meu': WITH_TEACHER,
+  '/grupele-mele': WITH_TEACHER,
   '/pontaj-staff': PRIVILEGED,
   '/notificari': WITH_TEACHER,
   '/audit': PRIVILEGED,
@@ -82,8 +82,36 @@ export const ROUTE_ACCESS = {
 
 export type AppRoute = keyof typeof ROUTE_ACCESS
 
-export function canAccessRoute(role: AppRole, path: AppRoute): boolean {
-  return (ROUTE_ACCESS[path] as readonly AppRole[]).includes(role)
+// Rute care, pe lângă rol, cer un profil de instructor legat de cont. Fac
+// „predatul" ortogonal rolului: aceleași pagini pentru un teacher pur și pentru
+// un manager care predă.
+export const REQUIRES_TEACHER_PROFILE = new Set<AppRoute>([
+  '/salariul-meu',
+  '/grupele-mele',
+])
+
+/**
+ * Discriminantul canonic pentru „arată-i datele lui de instructor".
+ *
+ * Rămâne adevărat pentru rolul `teacher` chiar fără profil legat, ca un cont de
+ * instructor neconfigurat să nu-și piardă meniul (vede pagina goală + eroarea de
+ * configurare, ca înainte).
+ */
+export function hasTeacherLens(
+  role: AppRole,
+  teacherId: string | null,
+): boolean {
+  return isTeacher(role) || Boolean(teacherId)
+}
+
+export function canAccessRoute(
+  role: AppRole,
+  path: AppRoute,
+  teacherId: string | null = null,
+): boolean {
+  if (!(ROUTE_ACCESS[path] as readonly AppRole[]).includes(role)) return false
+  if (REQUIRES_TEACHER_PROFILE.has(path)) return hasTeacherLens(role, teacherId)
+  return true
 }
 
 export function defaultRouteForRole(role: AppRole): string {
@@ -160,4 +188,16 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   manager: 'Manager',
   front_desk: 'Front Desk',
   teacher: 'Instructor',
+}
+
+/**
+ * Eticheta afișată pentru un cont: „Manager + Instructor" pentru cine are și
+ * profil de instructor legat.
+ *
+ * Model tehnic (rol + profil ortogonale) ≠ model mental („e manager ȘI predă").
+ * Compunerea se face doar la afișare — nu există rol compus în JWT sau în DB.
+ */
+export function roleLabel(role: AppRole, teacherId: string | null): string {
+  if (isTeacher(role) || !teacherId) return ROLE_LABEL[role]
+  return `${ROLE_LABEL[role]} + Instructor`
 }

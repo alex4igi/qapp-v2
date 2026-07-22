@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { isTeacher } from '@/lib/rolesMatrix'
+import { hasTeacherLens, isTeacher } from '@/lib/rolesMatrix'
 import {
   cursuriOptions,
   cursuriOptionsForCurrentTeacher,
@@ -22,9 +22,13 @@ export function useCursuriOptions(opts?: {
   locatieId?: string | null
   sezonId?: string | null
 }) {
-  const { role } = useAuth()
+  const { role, teacherId } = useAuth()
   const working = useWorkingLocatie()
+  // Teacher pur → doar cursurile lui. Cine are și profil de instructor, și acces
+  // mai larg (manager/recepție care predă) → lista completă, cu grupele lui scoase
+  // în față sub un antet. Aditiv, nu exclusiv: nu pierde nimic din ce vedea.
   const teacherMode = isTeacher(role)
+  const teacherLens = hasTeacherLens(role, teacherId) && !teacherMode
   const locatieId =
     opts && 'locatieId' in opts ? opts.locatieId || null : working.locatieId
   const hasSezonOverride = Boolean(opts && 'sezonId' in opts)
@@ -42,11 +46,25 @@ export function useCursuriOptions(opts?: {
       'cursuri',
       teacherMode ? 'teacher' : locatieId ?? 'all',
       sezonId,
+      teacherLens ? teacherId : null,
     ],
-    queryFn: () =>
-      teacherMode
-        ? cursuriOptionsForCurrentTeacher(sezonId)
-        : cursuriOptions(locatieId, sezonId),
+    queryFn: async () => {
+      if (teacherMode) return cursuriOptionsForCurrentTeacher(sezonId)
+      const all = await cursuriOptions(locatieId, sezonId)
+      if (!teacherLens) return all
+      const mine = await cursuriOptionsForCurrentTeacher(sezonId)
+      const mineIds = new Set(mine.map((o) => o.value))
+      // Intersectăm cu lista din scopul curent: filtrul de locație/sezon rămâne
+      // onest, doar ordinea se schimbă. Nu adăugăm grupe din afara filtrului.
+      const inScope = all.filter((o) => mineIds.has(o.value))
+      if (inScope.length === 0) return all
+      return [
+        ...inScope.map((o) => ({ ...o, group: 'Grupele mele' })),
+        ...all
+          .filter((o) => !mineIds.has(o.value))
+          .map((o) => ({ ...o, group: 'Toate grupele' })),
+      ]
+    },
     enabled: (opts?.enabled ?? true) && (hasSezonOverride || sezonQ.isSuccess),
   })
 }

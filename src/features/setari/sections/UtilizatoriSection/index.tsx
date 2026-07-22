@@ -2,6 +2,7 @@ import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  Badge,
   Button,
   DataTable,
   Spinner,
@@ -9,14 +10,15 @@ import {
 } from '@/components/ui'
 import { locatiiOptions } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
-import { canManageRole } from '@/lib/rolesMatrix'
+import { canManageRole, roleLabel } from '@/lib/rolesMatrix'
 import {
   listUsers,
   deleteUser,
   setUserLocatie,
   updateUserRole,
   resetUserPassword,
-  ROLE_LABEL,
+  linkTeacherAccount,
+  unlinkTeacherAccount,
   type UserRow,
   type UserRole,
 } from '../../utilizatoriApi'
@@ -26,6 +28,7 @@ import { ConfirmDeleteModal } from './ConfirmDeleteModal'
 import { EditRoleModal } from './EditRoleModal'
 import { ResetPasswordModal } from './ResetPasswordModal'
 import { EditLocatieModal } from './EditLocatieModal'
+import { EditTeacherLinkModal } from './EditTeacherLinkModal'
 
 export function UtilizatoriSection() {
   const queryClient = useQueryClient()
@@ -38,6 +41,7 @@ export function UtilizatoriSection() {
   const [editRoleValue, setEditRoleValue] = useState<UserRole>('front_desk')
   const [resetPwd, setResetPwd] = useState<UserRow | null>(null)
   const [resetPwdValue, setResetPwdValue] = useState('')
+  const [editTeacher, setEditTeacher] = useState<UserRow | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [locatieValidationError, setLocatieValidationError] = useState<string | null>(null)
 
@@ -96,6 +100,29 @@ export function UtilizatoriSection() {
       ),
   })
 
+  const linkTeacher = useMutation({
+    mutationFn: (input: { userId: string; teacherId: string }) =>
+      linkTeacherAccount(input.userId, input.teacherId),
+    onSuccess: () => {
+      setEditTeacher(null)
+      setActionError(null)
+      void invalidate()
+    },
+    onError: (e: unknown) =>
+      setActionError(humanizeError(e, 'Eroare la legarea de instructor.')),
+  })
+
+  const unlinkTeacher = useMutation({
+    mutationFn: (userId: string) => unlinkTeacherAccount(userId),
+    onSuccess: () => {
+      setEditTeacher(null)
+      setActionError(null)
+      void invalidate()
+    },
+    onError: (e: unknown) =>
+      setActionError(humanizeError(e, 'Eroare la dezlegare.')),
+  })
+
   const resetPassword = useMutation({
     mutationFn: (input: { userId: string; password: string }) =>
       resetUserPassword(input.userId, input.password),
@@ -119,9 +146,9 @@ export function UtilizatoriSection() {
     },
     {
       header: 'Rol',
-      cell: (u) => ROLE_LABEL[u.role] ?? u.role,
-      className: 'w-32',
-      sortValue: (u) => (ROLE_LABEL[u.role] ?? u.role)?.toLowerCase(),
+      cell: (u) => roleLabel(u.role, u.teacher_id),
+      className: 'w-44',
+      sortValue: (u) => roleLabel(u.role, u.teacher_id).toLowerCase(),
     },
     {
       header: 'Locație',
@@ -149,6 +176,17 @@ export function UtilizatoriSection() {
       className: 'w-44',
       sortValue: (u) =>
         u.locatie_id ? locatieLabelById.get(u.locatie_id)?.toLowerCase() : undefined,
+    },
+    {
+      header: 'Predă',
+      cell: (u) =>
+        u.teacher_id ? (
+          <Badge tone="warn">{u.teacher_nume ?? 'Instructor'}</Badge>
+        ) : (
+          <span className="text-quasar-gray">—</span>
+        ),
+      className: 'w-40',
+      sortValue: (u) => u.teacher_nume?.toLowerCase(),
     },
     {
       header: 'Creat',
@@ -184,6 +222,16 @@ export function UtilizatoriSection() {
             <Button
               variant="ghost"
               onClick={() => {
+                setEditTeacher(u)
+                setActionError(null)
+              }}
+              title="Leagă contul de un profil de instructor (nu schimbă rolul)"
+            >
+              Instructor
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
                 setResetPwd(u)
                 setResetPwdValue('')
                 setActionError(null)
@@ -204,7 +252,7 @@ export function UtilizatoriSection() {
           </div>
         )
       },
-      className: 'w-56',
+      className: 'w-72',
     },
   ]
 
@@ -287,6 +335,22 @@ export function UtilizatoriSection() {
             })
           }}
           onClose={() => setResetPwd(null)}
+        />
+      )}
+
+      {editTeacher && (
+        <EditTeacherLinkModal
+          user={editTeacher}
+          isPending={linkTeacher.isPending || unlinkTeacher.isPending}
+          error={actionError}
+          onLink={(teacherId) =>
+            linkTeacher.mutate({ userId: editTeacher.id, teacherId })
+          }
+          onUnlink={() => unlinkTeacher.mutate(editTeacher.id)}
+          onClose={() => {
+            setEditTeacher(null)
+            setActionError(null)
+          }}
         />
       )}
 

@@ -1,5 +1,5 @@
 import type { AppRole } from '@/hooks/useAuth'
-import { ROUTE_ACCESS, type AppRoute } from '@/lib/rolesMatrix'
+import { canAccessRoute, type AppRoute } from '@/lib/rolesMatrix'
 
 export type NavItem = {
   label: string
@@ -75,9 +75,12 @@ export const navSections: NavSection[] = [
 ]
 // Note: /pontaj-staff (admin+manager) va fi adăugat în Phase 8.
 
-export function visibleSections(role: AppRole): NavSection[] {
+export function visibleSections(
+  role: AppRole,
+  teacherId: string | null = null,
+): NavSection[] {
   const isVisible = (item: NavItem) =>
-    (ROUTE_ACCESS[item.path] as readonly AppRole[]).includes(role)
+    canAccessRoute(role, item.path, teacherId)
   return navSections
     .map((s) => ({ ...s, items: s.items.filter(isVisible) }))
     .filter((s) => s.items.length > 0)

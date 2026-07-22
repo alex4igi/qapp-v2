@@ -10,6 +10,9 @@ export type UserRow = {
   email: string | null
   role: UserRole
   locatie_id: string | null
+  /** Profilul din `teacheri` legat de cont — ortogonal rolului (un manager poate preda). */
+  teacher_id: string | null
+  teacher_nume: string | null
   created_at: string
   last_sign_in_at: string | null
 }
@@ -82,6 +85,14 @@ export async function linkTeacherAccount(
 ): Promise<void> {
   const { data, error } = await supabase.functions.invoke('admin-users', {
     body: { action: 'link_teacher', userId, teacherId },
+  })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+}
+
+export async function unlinkTeacherAccount(userId: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('admin-users', {
+    body: { action: 'unlink_teacher', userId },
   })
   if (error) throw error
   if (data?.error) throw new Error(data.error)

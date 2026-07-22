@@ -4,6 +4,7 @@ import { Modal, PageHeader, Spinner } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
+import { hasTeacherLens } from '@/lib/rolesMatrix'
 import { saliOptions } from '@/lib/lookups'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { InchiriereTab } from '@/features/plati/modals/PlataNouaModal/InchiriereTab'
@@ -21,8 +22,11 @@ import { OCCUP_LEGEND, OCCUP_STYLE } from '../constants'
 type BookingPrefill = { locatie: string; sala: string; data: string; oraStart: string }
 
 export function CalendarPage() {
-  const { role } = useAuth()
+  const { role, teacherId } = useAuth()
   const teacherMode = role === 'teacher'
+  // Oricine are profil de instructor își vede rezervările proprii; recepția și
+  // managerii păstrează în plus panourile operaționale.
+  const showRezervarileMele = hasTeacherLens(role, teacherId)
   const {
     locatieId: workLocatie,
     locatieNume: workLocatieNume,
@@ -122,9 +126,10 @@ export function CalendarPage() {
         </div>
 
         <div className="space-y-4">
-          {teacherMode ? (
+          {showRezervarileMele && (
             <RezervarileMelePanel onRental={(id) => setEditId(id)} />
-          ) : (
+          )}
+          {!teacherMode && (
             <>
               <TodayPanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
               <NeachitatePanel locatieId={locatie || null} onRental={(id) => setEditId(id)} />
