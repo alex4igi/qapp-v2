@@ -191,6 +191,7 @@ export type CursClientActiv = {
   // Reînscriere — calculate pe înrolările viitoare (data_incepere >= luna următoare)
   reinscriereActivata: boolean
   areInrolariViitoare: boolean
+  vineLa: VineLa | null
 }
 
 export async function getCursClientiActivi(
@@ -220,6 +221,7 @@ export async function getCursClientiActivi(
         pretInrolare: e.suma,
         reinscriereActivata: false,
         areInrolariViitoare: false,
+        vineLa: null,
       })
     } else {
       if (last && (!existing.ultimaPrezenta || last > existing.ultimaPrezenta)) {
@@ -252,6 +254,18 @@ export async function getCursClientiActivi(
       c.areInrolariViitoare = true
       if (f.este_reinscriere) c.reinscriereActivata = true
     }
+  }
+
+  const vineLa = await fetchVineLaByClient({
+    clienti: Array.from(byClient, ([id, c]) => ({
+      id,
+      ultimaPrezenta: c.ultimaPrezenta,
+    })),
+    exceptCursId: cursId,
+  })
+  for (const [clientId, v] of vineLa) {
+    const row = byClient.get(clientId)
+    if (row) row.vineLa = v
   }
 
   return Array.from(byClient.values()).sort((a, b) =>

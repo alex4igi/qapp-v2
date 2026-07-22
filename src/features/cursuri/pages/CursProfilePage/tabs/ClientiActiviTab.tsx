@@ -2,10 +2,12 @@ import { Spinner } from '@/components/ui'
 import type { CursClientActiv } from '../../../api'
 import { formatData, fullName } from '../helpers'
 import { formatRON } from '@/lib/format'
+import { vineLaLabel } from '@/lib/ultimaPrezenta'
 
 type Props = {
   loading: boolean
   rows: CursClientActiv[]
+  cursNume: string
   pretLunarPromo: number | null
   onRowClick: (clientId: string) => void
   onActivateReinscriere: (clientId: string) => void
@@ -15,6 +17,7 @@ type Props = {
 export function ClientiActiviTab({
   loading,
   rows,
+  cursNume,
   pretLunarPromo,
   onRowClick,
   onActivateReinscriere,
@@ -36,7 +39,7 @@ export function ClientiActiviTab({
           <tr>
             <th className="w-10 px-3 py-2 text-right">#</th>
             <th className="px-3 py-2">Nume</th>
-            <th className="px-3 py-2">Ultima prezență</th>
+            <th className="px-3 py-2">Ultima prezență la grupă</th>
             <th className="px-3 py-2 text-right">Preț înrolare</th>
             {showReinscriere && (
               <th className="px-3 py-2 text-right">
@@ -58,6 +61,12 @@ export function ClientiActiviTab({
               </td>
               <td className="px-3 py-2 text-quasar-black">
                 {formatData(r.ultimaPrezenta)}
+                {r.vineLa && (
+                  <span className="block text-xs font-medium text-green-700">
+                    ↪ {vineLaLabel(r.vineLa, cursNume)} —{' '}
+                    {formatData(r.vineLa.data)}
+                  </span>
+                )}
               </td>
               <td className="px-3 py-2 text-right text-quasar-black">
                 {r.pretInrolare != null ? formatRON(r.pretInrolare) : '—'}

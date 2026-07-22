@@ -279,6 +279,7 @@ export function CursProfilePage() {
               <ClientiActiviTab
                 loading={activiQuery.isLoading}
                 rows={activiQuery.data ?? []}
+                cursNume={curs.numele}
                 pretLunarPromo={curs.facultativ ? null : curs.pret_lunar_promo}
                 onRowClick={(cid) => navigate(`/clienti/${cid}`)}
                 onActivateReinscriere={(cid) =>
