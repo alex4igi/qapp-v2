@@ -1,6 +1,7 @@
 // Query-uri pentru tab-urile profilului unui curs: clienți activi, inactivi,
 // datorii, fără prezență, ocupare (vs capacitate).
 import { supabase } from '@/lib/supabase'
+import { fetchVineLaByClient, type VineLa } from '@/lib/ultimaPrezenta'
 
 function todayIso(): string {
   const d = new Date()
@@ -297,6 +298,7 @@ export type CursClientInactiv = {
   nume: string
   prenume: string | null
   ultimaPrezenta: string | null
+  vineLa: VineLa | null
 }
 
 export async function getCursClientiInactivi(
@@ -337,8 +339,21 @@ export async function getCursClientiInactivi(
         nume: e.client.nume,
         prenume: e.client.prenume,
         ultimaPrezenta: last,
+        vineLa: null,
       })
     }
+  }
+
+  const vineLa = await fetchVineLaByClient({
+    clienti: Array.from(byClient, ([id, c]) => ({
+      id,
+      ultimaPrezenta: c.ultimaPrezenta,
+    })),
+    exceptCursId: cursId,
+  })
+  for (const [clientId, v] of vineLa) {
+    const row = byClient.get(clientId)
+    if (row) row.vineLa = v
   }
 
   // Sortare descendentă după ultima prezență (cei recent inactivați sus)
@@ -404,6 +419,9 @@ export type CursFaraPrezentaRow = {
   nume: string
   prenume: string | null
   ultimaPrezenta: string | null
+  // Rămâne în listă chiar dacă vine altundeva — profesorul grupei ăsteia tot
+  // trebuie să știe că l-a pierdut. Vezi lib/ultimaPrezenta.ts.
+  vineLa: VineLa | null
 }
 
 export async function getCursFaraPrezenteRecente(params: {
@@ -444,9 +462,16 @@ export async function getCursFaraPrezenteRecente(params: {
         nume: v.nume,
         prenume: v.prenume,
         ultimaPrezenta: v.last,
+        vineLa: null,
       })
     }
   }
+
+  const vineLa = await fetchVineLaByClient({
+    clienti: out.map((r) => ({ id: r.clientId, ultimaPrezenta: r.ultimaPrezenta })),
+    exceptCursId: params.cursId,
+  })
+  for (const r of out) r.vineLa = vineLa.get(r.clientId) ?? null
 
   // Sortare crescătoare după ultima prezență: cei fără prezență (null) primii,
   // apoi de la cel mai vechi la cel mai recent.

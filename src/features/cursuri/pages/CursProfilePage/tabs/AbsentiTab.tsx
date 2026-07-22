@@ -1,14 +1,16 @@
 import { Spinner } from '@/components/ui'
 import type { CursFaraPrezentaRow } from '../../../api'
+import { vineLaLabel } from '@/lib/ultimaPrezenta'
 import { formatData, fullName } from '../helpers'
 
 type Props = {
   loading: boolean
   rows: CursFaraPrezentaRow[]
+  cursNume: string
   onRowClick: (clientId: string) => void
 }
 
-export function AbsentiTab({ loading, rows, onRowClick }: Props) {
+export function AbsentiTab({ loading, rows, cursNume, onRowClick }: Props) {
   if (loading) return <div className="mt-4"><Spinner /></div>
   if (rows.length === 0) {
     return (
@@ -24,7 +26,8 @@ export function AbsentiTab({ loading, rows, onRowClick }: Props) {
           <tr>
             <th className="w-10 px-3 py-2 text-right">#</th>
             <th className="px-3 py-2">Nume</th>
-            <th className="px-3 py-2">Ultima prezență</th>
+            <th className="px-3 py-2">Ultima prezență la grupă</th>
+            <th className="px-3 py-2">Vine la</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
@@ -40,6 +43,16 @@ export function AbsentiTab({ loading, rows, onRowClick }: Props) {
               </td>
               <td className="px-3 py-2 text-quasar-black">
                 {formatData(r.ultimaPrezenta)}
+              </td>
+              <td className="px-3 py-2 text-quasar-gray">
+                {r.vineLa ? (
+                  <span className="font-medium text-green-700">
+                    ↪ {vineLaLabel(r.vineLa, cursNume)} —{' '}
+                    {formatData(r.vineLa.data)}
+                  </span>
+                ) : (
+                  '—'
+                )}
               </td>
             </tr>
           ))}

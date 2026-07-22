@@ -317,6 +317,7 @@ export function CursProfilePage() {
                     <ClientiInactiviTab
                       loading={inactiviQuery.isLoading}
                       rows={inactiviQuery.data ?? []}
+                      cursNume={curs.numele}
                       onRowClick={(cid) => navigate(`/clienti/${cid}`)}
                     />
                   </div>
@@ -329,6 +330,7 @@ export function CursProfilePage() {
             <AbsentiTab
               loading={absentiQuery.isLoading}
               rows={absentiQuery.data ?? []}
+              cursNume={curs.numele}
               onRowClick={(cid) => navigate(`/clienti/${cid}`)}
             />
           )}

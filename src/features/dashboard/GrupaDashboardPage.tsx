@@ -11,6 +11,7 @@ import { ComposeMesajGrupaModal } from '@/features/announcements/ComposeMesajGru
 import { upsertPrezenta } from '@/features/prezente/api'
 import { updateLeadStatus } from '@/features/leads/api'
 import { formatRON, formatDate, formatMonth } from '@/lib/format'
+import { vineLaLabel } from '@/lib/ultimaPrezenta'
 import { waLink, waGroupLink } from '@/lib/phone'
 import { listSezoane } from '@/features/plati/api'
 import { getCursDatorii } from '@/features/cursuri/api'
@@ -357,11 +358,13 @@ function RosterColumns({
 /* ---------- foști cursanți: listă de recuperare ---------- */
 function FostiSection({
   rows,
+  cursNume,
   canEnroll,
   onReinrol,
   navigate,
 }: {
   rows: GrupaFostRow[]
+  cursNume: string
   canEnroll: boolean
   onReinrol: (clientId: string) => void
   navigate: (to: string) => void
@@ -390,6 +393,8 @@ function FostiSection({
           <div className="border-t border-line-2 px-4 py-2 text-xs text-muted">
             Au fost pe această grupă în ultimele 6 luni, dar nu mai au înrolare pe
             luna curentă — de aceea nu apar în roster și nu li se poate pune prezența.
+            Cei marcați cu ↪ vin în continuare, la altă grupă sau la aceeași grupă
+            din sezonul nou — pe ei nu-i suna ca pe cei pierduți.
           </div>
           {rows.map((f) => {
             const name = [f.nume, f.prenume].filter(Boolean).join(' ')
@@ -412,11 +417,17 @@ function FostiSection({
                   </span>
                   <span className="block text-[11px] text-muted">
                     {f.ultimaPrezenta
-                      ? `ultima prezență ${formatDate(f.ultimaPrezenta)}`
+                      ? `ultima prezență pe această grupă ${formatDate(f.ultimaPrezenta)}`
                       : f.ultimaLuna
                         ? `ultima înrolare ${formatMonth(f.ultimaLuna)}`
                         : '—'}
                   </span>
+                  {f.vineLa && (
+                    <span className="block truncate text-[11px] font-medium text-success">
+                      ↪ vine la {vineLaLabel(f.vineLa, cursNume)} —{' '}
+                      {formatDate(f.vineLa.data)}
+                    </span>
+                  )}
                 </span>
                 {canEnroll && (
                   <Button
@@ -793,6 +804,7 @@ export function GrupaDashboardPage() {
 
           <FostiSection
             rows={data.fosti}
+            cursNume={data.cursNume}
             canEnroll={canDeskActions}
             onReinrol={(clientId) => {
               setAddClientId(clientId)

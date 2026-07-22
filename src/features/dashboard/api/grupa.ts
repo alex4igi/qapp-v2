@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
 import { endOfMonth } from '@/features/plati/api/calendar'
 import { fetchAllRows } from '@/lib/fetchAll'
+import { fetchVineLaByClient, type VineLa } from '@/lib/ultimaPrezenta'
 import { isoDaysAgo } from './helpers'
 
 // `.in(...)` cu prea multe UUID-uri depășește limita de headers a PostgREST (~16KB)
@@ -51,6 +52,10 @@ export type GrupaFostRow = {
   // Luna ultimei înrolări pe această grupă (data_incepere = ziua 1 a lunii facturate).
   ultimaLuna: string | null
   ultimaPrezenta: string | null
+  // Unde a fost văzut mai recent decât `ultimaPrezenta`, dacă e cazul. La graniță
+  // de sezon „foștii" sunt de regulă aceiași oameni, mutați pe clona grupei —
+  // vezi lib/ultimaPrezenta.ts.
+  vineLa: VineLa | null
 }
 
 export type GrupaDashboard = {
@@ -529,6 +534,7 @@ export async function getGrupaDashboard(params: {
       telefon: e.client.telefon,
       ultimaLuna: e.data_incepere,
       ultimaPrezenta: null,
+      vineLa: null,
     })
   }
 
@@ -555,6 +561,20 @@ export async function getGrupaDashboard(params: {
       if (row && (!row.ultimaPrezenta || p.data > row.ultimaPrezenta)) {
         row.ultimaPrezenta = p.data
       }
+    }
+  }
+
+  if (fostiById.size) {
+    const vineLa = await fetchVineLaByClient({
+      clienti: Array.from(fostiById, ([id, f]) => ({
+        id,
+        ultimaPrezenta: f.ultimaPrezenta,
+      })),
+      exceptCursId: params.cursId,
+    })
+    for (const [clientId, v] of vineLa) {
+      const row = fostiById.get(clientId)
+      if (row) row.vineLa = v
     }
   }
 
