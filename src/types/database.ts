@@ -4836,6 +4836,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pontaj_luni: {
+        Row: {
+          aprobat_de: string | null
+          aprobat_la: string
+          created: string
+          id: string
+          luna: string
+          nota: string | null
+          nr_ture: number
+          total_minute: number
+          user_id: string
+        }
+        Insert: {
+          aprobat_de?: string | null
+          aprobat_la?: string
+          created?: string
+          id?: string
+          luna: string
+          nota?: string | null
+          nr_ture?: number
+          total_minute: number
+          user_id: string
+        }
+        Update: {
+          aprobat_de?: string | null
+          aprobat_la?: string
+          created?: string
+          id?: string
+          luna?: string
+          nota?: string | null
+          nr_ture?: number
+          total_minute?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       portal_accounts: {
         Row: {
           created_at: string
@@ -6339,30 +6375,45 @@ export type Database = {
       }
       staff_pontaj: {
         Row: {
+          corectat_de: string | null
+          corectat_la: string | null
           created: string
           end_at: string | null
           id: string
           locatie_id: string | null
+          minute_platibile: number | null
+          nota: string | null
           source: string | null
           start_at: string
+          status: string
           user_id: string
         }
         Insert: {
+          corectat_de?: string | null
+          corectat_la?: string | null
           created?: string
           end_at?: string | null
           id?: string
           locatie_id?: string | null
+          minute_platibile?: number | null
+          nota?: string | null
           source?: string | null
           start_at?: string
+          status?: string
           user_id: string
         }
         Update: {
+          corectat_de?: string | null
+          corectat_la?: string | null
           created?: string
           end_at?: string | null
           id?: string
           locatie_id?: string | null
+          minute_platibile?: number | null
+          nota?: string | null
           source?: string | null
           start_at?: string
+          status?: string
           user_id?: string
         }
         Relationships: [
@@ -9470,16 +9521,64 @@ export type Database = {
         Returns: number
       }
       ore_pe_zi_valid: { Args: { m: Json }; Returns: boolean }
-      pontaj_auto_close_open_sessions: { Args: never; Returns: number }
-      pontaj_close_session: {
-        Args: { p_source?: string }
+      pontaj_aproba_luna: {
+        Args: { p_luna: string; p_nota?: string; p_user_id: string }
         Returns: {
+          aprobat_de: string | null
+          aprobat_la: string
+          created: string
+          id: string
+          luna: string
+          nota: string | null
+          nr_ture: number
+          total_minute: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pontaj_luni"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pontaj_auto_close_open_sessions: { Args: never; Returns: number }
+      pontaj_check_in: {
+        Args: { p_locatie?: string }
+        Returns: {
+          corectat_de: string | null
+          corectat_la: string | null
           created: string
           end_at: string | null
           id: string
           locatie_id: string | null
+          minute_platibile: number | null
+          nota: string | null
           source: string | null
           start_at: string
+          status: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff_pontaj"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pontaj_check_out: {
+        Args: never
+        Returns: {
+          corectat_de: string | null
+          corectat_la: string | null
+          created: string
+          end_at: string | null
+          id: string
+          locatie_id: string | null
+          minute_platibile: number | null
+          nota: string | null
+          source: string | null
+          start_at: string
+          status: string
           user_id: string
         }
         SetofOptions: {
@@ -9493,15 +9592,97 @@ export type Database = {
         Args: { p_locatie: string; p_start: string }
         Returns: string
       }
-      pontaj_open_session: {
-        Args: never
+      pontaj_confirma: {
+        Args: { p_id: string }
         Returns: {
+          corectat_de: string | null
+          corectat_la: string | null
           created: string
           end_at: string | null
           id: string
           locatie_id: string | null
+          minute_platibile: number | null
+          nota: string | null
           source: string | null
           start_at: string
+          status: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff_pontaj"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pontaj_deblocheaza_luna: {
+        Args: { p_luna: string; p_motiv: string; p_user_id: string }
+        Returns: undefined
+      }
+      pontaj_luna_e_aprobata: {
+        Args: { p_moment: string; p_user: string }
+        Returns: boolean
+      }
+      pontaj_round_quarter: { Args: { t: string }; Returns: string }
+      pontaj_stare_curenta: {
+        Args: never
+        Returns: {
+          corectat_de: string | null
+          corectat_la: string | null
+          created: string
+          end_at: string | null
+          id: string
+          locatie_id: string | null
+          minute_platibile: number | null
+          nota: string | null
+          source: string | null
+          start_at: string
+          status: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff_pontaj"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pontaj_sterge: {
+        Args: { p_id: string; p_motiv: string }
+        Returns: undefined
+      }
+      pontaj_sumar_luna: {
+        Args: { p_luna: string }
+        Returns: {
+          aprobat: boolean
+          nr_deschise: number
+          nr_neconfirmate: number
+          nr_ture: number
+          total_minute: number
+          user_id: string
+        }[]
+      }
+      pontaj_upsert_manual: {
+        Args: {
+          p_end: string
+          p_id?: string
+          p_locatie: string
+          p_motiv: string
+          p_start: string
+          p_user_id: string
+        }
+        Returns: {
+          corectat_de: string | null
+          corectat_la: string | null
+          created: string
+          end_at: string | null
+          id: string
+          locatie_id: string | null
+          minute_platibile: number | null
+          nota: string | null
+          source: string | null
+          start_at: string
+          status: string
           user_id: string
         }
         SetofOptions: {

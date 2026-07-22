@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { useAuth } from './useAuth'
 
-// Delogare automată după inactivitate (cont de lucru partajat la recepție).
-// „Idle" = nicio interacțiune în tab-ul Qapp; pe alt tab/aplicație tot e idle
-// (browserul nu vede alte taburi) — comportament intenționat (decizie user).
-// Pontajul rămâne corect și fără asta prin fallback-ul server-side pe ora de
-// închidere a locației; idle = securitate, se declanșează doar cât tab-ul rulează.
+// Delogare automată după inactivitate — pură măsură de SECURITATE (ecran lăsat
+// deschis la recepție). NU mai atinge pontajul: tura rămâne deschisă până la
+// check-out explicit. Motivul: „idle în tab" ≠ „plecat de la muncă" — recepția e
+// legitim plecată de la calculator (client în sală, curățenie), iar vechea logică
+// îi tăia ore reale exact când pontajul a devenit sugestie de salariu.
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000 // 30 min
 
 const ACTIVITY_EVENTS = [
@@ -18,12 +18,12 @@ const ACTIVITY_EVENTS = [
 ] as const
 
 export function useIdleLogout() {
-  const { session, idleLogout } = useAuth()
+  const { session, signOut } = useAuth()
   const hasSession = Boolean(session)
-  // idleLogout nu e memoizat în provider → ref ca să nu reluăm efectul (și să nu
+  // signOut nu e memoizat în provider → ref ca să nu reluăm efectul (și să nu
   // resetăm timerul) la fiecare re-render / refresh de token.
-  const idleLogoutRef = useRef(idleLogout)
-  idleLogoutRef.current = idleLogout
+  const idleLogoutRef = useRef(signOut)
+  idleLogoutRef.current = signOut
 
   useEffect(() => {
     if (!hasSession) return

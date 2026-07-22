@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import {
-  canAccessRoute,
-  isFrontDesk,
-  ROLE_LABEL,
-} from '@/lib/rolesMatrix'
+import { canAccessRoute, roleLabel } from '@/lib/rolesMatrix'
 import { ClientForm } from '@/features/clienti/ClientForm'
 import { LeadModal } from '@/features/leads/LeadModal'
+import { RailPontaj } from './RailPontaj'
 import { visibleSections } from './navConfig'
 
 /* ---------- iconuri secțiuni (din mockup) ---------- */
@@ -81,8 +78,8 @@ function RailNav({
   collapsed: boolean
   onExpand: () => void
 }) {
-  const { role } = useAuth()
-  const sections = visibleSections(role)
+  const { role, teacherId } = useAuth()
+  const sections = visibleSections(role, teacherId)
   const location = useLocation()
 
   // Secțiunea căreia îi aparține ruta curentă (sau null pe rute fără secțiune,
@@ -284,14 +281,13 @@ function RailAccount({
   collapsed: boolean
   onExpand: () => void
 }) {
-  const { user, role, signOut, endShift } = useAuth()
+  const { user, role, teacherId, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   const showFeedback = canAccessRoute(role, '/feedback-app')
   const showAnunturi = canAccessRoute(role, '/anunturi')
-  const showEndShift = isFrontDesk(role)
 
   const go = (path: string) => {
     setOpen(false)
@@ -352,7 +348,9 @@ function RailAccount({
           <span className="block truncate text-[12.5px] font-semibold text-white">
             {user?.email?.split('@')[0] ?? 'Cont'}
           </span>
-          <span className="block text-[11px] text-rail-muted">{ROLE_LABEL[role]}</span>
+          <span className="block text-[11px] text-rail-muted">
+            {roleLabel(role, teacherId)}
+          </span>
         </span>
       </button>
 
@@ -366,7 +364,7 @@ function RailAccount({
               {user?.email}
             </div>
             <span className="mt-1 inline-block rounded bg-ink px-1.5 py-0.5 text-xs font-medium text-quasar-yellow">
-              {ROLE_LABEL[role]}
+              {roleLabel(role, teacherId)}
             </span>
           </div>
           <div className="py-1">
@@ -395,18 +393,6 @@ function RailAccount({
             )}
           </div>
           <div className="border-t border-line py-1">
-            {showEndShift && (
-              <button
-                type="button"
-                role="menuitem"
-                className={item}
-                onClick={() => void endShift()}
-                title="Înregistrează plecarea + sign-out"
-              >
-                <span aria-hidden>🏁</span>
-                <span>Încheie tura</span>
-              </button>
-            )}
             <button type="button" role="menuitem" className={item} onClick={() => void signOut()}>
               <span aria-hidden>↪</span>
               <span>Ieșire</span>
@@ -465,6 +451,7 @@ export function Rail(): ReactNode {
         <div className="flex-1" />
 
         <RailActions collapsed={collapsed} />
+        <RailPontaj collapsed={collapsed} />
         <RailAccount collapsed={collapsed} onExpand={expand} />
       </aside>
 
