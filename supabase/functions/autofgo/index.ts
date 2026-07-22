@@ -290,12 +290,29 @@ async function handleEmite(admin: SupabaseClient, firmaCui: string, items: EmitI
   return json({ results })
 }
 
-type MarkItem = { ref: string; client_nume: string; suma: number; data: string; descriere: string }
+type MarkItem = {
+  ref: string
+  client_nume: string
+  suma: number
+  data: string
+  descriere: string
+  numar_factura: string
+}
 
 async function handleMarcheaza(admin: SupabaseClient, firmaCui: string, items: MarkItem[]) {
   if (!firmaCui || !Array.isArray(items)) return json({ error: 'firmaCui și items obligatorii' }, 400)
-  const results: { ref: string; client: string; status: string; mesaj?: string }[] = []
+  const results: { ref: string; client: string; status: string; factura?: string; mesaj?: string }[] = []
   for (const item of items) {
+    const numar = (item.numar_factura ?? '').trim()
+    if (numar.length < 2) {
+      results.push({
+        ref: item.ref,
+        client: item.client_nume,
+        status: 'eroare',
+        mesaj: 'Numărul facturii din FGO este obligatoriu.',
+      })
+      continue
+    }
     const { error } = await admin.rpc('mark_bank_factura', {
       p_ref: item.ref,
       p_sursa: 'banca',
@@ -304,9 +321,10 @@ async function handleMarcheaza(admin: SupabaseClient, firmaCui: string, items: M
       p_suma: Number(item.suma),
       p_data: item.data,
       p_descriere: item.descriere,
+      p_numar_factura: numar,
     })
     if (error) results.push({ ref: item.ref, client: item.client_nume, status: 'eroare', mesaj: error.message })
-    else results.push({ ref: item.ref, client: item.client_nume, status: 'marcata' })
+    else results.push({ ref: item.ref, client: item.client_nume, status: 'marcata', factura: numar })
   }
   return json({ results })
 }

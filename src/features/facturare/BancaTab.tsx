@@ -7,12 +7,12 @@ import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { ClientMatcher } from './ClientMatcher'
 import { FacturaDialog } from './FacturaDialog'
+import { MarcheazaDialog } from './MarcheazaDialog'
 import {
   ignoraFacturi,
   ingestExtras,
   listBancaIstoric,
   listBancaWorklist,
-  marcheazaFacturi,
   salveazaPlataBanca,
 } from './api'
 import type { FacturaLinie, FacturaRow, MatchSuggestion } from './types'
@@ -43,6 +43,7 @@ export function BancaTab() {
   const [facturaFor, setFacturaFor] = useState<{ row: FacturaRow; match: MatchSuggestion | null } | null>(
     null,
   )
+  const [marcheazaFor, setMarcheazaFor] = useState<FacturaRow | null>(null)
 
   const pending = useQuery({
     queryKey: ['facturi-fgo', 'banca', 'worklist'],
@@ -90,21 +91,6 @@ export function BancaTab() {
     mutationFn: (ref: string) => ignoraFacturi([ref]),
     onSuccess: invalidate,
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la ignorare.')),
-  })
-
-  const marcheazaOne = useMutation({
-    mutationFn: (r: FacturaRow) =>
-      marcheazaFacturi(r.firma_cui, [
-        {
-          ref: r.ref,
-          client_nume: r.client_nume,
-          suma: r.suma,
-          data: r.data_tranzactie,
-          descriere: r.descriere ?? '',
-        },
-      ]),
-    onSuccess: invalidate,
-    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la marcare.')),
   })
 
   const columns: Column<FacturaRow>[] = useMemo(
@@ -207,8 +193,8 @@ export function BancaTab() {
                 <button
                   type="button"
                   className="text-xs text-muted underline hover:text-ink"
-                  onClick={() => marcheazaOne.mutate(r)}
-                  title="Facturat deja manual în FGO — marchează fără emitere"
+                  onClick={() => setMarcheazaFor(r)}
+                  title="Facturat deja manual în FGO — cere numărul facturii, nu emite nimic"
                 >
                   Marcată
                 </button>
@@ -218,7 +204,7 @@ export function BancaTab() {
         },
       },
     ],
-    [matches, ignoraOne, marcheazaOne],
+    [matches, ignoraOne],
   )
 
   return (
@@ -314,6 +300,14 @@ export function BancaTab() {
           row={facturaFor.row}
           match={facturaFor.match}
           onClose={() => setFacturaFor(null)}
+        />
+      )}
+
+      {marcheazaFor && (
+        <MarcheazaDialog
+          key={marcheazaFor.ref}
+          row={marcheazaFor}
+          onClose={() => setMarcheazaFor(null)}
         />
       )}
     </div>

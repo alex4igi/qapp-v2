@@ -30,12 +30,15 @@ export type EmitItem = {
   linii: { articol: string; suma: number }[]
 }
 
+// Marcarea „facturat de mână în FGO" cere numărul facturii: fără el afirmația nu e
+// verificabilă, iar un click greșit scotea transferul din lista de lucru nefacturat.
 export type MarkItem = {
   ref: string
   client_nume: string
   suma: number
   data: string
   descriere: string
+  numar_factura: string
 }
 
 export const ingestExtras = (csv: string) => invoke<IngestSummary>('ingest', { csv })
