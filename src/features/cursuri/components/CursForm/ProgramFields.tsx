@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import {
   Checkbox,
   CheckboxGroup,
@@ -7,6 +8,7 @@ import {
   type SelectOption,
 } from '@/components/ui'
 import { zileOptions } from '@/lib/enums'
+import { ProgramPicker } from '@/features/metodologic/components/ProgramPicker'
 import type { FormState, SetField } from './helpers'
 
 type Props = {
@@ -38,6 +40,13 @@ export function ProgramFields({
       return { ...prev, locatie: next, sala: keepSala }
     })
   }
+
+  // Programele metodologice sunt ancorate pe eticheta text a sezonului, nu pe id.
+  const sezonEticheta = sezoane.find((s) => s.value === form.sezon)?.label ?? null
+  const setProgram = useCallback(
+    (id: string) => setForm((prev) => ({ ...prev, program_metodologic: id })),
+    [setForm],
+  )
 
   return (
     <>
@@ -131,6 +140,15 @@ export function ProgramFields({
           />
         </Field>
       </div>
+
+      <ProgramPicker
+        sezonEticheta={sezonEticheta}
+        nivelul={form.nivelul || null}
+        varsta={form.varsta || null}
+        zile={form.zile}
+        value={form.program_metodologic}
+        onChange={setProgram}
+      />
 
       <Field label="Link grup WhatsApp" htmlFor="link_whatsapp">
         <TextInput

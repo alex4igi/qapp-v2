@@ -67,6 +67,9 @@ export const ROUTE_ACCESS = {
   // mai restrâns decât trimiterea din /contracte (care include manager).
   '/contracte/sabloane': ADMIN_OR_OWNER,
   '/oferta-publica': PRIVILEGED,
+  // Structura metodologică a sezonului (calendar + programe de lecții). Managementul
+  // o stabilește; teacherii o consumă din fișa cursului și din pagina grupei.
+  '/metodologic': PRIVILEGED,
   '/setari': PRIVILEGED,
   '/opt-out': PRIVILEGED,
   // Rutele „mele" de instructor: deschise oricărui rol, dar condiționate de

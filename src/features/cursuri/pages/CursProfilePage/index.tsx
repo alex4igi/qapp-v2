@@ -38,6 +38,7 @@ import {
   deleteCurs,
 } from '../../api'
 import { GrupaEvenimenteSection } from '@/features/evenimente/GrupaEvenimenteSection'
+import { MetodologieTab } from '@/features/metodologic/tabs/MetodologieTab'
 import { CursSidebar } from './CursSidebar'
 import { getCursInitials, labelOf } from './helpers'
 import { ClientiActiviTab } from './tabs/ClientiActiviTab'
@@ -55,6 +56,7 @@ type TabId =
   | 'open'
   | 'fara-documente'
   | 'evenimente'
+  | 'metodologie'
   | 'detalii'
 
 export function CursProfilePage() {
@@ -268,6 +270,7 @@ export function CursProfilePage() {
                 : []),
               { id: 'fara-documente', label: 'Fără documente' },
               { id: 'evenimente',  label: 'Evenimente' },
+              ...(curs.facultativ ? [] : [{ id: 'metodologie', label: 'Metodologie' }]),
               { id: 'detalii',     label: 'Detalii curs' },
             ]}
             active={tab}
@@ -366,6 +369,15 @@ export function CursProfilePage() {
             <div className="mt-4">
               <GrupaEvenimenteSection cursId={curs.id} />
             </div>
+          )}
+
+          {tab === 'metodologie' && !curs.facultativ && (
+            <MetodologieTab
+              cursId={curs.id}
+              programId={curs.program_metodologic}
+              canEdit={canSendMesajGrupa}
+              canLink={canEdit}
+            />
           )}
 
           {tab === 'detalii' && (

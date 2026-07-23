@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { getProgresTeacher } from '@/features/metodologic/api'
 
 // Hub „Grupele mele — progres" (rol teacher). Compune RPC-uri existente
 // teacher-scoped (get_grad_ocupare, get_trend_prezente) cu cele noi
@@ -148,6 +149,10 @@ export type GrupaProgres = {
   reinscriereEligibili: number
   concurs: number
   spectacol: number
+  // Progres pe programul metodologic (null dacă grupa n-are program asociat).
+  planSedintaCurenta: number | null
+  planTotal: number | null
+  planModulTema: string | null
 }
 
 export type HubData = {
@@ -166,6 +171,7 @@ export async function getHubData(): Promise<HubData> {
     absenteRisc,
     evaluari,
     zileNastere,
+    planProgres,
   ] = await Promise.all([
     getGradOcupare(),
     getTrendPrezente(),
@@ -174,17 +180,20 @@ export async function getHubData(): Promise<HubData> {
     getAbsenteRisc(2),
     getEvaluariStats(),
     getZileNastere(),
+    getProgresTeacher(),
   ])
 
   const trendById = new Map(trend.map((t) => [t.curs_id, t]))
   const reinById = new Map(reinscriere.map((r) => [r.curs_id, r]))
   const partById = new Map(participare.map((p) => [p.curs_id, p]))
+  const planById = new Map(planProgres.map((p) => [p.curs_id, p]))
 
   // Master = cursurile sezonului activ (get_grad_ocupare). Restul se lipesc.
   const grupe: GrupaProgres[] = ocupare.map((o) => {
     const t = trendById.get(o.curs_id)
     const r = reinById.get(o.curs_id)
     const p = partById.get(o.curs_id)
+    const plan = planById.get(o.curs_id)
     return {
       cursId: o.curs_id,
       nume: o.curs_nume,
@@ -199,6 +208,9 @@ export async function getHubData(): Promise<HubData> {
       reinscriereEligibili: r?.total_eligibili ?? 0,
       concurs: p?.concurs ?? 0,
       spectacol: p?.spectacol ?? 0,
+      planSedintaCurenta: plan?.nr_sedinta_curenta ?? null,
+      planTotal: plan?.total_sedinte ?? null,
+      planModulTema: plan?.modul_tema ?? null,
     }
   })
 

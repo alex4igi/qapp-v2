@@ -54,6 +54,8 @@ import { ContracteListPage } from '@/features/contracte/ContracteListPage'
 import { ReinscrieriPage } from '@/features/reinscrieri/ReinscrieriPage'
 import { SetariPage } from '@/features/setari/SetariPage'
 import { OfertaPublicaPage } from '@/features/oferta-publica/OfertaPublicaPage'
+import { MetodologicPage } from '@/features/metodologic/pages/MetodologicPage'
+import { ProgramEditorPage } from '@/features/metodologic/pages/ProgramEditorPage'
 import { OrganizatiePage } from '@/features/setari/OrganizatiePage'
 import { EvaluariListPage } from '@/features/evaluari/EvaluariListPage'
 import { SalariulMeuPage } from '@/features/salariu-teacher/SalariulMeuPage'
@@ -252,6 +254,13 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/oferta-publica']} />}>
             <Route element={<AppLayout />}>
               <Route path="oferta-publica" element={<OfertaPublicaPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/metodologic']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="metodologic" element={<MetodologicPage />} />
+              <Route path="metodologic/:programId" element={<ProgramEditorPage />} />
             </Route>
           </Route>
 

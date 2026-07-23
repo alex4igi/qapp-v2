@@ -44,6 +44,7 @@ export type FormState = {
   one_time: boolean
   suspendat: boolean
   rezervari_online: boolean
+  program_metodologic: string
 }
 
 const numOrEmpty = (n: number | null | undefined) => (n != null ? String(n) : '')
@@ -83,6 +84,7 @@ export function initialState(curs?: Curs | null): FormState {
     one_time: curs?.one_time ?? false,
     suspendat: curs?.suspendat ?? false,
     rezervari_online: curs?.rezervari_online ?? false,
+    program_metodologic: curs?.program_metodologic ?? '',
   }
 }
 

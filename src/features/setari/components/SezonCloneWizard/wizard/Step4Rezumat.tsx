@@ -55,6 +55,11 @@ export function Step4Rezumat({
         Sezonul va fi creat cu stare <strong>planificat</strong>. Va deveni
         activ automat la <strong>{dataIncepere}</strong> prin cron-ul de seară.
       </p>
+      <p className="rounded-lg bg-quasar-yellow/10 px-3 py-2 text-xs text-quasar-black">
+        📚 După clonare, mergi la <strong>Metodologie</strong> ca să duplici structura
+        lecțiilor pe noul sezon, să completezi datele calendarului și să asociezi
+        programele la grupe.
+      </p>
     </div>
   )
 }

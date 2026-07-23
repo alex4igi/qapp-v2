@@ -196,6 +196,22 @@ function GrupeTable({ rows }: { rows: GrupaProgres[] }) {
       className: 'w-24',
       sortValue: (g) => g.spectacol,
     },
+    {
+      header: 'Plan',
+      cell: (g) =>
+        g.planSedintaCurenta == null || g.planTotal == null ? (
+          <span className="text-muted">—</span>
+        ) : (
+          <span className="text-ink">
+            {Math.min(g.planSedintaCurenta, g.planTotal)}/{g.planTotal}
+            {g.planModulTema && (
+              <span className="block truncate text-xs text-muted">{g.planModulTema}</span>
+            )}
+          </span>
+        ),
+      className: 'w-28',
+      sortValue: (g) => g.planSedintaCurenta ?? -1,
+    },
   ]
 
   return (

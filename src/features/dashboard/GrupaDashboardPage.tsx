@@ -8,6 +8,7 @@ import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useAuth } from '@/hooks/useAuth'
 import { canMesajGrupa, isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import { ComposeMesajGrupaModal } from '@/features/announcements/ComposeMesajGrupaModal'
+import { LectieBanner } from '@/features/metodologic/components/LectieBanner'
 import { upsertPrezenta } from '@/features/prezente/api'
 import { updateLeadStatus } from '@/features/leads/api'
 import { formatRON, formatDate, formatMonth } from '@/lib/format'
@@ -715,6 +716,11 @@ export function GrupaDashboardPage() {
             />
           </div>
         </div>
+      </div>
+
+      {/* lecția zilei din programul metodologic (nimic dacă grupa n-are program) */}
+      <div className="mt-5">
+        <LectieBanner cursId={cursId!} data={date} />
       </div>
 
       {/* tab-uri */}
