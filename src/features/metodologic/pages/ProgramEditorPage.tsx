@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { humanizeError } from '@/lib/errorMessage'
-import { Badge, Button, PageHeader, Spinner } from '@/components/ui'
+import { Button, PageHeader, Spinner } from '@/components/ui'
 import {
   calendarComplet,
   getCalendarSezon,
@@ -13,15 +13,18 @@ import {
   updateProgram,
 } from '../api'
 import { ProgramSeasonView } from '../components/ProgramSeasonView'
+import { StareToggle } from '../components/StareToggle'
 import { LectieEditModal } from '../modals/LectieEditModal'
 import { ModulEditModal } from '../modals/ModulEditModal'
-import type { LectieAfisata, ModulAfisat, SursaProgram } from '../types'
+import { ProgramNumeModal } from '../modals/ProgramNumeModal'
+import type { LectieAfisata, ModulAfisat, StareProgram, SursaProgram } from '../types'
 
 export function ProgramEditorPage() {
   const { programId } = useParams<{ programId: string }>()
   const qc = useQueryClient()
   const [lectie, setLectie] = useState<LectieAfisata | null>(null)
   const [modul, setModul] = useState<ModulAfisat | null>(null)
+  const [editNume, setEditNume] = useState(false)
   const [eroareStare, setEroareStare] = useState<string | null>(null)
 
   const query = useQuery({
@@ -49,10 +52,10 @@ export function ProgramEditorPage() {
   const calendarGata = calendarComplet(calendarQuery.data ?? []).gata
   const eCiorna = program.stare === 'ciorna'
 
-  const comutaStare = async () => {
+  const comutaStare = async (next: StareProgram) => {
     setEroareStare(null)
     try {
-      await updateProgram(program.id, { stare: eCiorna ? 'activ' : 'ciorna' })
+      await updateProgram(program.id, { stare: next })
       refresh()
     } catch (e) {
       setEroareStare(humanizeError(e))
@@ -65,7 +68,14 @@ export function ProgramEditorPage() {
         title={
           <span className="flex items-center gap-2">
             {program.nume}
-            <Badge tone={eCiorna ? 'warn' : 'success'}>{eCiorna ? 'ciornă' : 'activ'}</Badge>
+            <button
+              type="button"
+              onClick={() => setEditNume(true)}
+              aria-label="Editează numele programului"
+              className="text-base text-muted hover:text-ink"
+            >
+              ✏️
+            </button>
           </span>
         }
         subtitle={`${program.sezon_eticheta} · ${totalSedinte} ședințe · ${program.sedinte_pe_saptamana}×/săptămână`}
@@ -74,9 +84,11 @@ export function ProgramEditorPage() {
             <Link to="/metodologic">
               <Button variant="ghost">← Metodologie</Button>
             </Link>
-            <Button onClick={comutaStare} disabled={eCiorna && !calendarGata}>
-              {eCiorna ? 'Activează programul' : 'Trece în ciornă'}
-            </Button>
+            <StareToggle
+              stare={program.stare as StareProgram}
+              onChange={comutaStare}
+              disabled={!calendarGata}
+            />
           </>
         }
       />
@@ -120,6 +132,15 @@ export function ProgramEditorPage() {
         onClose={() => setModul(null)}
         onSave={async (patch) => {
           await updateModul(modul!.modul.id, patch)
+          refresh()
+        }}
+      />
+
+      <ProgramNumeModal
+        program={editNume ? program : null}
+        onClose={() => setEditNume(false)}
+        onSave={async (patch) => {
+          await updateProgram(program.id, patch)
           refresh()
         }}
       />
