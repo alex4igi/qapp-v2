@@ -97,6 +97,7 @@ export const categorieIncasareOptions = opts(
   'Taxa',
   'Workshop',
   'Auditie',
+  'Inchiriere',
 )
 
 export const categorieCheltuialaOptions = opts(

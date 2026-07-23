@@ -2,9 +2,48 @@ import { supabase } from '@/lib/supabase'
 import { recordAuditLog } from '@/lib/auditLog'
 import { applyWordSearch } from '@/lib/search'
 import { fetchAllRows } from '@/lib/fetchAll'
+import { formatDate } from '@/lib/format'
 import type { Enums } from '@/types/db'
 
 export const PAGE_SIZE = 25
+
+// Embed-ul de închiriere pe încasare (categoria „Inchiriere"): sala + interval + chiriaș.
+const INCHIRIERE_EMBED = `inchirieri(data, ora_start, ora_final, guest_nume,
+        sala_rel:sali(nume),
+        teacher_rel:teacheri(nume, prenume),
+        client_rel:clienti(nume, prenume))`
+
+type InchiriereEmbed = {
+  data: string | null
+  ora_start: string | null
+  ora_final: string | null
+  guest_nume: string | null
+  sala_rel: { nume: string | null } | null
+  teacher_rel: { nume: string | null; prenume: string | null } | null
+  client_rel: { nume: string | null; prenume: string | null } | null
+} | null
+
+const fullName = (p: { nume: string | null; prenume: string | null } | null) =>
+  p ? `${p.nume ?? ''} ${p.prenume ?? ''}`.trim() || null : null
+
+// Detaliul afișat pentru o încasare de închiriere. Citit din rândul de închiriere,
+// nu din `observatii`: descrierea e înghețată la încasare și nu urmărește mutările
+// de interval/sală făcute ulterior.
+function inchiriereDetalii(r: InchiriereEmbed): string | null {
+  if (!r) return null
+  const renter =
+    fullName(r.teacher_rel) ?? fullName(r.client_rel) ?? r.guest_nume ?? null
+  const interval = [r.ora_start, r.ora_final]
+    .filter(Boolean)
+    .map((t) => (t as string).slice(0, 5))
+    .join('–')
+  const cand = [r.data ? formatDate(r.data) : null, interval || null]
+    .filter(Boolean)
+    .join(' ')
+  return (
+    [r.sala_rel?.nume, cand || null, renter].filter(Boolean).join(' · ') || null
+  )
+}
 
 // ---------------------------------------------------------------------
 // Ștergere / modificare încasare (manager+/admin/owner) — cu motiv + audit
@@ -30,7 +69,8 @@ export async function getIncasareForEdit(id: string): Promise<IncasareEditable> 
       id, data, suma, metoda, observatii, categorie, locatie,
       clienti(nume, prenume),
       enrollments(cursuri(numele)),
-      inventar(articol)
+      inventar(articol),
+      ${INCHIRIERE_EMBED}
       `,
     )
     .eq('id', id)
@@ -47,6 +87,7 @@ export async function getIncasareForEdit(id: string): Promise<IncasareEditable> 
     clienti: { nume: string | null; prenume: string | null } | null
     enrollments: { cursuri: { numele: string | null } | null } | null
     inventar: { articol: string | null } | null
+    inchirieri: InchiriereEmbed
   }
   return {
     id: r.id,
@@ -64,7 +105,9 @@ export async function getIncasareForEdit(id: string): Promise<IncasareEditable> 
         ? (r.enrollments?.cursuri?.numele ?? null)
         : r.categorie === 'Merch'
           ? (r.inventar?.articol ?? null)
-          : null,
+          : r.categorie === 'Inchiriere'
+            ? inchiriereDetalii(r.inchirieri)
+            : null,
   }
 }
 
@@ -174,7 +217,8 @@ const INCASARI_SELECT = `
       clienti(nume, prenume),
       enrollments(cursuri(numele)),
       inventar(articol),
-      locatii(nume)
+      locatii(nume),
+      ${INCHIRIERE_EMBED}
       `
 
 type IncasareRaw = {
@@ -189,6 +233,7 @@ type IncasareRaw = {
   enrollments: { cursuri: { numele: string | null } | null } | null
   inventar: { articol: string | null } | null
   locatii: { nume: string | null } | null
+  inchirieri: InchiriereEmbed
 }
 
 function mapIncasareRow(r: IncasareRaw): IncasareRow {
@@ -208,7 +253,9 @@ function mapIncasareRow(r: IncasareRaw): IncasareRow {
         ? (r.enrollments?.cursuri?.numele ?? null)
         : r.categorie === 'Merch'
           ? (r.inventar?.articol ?? null)
-          : null,
+          : r.categorie === 'Inchiriere'
+            ? inchiriereDetalii(r.inchirieri)
+            : null,
     locatie_nume: r.locatii?.nume ?? null,
   }
 }
