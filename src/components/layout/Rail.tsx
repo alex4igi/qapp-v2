@@ -4,9 +4,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { canAccessRoute, roleLabel } from '@/lib/rolesMatrix'
 import { ClientForm } from '@/features/clienti/ClientForm'
 import { LeadModal } from '@/features/leads/LeadModal'
-import { visibleSections } from './navConfig'
+import { sectionMatches, visibleSections } from './navConfig'
 
-/* ---------- iconuri secțiuni (din mockup) ---------- */
+/* ---------- iconuri secțiuni ---------- */
 function SectionIcon({ label }: { label: string }) {
   const common = {
     width: 17,
@@ -15,16 +15,10 @@ function SectionIcon({ label }: { label: string }) {
     fill: 'none',
     stroke: 'currentColor',
     strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
   }
   switch (label) {
-    case 'Statistici':
-      return (
-        <svg {...common}>
-          <rect x="3" y="12" width="4" height="8" rx="1" />
-          <rect x="10" y="7" width="4" height="13" rx="1" />
-          <rect x="17" y="3" width="4" height="17" rx="1" />
-        </svg>
-      )
     case 'Clienți':
       return (
         <svg {...common}>
@@ -33,11 +27,39 @@ function SectionIcon({ label }: { label: string }) {
           <circle cx="17" cy="8.5" r="2.6" />
         </svg>
       )
-    case 'Studio':
+    case 'Încasări':
+      return (
+        <svg {...common}>
+          <rect x="2.5" y="6" width="19" height="12" rx="2" />
+          <circle cx="12" cy="12" r="2.6" />
+        </svg>
+      )
+    case 'Cursuri':
       return (
         <svg {...common}>
           <rect x="3.5" y="4" width="17" height="16" rx="2" />
           <path d="M3.5 9h17M9 9v11" />
+        </svg>
+      )
+    case 'Evenimente':
+      return (
+        <svg {...common}>
+          <path d="M12 3.5l2.5 5.3 5.8.8-4.2 4 1 5.7-5.1-2.8-5.1 2.8 1-5.7-4.2-4 5.8-.8z" />
+        </svg>
+      )
+    case 'Marketing':
+      return (
+        <svg {...common}>
+          <path d="M4 10v4l10 4V6z" />
+          <path d="M14 8.5a4 4 0 010 7" />
+        </svg>
+      )
+    case 'Rapoarte':
+      return (
+        <svg {...common}>
+          <rect x="3" y="12" width="4" height="8" rx="1" />
+          <rect x="10" y="7" width="4" height="13" rx="1" />
+          <rect x="17" y="3" width="4" height="17" rx="1" />
         </svg>
       )
     case 'Personal':
@@ -45,6 +67,13 @@ function SectionIcon({ label }: { label: string }) {
         <svg {...common}>
           <circle cx="12" cy="7.5" r="3" />
           <path d="M5.5 20c0-3.3 2.7-5.5 6.5-5.5s6.5 2.2 6.5 5.5" />
+        </svg>
+      )
+    case 'Administrare':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1" />
         </svg>
       )
     default:
@@ -84,8 +113,7 @@ function RailNav({
   // Secțiunea căreia îi aparține ruta curentă (sau null pe rute fără secțiune,
   // ex. dashboard — atunci NIMIC nu e marcat activ).
   const activeLabel =
-    sections.find((s) => s.items.some((i) => location.pathname.startsWith(i.path)))
-      ?.label ?? null
+    sections.find((s) => sectionMatches(s, location.pathname))?.label ?? null
   const [open, setOpen] = useState<string | null>(activeLabel)
 
   // La navigare către o pagină dintr-o secțiune, deschide acea secțiune.
@@ -94,15 +122,41 @@ function RailNav({
     if (activeLabel) setOpen(activeLabel)
   }, [activeLabel])
 
-  // Colapsat: doar iconurile secțiunilor. Clic pe una redeschide rail-ul cu
-  // secțiunea aceea desfăcută (submeniul n-are unde încăpea la 64px).
+  // Colapsat: doar iconurile secțiunilor (colorate). Clic pe una redeschide rail-ul
+  // cu secțiunea aceea desfăcută; frunza (Administrare) navighează direct.
   if (collapsed) {
     return (
       <nav className="flex flex-col items-center gap-1">
         {sections.map((section) => {
-          const hasActive = section.items.some((i) =>
-            location.pathname.startsWith(i.path),
+          const hasActive = sectionMatches(section, location.pathname)
+          const cls = [
+            'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+            hasActive
+              ? 'bg-rail-2 text-white'
+              : 'hover:bg-rail-2/60 hover:text-white',
+          ].join(' ')
+          const style = hasActive
+            ? { boxShadow: `inset 3px 0 0 ${section.color}` }
+            : undefined
+          const icon = (
+            <span style={{ color: section.color }}>
+              <SectionIcon label={section.label} />
+            </span>
           )
+          if (section.leaf) {
+            return (
+              <Link
+                key={section.label}
+                to={section.items[0].path}
+                title={section.label}
+                aria-label={section.label}
+                className={cls}
+                style={style}
+              >
+                {icon}
+              </Link>
+            )
+          }
           return (
             <button
               key={section.label}
@@ -113,14 +167,10 @@ function RailNav({
                 setOpen(section.label)
                 onExpand()
               }}
-              className={[
-                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
-                hasActive
-                  ? 'bg-rail-2 text-white shadow-[inset_3px_0_0_var(--color-quasar-yellow)]'
-                  : 'text-rail-soft hover:bg-rail-2/60 hover:text-white',
-              ].join(' ')}
+              className={cls}
+              style={style}
             >
-              <SectionIcon label={section.label} />
+              {icon}
             </button>
           )
         })}
@@ -135,10 +185,34 @@ function RailNav({
       </div>
       {sections.map((section) => {
         const isOpen = open === section.label
-        const hasActive = section.items.some((i) =>
-          location.pathname.startsWith(i.path),
+        const hasActive = sectionMatches(section, location.pathname)
+        const icon = (
+          <span style={{ color: section.color }}>
+            <SectionIcon label={section.label} />
+          </span>
         )
-        // Evidențiem (bară galbenă + fundal) secțiunea deschisă SAU cea a rutei
+
+        // Frunză (Administrare): un singur rând-link, fără acordeon.
+        if (section.leaf) {
+          return (
+            <NavLink
+              key={section.label}
+              to={section.items[0].path}
+              className={[
+                'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-colors',
+                hasActive
+                  ? 'bg-rail-2 text-white'
+                  : 'text-rail-soft hover:bg-rail-2/60 hover:text-white',
+              ].join(' ')}
+              style={hasActive ? { boxShadow: `inset 3px 0 0 ${section.color}` } : undefined}
+            >
+              {icon}
+              <span className="flex-1 text-left">{section.label}</span>
+            </NavLink>
+          )
+        }
+
+        // Evidențiem (bară colorată + fundal) secțiunea deschisă SAU cea a rutei
         // curente — astfel clickul pe meniu aprinde butonul, iar deschiderea
         // altei secțiuni mută evidențierea.
         const highlight = isOpen || hasActive
@@ -150,12 +224,13 @@ function RailNav({
               className={[
                 'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-colors',
                 highlight
-                  ? 'bg-rail-2 text-white shadow-[inset_3px_0_0_var(--color-quasar-yellow)]'
+                  ? 'bg-rail-2 text-white'
                   : 'text-rail-soft hover:bg-rail-2/60 hover:text-white',
               ].join(' ')}
+              style={highlight ? { boxShadow: `inset 3px 0 0 ${section.color}` } : undefined}
               aria-expanded={isOpen}
             >
-              <SectionIcon label={section.label} />
+              {icon}
               <span className="flex-1 text-left">{section.label}</span>
               <span
                 className={[
@@ -183,11 +258,20 @@ function RailNav({
                       tabIndex={isOpen ? 0 : -1}
                       className={({ isActive }) =>
                         [
-                          'block truncate rounded-md px-2.5 py-1.5 text-[13px] transition-colors',
+                          'block truncate rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors',
                           isActive
-                            ? 'bg-quasar-yellow font-semibold text-ink'
+                            ? ''
                             : 'text-rail-soft hover:bg-rail-2 hover:text-white',
                         ].join(' ')
+                      }
+                      style={({ isActive }) =>
+                        isActive
+                          ? {
+                              backgroundColor: `color-mix(in srgb, ${section.color} 22%, transparent)`,
+                              color: section.color,
+                              boxShadow: `inset 2px 0 0 ${section.color}`,
+                            }
+                          : undefined
                       }
                     >
                       {item.label}

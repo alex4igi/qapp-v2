@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui'
 import { AuthProvider } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { AdministrareLayout } from '@/components/layout/AdministrareLayout'
 import { Placeholder } from '@/components/Placeholder'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -116,18 +117,6 @@ function App() {
             </Route>
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/audit']} />}>
-            <Route element={<AppLayout />}>
-              <Route path="audit" element={<AuditPage />} />
-            </Route>
-          </Route>
-
-          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/pontaj-staff']} />}>
-            <Route element={<AppLayout />}>
-              <Route path="pontaj-staff" element={<PontajStaffPage />} />
-            </Route>
-          </Route>
-
           {/* Feedback despre aplicație — accesibil tuturor rolurilor (inclusiv
               teacher): autorul își vede propriul feedback, admin/owner triază tot. */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/feedback-app']} />}>
@@ -188,15 +177,6 @@ function App() {
             </Route>
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/contracte']} />}>
-            <Route element={<AppLayout />}>
-              <Route path="contracte" element={<ContracteListPage />} />
-              {/* Tab „Șabloane" trăiește în ContracteListPage; ruta separată există doar
-                  ca intrare directă (bookmark) — se auto-selectează tab-ul potrivit. */}
-              <Route path="contracte/sabloane" element={<ContracteListPage />} />
-            </Route>
-          </Route>
-
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/contracte/sabloane']} />}>
             <Route element={<AppLayout />}>
               <Route path="contracte/sabloane/nou" element={<TemplateEditorPage />} />
@@ -210,7 +190,6 @@ function App() {
               <Route path="statistici" element={<StatisticiPage />} />
               <Route path="scorecard" element={<ScorecardPage />} />
               <Route path="vouchere" element={<VouchereListPage />} />
-              <Route path="inventar" element={<InventarListPage />} />
               <Route path="evenimente" element={<EvenimenteListPage />} />
               <Route path="concursuri" element={<ConcursuriListPage />} />
               <Route path="reinscrieri" element={<ReinscrieriPage />} />
@@ -245,9 +224,30 @@ function App() {
             </Route>
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/setari']} />}>
+          {/* Hub „Administrare" — cele 6 pagini de config sub un tab-bar comun
+              (AdministrareLayout). Paths neschimbate → deep-link-uri & linkuri
+              interne rămân valide. Organizație (owner-only) are gard propriu. */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/administrare']} />}>
             <Route element={<AppLayout />}>
-              <Route path="setari" element={<SetariPage />} />
+              <Route path="administrare" element={<Navigate to="/setari" replace />} />
+              <Route element={<AdministrareLayout />}>
+                <Route path="setari" element={<SetariPage />} />
+                <Route path="contracte" element={<ContracteListPage />} />
+                {/* Tab „Șabloane" trăiește în ContracteListPage; ruta separată
+                    există ca intrare directă (bookmark) — auto-selectează tab-ul. */}
+                <Route path="contracte/sabloane" element={<ContracteListPage />} />
+                <Route path="inventar" element={<InventarListPage />} />
+                <Route path="pontaj-staff" element={<PontajStaffPage />} />
+                <Route path="audit" element={<AuditPage />} />
+              </Route>
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/organizatie']} />}>
+            <Route element={<AppLayout />}>
+              <Route element={<AdministrareLayout />}>
+                <Route path="organizatie" element={<OrganizatiePage />} />
+              </Route>
             </Route>
           </Route>
 
@@ -267,12 +267,6 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/opt-out']} />}>
             <Route element={<AppLayout />}>
               <Route path="opt-out" element={<OptOutListPage />} />
-            </Route>
-          </Route>
-
-          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/organizatie']} />}>
-            <Route element={<AppLayout />}>
-              <Route path="organizatie" element={<OrganizatiePage />} />
             </Route>
           </Route>
 

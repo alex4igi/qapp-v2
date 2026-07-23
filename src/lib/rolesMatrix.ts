@@ -71,6 +71,10 @@ export const ROUTE_ACCESS = {
   // o stabilește; teacherii o consumă din fișa cursului și din pagina grupei.
   '/metodologic': PRIVILEGED,
   '/setari': PRIVILEGED,
+  // Hub „Administrare" — landing cu tab-uri peste paginile de config (Setări,
+  // Contracte, Inventar, Pontaj, Audit, Organizație). Vizibilitatea fiecărui tab
+  // rămâne per rută; hub-ul e deschis privilegiaților (tab-ul Organizație doar owner).
+  '/administrare': PRIVILEGED,
   '/opt-out': PRIVILEGED,
   // Rutele „mele" de instructor: deschise oricărui rol, dar condiționate de
   // existența unui profil legat (vezi REQUIRES_TEACHER_PROFILE). Un manager care

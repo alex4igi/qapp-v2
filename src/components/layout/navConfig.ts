@@ -8,7 +8,16 @@ export type NavItem = {
 
 export type NavSection = {
   label: string
+  /** Accent per secțiune (rail): iconul + bara de activ. */
+  color: string
   items: NavItem[]
+  /**
+   * Secțiune-frunză: se randează ca un singur rând-link (fără acordeon), folosind
+   * `items[0]` ca destinație. `matchPrefixes` = rutele care aprind evidențierea
+   * (ex. hub-ul Administrare acoperă /setari, /audit, /contracte…).
+   */
+  leaf?: boolean
+  matchPrefixes?: string[]
 }
 
 // Lista completă a item-urilor din nav. Vizibilitatea per rol se derivă
@@ -16,65 +25,103 @@ export type NavSection = {
 export const navSections: NavSection[] = [
   {
     label: 'Clienți',
+    color: '#4c9aff',
     items: [
-      { label: 'Clienți',        path: '/clienti' },
-      { label: 'Familii',        path: '/familii' },
-      { label: 'Leads',          path: '/leads' },
-      { label: 'Recuperare',     path: '/recuperare' },
-      { label: 'Plăți',          path: '/plati' },
-      { label: 'Facturare',      path: '/facturare' },
-      { label: 'Prezențe',       path: '/prezente' },
-      { label: 'Evaluări',       path: '/evaluari' },
-      { label: 'Notificări SMS', path: '/sms' },
-      { label: 'Opt-out',        path: '/opt-out' },
+      { label: 'Leads',      path: '/leads' },
+      { label: 'Clienți',    path: '/clienti' },
+      { label: 'Familii',    path: '/familii' },
+      { label: 'Prezențe',   path: '/prezente' },
+      { label: 'Evaluări',   path: '/evaluari' },
     ],
   },
   {
-    label: 'Statistici',
+    label: 'Încasări',
+    color: '#2fbf71',
     items: [
-      { label: 'Panou (numere)', path: '/analytics' },
-      { label: 'CFO (finanțe)', path: '/cfo' },
-      { label: 'Overview', path: '/overview' },
+      { label: 'Plăți',       path: '/plati' },
+      { label: 'Recuperare',  path: '/recuperare' },
+      { label: 'Facturare',   path: '/facturare' },
+      { label: 'Reînscrieri', path: '/reinscrieri' },
+      { label: 'Vouchere',    path: '/vouchere' },
+    ],
+  },
+  {
+    label: 'Cursuri',
+    color: '#f59042',
+    items: [
+      { label: 'Cursuri',     path: '/cursuri' },
+      { label: 'Teacheri',    path: '/teacheri' },
+      { label: 'Metodologie', path: '/metodologic' },
+      { label: 'Închirieri',  path: '/inchirieri' },
+    ],
+  },
+  {
+    label: 'Evenimente',
+    color: '#f4649b',
+    items: [
+      { label: 'Evenimente', path: '/evenimente' },
+      { label: 'Spectacole', path: '/spectacole' },
+      { label: 'Concursuri', path: '/concursuri' },
+    ],
+  },
+  {
+    label: 'Marketing',
+    color: '#a78bfa',
+    items: [
+      { label: 'Campanii',        path: '/campanii' },
+      { label: 'SMS',             path: '/sms' },
+      { label: 'Ofertă publică',  path: '/oferta-publica' },
+      { label: 'Feedback clienți', path: '/feedback' },
+      { label: 'Opt-out',         path: '/opt-out' },
+    ],
+  },
+  {
+    label: 'Rapoarte',
+    color: '#26c6c9',
+    items: [
+      { label: 'Panou',            path: '/analytics' },
+      { label: 'CFO',              path: '/cfo' },
       { label: 'Situație zilnică', path: '/situatie-zilnica' },
+      { label: 'Overview',         path: '/overview' },
       { label: 'Financiar',        path: '/financiar' },
       { label: 'Statistici',       path: '/statistici' },
       { label: 'Scorecard CC',     path: '/scorecard' },
     ],
   },
   {
-    label: 'Studio',
+    label: 'Personal',
+    color: '#e7b84b',
     items: [
-      { label: 'Cursuri',     path: '/cursuri' },
-      { label: 'Închirieri',  path: '/inchirieri' },
-      { label: 'Teacheri',    path: '/teacheri' },
-      { label: 'Feedback',    path: '/feedback' },
-      { label: 'Vouchere',    path: '/vouchere' },
-      { label: 'Inventar',    path: '/inventar' },
-      { label: 'Evenimente',  path: '/evenimente' },
-      { label: 'Spectacole',  path: '/spectacole' },
-      { label: 'Concursuri',  path: '/concursuri' },
-      { label: 'Campanii',    path: '/campanii' },
-      { label: 'Metodologie',    path: '/metodologic' },
-      { label: 'Reînscrieri',    path: '/reinscrieri' },
-      { label: 'Contracte',      path: '/contracte' },
-      { label: 'Ofertă publică', path: '/oferta-publica' },
-      { label: 'Setări',         path: '/setari' },
+      { label: 'Grupele mele', path: '/grupele-mele' },
+      { label: 'Salariul meu', path: '/salariul-meu' },
     ],
   },
   {
-    label: 'Personal',
-    items: [
-      { label: 'Grupele mele',       path: '/grupele-mele' },
-      { label: 'Salariul meu',       path: '/salariul-meu' },
-      // Anunțuri + Feedback aplicație trăiesc în meniul contului (vezi
-      // AccountMenu), ca să nu fie dublate aici.
-      { label: 'Audit log',          path: '/audit' },
-      { label: 'Pontaj staff',       path: '/pontaj-staff' },
-      { label: 'Organizație',        path: '/organizatie' },
+    // Hub cu tab-uri — cele 6 pagini de config au ieșit din rail. Anunțuri +
+    // Feedback aplicație trăiesc în meniul contului (AccountMenu).
+    label: 'Administrare',
+    color: '#9aa3b2',
+    leaf: true,
+    matchPrefixes: [
+      '/administrare',
+      '/setari',
+      '/contracte',
+      '/inventar',
+      '/pontaj-staff',
+      '/audit',
+      '/organizatie',
     ],
+    items: [{ label: 'Administrare', path: '/administrare' }],
   },
 ]
-// Note: /pontaj-staff (admin+manager) va fi adăugat în Phase 8.
+
+/** Ruta curentă aparține secțiunii? (frunză → matchPrefixes; altfel → item-uri) */
+export function sectionMatches(section: NavSection, pathname: string): boolean {
+  const prefixes = section.leaf
+    ? (section.matchPrefixes ?? section.items.map((i) => i.path))
+    : section.items.map((i) => i.path)
+  return prefixes.some((p) => pathname.startsWith(p))
+}
 
 export function visibleSections(
   role: AppRole,
