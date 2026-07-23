@@ -1,9 +1,11 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
 import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
-import { listSalariiTeacher } from '@/features/teacheri/api'
+import { listSalariiTeacher, previewSalariuTeacher } from '@/features/teacheri/api'
+import type { SalariuGrupa, SalariuPreview } from '@/features/teacheri/api'
+import { getSezonActiv } from '@/features/setari/api'
 import { formatRON } from '@/lib/format'
 import type { SalariuTeacher } from '@/types/db'
 
@@ -12,26 +14,52 @@ const RO_LUNI = [
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie',
 ]
 
-// Forma unui element din breakdown (vezi calculeaza_salariu_teacher → 'grupe').
-type SalGrupa = {
-  curs_id: string
-  curs_nume: string
-  tip: string
-  sedinte_per_sapt: number | null
-  nr_unitati: number | null
-  prag_unitati_min: number | null
-  suma: number | null
-  manual: boolean | null
+// Estimările (preview live pentru lunile neconfirmate) rămân ASCUNSE cât timp
+// modelul de salarizare e în schimbare — teacherii n-ar trebui să vadă sume
+// calculate cu praguri care se modifică înainte de septembrie 2026 (vezi
+// memoria project_salariu_model_schimbare_sept). Când modelul e definit, pune
+// flag-ul pe `true`: pagina arată atunci și lunile neconfirmate, cu badge
+// „estimare". Garda de acces pe RPC (migrațiile 20260722210000/220000) rămâne
+// activă indiferent de flag.
+const SHOW_ESTIMARI = false
+
+// O lună e ori snapshot confirmat de admin (imutabil, „plătit"), ori preview
+// recalculat la fiecare load („estimare"). Aceeași distincție ca în tabul de
+// salarii din profilul instructorului.
+type LunaItem =
+  | { kind: 'snapshot'; anul: number; luna: number; data: SalariuTeacher }
+  | { kind: 'preview'; anul: number; luna: number; data: SalariuPreview }
+
+function grupeFor(item: LunaItem): SalariuGrupa[] {
+  if (item.kind === 'preview') return item.data.grupe ?? []
+  return Array.isArray(item.data.breakdown)
+    ? (item.data.breakdown as unknown as SalariuGrupa[])
+    : []
 }
 
-function grupeFor(s: SalariuTeacher): SalGrupa[] {
-  return Array.isArray(s.breakdown) ? (s.breakdown as unknown as SalGrupa[]) : []
+function monthRange(
+  start: { y: number; m: number },
+  end: { y: number; m: number },
+) {
+  const out: { y: number; m: number }[] = []
+  let y = end.y
+  let m = end.m
+  while (y > start.y || (y === start.y && m >= start.m)) {
+    out.push({ y, m })
+    m -= 1
+    if (m === 0) {
+      m = 12
+      y -= 1
+    }
+  }
+  return out
 }
 
-function SalariuCard({ s }: { s: SalariuTeacher }) {
+function SalariuCard({ item }: { item: LunaItem }) {
   const [open, setOpen] = useState(false)
-  const grupe = grupeFor(s)
-  const platit = s.status === 'platit'
+  const grupe = grupeFor(item)
+  const total =
+    item.kind === 'preview' ? item.data.total : Number(item.data.total)
 
   return (
     <article className="rounded-lg border border-quasar-gray-light bg-white">
@@ -41,20 +69,24 @@ function SalariuCard({ s }: { s: SalariuTeacher }) {
       >
         <span className="text-quasar-gray">{open ? '▾' : '▸'}</span>
         <span className="w-40 font-medium text-quasar-black">
-          {RO_LUNI[s.luna - 1]} {s.anul}
+          {RO_LUNI[item.luna - 1]} {item.anul}
         </span>
         <strong className="w-32 text-right text-quasar-black">
-          {formatRON(s.total)}
+          {formatRON(total)}
         </strong>
-        <span className="w-32">
-          {platit ? (
+        <span className="w-40">
+          {item.kind === 'snapshot' ? (
             <span className="text-emerald-700">✓ Plătit</span>
           ) : (
-            <span className="text-amber-700">⏳ În așteptare</span>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+              estimare · neconfirmat
+            </span>
           )}
         </span>
         <span className="text-sm text-quasar-gray">
-          {s.data_plata ? `Plătit: ${s.data_plata}` : ''}
+          {item.kind === 'snapshot' && item.data.data_plata
+            ? `Plătit: ${item.data.data_plata}`
+            : ''}
         </span>
       </button>
 
@@ -93,7 +125,11 @@ function SalariuCard({ s }: { s: SalariuTeacher }) {
                       )}
                     </td>
                     <td className="py-1.5 text-right font-medium">
-                      {formatRON(g.suma ?? 0)}
+                      {g.manual ? (
+                        <span className="text-quasar-gray">manual</span>
+                      ) : (
+                        formatRON(g.suma ?? 0)
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -112,10 +148,49 @@ export function SalariulMeuPage() {
   const { teacherId: myTeacherId, loading: teacherLoading } = useCurrentTeacherId()
   const teacherId = myTeacherId ?? ''
 
+  const today = new Date()
+  const currentYear = today.getFullYear()
+  const currentMonth = today.getMonth() + 1
+
+  const sezonQ = useQuery({ queryKey: ['sezon-activ'], queryFn: getSezonActiv })
+
   const salariiQ = useQuery({
     queryKey: ['my-salarii', teacherId],
     queryFn: () => listSalariiTeacher(teacherId),
     enabled: Boolean(teacherId),
+  })
+
+  // Fereastra afișată: de la începutul sezonului activ (fallback: ultimele 12 luni)
+  // până la luna curentă — aceeași regulă ca în tabul de salarii al adminului.
+  const months = useMemo(() => {
+    let startY = currentYear
+    let startM = currentMonth - 11
+    while (startM <= 0) {
+      startM += 12
+      startY -= 1
+    }
+    const s = sezonQ.data
+    if (s?.data_incepere) {
+      const d = new Date(s.data_incepere)
+      startY = d.getFullYear()
+      startM = d.getMonth() + 1
+    }
+    return monthRange({ y: startY, m: startM }, { y: currentYear, m: currentMonth })
+  }, [sezonQ.data, currentYear, currentMonth])
+
+  const snapshots = salariiQ.data ?? []
+  const monthsNeedingPreview = SHOW_ESTIMARI
+    ? months.filter(
+        (mo) => !snapshots.some((s) => s.anul === mo.y && s.luna === mo.m),
+      )
+    : []
+
+  const previewQueries = useQueries({
+    queries: monthsNeedingPreview.map((mo) => ({
+      queryKey: ['my-salariu-preview', teacherId, mo.y, mo.m],
+      queryFn: () => previewSalariuTeacher(teacherId, mo.y, mo.m),
+      enabled: Boolean(teacherId) && !sezonQ.isLoading,
+    })),
   })
 
   if (teacherLoading) return <Spinner />
@@ -131,30 +206,66 @@ export function SalariulMeuPage() {
     )
   }
 
-  const rows = salariiQ.data ?? []
+  const previewByKey = new Map<string, SalariuPreview>()
+  monthsNeedingPreview.forEach((mo, idx) => {
+    const d = previewQueries[idx]?.data
+    if (d) previewByKey.set(`${mo.y}-${mo.m}`, d)
+  })
+
+  const items: LunaItem[] = months
+    .map<LunaItem | null>((mo) => {
+      const snap = snapshots.find((s) => s.anul === mo.y && s.luna === mo.m)
+      if (snap) return { kind: 'snapshot', anul: mo.y, luna: mo.m, data: snap }
+      const prev = previewByKey.get(`${mo.y}-${mo.m}`)
+      // Lunile fără nicio grupă (n-ai predat în sezonul care deține luna) n-au ce
+      // spune — le sărim, ca lista să nu fie un șir de rânduri goale.
+      if (prev && prev.grupe?.length) {
+        return { kind: 'preview', anul: mo.y, luna: mo.m, data: prev }
+      }
+      return null
+    })
+    .filter((x): x is LunaItem => x !== null)
+
+  const loading =
+    salariiQ.isLoading || sezonQ.isLoading || previewQueries.some((q) => q.isLoading)
+  const error = salariiQ.error ?? previewQueries.find((q) => q.error)?.error
+  const hasPreview = items.some((i) => i.kind === 'preview')
 
   return (
     <div>
       <PageHeader
         title="Salariul meu"
-        subtitle="Snapshot-uri lunare confirmate de admin — desfă o lună pentru detaliul pe grupe"
+        subtitle="Desfă o lună pentru detaliul pe grupe"
       />
 
-      {salariiQ.isLoading ? (
+      {loading ? (
         <Spinner />
-      ) : salariiQ.isError ? (
-        <p className="text-sm text-red-600">
-          Eroare:{' '}
-          {humanizeError(salariiQ.error)}
+      ) : error ? (
+        <p className="text-sm text-red-600">Eroare: {humanizeError(error)}</p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-quasar-gray">
+          {SHOW_ESTIMARI
+            ? 'Nu ai grupe în sezonul curent, deci nu e nimic de calculat.'
+            : 'Salariile apar aici după ce managerul confirmă luna.'}
         </p>
-      ) : rows.length === 0 ? (
-        <p className="text-sm text-quasar-gray">Niciun salariu confirmat încă.</p>
       ) : (
-        <div className="space-y-2">
-          {rows.map((s) => (
-            <SalariuCard key={s.id} s={s} />
-          ))}
-        </div>
+        <>
+          {hasPreview && (
+            <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Lunile marcate <strong>„estimare"</strong> sunt calculate live după
+              modelul actual și se pot schimba până când managerul confirmă luna.
+              Doar lunile <strong>„Plătit"</strong> sunt sume finale.
+            </p>
+          )}
+          <div className="space-y-2">
+            {items.map((item) => (
+              <SalariuCard
+                key={`${item.kind}-${item.anul}-${item.luna}`}
+                item={item}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
