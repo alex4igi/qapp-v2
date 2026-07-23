@@ -38,7 +38,7 @@ function CalendarSection({
   onRefresh: () => void
 }) {
   const [editat, setEditat] = useState<SezonCalendarRand | null>(null)
-  const stare = calendarComplet(randuri)
+  const completitudine = calendarComplet(randuri)
   const ordonate = ordoneazaCalendar(randuri)
 
   const salveaza = async (patch: CalendarInput) => {
@@ -71,8 +71,8 @@ function CalendarSection({
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-bold text-ink">1 · Calendarul sezonului</h2>
-          <Badge tone={stare.gata ? 'success' : 'warn'}>
-            {stare.moduleCuDate}/{stare.moduleTotal} module cu date
+          <Badge tone={completitudine.gata ? 'success' : 'warn'}>
+            {completitudine.moduleCuDate}/{completitudine.moduleTotal} module cu date
           </Badge>
         </div>
         <div className="flex gap-2">
@@ -158,14 +158,15 @@ function ProgrameSection({
 
       {!calendarGata && (
         <p className="mb-3 rounded-lg bg-warn-bg px-3 py-3 text-sm text-warn">
-          📅 Stabilește întâi calendarul sezonului (module cu date). Fără el, programele nu
-          pot fi activate și nu se pot asocia grupelor.
+          📅 Completează datele calendarului ca bannerul de lecție să știe la ce ședință e
+          fiecare grupă.
         </p>
       )}
 
       {programe.length === 0 ? (
         <p className="rounded-lg bg-surface px-3 py-4 text-center text-sm text-muted">
-          Niciun program pentru sezonul selectat. Duplică structura dintr-un sezon anterior.
+          Niciun program pentru sezonul selectat. Creează unul nou sau duplică structura
+          dintr-un sezon anterior.
         </p>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
@@ -175,12 +176,7 @@ function ProgrameSection({
               to={`/metodologic/${p.program_id}`}
               className="rounded-xl border border-line-2 bg-surface p-3 transition-colors hover:border-quasar-yellow"
             >
-              <div className="mb-1 flex items-start justify-between gap-2">
-                <span className="text-sm font-semibold text-ink">{p.program_nume}</span>
-                <Badge tone={p.stare === 'activ' ? 'success' : 'warn'}>
-                  {p.stare === 'activ' ? 'activ' : 'ciornă'}
-                </Badge>
-              </div>
+              <span className="mb-1 block text-sm font-semibold text-ink">{p.program_nume}</span>
               <p className="text-xs text-muted">
                 {p.total_sedinte} ședințe · {cursuri.length} grupe asociate
               </p>
@@ -258,8 +254,7 @@ function DuplicaModal({
       <div className="space-y-3">
         <p className="text-sm text-muted">
           Copiază modulele, vacanțele și programele din <b>{sursa}</b>. Datele din calendar
-          rămân goale, iar programele intră în ciornă — le completezi și le activezi după ce
-          stabilești calendarul noului sezon.
+          rămân goale — le completezi pentru noul sezon, apoi ajustezi programele.
         </p>
         <Field label="Sezonul nou" required>
           <TextInput
@@ -311,8 +306,8 @@ function ProgramNouModal({
     >
       <div className="space-y-3">
         <p className="text-sm text-muted">
-          Programă goală pentru <b>{sezon}</b>, în ciornă, cu câte un modul per modul din
-          calendarul sezonului. Adaugi ședințele și temele în editor.
+          Programă goală pentru <b>{sezon}</b>, cu câte un modul per modul din calendarul
+          sezonului. Adaugi ședințele și temele în editor.
         </p>
         <Field label="Nume program" required>
           <TextInput

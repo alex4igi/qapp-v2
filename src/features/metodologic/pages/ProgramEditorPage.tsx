@@ -6,9 +6,7 @@ import { Button, PageHeader, Spinner } from '@/components/ui'
 import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal'
 import {
   adaugaLectie,
-  calendarComplet,
   duplicaProgram,
-  getCalendarSezon,
   getProgramDetaliat,
   stergeLectie,
   stergeProgram,
@@ -17,11 +15,10 @@ import {
   updateProgram,
 } from '../api'
 import { ProgramSeasonView } from '../components/ProgramSeasonView'
-import { StareToggle } from '../components/StareToggle'
 import { LectieEditModal } from '../modals/LectieEditModal'
 import { ModulEditModal } from '../modals/ModulEditModal'
 import { ProgramNumeModal } from '../modals/ProgramNumeModal'
-import type { LectieAfisata, ModulAfisat, StareProgram } from '../types'
+import type { LectieAfisata, ModulAfisat } from '../types'
 
 export function ProgramEditorPage() {
   const { programId } = useParams<{ programId: string }>()
@@ -32,18 +29,12 @@ export function ProgramEditorPage() {
   const [editNume, setEditNume] = useState(false)
   const [duplicand, setDuplicand] = useState(false)
   const [stergeOpen, setStergeOpen] = useState(false)
-  const [eroareStare, setEroareStare] = useState<string | null>(null)
+  const [eroare, setEroare] = useState<string | null>(null)
 
   const query = useQuery({
     queryKey: ['program-detaliat', programId],
     queryFn: () => getProgramDetaliat(programId as string),
     enabled: Boolean(programId),
-  })
-
-  const calendarQuery = useQuery({
-    queryKey: ['metodologic-calendar', query.data?.program.sezon_eticheta],
-    queryFn: () => getCalendarSezon(query.data!.program.sezon_eticheta),
-    enabled: Boolean(query.data),
   })
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['program-detaliat', programId] })
@@ -55,28 +46,16 @@ export function ProgramEditorPage() {
   if (!query.data) return <p className="text-sm text-muted">Programul nu există.</p>
 
   const { program, totalSedinte } = query.data
-  const calendarGata = calendarComplet(calendarQuery.data ?? []).gata
-  const eCiorna = program.stare === 'ciorna'
-
-  const comutaStare = async (next: StareProgram) => {
-    setEroareStare(null)
-    try {
-      await updateProgram(program.id, { stare: next })
-      refresh()
-    } catch (e) {
-      setEroareStare(humanizeError(e))
-    }
-  }
 
   const duplica = async () => {
     setDuplicand(true)
-    setEroareStare(null)
+    setEroare(null)
     try {
       const nouId = await duplicaProgram(program.id)
       qc.invalidateQueries({ queryKey: ['metodologic-progres', program.sezon_eticheta] })
       navigate(`/metodologic/${nouId}`)
     } catch (e) {
-      setEroareStare(humanizeError(e))
+      setEroare(humanizeError(e))
     } finally {
       setDuplicand(false)
     }
@@ -110,22 +89,11 @@ export function ProgramEditorPage() {
             <Button variant="danger" onClick={() => setStergeOpen(true)}>
               Șterge
             </Button>
-            <StareToggle
-              stare={program.stare as StareProgram}
-              onChange={comutaStare}
-              disabled={!calendarGata}
-            />
           </>
         }
       />
 
-      {eCiorna && !calendarGata && (
-        <p className="mb-4 rounded-lg bg-warn-bg px-3 py-3 text-sm text-warn">
-          📅 Programul nu poate fi activat: sezonul {program.sezon_eticheta} n-are module cu
-          date în calendar.
-        </p>
-      )}
-      {eroareStare && <p className="mb-4 text-sm text-danger">{eroareStare}</p>}
+      {eroare && <p className="mb-4 text-sm text-danger">{eroare}</p>}
 
       <ProgramSeasonView
         detaliu={query.data}

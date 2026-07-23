@@ -2,8 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { NIVEL_PROGRAMA_TO_CURS, ZILE_WEEKEND } from '../constants'
 import type { Program } from '../types'
 
-// Asocierea program ↔ curs. Trigger-ul din DB refuză programele în ciornă, deci
-// aici oferim doar programele active ale sezonului.
+// Asocierea program ↔ curs: orice program al sezonului se poate lega de un curs.
 
 export type CursDeAsociat = {
   id: string
@@ -16,12 +15,11 @@ export type CursDeAsociat = {
   program_metodologic: string | null
 }
 
-export async function getProgrameActive(sezonEticheta: string): Promise<Program[]> {
+export async function getProgrameSezon(sezonEticheta: string): Promise<Program[]> {
   const { data, error } = await supabase
     .from('programe_metodologice')
     .select('*')
     .eq('sezon_eticheta', sezonEticheta)
-    .eq('stare', 'activ')
     .order('nume')
   if (error) throw error
   return data ?? []

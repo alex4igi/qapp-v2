@@ -8,7 +8,6 @@ import type {
   ProgramLectie,
   ProgresAdmin,
   ProgresTeacher,
-  StareProgram,
   TipLectie,
 } from '../types'
 
@@ -112,7 +111,7 @@ export async function getProgramDetaliat(
 
 export async function updateProgram(
   id: string,
-  patch: { nume?: string; descriere?: string | null; stare?: StareProgram }
+  patch: { nume?: string; descriere?: string | null }
 ): Promise<void> {
   const { error } = await supabase
     .from('programe_metodologice')
@@ -207,7 +206,7 @@ export async function duplicaStructuraSezon(sursa: string, tinta: string): Promi
   return (data as number) ?? 0
 }
 
-// Duplică un program într-o copie-ciornă (același sezon) și întoarce id-ul nou.
+// Duplică un program într-o copie (același sezon) și întoarce id-ul nou.
 export async function duplicaProgram(programId: string, nume?: string): Promise<string> {
   const { data, error } = await supabase.rpc('duplica_program', {
     p_program: programId,
@@ -228,14 +227,14 @@ export async function stergeProgram(programId: string, force = false): Promise<v
 }
 
 /**
- * Programă nouă de la zero (ciornă), cu câte un modul gol per modul din calendarul
+ * Programă nouă de la zero, cu câte un modul gol per modul din calendarul
  * sezonului — ca structura să se alinieze cu sezonul, iar userul doar să adauge
  * ședințe și teme.
  */
 export async function creeazaProgram(sezonEticheta: string, nume: string): Promise<string> {
   const { data: prog, error: eProg } = await supabase
     .from('programe_metodologice')
-    .insert({ nume, sezon_eticheta: sezonEticheta, stare: 'ciorna', sedinte_pe_saptamana: 2 })
+    .insert({ nume, sezon_eticheta: sezonEticheta, sedinte_pe_saptamana: 2 })
     .select('id')
     .single()
   if (eProg) throw eProg

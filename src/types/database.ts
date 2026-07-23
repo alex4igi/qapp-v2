@@ -5639,7 +5639,6 @@ export type Database = {
           sedinte_pe_saptamana: number
           sezon_eticheta: string
           sezon_id: string | null
-          stare: string
           surse: Json
           updated: string
         }
@@ -5652,7 +5651,6 @@ export type Database = {
           sedinte_pe_saptamana?: number
           sezon_eticheta: string
           sezon_id?: string | null
-          stare?: string
           surse?: Json
           updated?: string
         }
@@ -5665,7 +5663,6 @@ export type Database = {
           sedinte_pe_saptamana?: number
           sezon_eticheta?: string
           sezon_id?: string | null
-          stare?: string
           surse?: Json
           updated?: string
         }
@@ -9535,7 +9532,6 @@ export type Database = {
           program_nume: string
           sedinte_tinute: number
           sezon_eticheta: string
-          stare: string
           total_sedinte: number
         }[]
       }

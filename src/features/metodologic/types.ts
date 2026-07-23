@@ -7,7 +7,6 @@ export type SezonCalendarRand = Tables<'sezon_calendar'>
 export type LectieOverride = Tables<'curs_lectii_override'>
 export type JurnalRand = Tables<'program_jurnal'>
 
-export type StareProgram = 'ciorna' | 'activ'
 export type TipLectie = 'lectie' | 'spectacol' | 'concurs'
 export type TipCalendar = 'modul' | 'vacanta'
 export type StatusJurnal = 'conform' | 'diferit'
@@ -48,7 +47,6 @@ export type ProgresAdmin = {
   program_id: string
   program_nume: string
   sezon_eticheta: string
-  stare: string
   total_sedinte: number
   curs_id: string | null
   curs_nume: string | null
