@@ -17,7 +17,7 @@ import { StareToggle } from '../components/StareToggle'
 import { LectieEditModal } from '../modals/LectieEditModal'
 import { ModulEditModal } from '../modals/ModulEditModal'
 import { ProgramNumeModal } from '../modals/ProgramNumeModal'
-import type { LectieAfisata, ModulAfisat, StareProgram, SursaProgram } from '../types'
+import type { LectieAfisata, ModulAfisat, StareProgram } from '../types'
 
 export function ProgramEditorPage() {
   const { programId } = useParams<{ programId: string }>()
@@ -48,7 +48,6 @@ export function ProgramEditorPage() {
   if (!query.data) return <p className="text-sm text-muted">Programul nu există.</p>
 
   const { program, totalSedinte } = query.data
-  const surse = (program.surse as SursaProgram[] | null) ?? []
   const calendarGata = calendarComplet(calendarQuery.data ?? []).gata
   const eCiorna = program.stare === 'ciorna'
 
@@ -100,12 +99,6 @@ export function ProgramEditorPage() {
         </p>
       )}
       {eroareStare && <p className="mb-4 text-sm text-danger">{eroareStare}</p>}
-
-      {surse.length > 0 && (
-        <p className="mb-4 text-xs text-muted">
-          Import din: {surse.map((s) => `${s.grupa} (${s.zile})`).join(' · ')}
-        </p>
-      )}
 
       <ProgramSeasonView
         detaliu={query.data}
