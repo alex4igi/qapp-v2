@@ -11,15 +11,19 @@ export const SLOTS_COUNT = (DAY_END_MIN - DAY_START_MIN) / SLOT_MIN
 // (Duminica=0). Săptămâna se afișează Luni→Duminica.
 export const WEEKDAY_SHORT = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm']
 
-// Culori pe tipul de ocupare (Tailwind classes).
+// Culori pe tipul de ocupare (Tailwind classes). Închirierile cu preț semnalizează
+// starea banilor (verde = achitat, roșu = sold rămas); galbenul rămâne pentru
+// rezervările fără plată (practică staff).
 export const OCCUP_STYLE: Record<OccupKind, string> = {
   curs: 'bg-quasar-gray-light/70 text-quasar-black border-quasar-gray-light',
-  'inchiriere-platita': 'bg-quasar-yellow/40 text-quasar-black border-quasar-yellow',
-  'inchiriere-gratis': 'bg-emerald-100 text-emerald-900 border-emerald-300',
+  'inchiriere-achitata': 'bg-emerald-100 text-emerald-900 border-emerald-300',
+  'inchiriere-restanta': 'bg-red-100 text-red-900 border-red-300',
+  'inchiriere-gratis': 'bg-quasar-yellow/40 text-quasar-black border-quasar-yellow',
 }
 
 export const OCCUP_LEGEND: { kind: OccupKind; label: string }[] = [
   { kind: 'curs', label: 'Curs recurent' },
-  { kind: 'inchiriere-platita', label: 'Închiriere plătită' },
+  { kind: 'inchiriere-achitata', label: 'Închiriere achitată' },
+  { kind: 'inchiriere-restanta', label: 'Închiriere restantă' },
   { kind: 'inchiriere-gratis', label: 'Practică staff (gratis)' },
 ]

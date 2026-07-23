@@ -69,7 +69,11 @@ export function useWeekOccupancy(params: {
         startMin,
         endMin,
         label: renterLabel(r),
-        kind: gratis ? 'inchiriere-gratis' : 'inchiriere-platita',
+        kind: gratis
+          ? 'inchiriere-gratis'
+          : r.status_plata === 'achitat'
+            ? 'inchiriere-achitata'
+            : 'inchiriere-restanta',
         inchiriereId: r.id,
       })
     }

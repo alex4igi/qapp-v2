@@ -1,5 +1,9 @@
 // Interval ocupat pe un slot din calendar (curs recurent proiectat SAU închiriere).
-export type OccupKind = 'curs' | 'inchiriere-platita' | 'inchiriere-gratis'
+export type OccupKind =
+  | 'curs'
+  | 'inchiriere-achitata'
+  | 'inchiriere-restanta'
+  | 'inchiriere-gratis'
 
 export type BusyInterval = {
   startMin: number // minute de la miezul nopții
