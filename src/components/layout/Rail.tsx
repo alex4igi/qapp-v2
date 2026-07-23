@@ -4,7 +4,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { canAccessRoute, roleLabel } from '@/lib/rolesMatrix'
 import { ClientForm } from '@/features/clienti/ClientForm'
 import { LeadModal } from '@/features/leads/LeadModal'
-import { RailPontaj } from './RailPontaj'
 import { visibleSections } from './navConfig'
 
 /* ---------- iconuri secțiuni (din mockup) ---------- */
@@ -451,7 +450,6 @@ export function Rail(): ReactNode {
         <div className="flex-1" />
 
         <RailActions collapsed={collapsed} />
-        <RailPontaj collapsed={collapsed} />
         <RailAccount collapsed={collapsed} onExpand={expand} />
       </aside>
 
