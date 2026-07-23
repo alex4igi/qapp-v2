@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { humanizeError } from '@/lib/errorMessage'
 import { Button, PageHeader, Spinner } from '@/components/ui'
 import {
   calendarComplet,
+  duplicaProgram,
   getCalendarSezon,
   getProgramDetaliat,
   stergeLectie,
@@ -21,10 +22,12 @@ import type { LectieAfisata, ModulAfisat, StareProgram } from '../types'
 
 export function ProgramEditorPage() {
   const { programId } = useParams<{ programId: string }>()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [lectie, setLectie] = useState<LectieAfisata | null>(null)
   const [modul, setModul] = useState<ModulAfisat | null>(null)
   const [editNume, setEditNume] = useState(false)
+  const [duplicand, setDuplicand] = useState(false)
   const [eroareStare, setEroareStare] = useState<string | null>(null)
 
   const query = useQuery({
@@ -61,6 +64,20 @@ export function ProgramEditorPage() {
     }
   }
 
+  const duplica = async () => {
+    setDuplicand(true)
+    setEroareStare(null)
+    try {
+      const nouId = await duplicaProgram(program.id)
+      qc.invalidateQueries({ queryKey: ['metodologic-progres', program.sezon_eticheta] })
+      navigate(`/metodologic/${nouId}`)
+    } catch (e) {
+      setEroareStare(humanizeError(e))
+    } finally {
+      setDuplicand(false)
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -83,6 +100,9 @@ export function ProgramEditorPage() {
             <Link to="/metodologic">
               <Button variant="ghost">← Metodologie</Button>
             </Link>
+            <Button variant="secondary" onClick={duplica} disabled={duplicand}>
+              {duplicand ? 'Se duplică…' : 'Duplică'}
+            </Button>
             <StareToggle
               stare={program.stare as StareProgram}
               onChange={comutaStare}

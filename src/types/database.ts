@@ -8919,6 +8919,10 @@ export type Database = {
         Args: { p_force?: boolean; p_id: string }
         Returns: undefined
       }
+      duplica_program: {
+        Args: { p_nume?: string; p_program: string }
+        Returns: string
+      }
       duplica_structura_sezon: {
         Args: { p_sursa: string; p_tinta: string }
         Returns: number

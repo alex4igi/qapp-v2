@@ -206,3 +206,13 @@ export async function duplicaStructuraSezon(sursa: string, tinta: string): Promi
   if (error) throw error
   return (data as number) ?? 0
 }
+
+// Duplică un program într-o copie-ciornă (același sezon) și întoarce id-ul nou.
+export async function duplicaProgram(programId: string, nume?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('duplica_program', {
+    p_program: programId,
+    p_nume: nume,
+  })
+  if (error) throw error
+  return data as string
+}
