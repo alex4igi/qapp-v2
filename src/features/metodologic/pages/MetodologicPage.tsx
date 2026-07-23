@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { humanizeError } from '@/lib/errorMessage'
 import { Badge, Button, Field, Modal, PageHeader, Select, Spinner, TextInput } from '@/components/ui'
 import {
   addCalendarRand,
   calendarComplet,
+  creeazaProgram,
   deleteCalendarRand,
   duplicaStructuraSezon,
   getCalendarSezon,
@@ -273,11 +274,66 @@ function DuplicaModal({
   )
 }
 
+/* ── Programă nouă (de la zero) ───────────────────────────────────────────── */
+function ProgramNouModal({
+  sezon,
+  onClose,
+  onDone,
+}: {
+  sezon: string
+  onClose: () => void
+  onDone: (nouId: string) => void
+}) {
+  const [nume, setNume] = useState('')
+  const [eroare, setEroare] = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () => creeazaProgram(sezon, nume.trim()),
+    onSuccess: (id) => onDone(id),
+    onError: (e) => setEroare(humanizeError(e)),
+  })
+
+  return (
+    <Modal
+      open
+      title="Programă nouă"
+      onClose={onClose}
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            Renunță
+          </Button>
+          <Button onClick={() => mutation.mutate()} disabled={!nume.trim() || mutation.isPending}>
+            {mutation.isPending ? 'Se creează…' : 'Creează'}
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-sm text-muted">
+          Programă goală pentru <b>{sezon}</b>, în ciornă, cu câte un modul per modul din
+          calendarul sezonului. Adaugi ședințele și temele în editor.
+        </p>
+        <Field label="Nume program" required>
+          <TextInput
+            value={nume}
+            onChange={(e) => setNume(e.target.value)}
+            placeholder="ex. Începători Tiny 2×/săpt"
+          />
+        </Field>
+        {eroare && <p className="text-sm text-danger">{eroare}</p>}
+      </div>
+    </Modal>
+  )
+}
+
 /* ── Pagina ───────────────────────────────────────────────────────────────── */
 export function MetodologicPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [sezon, setSezon] = useState<string | null>(null)
   const [duplica, setDuplica] = useState(false)
+  const [programNou, setProgramNou] = useState(false)
 
   const sezoaneQuery = useQuery({ queryKey: ['metodologic-sezoane'], queryFn: getSezonEtichete })
   const sezonCurent = sezon ?? sezoaneQuery.data?.[0] ?? null
@@ -309,9 +365,12 @@ export function MetodologicPage() {
         subtitle="Structura lecțiilor pe sezon: întâi calendarul, apoi programele, apoi asocierea la grupe"
         actions={
           sezonCurent ? (
-            <Button variant="ghost" onClick={() => setDuplica(true)}>
-              Duplică pe sezon nou
-            </Button>
+            <>
+              <Button variant="ghost" onClick={() => setDuplica(true)}>
+                Duplică pe sezon nou
+              </Button>
+              <Button onClick={() => setProgramNou(true)}>+ Programă nouă</Button>
+            </>
           ) : undefined
         }
       />
@@ -362,6 +421,17 @@ export function MetodologicPage() {
             setDuplica(false)
             qc.invalidateQueries({ queryKey: ['metodologic-sezoane'] })
             setSezon(tinta)
+          }}
+        />
+      )}
+
+      {programNou && sezonCurent && (
+        <ProgramNouModal
+          sezon={sezonCurent}
+          onClose={() => setProgramNou(false)}
+          onDone={(nouId) => {
+            setProgramNou(false)
+            navigate(`/metodologic/${nouId}`)
           }}
         />
       )}

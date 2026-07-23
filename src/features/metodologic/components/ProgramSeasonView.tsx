@@ -63,11 +63,13 @@ function ModulBloc({
   sedintaCurenta,
   onEditLectie,
   onEditModul,
+  onAddLectie,
 }: {
   m: ModulAfisat
   sedintaCurenta: number | null
   onEditLectie?: (l: LectieAfisata) => void
   onEditModul?: (m: ModulAfisat) => void
+  onAddLectie?: (m: ModulAfisat) => void
 }) {
   return (
     <div className="rounded-2xl border border-line bg-card">
@@ -101,6 +103,15 @@ function ModulBloc({
             onEdit={onEditLectie}
           />
         ))}
+        {onAddLectie && (
+          <button
+            type="button"
+            onClick={() => onAddLectie(m)}
+            className="w-full border-t border-line-2 px-3 py-2 text-left text-xs font-medium text-muted hover:bg-surface hover:text-ink"
+          >
+            + Adaugă ședință
+          </button>
+        )}
       </div>
     </div>
   )
@@ -112,6 +123,7 @@ type Props = {
   sedintaCurenta?: number | null
   onEditLectie?: (l: LectieAfisata) => void
   onEditModul?: (m: ModulAfisat) => void
+  onAddLectie?: (m: ModulAfisat) => void
 }
 
 /** Sezonul complet: modulele cu lecțiile lor, cu vacanțele intercalate cronologic. */
@@ -120,6 +132,7 @@ export function ProgramSeasonView({
   sedintaCurenta = null,
   onEditLectie,
   onEditModul,
+  onAddLectie,
 }: Props) {
   return (
     <div className="space-y-3">
@@ -129,6 +142,7 @@ export function ProgramSeasonView({
             m={m}
             sedintaCurenta={sedintaCurenta}
             onEditLectie={onEditLectie}
+            onAddLectie={onAddLectie}
             onEditModul={onEditModul}
           />
           {detaliu.vacante[i] && <VacantaRand v={detaliu.vacante[i]} />}

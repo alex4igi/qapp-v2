@@ -3,12 +3,15 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { humanizeError } from '@/lib/errorMessage'
 import { Button, PageHeader, Spinner } from '@/components/ui'
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal'
 import {
+  adaugaLectie,
   calendarComplet,
   duplicaProgram,
   getCalendarSezon,
   getProgramDetaliat,
   stergeLectie,
+  stergeProgram,
   updateLectie,
   updateModul,
   updateProgram,
@@ -28,6 +31,7 @@ export function ProgramEditorPage() {
   const [modul, setModul] = useState<ModulAfisat | null>(null)
   const [editNume, setEditNume] = useState(false)
   const [duplicand, setDuplicand] = useState(false)
+  const [stergeOpen, setStergeOpen] = useState(false)
   const [eroareStare, setEroareStare] = useState<string | null>(null)
 
   const query = useQuery({
@@ -103,6 +107,9 @@ export function ProgramEditorPage() {
             <Button variant="secondary" onClick={duplica} disabled={duplicand}>
               {duplicand ? 'Se duplică…' : 'Duplică'}
             </Button>
+            <Button variant="danger" onClick={() => setStergeOpen(true)}>
+              Șterge
+            </Button>
             <StareToggle
               stare={program.stare as StareProgram}
               onChange={comutaStare}
@@ -124,6 +131,10 @@ export function ProgramEditorPage() {
         detaliu={query.data}
         onEditLectie={setLectie}
         onEditModul={setModul}
+        onAddLectie={async (m) => {
+          await adaugaLectie(program.id, m.modul.id)
+          refresh()
+        }}
       />
 
       <LectieEditModal
@@ -155,6 +166,19 @@ export function ProgramEditorPage() {
         onSave={async (patch) => {
           await updateProgram(program.id, patch)
           refresh()
+        }}
+      />
+
+      <DeleteConfirmModal
+        open={stergeOpen}
+        title="Șterge programul"
+        entityLabel={program.nume}
+        noun="programul"
+        onClose={() => setStergeOpen(false)}
+        onConfirm={async (force) => {
+          await stergeProgram(program.id, force)
+          qc.invalidateQueries({ queryKey: ['metodologic-progres', program.sezon_eticheta] })
+          navigate('/metodologic')
         }}
       />
     </div>

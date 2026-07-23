@@ -216,3 +216,64 @@ export async function duplicaProgram(programId: string, nume?: string): Promise<
   if (error) throw error
   return data as string
 }
+
+// Ștergere program. force=true îl șterge chiar dacă e asociat unor grupe (le
+// dezasociază). Garda + errcode QD409 vin din RPC (vezi DeleteConfirmModal).
+export async function stergeProgram(programId: string, force = false): Promise<void> {
+  const { error } = await supabase.rpc('sterge_program', {
+    p_program: programId,
+    p_force: force,
+  })
+  if (error) throw error
+}
+
+/**
+ * Programă nouă de la zero (ciornă), cu câte un modul gol per modul din calendarul
+ * sezonului — ca structura să se alinieze cu sezonul, iar userul doar să adauge
+ * ședințe și teme.
+ */
+export async function creeazaProgram(sezonEticheta: string, nume: string): Promise<string> {
+  const { data: prog, error: eProg } = await supabase
+    .from('programe_metodologice')
+    .insert({ nume, sezon_eticheta: sezonEticheta, stare: 'ciorna', sedinte_pe_saptamana: 2 })
+    .select('id')
+    .single()
+  if (eProg) throw eProg
+
+  const { data: cal, error: eCal } = await supabase
+    .from('sezon_calendar')
+    .select('numar')
+    .eq('sezon_eticheta', sezonEticheta)
+    .eq('tip', 'modul')
+    .order('numar')
+  if (eCal) throw eCal
+
+  if (cal && cal.length) {
+    const { error: eMod } = await supabase
+      .from('program_module')
+      .insert(cal.map((c) => ({ program_id: prog.id, numar: c.numar, tema: null, subtitlu: null })))
+    if (eMod) throw eMod
+  }
+
+  return prog.id
+}
+
+/** Adaugă o ședință la finalul unui modul, cu numerotarea continuă recalculată. */
+export async function adaugaLectie(programId: string, modulId: string): Promise<void> {
+  const [{ data: module, error: eMod }, { data: lectii, error: eLec }] = await Promise.all([
+    supabase.from('program_module').select('id,numar').eq('program_id', programId),
+    supabase.from('program_lectii').select('nr_sedinta,modul_id').eq('program_id', programId),
+  ])
+  if (eMod) throw eMod
+  if (eLec) throw eLec
+
+  const numarById = new Map((module ?? []).map((m) => [m.id, m.numar]))
+  const modulNumar = numarById.get(modulId) ?? 0
+
+  // Poziția de inserare = ultima ședință din acest modul; dacă modulul e gol,
+  // ultima ședință a modulelor dinainte (după numărul modulului); altfel 0.
+  const panaLaModul = (lectii ?? []).filter((l) => (numarById.get(l.modul_id) ?? 0) <= modulNumar)
+  const dupaNr = panaLaModul.length ? Math.max(...panaLaModul.map((l) => l.nr_sedinta)) : 0
+
+  await insereazaLectie(programId, modulId, dupaNr)
+}

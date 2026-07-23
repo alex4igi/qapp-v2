@@ -10396,6 +10396,10 @@ export type Database = {
         Args: { p_enrollment: string; p_motiv: string }
         Returns: undefined
       }
+      sterge_program: {
+        Args: { p_force?: boolean; p_program: string }
+        Returns: undefined
+      }
       submit_rating_client: {
         Args: {
           p_client: string
