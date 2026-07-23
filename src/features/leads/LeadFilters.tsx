@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   TextInput,
   Select,
@@ -150,15 +150,64 @@ export function applyLeadFilters(
 }
 
 // Câte filtre „ascunse" sunt active — badge-ul de pe butonul ⚙ Filtre. `search`
-// și presetul de status au controale proprii, vizibile, deci nu se numără.
-function countHiddenFilters(v: LeadFiltersValue): number {
+// și presetul de status au controale proprii, vizibile, deci nu se numără. La
+// fel locația, când e randată ca pill-uri.
+function countHiddenFilters(v: LeadFiltersValue, locatiePills: boolean): number {
   let n = 0
   if (v.sursa) n++
   if (v.grupa) n++
-  if (v.locatie) n++
+  if (v.locatie && !locatiePills) n++
   if (v.contact) n++
   if (v.perioada.preset !== 'tot') n++
   return n
+}
+
+type LocatiePill = { value: string; label: string; count: number }
+
+// Cheia de grupare TREBUIE să urmeze exact predicatul din applyLeadFilters
+// (truthiness pe `locatia`, egalitate strictă altfel) — altfel contorul de pe
+// pill ar promite alt număr de carduri decât apare după click.
+function locatieKey(lead: Lead): string {
+  return lead.locatia ? lead.locatia : FARA_LOCATIE
+}
+
+// Pill-urile arată câte carduri rămân după click, deci se numără pe setul cu
+// toate CELELALTE filtre aplicate — nu pe cel deja restrâns la o locație.
+function useLocatiePills(
+  leads: Lead[] | undefined,
+  value: LeadFiltersValue,
+  enabled: boolean,
+): LocatiePill[] {
+  return useMemo(() => {
+    if (!enabled) return []
+    const base = applyLeadFilters(leads ?? [], { ...value, locatie: '' })
+    const counts = new Map<string, number>()
+    for (const lead of base) {
+      const k = locatieKey(lead)
+      counts.set(k, (counts.get(k) ?? 0) + 1)
+    }
+    // Locațiile canonice apar mereu (chiar și cu 0), ca rândul să nu-și schimbe
+    // forma la fiecare filtrare. `leads.locatia` e text liber, deci valorile
+    // scrise altfel („Stefan cel Mare") se adaugă doar dacă chiar există —
+    // fără ele lead-urile respective n-ar fi accesibile din niciun pill.
+    const canonice: string[] = [...LOCATII]
+    const scrise = [...counts.keys()]
+      .filter((k) => k !== FARA_LOCATIE && !canonice.includes(k))
+      .sort((a, b) => a.localeCompare(b, 'ro'))
+    return [
+      { value: '', label: 'Toate', count: base.length },
+      ...[...canonice, ...scrise].map((l) => ({
+        value: l,
+        label: l,
+        count: counts.get(l) ?? 0,
+      })),
+      {
+        value: FARA_LOCATIE,
+        label: 'Fără locație',
+        count: counts.get(FARA_LOCATIE) ?? 0,
+      },
+    ]
+  }, [leads, value, enabled])
 }
 
 type Props = {
@@ -169,6 +218,8 @@ type Props = {
   // deci schimbarea lui se raportează în sus, nu se scrie direct în `statusuri`.
   onPresetChange?: (preset: StatusPreset) => void
   variant?: 'kanban' | 'lista'
+  // Setul pe care se calculează contoarele pill-urilor de locație (Kanban).
+  leads?: Lead[]
   // Conținut aliniat la dreapta pe ACELAȘI rând (contoare, export) — ca vederea
   // Listă să pornească cu o singură bară, nu cu trei.
   trailing?: ReactNode
@@ -180,6 +231,7 @@ export function LeadFilters({
   onChange,
   onPresetChange,
   variant = 'kanban',
+  leads,
   trailing,
 }: Props) {
   const [open, setOpen] = useState(false)
@@ -209,7 +261,9 @@ export function LeadFilters({
 
   const isLista = variant === 'lista'
   const preset = presetOf(value.statusuri)
-  const hidden = countHiddenFilters(value)
+  // În Listă bara are deja preset + contoare; locația rămâne acolo în ⚙ Filtre.
+  const locatiePills = useLocatiePills(leads, value, !isLista)
+  const hidden = countHiddenFilters(value, locatiePills.length > 0)
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -276,14 +330,16 @@ export function LeadFilters({
                 onChange={(e) => set('grupa', e.target.value)}
               />
             </Field>
-            <Field label="Locație">
-              <Select
-                placeholder="Toate locațiile"
-                options={LOCATIE_OPTIONS}
-                value={value.locatie}
-                onChange={(e) => set('locatie', e.target.value)}
-              />
-            </Field>
+            {locatiePills.length === 0 && (
+              <Field label="Locație">
+                <Select
+                  placeholder="Toate locațiile"
+                  options={LOCATIE_OPTIONS}
+                  value={value.locatie}
+                  onChange={(e) => set('locatie', e.target.value)}
+                />
+              </Field>
+            )}
 
             {isLista && (
               <>
@@ -361,6 +417,46 @@ export function LeadFilters({
           </div>
         )}
       </div>
+
+      {locatiePills.length > 0 && (
+        <>
+          <span className="mx-0.5 h-6 w-px bg-line" aria-hidden />
+          <div
+            role="group"
+            aria-label="Filtru locație"
+            className="flex flex-wrap items-center gap-1.5"
+          >
+            {locatiePills.map((p) => {
+              const activ = value.locatie === p.value
+              return (
+                <button
+                  key={p.value || 'toate'}
+                  type="button"
+                  aria-pressed={activ}
+                  // Re-click pe pill-ul activ = înapoi la „Toate": altfel golirea
+                  // filtrului ar cere un al doilea target de click.
+                  onClick={() => set('locatie', activ && p.value ? '' : p.value)}
+                  className={[
+                    'rounded-full border px-3 py-1.5 text-sm transition-colors',
+                    activ
+                      ? 'border-quasar-yellow bg-quasar-yellow font-medium text-quasar-black'
+                      : 'border-line text-quasar-gray hover:border-quasar-yellow',
+                  ].join(' ')}
+                >
+                  {p.label}
+                  <span
+                    className={`ml-1.5 text-xs ${
+                      activ ? 'text-quasar-black/60' : 'text-quasar-gray/60'
+                    }`}
+                  >
+                    {p.count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {trailing && <div className="ml-auto">{trailing}</div>}
     </div>

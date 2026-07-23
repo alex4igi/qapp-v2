@@ -311,6 +311,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
         onChange={setFilters}
         onPresetChange={setPreset}
         variant={mode}
+        leads={baseLeads}
         trailing={
           mode === 'lista' ? (
             <ListaContoare
