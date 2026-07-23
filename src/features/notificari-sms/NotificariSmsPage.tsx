@@ -135,7 +135,6 @@ export function NotificariSmsPage() {
     <div>
       <PageHeader
         title="Notificări SMS"
-        subtitle={data ? `${data.total} în coadă` : undefined}
         actions={
           <>
             <Button variant="secondary" onClick={() => setComposerOpen(true)}>
