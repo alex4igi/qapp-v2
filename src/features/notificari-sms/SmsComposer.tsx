@@ -112,10 +112,17 @@ export function SmsComposer({ open, onClose }: Props) {
 
   const selectedRecipients = valizi.filter(isSelected)
 
-  const nrDatornici = useMemo(
-    () => selectedRecipients.reduce((acc, r) => acc + r.client_ids.length, 0),
-    [selectedRecipients],
+  // Funnel transparent: pornim de la TOȚI datornicii (același număr ca lista de
+  // sunat) și arătăm explicit fiecare tăiere (dedup lunar, telefon invalid).
+  const nrDatorniciTotal = useMemo(
+    () => recipients.reduce((acc, r) => acc + r.client_ids.length, 0),
+    [recipients],
   )
+  const numereUnice = useMemo(
+    () => new Set(valizi.map((r) => r.telefonFmt)).size,
+    [valizi],
+  )
+  const dejaNotificati = valizi.filter((r) => r.alreadySent).length
 
   const toggle = (familiaId: string) =>
     setDeselected((prev) => {
@@ -245,11 +252,18 @@ export function SmsComposer({ open, onClose }: Props) {
           <p className="text-sm text-red-600">Eroare la încărcarea destinatarilor.</p>
         ) : (
           <>
-            <div className="flex items-center justify-between rounded-md bg-quasar-yellow/10 px-3 py-2 text-sm">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-quasar-yellow/10 px-3 py-2 text-sm">
               <span className="font-medium">
-                {nrDatornici} {cod === 'mesaj_liber' ? 'persoane' : 'datornici'} ·{' '}
-                {selectedRecipients.length} numere unice selectate
+                {nrDatorniciTotal}{' '}
+                {cod === 'mesaj_liber' ? 'persoane' : 'datornici'} ·{' '}
+                {numereUnice} numere unice · {selectedRecipients.length}{' '}
+                selectate
               </span>
+              {dejaNotificati > 0 && (
+                <span className="text-quasar-gray">
+                  {dejaNotificati} deja notificați luna aceasta
+                </span>
+              )}
               {invalizi.length > 0 && (
                 <span className="text-red-600">
                   {invalizi.length} cu telefon invalid

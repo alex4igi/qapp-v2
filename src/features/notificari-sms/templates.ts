@@ -48,6 +48,7 @@ export const SMS_BULK_LABEL: Record<SmsBulkCod, string> = {
 export type SmsRecipientMembru = { nume: string; rest: number }
 
 export type SmsRecipient = {
+  // id familie sau, la clienți fără familie, id-ul clientului — cheie de grup unică
   familia_id: string
   telefon: string
   locatie_nume: string | null

@@ -85,6 +85,12 @@ Buna ziua! Va reamintim ca {N zile/maine/astazi} este termenul de plata pentru c
 ```
 Buna ziua! Exista {plati restante/o plata restanta} la cursurile Quasar Dance pentru {nume + suma}. Se poate achita cash/card la studio sau prin transfer la IBAN RO85 INGB 0000 9999 1498 9082. Pentru intrebari, contactati-ne la {nr telefon locatia inrolarii}. Echipa Quasar Dance
 ```
+> **Aliniat cu worklist-ul de recuperare** (2026-07-24, migrația `20260724100000`):
+> țintește EXACT setul din `get_restante_worklist` — clienți **Activi**, neprescris,
+> nereziliat, **cel puțin o rată chiar depășită** (nu doar luna curentă nescadentă).
+> Clienții **fără familie** primesc și ei SMS (grupare pe client; telefon =
+> `familii.telefon → telefon_2 → clienti.telefon → telefonul_2`). Rândurile fără
+> niciun telefon apar în composer la „telefon invalid", nu mai sunt ascunse.
 
 ### 8. `avertisment_loc` — pierderea locului (restanță > 50 zile) — ✅ LIVRAT 2026-06-08
 Un SMS / familie (listează copiii în pericol + suma totală). `{termen}` = data trimiterii + 2 zile.

@@ -1,0 +1,102 @@
+{
+  "clients": [
+    {
+      "id": "143db4cc-ff5a-44cd-bea8-b3f4334d246c",
+      "nume": "ZZTEST Mihai",
+      "prenume": "Test",
+      "email": null,
+      "telefon": null,
+      "telefonul_2": null,
+      "foto": null,
+      "data_nasterii": "2012-03-20",
+      "sexul": null,
+      "familia": "391fe28b-3930-4596-824e-7817f81e89c8",
+      "status": "EXclient",
+      "participari_concurs": [],
+      "link_contract": null,
+      "marime_tricou": null,
+      "old_user_id": null,
+      "created": "2026-07-21T21:26:21.92911+00:00",
+      "updated": "2026-07-22T02:00:00.298727+00:00",
+      "unitate_invatamant": null,
+      "opt_out_marketing": true,
+      "opt_out_motiv": "auto: EXclient",
+      "opt_out_la": "2026-07-22T02:00:00.298727+00:00",
+      "auth_user_id": null,
+      "factura_lunara": false,
+      "factura_lunara_de_la": null,
+      "facturare_pf_nume": null,
+      "facturare_pf_cnp": null,
+      "facturare_pf_adresa": null
+    },
+    {
+      "id": "44170591-749a-41d0-a4c4-12f349df85fe",
+      "nume": "ZZTEST Ana",
+      "prenume": "Test",
+      "email": null,
+      "telefon": null,
+      "telefonul_2": null,
+      "foto": null,
+      "data_nasterii": "2015-05-10",
+      "sexul": null,
+      "familia": "391fe28b-3930-4596-824e-7817f81e89c8",
+      "status": "Activ",
+      "participari_concurs": [],
+      "link_contract": null,
+      "marime_tricou": null,
+      "old_user_id": null,
+      "created": "2026-07-21T21:26:21.851349+00:00",
+      "updated": "2026-07-21T21:26:22.001633+00:00",
+      "unitate_invatamant": null,
+      "opt_out_marketing": false,
+      "opt_out_motiv": null,
+      "opt_out_la": null,
+      "auth_user_id": null,
+      "factura_lunara": false,
+      "factura_lunara_de_la": null,
+      "facturare_pf_nume": null,
+      "facturare_pf_cnp": null,
+      "facturare_pf_adresa": null
+    },
+    {
+      "id": "ce4976a4-cb49-4153-9990-f2123f70a309",
+      "nume": "ZZTEST Adult",
+      "prenume": "Solo",
+      "email": "portal.adult@quasardance.ro",
+      "telefon": null,
+      "telefonul_2": null,
+      "foto": null,
+      "data_nasterii": "1995-07-15",
+      "sexul": null,
+      "familia": null,
+      "status": "Activ",
+      "participari_concurs": [],
+      "link_contract": null,
+      "marime_tricou": null,
+      "old_user_id": null,
+      "created": "2026-07-21T21:26:23.281753+00:00",
+      "updated": "2026-07-21T21:26:23.35534+00:00",
+      "unitate_invatamant": null,
+      "opt_out_marketing": false,
+      "opt_out_motiv": null,
+      "opt_out_la": null,
+      "auth_user_id": "4ee1d835-2a68-4cd2-8eb2-bf0388a7b915",
+      "factura_lunara": false,
+      "factura_lunara_de_la": null,
+      "facturare_pf_nume": null,
+      "facturare_pf_cnp": null,
+      "facturare_pf_adresa": null
+    }
+  ],
+  "enrollments": [
+    {
+      "id": "90305da3-6650-46d1-a83c-fb66dd022121"
+    },
+    {
+      "id": "2cd88eff-8c22-4bc7-a733-10073bccd429"
+    },
+    {
+      "id": "cfa30806-7764-4ddc-8b6d-af9d3d8bd143"
+    }
+  ]
+}
