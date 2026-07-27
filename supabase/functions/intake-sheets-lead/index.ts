@@ -10,7 +10,7 @@
 //   20260722120000, unde bloca notița recepției cu text de import.
 import {
   serviceClient,
-  resolveCampanie,
+  lazyCampanie,
   insertLead,
   mapLocatie,
   parseVarsta,
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const rows: SheetRow[] = Array.isArray(body.rows) ? body.rows : []
     const status = body.status === 'nurture' ? 'nurture' : 'nou'
     const supabase = serviceClient()
-    const sursaId = await resolveCampanie(supabase, 'Meta Ads')
+    const sursa = lazyCampanie(supabase, 'Meta Ads')
 
     // Dedup în masă: scriptul trimite TOT setul la fiecare rulare (conectorul Meta
     // nu adaugă la coadă, ci reordonează), așa că luăm o dată toate id-urile deja
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
           utm_medium: 'lead_ads_sheet',
           utm_campaign: r.campaign ?? null,
         },
-        sursaId,
+        await sursa(),
         { status },
       )
       if (result.created) created++

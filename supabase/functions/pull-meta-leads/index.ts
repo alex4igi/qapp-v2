@@ -13,7 +13,7 @@
 //     pages_show_list, pages_read_engagement, pages_manage_ads, ads_management).
 //   META_PULL_DAYS (opțional) — fereastra de timp în zile (default 3).
 //   CRON_SECRET (opțional) — dacă e setat, cere Authorization: Bearer <secret>.
-import { serviceClient, resolveCampanie, insertLead } from '../_shared/intake.ts'
+import { serviceClient, lazyCampanie, insertLead } from '../_shared/intake.ts'
 import { GRAPH, parseLeadFields, type FieldDatum } from '../_shared/meta.ts'
 
 type GraphLead = {
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       if (id) seen.add(id)
     }
 
-    const sursaId = await resolveCampanie(supabase, 'Meta Ads')
+    const sursa = lazyCampanie(supabase, 'Meta Ads')
 
     // Paginile accesibile System User-ului + page token-ul fiecăreia.
     const accounts = await graphGet(
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
                 utm_medium: 'lead_ads',
                 utm_campaign: lead.campaign_name ?? lead.campaign_id ?? null,
               },
-              sursaId,
+              await sursa(),
             )
             if (result.created) created++
             else skipped++

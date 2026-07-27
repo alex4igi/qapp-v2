@@ -38,23 +38,61 @@ export function serviceClient(): SupabaseClient {
   )
 }
 
+// Caută campania după nume. `ok: false` = interogarea a eșuat (≠ „nu există”).
+async function findCampanie(
+  supabase: SupabaseClient,
+  nume: string,
+): Promise<{ id: string | null; ok: boolean }> {
+  const { data, error } = await supabase
+    .from('campanii_promovare')
+    .select('id')
+    .eq('nume', nume)
+    .order('created', { ascending: true })
+    .limit(1)
+  if (error) {
+    console.error('[campanii] lookup eșuat:', error.message)
+    return { id: null, ok: false }
+  }
+  return { id: data?.[0]?.id ?? null, ok: true }
+}
+
 // Găsește campania după nume; o creează dacă nu există. Returnează id-ul.
+//
+// Incident 23–27 iulie 2026 (674 rânduri „Meta Ads”): varianta veche folosea
+// `.maybeSingle()` și ignora `error`, așa că orice eroare de lookup se citea ca
+// „nu există campania” → insert. Cu 2 rânduri pe același nume, maybeSingle dă
+// eroare la FIECARE apel, deci bucla se auto-întreținea. De aceea aici:
+// lookup-ul eșuat NU declanșează insert (lead-ul intră cu sursa null, recuperabil),
+// iar conflictul pe indexul unique se rezolvă re-citind rândul existent.
 export async function resolveCampanie(
   supabase: SupabaseClient,
   nume: string,
 ): Promise<string | null> {
-  const { data } = await supabase
-    .from('campanii_promovare')
-    .select('id')
-    .eq('nume', nume)
-    .maybeSingle()
-  if (data?.id) return data.id
-  const { data: created } = await supabase
+  const found = await findCampanie(supabase, nume)
+  if (found.id) return found.id
+  if (!found.ok) return null
+
+  const { data: created, error } = await supabase
     .from('campanii_promovare')
     .insert({ nume })
     .select('id')
     .single()
-  return created?.id ?? null
+  if (created?.id) return created.id
+  // 23505 = unique_violation: a creat-o alt request între timp.
+  if (error?.code === '23505') return (await findCampanie(supabase, nume)).id
+  console.error('[campanii] insert eșuat:', error?.message)
+  return null
+}
+
+// Rezolvă campania o singură dată per request și DOAR când chiar există un lead de
+// inserat. Pollerele rulează la 15 min și de cele mai multe ori nu aduc nimic nou —
+// nu au de ce să atingă `campanii_promovare` la fiecare tick.
+export function lazyCampanie(
+  supabase: SupabaseClient,
+  nume: string,
+): () => Promise<string | null> {
+  let pending: Promise<string | null> | null = null
+  return () => (pending ??= resolveCampanie(supabase, nume))
 }
 
 const GRUPA_VALUES = new Set([

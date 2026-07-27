@@ -9,7 +9,7 @@
 // Setup complet: docs/integrare-meta-lead-ads.md.
 import {
   serviceClient,
-  resolveCampanie,
+  lazyCampanie,
   insertLead,
 } from '../_shared/intake.ts'
 import { GRAPH, parseLeadFields } from '../_shared/meta.ts'
@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
     const pageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN')
     const body = await req.json().catch(() => ({}))
     const supabase = serviceClient()
+    const sursa = lazyCampanie(supabase, 'Meta Ads')
     let created = 0
     let skipped = 0
 
@@ -87,7 +88,6 @@ Deno.serve(async (req) => {
         // tehnice ale reclamei se iau din Meta.
         const note = [...parsed.notes]
 
-        const sursaId = await resolveCampanie(supabase, 'Meta Ads')
         const result = await insertLead(
           supabase,
           {
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
             utm_medium: 'lead_ads',
             utm_campaign: data.campaign_name ?? data.campaign_id ?? null,
           },
-          sursaId,
+          await sursa(),
         )
         if (result.created) created++
         else skipped++
