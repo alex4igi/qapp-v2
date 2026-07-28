@@ -71,9 +71,12 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
     locked: locatieLocked,
   } = useWorkingLocatie()
 
-  // Staff legat de o locație rezervă doar acolo (regulă „rezervi doar la locația ta").
+  // „Rezervi doar la locația ta" rămâne regula recepției (banii intră în casa
+  // locației ei). Instructorul își rezervă sala oriunde — locul unde predă n-are
+  // legătură cu sala pe care o folosește (oglindit în inchirieri_teacher_insert).
+  const locatieFixa = locatieLocked && !teacherMode
   const [locatie, setLocatie] = useState(
-    locatieLocked
+    locatieFixa
       ? (workLocatieId ?? '')
       : (defaultInchiriere?.locatie ?? workLocatieId ?? ''),
   )
@@ -107,7 +110,11 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
     queryFn: () => saliOptions(locatie),
     enabled: Boolean(locatie),
   })
-  const teacheriQ = useTeacheriOptions()
+  // Chiriașul NU se filtrează pe locația de lucru: un instructor care predă la
+  // Nicolina poate închiria o sală pe Ștefan cel Mare (și invers) — locul unde
+  // predă n-are legătură cu sala pe care o rezervă. Filtrul implicit pe locație
+  // îl scotea din listă și îl făcea nerezervabil.
+  const teacheriQ = useTeacheriOptions({ locatieId: null })
   const clientiQ = useQuery({
     queryKey: ['lookup', 'clienti'],
     queryFn: clientiOptions,
@@ -245,7 +252,11 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
       if (rest > 0 && renterKind === 'guest') {
         throw new Error('Guest trebuie să achite integral pe loc.')
       }
-      if (!workLocatieId) {
+      // Locația de lucru e casa în care intră banii — obligatorie doar când
+      // chiar se mișcă bani. O rezervare fără bani (antrenamentul unui
+      // instructor) n-are nevoie de ea.
+      const miscaBani = collected > 0 || (renterKind === 'client' && rest > 0)
+      if (miscaBani && !workLocatieId) {
         throw new Error('Setează locația de lucru din bara de sus (📍 lângă dată).')
       }
 
@@ -265,7 +276,7 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
         tenders,
         descriere,
         observatii,
-        locatieId: workLocatieId,
+        locatieId: workLocatieId ?? locatie,
       })
     },
     onSuccess: () => {
@@ -297,7 +308,7 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
           <Select
             options={locatiiQ.data ?? []}
             value={locatie}
-            disabled={locatieLocked}
+            disabled={locatieFixa}
             onChange={(e) => {
               setLocatie(e.target.value)
               setSala('')
@@ -368,7 +379,9 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
               {renterName ||
                 (ownTeacherLoading
                   ? 'se încarcă…'
-                  : 'contul nu e legat de un profil de instructor')}
+                  : ownTeacherId
+                    ? 'profilul tău'
+                    : 'contul nu e legat de un profil de instructor')}
             </strong>
           </div>
           <div className="flex flex-wrap gap-1.5">
