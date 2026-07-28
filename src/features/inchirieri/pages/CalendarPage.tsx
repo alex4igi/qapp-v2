@@ -40,9 +40,12 @@ export function CalendarPage() {
   const [booking, setBooking] = useState<BookingPrefill | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
 
-  // „Rezervi doar la locația ta": staff legat de o locație poate VEDEA orice
-  // locație, dar rezervă doar la a lui (dublat de politica RLS de insert).
-  const canBookHere = !locatieLocked || !workLocatie || locatie === workLocatie
+  // „Rezervi doar la locația ta": recepția legată de o locație poate VEDEA orice
+  // locație, dar rezervă doar la a ei (dublat de politica RLS de insert).
+  // Instructorul face excepție — își rezervă sala la orice locație, indiferent
+  // unde predă (regulă schimbată 2026-07-28, vezi migrația de aceeași dată).
+  const canBookHere =
+    teacherMode || !locatieLocked || !workLocatie || locatie === workLocatie
 
   // Auto-selectează prima sală când se schimbă locația.
   const saliQ = useQuery({
