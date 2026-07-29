@@ -5,6 +5,7 @@ export type AuditAction =
   | 'enrollment_moved'
   | 'enrollment_date_corrected'
   | 'abonament_to_sedinte'
+  | 'sedinte_to_abonament'
   | 'enrollment_reziliata'
   | 'enrollment_deleted'
   | 'incasare_modified'

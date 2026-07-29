@@ -481,21 +481,183 @@ export async function deleteInrolareDuplicat(params: {
   })
 }
 
-// Convertește o ședință „Per sedinta" în abonament: abonamentul țintă e creat
-// separat (createInrolari), iar acest RPC mută eventuala încasare pe el, zerează
-// rezervarea OPEN și face void curat al ședinței (fără restanță). Idempotent.
-export async function convertSedintaInAbonament(params: {
-  sedintaId: string
-  targetEnrollmentId: string
+// ── Conversie ședințe → abonament (pe lună) ──────────────────────────────────
+// Simetric cu convertAbonamentInSedinte: pornim de la o ședință, dar convertim
+// TOATE ședințele active ale clientului la acel curs din luna ei. Prețul e pe luna
+// întreagă, iar ce s-a plătit deja pe ședințe devine avans. Vezi RPC
+// converteste_sedinte_in_abonament.
+export type SedinteToAbonamentPreview = {
+  applicable: boolean
+  reason?: string
+  clientId?: string
+  cursId?: string
+  cursNume?: string
+  luna?: string // YYYY-MM-01
+  sedinte?: { data: string; platit: number }[]
+  pretLunar?: number
+  platit?: number
+  deIncasat?: number
+  credit?: number
+}
+
+async function loadSedinteToAbonament(
+  enrollmentId: string,
+): Promise<SedinteToAbonamentPreview> {
+  const { data: enr, error: eErr } = await supabase
+    .from('enrollments')
+    .select('id, client, cursul, tip_plata, data_incepere, reziliat')
+    .eq('id', enrollmentId)
+    .single()
+  if (eErr) throw eErr
+  if (enr.reziliat) return { applicable: false, reason: 'Ședința e deja reziliată.' }
+  if (enr.tip_plata !== 'Per sedinta') {
+    return {
+      applicable: false,
+      reason: 'Doar înrolările „Per sedinta" se pot converti în abonament.',
+    }
+  }
+  if (!enr.data_incepere || !enr.cursul || !enr.client) {
+    return { applicable: false, reason: 'Ședința nu are dată sau curs asociat.' }
+  }
+
+  const { data: curs, error: cErr } = await supabase
+    .from('cursuri')
+    .select('numele, pret_lunar')
+    .eq('id', enr.cursul)
+    .single()
+  if (cErr) throw cErr
+  const pretLunar = curs?.pret_lunar
+  if (pretLunar == null || pretLunar <= 0) {
+    return { applicable: false, reason: 'Cursul nu are „Preț lunar" setat.' }
+  }
+
+  const luna = `${enr.data_incepere.slice(0, 7)}-01`
+  const lunaEnd = endOfMonth(luna)
+
+  // Gard identic cu RPC-ul: un singur abonament pe (client, curs, lună).
+  const { data: existing, error: aErr } = await supabase
+    .from('enrollments')
+    .select('id')
+    .eq('client', enr.client)
+    .eq('cursul', enr.cursul)
+    .eq('tip_plata', 'Per luna')
+    .eq('reziliat', false)
+    .gte('data_incepere', luna)
+    .lte('data_incepere', lunaEnd)
+  if (aErr) throw aErr
+  if ((existing ?? []).length > 0) {
+    return {
+      applicable: false,
+      reason: 'Există deja un abonament activ pe luna respectivă.',
+    }
+  }
+
+  const { data: sedinte, error: sErr } = await supabase
+    .from('enrollments')
+    .select('id, data_incepere')
+    .eq('client', enr.client)
+    .eq('cursul', enr.cursul)
+    .eq('tip_plata', 'Per sedinta')
+    .eq('reziliat', false)
+    .gte('data_incepere', luna)
+    .lte('data_incepere', lunaEnd)
+    .order('data_incepere', { ascending: true })
+  if (sErr) throw sErr
+  const ids = (sedinte ?? []).map((s) => s.id)
+  if (ids.length === 0) {
+    return { applicable: false, reason: 'Nicio ședință activă în luna respectivă.' }
+  }
+
+  const { data: incasari, error: iErr } = await supabase
+    .from('incasari')
+    .select('inregistrare, suma')
+    .in('inregistrare', ids)
+  if (iErr) throw iErr
+  const platitPerSedinta = new Map<string, number>()
+  for (const i of incasari ?? []) {
+    if (!i.inregistrare) continue
+    platitPerSedinta.set(
+      i.inregistrare,
+      (platitPerSedinta.get(i.inregistrare) ?? 0) + (i.suma ?? 0),
+    )
+  }
+  const platit = [...platitPerSedinta.values()].reduce((a, b) => a + b, 0)
+
+  return {
+    applicable: true,
+    clientId: enr.client,
+    cursId: enr.cursul,
+    cursNume: curs?.numele ?? undefined,
+    luna,
+    sedinte: (sedinte ?? []).map((s) => ({
+      data: s.data_incepere as string,
+      platit: platitPerSedinta.get(s.id) ?? 0,
+    })),
+    pretLunar,
+    platit,
+    deIncasat: Math.max(pretLunar - platit, 0),
+    credit: Math.max(platit - pretLunar, 0),
+  }
+}
+
+export async function getSedinteToAbonamentPreview(params: {
+  enrollmentId: string
+}): Promise<SedinteToAbonamentPreview> {
+  return loadSedinteToAbonament(params.enrollmentId)
+}
+
+export async function convertSedinteInAbonament(params: {
+  clientId: string
+  cursId: string
+  luna: string
   motiv?: string
-}): Promise<{ already_converted?: boolean; converted?: boolean }> {
-  const { data, error } = await supabase.rpc('converteste_sedinta_in_abonament', {
-    p_sedinta: params.sedintaId,
-    p_target: params.targetEnrollmentId,
+}): Promise<{
+  converted?: boolean
+  enrollment?: string
+  luna?: string
+  sedinte?: number
+  pret?: number
+  platit?: number
+  de_incasat?: number
+  credit?: number
+}> {
+  const locatieId = await getLocatieFromCurs(params.cursId)
+
+  const { data, error } = await supabase.rpc('converteste_sedinte_in_abonament', {
+    p_client: params.clientId,
+    p_curs: params.cursId,
+    p_luna: params.luna,
     p_motiv: params.motiv?.trim() || undefined,
   })
   if (error) throw error
-  return (data ?? {}) as { already_converted?: boolean; converted?: boolean }
+  const result = (data ?? {}) as {
+    converted?: boolean
+    enrollment?: string
+    luna?: string
+    sedinte?: number
+    pret?: number
+    platit?: number
+    de_incasat?: number
+    credit?: number
+  }
+
+  if (result.converted) {
+    await recordAuditLog({
+      action: 'sedinte_to_abonament',
+      entityType: 'enrollment',
+      entityId: result.enrollment ?? params.cursId,
+      oldValue: { sedinte: result.sedinte, platit: result.platit },
+      newValue: {
+        luna: result.luna,
+        pret: result.pret,
+        de_incasat: result.de_incasat,
+        credit: result.credit,
+      },
+      reason: params.motiv?.trim() || 'Conversie ședințe → abonament',
+      locatieId,
+    })
+  }
+  return result
 }
 
 // ── Conversie abonament „Per luna" (facultativ) → ședințe ────────────────────

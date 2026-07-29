@@ -7,12 +7,10 @@ import {
   listSezoane,
   rezilizaInrolari,
   recalcUltimaLunaReziliere,
-  convertSedintaInAbonament,
   deleteInrolareDuplicat,
   getClientCredit,
   endOfMonth,
 } from '@/features/plati/api'
-import type { Enrollment } from '@/types/db'
 import { reintegrateClientAsLead } from '@/features/leads/api'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
@@ -22,6 +20,7 @@ import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
 import { CorecteazaDataModal } from '@/features/plati/CorecteazaDataModal'
 import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
 import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentSedinteModal'
+import { ConvertSedinteAbonamentModal } from '@/features/plati/ConvertSedinteAbonamentModal'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { waLink } from '@/lib/phone'
@@ -66,10 +65,7 @@ export function ClientProfilePage() {
   const [moveEnrollmentId, setMoveEnrollmentId] = useState<string | null>(null)
   const [corectDataEnrollmentId, setCorectDataEnrollmentId] = useState<string | null>(null)
   const [motivareEnrollmentId, setMotivareEnrollmentId] = useState<string | null>(null)
-  const [convertSedinta, setConvertSedinta] = useState<{
-    sedintaId: string
-    cursId: string
-  } | null>(null)
+  const [convertSedintaId, setConvertSedintaId] = useState<string | null>(null)
   const [convertAbonamentId, setConvertAbonamentId] = useState<string | null>(null)
   const [deleteRow, setDeleteRow] = useState<ClientInrolareSezon | null>(null)
   const [motivStergere, setMotivStergere] = useState('')
@@ -250,38 +246,6 @@ export function ClientProfilePage() {
     setMotivStergere('')
   }
 
-  // Conversie ședință → abonament: abonamentul s-a creat deja (EnrollmentForm a
-  // întors rândurile); ținta = rândul cel mai timpuriu (luna curentă). RPC-ul mută
-  // eventuala încasare, zerează rezervarea OPEN și face void curat al ședinței.
-  const convertSedintaMut = useMutation({
-    mutationFn: (input: { sedintaId: string; targetEnrollmentId: string }) =>
-      convertSedintaInAbonament(input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['client', id] })
-      void queryClient.invalidateQueries({ queryKey: ['plati'] })
-      void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
-      void queryClient.invalidateQueries({
-        queryKey: ['client-inrolari-sezon', id],
-      })
-      void queryClient.invalidateQueries({ queryKey: ['grupa-dashboard'] })
-      void queryClient.invalidateQueries({ queryKey: ['open-rezervari'] })
-    },
-  })
-
-  const handleConvertEnrolled = (rows: Enrollment[]) => {
-    if (!convertSedinta) return
-    const target = [...rows].sort((a, b) =>
-      (a.data_incepere ?? '').localeCompare(b.data_incepere ?? ''),
-    )[0]
-    // Rânduri goale = fluxul OPEN per ședință a fost ales din nou (nu e abonament);
-    // nu avem țintă de creditat, deci nu rezilim ședința.
-    if (!target) return
-    convertSedintaMut.mutate({
-      sedintaId: convertSedinta.sedintaId,
-      targetEnrollmentId: target.id,
-    })
-  }
-
   if (clientQuery.isLoading) return <Spinner />
   if (clientQuery.isError || !clientQuery.data) {
     return (
@@ -418,11 +382,11 @@ export function ClientProfilePage() {
               onMotiveaza={
                 canManagerActions ? (eId) => setMotivareEnrollmentId(eId) : undefined
               }
-              // Conversia ședință → abonament (campanie iulie) e permisă și front_desk.
+              // Conversia ședințe → abonament (pe luna ședinței) e permisă și front_desk.
               // Butonul apare doar pe rândurile „Per sedinta" (vezi InrolariSezonTab).
               onConvertToAbonament={
                 isFrontDeskOrHigher(role)
-                  ? (eId, cId) => setConvertSedinta({ sedintaId: eId, cursId: cId })
+                  ? (eId) => setConvertSedintaId(eId)
                   : undefined
               }
               // Conversia inversă abonament facultativ „Per luna" → ședințe (front_desk+).
@@ -527,13 +491,11 @@ export function ClientProfilePage() {
         />
       )}
 
-      {convertSedinta && (
-        <EnrollmentForm
+      {convertSedintaId && (
+        <ConvertSedinteAbonamentModal
           open
-          defaultClientId={client.id}
-          defaultCursId={convertSedinta.cursId}
-          onEnrolled={handleConvertEnrolled}
-          onClose={() => setConvertSedinta(null)}
+          enrollmentId={convertSedintaId}
+          onClose={() => setConvertSedintaId(null)}
         />
       )}
 

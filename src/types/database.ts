@@ -8885,8 +8885,13 @@ export type Database = {
         Args: { p_abonament: string; p_motiv?: string }
         Returns: Json
       }
-      converteste_sedinta_in_abonament: {
-        Args: { p_motiv?: string; p_sedinta: string; p_target: string }
+      converteste_sedinte_in_abonament: {
+        Args: {
+          p_client: string
+          p_curs: string
+          p_luna: string
+          p_motiv?: string
+        }
         Returns: Json
       }
       corecteaza_data_inrolare: {

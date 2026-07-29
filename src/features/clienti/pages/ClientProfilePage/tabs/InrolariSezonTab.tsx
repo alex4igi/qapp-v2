@@ -15,7 +15,7 @@ type Props = {
   onMoveCurs?: (enrollmentId: string) => void
   onCorectDate?: (enrollmentId: string) => void
   onMotiveaza?: (enrollmentId: string) => void
-  onConvertToAbonament?: (enrollmentId: string, cursId: string) => void
+  onConvertToAbonament?: (enrollmentId: string) => void
   onConvertToSedinte?: (enrollmentId: string) => void
   facultativCursIds?: Set<string>
   onDelete?: (row: ClientInrolareSezon) => void
@@ -135,8 +135,8 @@ export function InrolariSezonTab({
                     icon: '🎓',
                     label: 'Abonează',
                     title:
-                      'Convertește ședința în abonament (creează abonamentul, ședința rămâne gratuită)',
-                    onClick: () => onConvertToAbonament(r.id_enrollment, r.id_curs),
+                      'Trece ședințele lunii pe abonament (banii plătiți devin avans)',
+                    onClick: () => onConvertToAbonament(r.id_enrollment),
                   })
                 if (
                   onConvertToSedinte &&
