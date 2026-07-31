@@ -7,7 +7,17 @@ export type FacturaStatus =
   | 'Eroare'
   | 'Ignorata'
 
-export type FacturaLinie = { articol: string | null; suma: number }
+// client_id: cui i se atribuie linia când transferul bancar plătește pentru mai mulți
+// clienți. Lipsește pe liniile de dinaintea alocărilor și pe fluxurile portal/client.
+export type FacturaLinie = { articol: string | null; suma: number; client_id?: string | null }
+
+// Beneficiarii unui transfer bancar. Doar CINE — suma și starea plății se derivă din
+// linii[].client_id (vezi alocari.ts), ca banii să nu fie ținuți în două locuri.
+export type Alocare = {
+  client_id: string
+  familia_id: string | null
+  nume: string
+}
 
 export type FacturaRow = {
   ref: string
@@ -28,6 +38,7 @@ export type FacturaRow = {
   emis_la: string | null
   platit_la: string | null
   linii: FacturaLinie[] | null
+  alocari: Alocare[]
 }
 
 export type MatchSuggestion = {

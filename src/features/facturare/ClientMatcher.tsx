@@ -4,14 +4,23 @@ import { useQuery } from '@tanstack/react-query'
 import { matchPayer, searchClienti } from './api'
 import type { MatchSuggestion } from './types'
 
+// Picker de client/familie: sugestii fuzzy după plătitor + căutare manuală. Nu ține
+// starea alegerii — cine e ales se vede în ClientiAlocati, ca să poți alege în continuare.
 type Props = {
   payerNume: string
   descriere: string
-  value: MatchSuggestion | null
-  onChange: (m: MatchSuggestion | null) => void
+  excludeIds?: string[]
+  placeholder?: string
+  onPick: (m: MatchSuggestion) => void
 }
 
-export function ClientMatcher({ payerNume, descriere, value, onChange }: Props) {
+export function ClientMatcher({
+  payerNume,
+  descriere,
+  excludeIds,
+  placeholder,
+  onPick,
+}: Props) {
   const [term, setTerm] = useState('')
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -20,7 +29,7 @@ export function ClientMatcher({ payerNume, descriere, value, onChange }: Props) 
   const suggestions = useQuery({
     queryKey: ['fgo-match', payerNume, descriere],
     queryFn: () => matchPayer(payerNume, descriere),
-    enabled: !value && payerNume.trim().length > 0,
+    enabled: payerNume.trim().length > 0,
     staleTime: 5 * 60 * 1000,
   })
 
@@ -30,7 +39,12 @@ export function ClientMatcher({ payerNume, descriere, value, onChange }: Props) 
     enabled: term.trim().length >= 2,
   })
 
-  const results = term.trim().length >= 2 ? search.data ?? [] : []
+  // Filtrarea se face client-side ca queryKey-ul să rămână comun între rândurile cu
+  // același plătitor (altfel s-ar reface RPC-ul de potrivire la fiecare alocare).
+  const exclude = new Set(excludeIds ?? [])
+  const results = (term.trim().length >= 2 ? search.data ?? [] : []).filter(
+    (r) => !exclude.has(r.id),
+  )
   const showResults = focused && results.length > 0
 
   // Panoul de rezultate e randat în portal (fixed), ca să nu fie tăiat de
@@ -49,25 +63,7 @@ export function ClientMatcher({ payerNume, descriere, value, onChange }: Props) 
     }
   }, [showResults])
 
-  if (value) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-          ✓ {value.nume}
-          {value.tip === 'familie' ? ' (familie)' : ''}
-        </span>
-        <button
-          type="button"
-          onClick={() => onChange(null)}
-          className="text-xs text-muted underline hover:text-ink"
-        >
-          schimbă
-        </button>
-      </div>
-    )
-  }
-
-  const sugg = (suggestions.data ?? []).slice(0, 5)
+  const sugg = (suggestions.data ?? []).filter((s) => !exclude.has(s.id)).slice(0, 5)
 
   return (
     <div className="space-y-1">
@@ -77,7 +73,7 @@ export function ClientMatcher({ payerNume, descriere, value, onChange }: Props) 
             <button
               key={`${s.tip}-${s.id}`}
               type="button"
-              onClick={() => onChange(s)}
+              onClick={() => onPick(s)}
               className="rounded-full border border-line bg-card px-2 py-0.5 text-xs text-ink hover:border-quasar-yellow hover:bg-quasar-yellow/20"
               title={`scor ${(s.scor * 100).toFixed(0)}%`}
             >
@@ -91,7 +87,7 @@ export function ClientMatcher({ payerNume, descriere, value, onChange }: Props) 
         ref={inputRef}
         type="text"
         value={term}
-        placeholder="caută manual…"
+        placeholder={placeholder ?? 'caută manual…'}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={(e) => setTerm(e.target.value)}
@@ -116,7 +112,7 @@ export function ClientMatcher({ payerNume, descriere, value, onChange }: Props) 
                 type="button"
                 onMouseDown={(e) => {
                   e.preventDefault()
-                  onChange(r)
+                  onPick(r)
                   setTerm('')
                   setFocused(false)
                 }}

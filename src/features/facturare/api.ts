@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase'
+import { clientIdRegistru, familiaIdRegistru } from './alocari'
 import type {
+  Alocare,
   EmitResult,
+  FacturaLinie,
   FacturaRow,
   FacturaStatus,
   FacturaSursa,
@@ -139,7 +142,7 @@ export async function listFacturi(
   if (statusIn && statusIn.length) q = q.in('status', statusIn)
   const { data, error } = await q
   if (error) throw error
-  return (data ?? []) as FacturaRow[]
+  return (data ?? []) as unknown as FacturaRow[]
 }
 
 // „De procesat" (banca): NOT done AND NOT Ignorata, unde done = plătit ȘI facturat.
@@ -153,7 +156,7 @@ export async function listBancaWorklist(): Promise<FacturaRow[]> {
   for (const [col, opts] of STABLE_ORDER) q = q.order(col, opts)
   const { data, error } = await q
   if (error) throw error
-  return (data ?? []) as FacturaRow[]
+  return (data ?? []) as unknown as FacturaRow[]
 }
 
 // Istoric-jurnal (banca): tot ce a avut o acțiune (plată sau factură/ignorare).
@@ -166,19 +169,74 @@ export async function listBancaIstoric(): Promise<FacturaRow[]> {
   for (const [col, opts] of STABLE_ORDER) q = q.order(col, opts)
   const { data, error } = await q.limit(50)
   if (error) throw error
-  return (data ?? []) as FacturaRow[]
+  return (data ?? []) as unknown as FacturaRow[]
 }
 
-// Marchează transferul ca „înregistrat" + stochează liniile derivate din plată.
+// Adaugă plata înregistrată pentru UN client la liniile transferului. Citim rândul
+// proaspăt din DB, nu din cache-ul React Query: alocările și plățile scriu pe același
+// jsonb, iar un update pornit dintr-un snapshot vechi ar șterge liniile fratelui.
 export async function salveazaPlataBanca(
   ref: string,
-  linii: { articol: string | null; suma: number }[],
+  clientId: string,
+  linii: FacturaLinie[],
 ): Promise<void> {
+  const { data: cur, error: readErr } = await supabase
+    .from('facturi_fgo')
+    .select('linii, alocari, platit_la')
+    .eq('ref', ref)
+    .single()
+  if (readErr) throw readErr
+
+  const prev = (cur.linii ?? []) as FacturaLinie[]
+  const toate = [...prev, ...linii.map((l) => ({ ...l, client_id: clientId }))]
+  const alocari = (cur.alocari ?? []) as Alocare[]
+
+  // Transferul e „înregistrat" abia când fiecare beneficiar are cel puțin o linie.
+  // Rândurile fără alocări păstrează comportamentul vechi: prima plată îl marchează.
+  const totPlatit =
+    alocari.length === 0 ||
+    alocari.every((a) => toate.some((l) => l.client_id === a.client_id))
+
+  // platit_la e monoton: dacă l-am șterge când apare un beneficiar nou, un rând deja în
+  // „De facturat" ar sări înapoi în „Nou din extras".
+  const patch: { linii: FacturaLinie[]; platit_la?: string } = { linii: toate }
+  if (totPlatit && !cur.platit_la) patch.platit_la = new Date().toISOString()
+
+  const { error } = await supabase.from('facturi_fgo').update(patch).eq('ref', ref)
+  if (error) throw error
+}
+
+// Salvează CINE sunt beneficiarii. Nu atinge linii/platit_la/status — alocarea e o
+// afirmație despre potrivire, nu despre bani.
+export async function saveAlocari(ref: string, alocari: Alocare[]): Promise<void> {
   const { error } = await supabase
     .from('facturi_fgo')
-    .update({ platit_la: new Date().toISOString(), linii })
+    .update({
+      alocari,
+      client_id: clientIdRegistru(alocari),
+      familia_id: familiaIdRegistru(alocari),
+    })
     .eq('ref', ref)
   if (error) throw error
+}
+
+// Membrii unei familii, direct în forma folosită de matcher — pentru cazul „transferul e
+// pentru frați": alegi familia, bifezi copiii.
+export async function listMembriFamilie(familiaId: string): Promise<MatchSuggestion[]> {
+  const { data, error } = await supabase
+    .from('clienti')
+    .select('id, nume, prenume, familia, status')
+    .eq('familia', familiaId)
+    .order('nume', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map((c) => ({
+    tip: 'client' as const,
+    id: c.id,
+    nume: [c.nume, c.prenume].filter(Boolean).join(' ').trim(),
+    familia_id: c.familia,
+    scor: 0,
+    status: c.status,
+  }))
 }
 
 // „Ignoră" — scoate rândurile din lista de lucru fără să le șteargă (păstrează

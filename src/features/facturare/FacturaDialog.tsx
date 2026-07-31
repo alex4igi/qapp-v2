@@ -1,41 +1,86 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Modal, Select, Button } from '@/components/ui'
+import { Modal, Select, TextInput, Button } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
 import { ARTICOLE_FGO } from './constants'
 import { articolDinTextBanca } from './articolResolver'
 import { emiteFacturi, type EmitItem } from './api'
-import type { FacturaRow, MatchSuggestion } from './types'
+import {
+  clientIdRegistru,
+  familiaIdRegistru,
+  liniiAlocare,
+  liniiNealocate,
+  restNealocat,
+  round2,
+} from './alocari'
+import type { FacturaRow } from './types'
 
 const fmt = (n: number) =>
   n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-type LineDraft = { articol: string; suma: number }
+// suma e string: input controlat, altfel tastarea „2"→„26"→„260" se bate cu Number().
+type LineDraft = { key: string; articol: string; suma: string }
+type Group = { clientId: string | null; nume: string | null; lines: LineDraft[] }
 
-// Dialog de facturare per transfer: liniile vin din plata înregistrată (pre-completate
-// cu articolul derivat), recepția completează/editează articolele apoi emite factura FGO.
-export function FacturaDialog({
-  row,
-  match,
-  onClose,
-}: {
-  row: FacturaRow
-  match: MatchSuggestion | null
-  onClose: () => void
-}) {
-  const queryClient = useQueryClient()
-  // Pre-completare articol: întâi cel derivat din plată (linia); dacă lipsește,
-  // ghicire din textul extrasului bancar (editabilă). Restul → recepția alege.
+const newKey = () => crypto.randomUUID()
+
+// Grupăm liniile pe beneficiar. Un singur client cu plata neînregistrată produce exact
+// starea de dinainte de alocări: o linie cu articolul ghicit și suma întreagă.
+function initialGroups(row: FacturaRow): Group[] {
+  const alocari = row.alocari ?? []
+  const groups: Group[] = alocari.map((a) => ({
+    clientId: a.client_id,
+    nume: a.nume,
+    lines: liniiAlocare(row, a.client_id).map((l) => ({
+      key: newKey(),
+      articol: l.articol ?? '',
+      suma: String(l.suma),
+    })),
+  }))
+
+  const vechi = liniiNealocate(row)
+  if (vechi.length) {
+    groups.push({
+      clientId: null,
+      nume: null,
+      lines: vechi.map((l) => ({ key: newKey(), articol: l.articol ?? '', suma: String(l.suma) })),
+    })
+  }
+  if (groups.length === 0) groups.push({ clientId: null, nume: null, lines: [] })
+
   const guess = articolDinTextBanca(row.descriere) ?? ''
-  const [lines, setLines] = useState<LineDraft[]>(
-    row.linii && row.linii.length
-      ? row.linii.map((l) => ({ articol: l.articol ?? guess, suma: l.suma }))
-      : [{ articol: guess, suma: row.suma }],
-  )
+  const rest = restNealocat(row)
+  const goale = groups.filter((g) => g.lines.length === 0)
+  for (const g of goale) {
+    // Restul se pune doar dacă un singur grup e gol; cu doi frați neplătiți nu inventăm
+    // o împărțire — recepția scrie sumele.
+    const suma = goale.length === 1 && rest > 0.004 ? String(rest) : ''
+    g.lines = [{ key: newKey(), articol: guess, suma }]
+  }
+  return groups
+}
+
+// Dialog de facturare per transfer: o singură factură pe numele plătitorului, cu liniile
+// grupate pe beneficiar când transferul acoperă mai mulți clienți.
+export function FacturaDialog({ row, onClose }: { row: FacturaRow; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const [groups, setGroups] = useState<Group[]>(() => initialGroups(row))
   const [error, setError] = useState<string | null>(null)
 
-  const totalLinii = lines.reduce((a, l) => a + l.suma, 0)
-  const allFilled = lines.every((l) => l.articol)
+  const allLines = groups.flatMap((g) => g.lines)
+  const totalLinii = round2(allLines.reduce((a, l) => a + (Number(l.suma) || 0), 0))
+  const diferenta = round2(totalLinii - row.suma)
+  const valid =
+    allLines.length > 0 && allLines.every((l) => l.articol && Number(l.suma) > 0)
+
+  const patchLine = (gi: number, key: string, patch: Partial<LineDraft>) =>
+    setGroups((prev) =>
+      prev.map((g, i) =>
+        i === gi
+          ? { ...g, lines: g.lines.map((l) => (l.key === key ? { ...l, ...patch } : l)) }
+          : g,
+      ),
+    )
 
   const emit = useMutation({
     mutationFn: async () => {
@@ -46,10 +91,9 @@ export function FacturaDialog({
         data: row.data_tranzactie,
         descriere: row.descriere ?? '',
         valuta: row.valuta,
-        client_id: match?.tip === 'client' ? match.id : row.client_id,
-        familia_id:
-          match?.tip === 'familie' ? match.id : match?.familia_id ?? row.familia_id,
-        linii: lines.map((l) => ({ articol: l.articol, suma: l.suma })),
+        client_id: clientIdRegistru(row.alocari ?? []),
+        familia_id: familiaIdRegistru(row.alocari ?? []),
+        linii: allLines.map((l) => ({ articol: l.articol, suma: Number(l.suma) })),
       }
       const res = await emiteFacturi(row.firma_cui, [item])
       const r0 = res.results[0]
@@ -74,23 +118,62 @@ export function FacturaDialog({
         <p className="text-sm text-ink">
           Client (plătitor): <strong>{row.client_nume}</strong>
         </p>
-        <div className="space-y-2">
-          {lines.map((l, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="flex-1">
-                <Select
-                  options={artOptions}
-                  value={l.articol}
-                  onChange={(e) =>
-                    setLines((prev) =>
-                      prev.map((x, j) => (j === i ? { ...x, articol: e.target.value } : x)),
-                    )
-                  }
-                />
-              </div>
-              <div className="w-32 text-right text-sm whitespace-nowrap text-ink">
-                {fmt(l.suma)} {row.valuta}
-              </div>
+        <div className="space-y-3">
+          {groups.map((g, gi) => (
+            <div key={g.clientId ?? 'nealocat'} className="space-y-2">
+              {groups.length > 1 && (
+                <p className="text-xs font-semibold text-muted">{g.nume ?? 'Nealocat'}</p>
+              )}
+              {g.lines.map((l) => (
+                <div key={l.key} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Select
+                      options={artOptions}
+                      value={l.articol}
+                      onChange={(e) => patchLine(gi, l.key, { articol: e.target.value })}
+                    />
+                  </div>
+                  <div className="w-28 shrink-0">
+                    <TextInput
+                      inputMode="decimal"
+                      className="text-right"
+                      value={l.suma}
+                      onChange={(e) => patchLine(gi, l.key, { suma: e.target.value })}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setGroups((prev) =>
+                        prev.map((x, i) =>
+                          i === gi
+                            ? { ...x, lines: x.lines.filter((y) => y.key !== l.key) }
+                            : x,
+                        ),
+                      )
+                    }
+                    className="text-xs text-muted hover:text-red-700"
+                    title="Șterge linia"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setGroups((prev) =>
+                    prev.map((x, i) =>
+                      i === gi
+                        ? { ...x, lines: [...x.lines, { key: newKey(), articol: '', suma: '' }] }
+                        : x,
+                    ),
+                  )
+                }
+                className="text-xs text-muted underline hover:text-ink"
+              >
+                + linie
+              </button>
             </div>
           ))}
         </div>
@@ -100,6 +183,12 @@ export function FacturaDialog({
             {fmt(totalLinii)} {row.valuta}
           </span>
         </div>
+        {Math.abs(diferenta) > 0.01 && (
+          <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Totalul liniilor ({fmt(totalLinii)}) diferă de suma transferului (
+            {fmt(row.suma)} {row.valuta}) cu {fmt(diferenta)}.
+          </div>
+        )}
         {error && (
           <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
         )}
@@ -108,9 +197,9 @@ export function FacturaDialog({
             Anulează
           </Button>
           <Button
-            disabled={!allFilled || emit.isPending}
+            disabled={!valid || emit.isPending}
             onClick={() => emit.mutate()}
-            title={!allFilled ? 'Completează articolul pe toate liniile' : undefined}
+            title={!valid ? 'Fiecare linie are nevoie de articol și de o sumă > 0' : undefined}
           >
             {emit.isPending ? 'Se emite…' : 'Emite factura'}
           </Button>

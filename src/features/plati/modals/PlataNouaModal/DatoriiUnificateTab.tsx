@@ -32,7 +32,9 @@ type Props = {
   defaultClientId?: string
   defaultSuma?: number
   defaultMetoda?: MetodaSel
-  onRecorded?: (linii: FacturaLinie[]) => void
+  // clientId e cel din formular la momentul salvării, nu defaultClientId: selectorul de
+  // cursant rămâne editabil, iar apelantul (fluxul bancă) atribuie plata pe cine trebuie.
+  onRecorded?: (linii: FacturaLinie[], clientId: string) => void
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
@@ -226,7 +228,9 @@ export function DatoriiUnificateTab({
     setCheckedEnroll(new Set())
     setCheckedDat(new Set())
     setPartial('')
-    setMetoda('Cash')
+    // Revenim la metoda cu care s-a deschis modalul, nu la Cash: din fluxul bancă
+    // schimbarea cursantului transforma tăcut un transfer în numerar.
+    setMetoda(defaultMetoda ?? 'Cash')
     setCash('')
     setCard('')
     setUseCreditOn(false)
@@ -379,7 +383,7 @@ export function DatoriiUnificateTab({
         }
       }
 
-      return { linii }
+      return { linii, clientId }
     },
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
@@ -391,7 +395,7 @@ export function DatoriiUnificateTab({
       void queryClient.invalidateQueries({ queryKey: ['surplus-targets'] })
       void queryClient.invalidateQueries({ queryKey: ['plati-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['client-inrolari-sezon'] })
-      onRecorded?.(data.linii)
+      onRecorded?.(data.linii, data.clientId)
       handleClose()
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),

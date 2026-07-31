@@ -19,7 +19,7 @@ type Props = {
   defaultInchiriere?: DefaultInchiriere
   defaultSuma?: number
   defaultMetoda?: MetodaSel
-  onRecorded?: (linii: FacturaLinie[]) => void
+  onRecorded?: (linii: FacturaLinie[], clientId: string) => void
 }
 
 export function PlataNouaModal({

@@ -5,7 +5,7 @@ import { Button, DataTable, Spinner, type Column } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
-import { ClientMatcher } from './ClientMatcher'
+import { ClientiAlocati } from './ClientiAlocati'
 import { FacturaDialog } from './FacturaDialog'
 import { MarcheazaDialog } from './MarcheazaDialog'
 import {
@@ -14,8 +14,11 @@ import {
   listBancaIstoric,
   listBancaWorklist,
   salveazaPlataBanca,
+  saveAlocari,
+  searchClienti,
 } from './api'
-import type { FacturaLinie, FacturaRow, MatchSuggestion } from './types'
+import { platitLegacy, restNealocat } from './alocari'
+import type { Alocare, FacturaLinie, FacturaRow } from './types'
 
 const fmt = (n: number) =>
   n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -61,14 +64,13 @@ export function BancaTab() {
   const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const [matches, setMatches] = useState<Record<string, MatchSuggestion | null>>({})
   const [error, setError] = useState<string | null>(null)
-  const [plataFor, setPlataFor] = useState<{ ref: string; clientId?: string; suma: number } | null>(
-    null,
-  )
-  const [facturaFor, setFacturaFor] = useState<{ row: FacturaRow; match: MatchSuggestion | null } | null>(
-    null,
-  )
+  const [plataFor, setPlataFor] = useState<{
+    ref: string
+    clientId: string
+    suma?: number
+  } | null>(null)
+  const [facturaFor, setFacturaFor] = useState<FacturaRow | null>(null)
   const [marcheazaFor, setMarcheazaFor] = useState<FacturaRow | null>(null)
 
   const pending = useQuery({
@@ -94,8 +96,6 @@ export function BancaTab() {
   }, [pending.data])
   const total = nou.length + deFacturat.length + dePlata.length
 
-  const matchOf = (r: FacturaRow): MatchSuggestion | null => matches[r.ref] ?? null
-
   const invalidate = () =>
     void queryClient.invalidateQueries({ queryKey: ['facturi-fgo', 'banca'] })
 
@@ -120,11 +120,55 @@ export function BancaTab() {
   }
 
   const savePlata = useMutation({
-    mutationFn: (v: { ref: string; linii: FacturaLinie[] }) =>
-      salveazaPlataBanca(v.ref, v.linii),
+    mutationFn: (v: { ref: string; clientId: string; linii: FacturaLinie[] }) =>
+      salveazaPlataBanca(v.ref, v.clientId, v.linii),
     onSuccess: invalidate,
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la marcarea plății.')),
   })
+
+  const saveAloc = useMutation({
+    mutationFn: (v: { ref: string; alocari: Alocare[] }) => saveAlocari(v.ref, v.alocari),
+    // Alegerea clientului era instant (state local); o ținem instant și acum, cu rollback
+    // la eroare. Ordinea rândurilor e stabilă: STABLE_ORDER nu depinde de ce scriem aici.
+    onMutate: async (v) => {
+      const key = ['facturi-fgo', 'banca', 'worklist']
+      await queryClient.cancelQueries({ queryKey: key })
+      const prev = queryClient.getQueryData<FacturaRow[]>(key)
+      queryClient.setQueryData<FacturaRow[]>(key, (old) =>
+        (old ?? []).map((r) => (r.ref === v.ref ? { ...r, alocari: v.alocari } : r)),
+      )
+      return { prev, key }
+    },
+    onError: (e: unknown, _v, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(ctx.key, ctx.prev)
+      setError(humanizeError(e, 'Eroare la salvarea clienților.'))
+    },
+    onSettled: invalidate,
+  })
+
+  // Plata înregistrată se atribuie clientului din formular, nu celui de la deschiderea
+  // modalului: selectorul de cursant rămâne editabil, deci recepția poate corecta acolo.
+  const onPlataRecorded = async (ref: string, linii: FacturaLinie[], clientId: string) => {
+    const row = (pending.data ?? []).find((r) => r.ref === ref)
+    const alocari = row?.alocari ?? []
+    if (row && !alocari.some((a) => a.client_id === clientId)) {
+      const [c] = await searchClienti(clientId)
+      if (c) {
+        await saveAlocari(ref, [
+          ...alocari,
+          { client_id: c.id, familia_id: c.familia_id, nume: c.nume },
+        ])
+      }
+    }
+    savePlata.mutate({ ref, clientId, linii })
+  }
+
+  // defaultSuma = restul nealocat, ca al doilea frate să nu pornească de la suma întreagă.
+  // `undefined` (nu 0) când nu mai e rest: DatoriiUnificateTab tratează 0 ca „plătește tot".
+  const openPlata = (r: FacturaRow, clientId: string) => {
+    const rest = restNealocat(r)
+    setPlataFor({ ref: r.ref, clientId, suma: rest > 0.004 ? rest : undefined })
+  }
 
   const ignoraOne = useMutation({
     mutationFn: (ref: string) => ignoraFacturi([ref]),
@@ -138,13 +182,13 @@ export function BancaTab() {
       { header: 'Plătitor', cell: (r) => r.client_nume, sortValue: (r) => r.client_nume },
       {
         header: 'Client în CRM',
-        className: 'min-w-[220px]',
+        className: 'min-w-[240px]',
         cell: (r) => (
-          <ClientMatcher
-            payerNume={r.client_nume}
-            descriere={r.descriere ?? ''}
-            value={matchOf(r)}
-            onChange={(m) => setMatches((prev) => ({ ...prev, [r.ref]: m }))}
+          <ClientiAlocati
+            row={r}
+            showPlata={(r.alocari ?? []).length > 1 && !platitLegacy(r)}
+            onChange={(alocari) => saveAloc.mutate({ ref: r.ref, alocari })}
+            onPlata={(a) => openPlata(r, a.client_id)}
           />
         ),
       },
@@ -188,35 +232,29 @@ export function BancaTab() {
         header: '',
         className: 'whitespace-nowrap',
         cell: (r) => {
-          const m = matchOf(r)
-          const platit = !!r.platit_la
+          const alocari = r.alocari ?? []
           const facturat = isFacturat(r)
+          // Un singur beneficiar → butonul rămâne aici, unde a fost dintotdeauna. Cu mai
+          // mulți, fiecare își are butonul lângă chip (în coloana „Client în CRM").
+          const unSingur = alocari.length <= 1 && !platitLegacy(r) && !r.platit_la
           return (
             <div className="flex flex-wrap items-center gap-2">
-              {!platit && (
+              {unSingur && (
                 <Button
                   variant="secondary"
-                  disabled={!m}
+                  disabled={alocari.length === 0}
                   title={
-                    m
-                      ? m.tip === 'familie'
-                        ? 'Plată nouă (Transfer) — alege membrul familiei'
-                        : 'Plată nouă (Transfer) pre-completată cu clientul și suma'
+                    alocari.length
+                      ? 'Plată nouă (Transfer) pre-completată cu clientul și suma'
                       : 'Alege întâi clientul din CRM'
                   }
-                  onClick={() =>
-                    setPlataFor({
-                      ref: r.ref,
-                      clientId: m?.tip === 'client' ? m.id : undefined,
-                      suma: r.suma,
-                    })
-                  }
+                  onClick={() => alocari[0] && openPlata(r, alocari[0].client_id)}
                 >
                   💳 Plată
                 </Button>
               )}
               {!facturat && (
-                <Button variant="secondary" onClick={() => setFacturaFor({ row: r, match: m })}>
+                <Button variant="secondary" onClick={() => setFacturaFor(r)}>
                   🧾 Facturează
                 </Button>
               )}
@@ -243,7 +281,7 @@ export function BancaTab() {
         },
       },
     ],
-    [matches, ignoraOne],
+    [ignoraOne, saveAloc],
   )
 
   return (
@@ -292,7 +330,7 @@ export function BancaTab() {
         <div className="space-y-6">
           <Sectiune
             titlu="Nou din extras"
-            explicatie="Nici plata înregistrată, nici factura emisă — de făcut amândouă."
+            explicatie="Nici plata înregistrată (sau doar parțial), nici factura emisă — de făcut amândouă."
             rows={nou}
             columns={columns}
           />
@@ -345,21 +383,21 @@ export function BancaTab() {
       )}
 
       <PlataNouaModal
+        key={plataFor ? `${plataFor.ref}:${plataFor.clientId}` : 'inchis'}
         open={!!plataFor}
         onClose={() => setPlataFor(null)}
         defaultClientId={plataFor?.clientId}
         defaultSuma={plataFor?.suma}
         defaultMetoda="Transfer"
-        onRecorded={(linii) => {
-          if (plataFor) savePlata.mutate({ ref: plataFor.ref, linii })
+        onRecorded={(linii, clientId) => {
+          if (plataFor) void onPlataRecorded(plataFor.ref, linii, clientId)
         }}
       />
 
       {facturaFor && (
         <FacturaDialog
-          key={facturaFor.row.ref}
-          row={facturaFor.row}
-          match={facturaFor.match}
+          key={facturaFor.ref}
+          row={facturaFor}
           onClose={() => setFacturaFor(null)}
         />
       )}

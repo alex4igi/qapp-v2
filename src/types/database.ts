@@ -2906,6 +2906,7 @@ export type Database = {
       }
       facturi_fgo: {
         Row: {
+          alocari: Json
           client_id: string | null
           client_nume: string
           created: string
@@ -2928,6 +2929,7 @@ export type Database = {
           valuta: string
         }
         Insert: {
+          alocari?: Json
           client_id?: string | null
           client_nume?: string
           created?: string
@@ -2950,6 +2952,7 @@ export type Database = {
           valuta?: string
         }
         Update: {
+          alocari?: Json
           client_id?: string | null
           client_nume?: string
           created?: string
