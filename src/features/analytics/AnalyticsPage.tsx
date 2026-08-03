@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { PageHeader, Field, MonthPicker, Select, Button } from '@/components/ui'
+import { PageHeader, Field, MonthPicker, Select, Button, LazySection } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { locatiiOptions } from '@/lib/lookups'
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/features/statistici/api'
 import { getConversieLeads } from '@/features/ansamblu/api'
 import { KpiCard } from '@/features/statistici/KpiCard'
-import { ANALYTICS_QO, LazySection } from './sections/shared'
+import { ANALYTICS_QO } from './sections/shared'
 import { Section0PachetLuni } from './sections/Section0PachetLuni'
 import { Section1Retentie } from './sections/Section1Retentie'
 import { Section2Achizitie } from './sections/Section2Achizitie'

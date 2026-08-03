@@ -10,8 +10,9 @@ import {
 } from 'recharts'
 import { Field, Select, Spinner } from '@/components/ui'
 import { formatRON } from '@/lib/format'
-import { teacheriOptions } from '@/lib/lookups'
+import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { getTeacherOverview } from './api'
+import { STAT_QO } from './sections/shared'
 
 const COLORS = [
   '#FFD600',
@@ -25,10 +26,8 @@ const COLORS = [
 ]
 
 export function TeacherOverviewSection() {
-  const teacheriQ = useQuery({
-    queryKey: ['lookup', 'teacheri', 'all'],
-    queryFn: () => teacheriOptions(),
-  })
+  // Aceeași sursă ca restul paginii (dedup pe queryKey) — filtrată pe sezonul activ.
+  const teacheriQ = useTeacheriOptions({ locatieId: null })
   const [teacherId, setTeacherId] = useState('')
 
   // Pre-selectează primul instructor odată ce lista s-a încărcat.
@@ -42,6 +41,7 @@ export function TeacherOverviewSection() {
     queryKey: ['stat', 'teacher-overview', teacherId],
     queryFn: () => getTeacherOverview(teacherId),
     enabled: !!teacherId,
+    ...STAT_QO,
   })
 
   const rows = overviewQ.data ?? []

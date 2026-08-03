@@ -172,7 +172,7 @@ comportament identic:
 | `dashboard/` | `GrupaDashboardPage.tsx` | 636 | extrage `ClientCard`/`RosterList` la scope de modul |
 | ~~`financiar/`~~ | ~~`api.ts`~~ | ~~560~~ | ✅ FĂCUT 2026-07-05: `api/{restante-views,rapoarte,incasari,restante}.ts` + barrel |
 | ~~`statistici/`~~ | ~~`api.ts`~~ | ~~510~~ | ✅ FĂCUT 2026-07-05: `api/{interval,financiar,sezoane,prezente,leads,teacheri}.ts` + barrel |
-| `statistici/` | `StatisticiPage.tsx` | 641 | split pe secțiuni (doar pagina a rămas) |
+| ~~`statistici/`~~ | ~~`StatisticiPage.tsx`~~ | ~~686~~ | ✅ FĂCUT 2026-08-03: shell ~150 + `sections/` (13 componente, fiecare cu query-urile ei); tot ce e sub fold în `LazySection` (`@/components/ui`), `STAT_QO` staleTime 5 min |
 | `familii/` | `FamilieProfilePage.tsx` | 509 | schelet de modul |
 | ~~`setari/`~~ | ~~`api.ts`~~ | ~~318~~ | ✅ FĂCUT 2026-07-05: `api/{locatii,sali,sezoane,sms}.ts` + barrel |
 
