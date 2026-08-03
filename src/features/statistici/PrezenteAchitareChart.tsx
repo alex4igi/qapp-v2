@@ -13,14 +13,17 @@ import type { PrezentaAchitareRow } from './api'
 type Props = {
   title: string
   rows: PrezentaAchitareRow[]
+  note?: string
   emptyMessage?: string
 }
 
 // achitate + neachitate partiționează prezențele lunii; din_trecut e un overlay
-// (prezențe din luni anterioare stinse în luna curentă) — de aceea bare grupate, nu stivuite.
+// (prezențe din luni anterioare stinse în luna curentă, inclusiv dinaintea
+// intervalului ales) — de aceea bare grupate, nu stivuite.
 export function PrezenteAchitareChart({
   title,
   rows,
+  note,
   emptyMessage = 'Nicio prezență în intervalul ales.',
 }: Props) {
   const hasData = rows.some(
@@ -29,7 +32,12 @@ export function PrezenteAchitareChart({
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="mb-3 text-sm font-semibold text-quasar-black">{title}</h3>
+      <h3 className="text-sm font-semibold text-quasar-black">{title}</h3>
+      {note ? (
+        <p className="mt-1 mb-3 text-xs text-quasar-gray">{note}</p>
+      ) : (
+        <div className="mb-3" />
+      )}
       {!hasData ? (
         <p className="py-8 text-center text-sm text-quasar-gray">
           {emptyMessage}

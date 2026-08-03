@@ -3,7 +3,9 @@ import { getGradOcupare } from '@/features/ansamblu/api'
 import { type Interval, intervalToDateRange } from './interval'
 
 // ============================================================================
-// Prezențe pe achitare (model lună-cu-lună, mărginit la intervalul afișat)
+// Prezențe pe achitare (model lună-cu-lună). `achitate`/`neachitate` partiționează
+// prezențele lunilor din interval; `din_trecut` privește până la 24 de luni în
+// urmă față de luna stingerii, deci și dinaintea intervalului ales.
 // ============================================================================
 
 export type PrezentaAchitareRow = {
