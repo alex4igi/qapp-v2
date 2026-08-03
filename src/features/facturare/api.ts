@@ -159,17 +159,22 @@ export async function listBancaWorklist(): Promise<FacturaRow[]> {
   return (data ?? []) as unknown as FacturaRow[]
 }
 
+export const ISTORIC_PAGE_SIZE = 25
+
+export type IstoricPage = { rows: FacturaRow[]; total: number }
+
 // Istoric-jurnal (banca): tot ce a avut o acțiune (plată sau factură/ignorare).
-export async function listBancaIstoric(): Promise<FacturaRow[]> {
+export async function listBancaIstoric(page = 0): Promise<IstoricPage> {
+  const from = page * ISTORIC_PAGE_SIZE
   let q = supabase
     .from('facturi_fgo')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('sursa', 'banca')
     .or('platit_la.not.is.null,status.in.(Emisa,Marcata,Eroare,Ignorata)')
   for (const [col, opts] of STABLE_ORDER) q = q.order(col, opts)
-  const { data, error } = await q.limit(50)
+  const { data, error, count } = await q.range(from, from + ISTORIC_PAGE_SIZE - 1)
   if (error) throw error
-  return (data ?? []) as unknown as FacturaRow[]
+  return { rows: (data ?? []) as unknown as FacturaRow[], total: count ?? 0 }
 }
 
 // Adaugă plata înregistrată pentru UN client la liniile transferului. Citim rândul

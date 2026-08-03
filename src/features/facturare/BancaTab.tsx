@@ -1,6 +1,6 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useRef, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, DataTable, Spinner, type Column } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
@@ -9,6 +9,7 @@ import { ClientiAlocati } from './ClientiAlocati'
 import { FacturaDialog } from './FacturaDialog'
 import { MarcheazaDialog } from './MarcheazaDialog'
 import {
+  ISTORIC_PAGE_SIZE,
   ignoraFacturi,
   ingestExtras,
   listBancaIstoric,
@@ -77,10 +78,15 @@ export function BancaTab() {
     queryKey: ['facturi-fgo', 'banca', 'worklist'],
     queryFn: () => listBancaWorklist(),
   })
+  const [istoricPage, setIstoricPage] = useState(0)
   const recent = useQuery({
-    queryKey: ['facturi-fgo', 'banca', 'istoric'],
-    queryFn: () => listBancaIstoric(),
+    queryKey: ['facturi-fgo', 'banca', 'istoric', istoricPage],
+    queryFn: () => listBancaIstoric(istoricPage),
+    placeholderData: keepPreviousData,
   })
+  const istoric = recent.data?.rows ?? []
+  const istoricTotal = recent.data?.total ?? 0
+  const istoricPages = Math.max(1, Math.ceil(istoricTotal / ISTORIC_PAGE_SIZE))
 
   // Lista amestecă două joburi diferite (înregistrarea plății și emiterea facturii), iar
   // un rând iese abia când ambele sunt gata. Nedespărțite, cele două arătau ca un tabel
@@ -353,13 +359,13 @@ export function BancaTab() {
         </div>
       )}
 
-      {(recent.data ?? []).length > 0 && (
+      {istoricTotal > 0 && (
         <details className="rounded-2xl border border-line bg-card p-4">
           <summary className="cursor-pointer text-sm font-semibold text-ink">
-            Istoric ({(recent.data ?? []).length})
+            Istoric ({istoricTotal})
           </summary>
           <ul className="mt-3 space-y-1 text-sm">
-            {(recent.data ?? []).map((r) => (
+            {istoric.map((r) => (
               <li key={r.ref} className="flex justify-between gap-3">
                 <span className="text-ink">
                   {r.data_tranzactie} · {r.client_nume} · {fmt(r.suma)} RON
@@ -379,6 +385,31 @@ export function BancaTab() {
               </li>
             ))}
           </ul>
+          {istoricPages > 1 && (
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3 text-xs text-muted">
+              <span>
+                Pagina {istoricPage + 1} din {istoricPages}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  className="text-xs"
+                  disabled={istoricPage === 0 || recent.isFetching}
+                  onClick={() => setIstoricPage((p) => Math.max(0, p - 1))}
+                >
+                  ← Anterior
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="text-xs"
+                  disabled={istoricPage + 1 >= istoricPages || recent.isFetching}
+                  onClick={() => setIstoricPage((p) => p + 1)}
+                >
+                  Următor →
+                </Button>
+              </div>
+            </div>
+          )}
         </details>
       )}
 
