@@ -20,6 +20,7 @@ const now = new Date()
 const Y = now.getFullYear(), M = now.getMonth() + 1
 const pad = (n) => String(n).padStart(2, '0')
 const lunaStart = `${Y}-${pad(M)}-01`
+const lunaEnd = new Date(Date.UTC(Y, M, 0)).toISOString().slice(0, 10)
 const d = (day) => `${Y}-${pad(M)}-${pad(day)}`
 // luna anterioară (gardul de lună: ședințele ei NU trebuie atinse)
 const prevY = M === 1 ? Y - 1 : Y, prevM = M === 1 ? 12 : M - 1
@@ -50,7 +51,7 @@ async function restOf(enr) {
   return Array.isArray(r) && r.length ? Number(r[0].rest) : null
 }
 async function enrRow(id) {
-  return (await admin.from('enrollments').select('suma, suma_baza, reziliat, activ, tip_plata, data_incepere').eq('id', id).single()).data
+  return (await admin.from('enrollments').select('suma, suma_baza, reziliat, activ, tip_plata, data_incepere, data_final').eq('id', id).single()).data
 }
 
 try {
@@ -90,6 +91,10 @@ try {
   const abo = r1.data.enrollment
   const aboRow = await enrRow(abo)
   assert(aboRow.tip_plata === 'Per luna' && aboRow.data_incepere === lunaStart, 'abonament „Per luna" pe ziua 1 a lunii')
+  // Regresie 4 aug 2026: cu data_final NULL abonamentul „acoperea" orice lună
+  // viitoare → fantomă permanentă în roster + gardul anti-dublură bloca pe veci
+  // orice înrolare nouă pe curs.
+  assert(aboRow.data_final === lunaEnd, `abonamentul se închide la sfârșitul lunii (${lunaEnd}), nu NULL`)
   assert(await restOf(abo) === 100, 'restanța abonamentului = 100 (ședințele plătite au intrat ca avans)')
 
   for (const [id, nume] of [[s1, 's1'], [s2, 's2'], [s3, 's3']]) {
