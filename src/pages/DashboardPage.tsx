@@ -19,6 +19,7 @@ import { DashboardChart } from '@/features/dashboard/DashboardChart'
 import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
 import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
 import { InchirieriAziCard } from '@/features/dashboard/InchirieriAziCard'
+import { EvaluariCountdown } from '@/features/evaluari/components/EvaluariCountdown'
 
 export function DashboardPage() {
   const { role, teacherId } = useAuth()
@@ -133,6 +134,10 @@ export function DashboardPage() {
           ) : null
         }
       />
+
+      {/* Contorul de evaluări e primul lucru pe care-l vede instructorul la login,
+          cât timp e o rundă deschisă. Se auto-ascunde în rest. */}
+      <EvaluariCountdown variant="inline" />
 
       {!teacherMode && <DashboardKpis date={date} courses={courseRefs} />}
 

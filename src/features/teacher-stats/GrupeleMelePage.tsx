@@ -7,6 +7,8 @@ import {
   DataTable,
   type Column,
 } from '@/components/ui'
+import { EvaluariCountdown } from '@/features/evaluari/components/EvaluariCountdown'
+import { formatStele, TREPTE_MAX } from '@/features/evaluari/scale'
 import {
   getHubData,
   type GrupaProgres,
@@ -241,7 +243,7 @@ function EvaluariCard({ ev }: { ev: EvaluariStats }) {
           {ev.curs_nume}
         </span>
         <span className="shrink-0 text-sm font-bold text-ink">
-          {ev.media_generala != null ? `${ev.media_generala} / 5` : '—'}
+          {ev.media_generala != null ? `${formatStele(ev.media_generala)} / 5` : '—'}
         </span>
       </div>
       <p className="mb-2 text-xs text-muted">
@@ -259,11 +261,11 @@ function EvaluariCard({ ev }: { ev: EvaluariStats }) {
                 <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-line-2">
                   <span
                     className="block h-full rounded-full bg-quasar-yellow"
-                    style={{ width: `${((val ?? 0) / 5) * 100}%` }}
+                    style={{ width: `${((val ?? 0) / TREPTE_MAX) * 100}%` }}
                   />
                 </span>
-                <span className="w-6 shrink-0 text-right text-ink">
-                  {val ?? '—'}
+                <span className="w-7 shrink-0 text-right text-ink">
+                  {formatStele(val)}
                 </span>
               </div>
             )
@@ -282,7 +284,7 @@ function EvaluariCard({ ev }: { ev: EvaluariStats }) {
                     month: 'short',
                     year: '2-digit',
                   })}
-                  : <span className="font-semibold">{t.media}</span>
+                  : <span className="font-semibold">{formatStele(t.media)}</span>
                 </span>
               </span>
             ))}
@@ -366,6 +368,7 @@ export function GrupeleMelePage() {
         </p>
       ) : !data ? null : (
         <div className="space-y-4">
+          <EvaluariCountdown />
           <AbsenteRiscSection rows={data.absenteRisc} />
           <ZileNastereSection rows={data.zileNastere} />
           <GrupeTable rows={data.grupe} />

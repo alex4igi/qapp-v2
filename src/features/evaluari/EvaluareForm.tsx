@@ -27,6 +27,7 @@ import {
 } from './api'
 import { skills, type SkillKey } from './skills'
 import { SkillRating } from './SkillRating'
+import { getSesiuneActiva, STARE_LABEL, type StareEvaluare } from './flowApi'
 
 type Props = {
   open: boolean
@@ -89,6 +90,18 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
     }
   }, [isTeacher, teacherIdQ.data, form.teacher])
 
+  // Evaluările intră în runda deschisă, dacă există: altfel n-ar fi prinse de contor
+  // și n-ar pleca niciodată la părinți.
+  const sesiuneQ = useQuery({
+    queryKey: ['evaluari', 'sesiune-activa'],
+    queryFn: getSesiuneActiva,
+    enabled: !isEdit,
+  })
+
+  // Odată plecată la manager, evaluarea e read-only: corectura vine prin respingere.
+  const stare = (evaluare?.stare ?? 'ciorna') as StareEvaluare
+  const blocat = isEdit && stare !== 'ciorna' && stare !== 'respinsa'
+
   // Liste pentru dropdown-uri.
   const teacheriQ = useTeacheriOptions()
 
@@ -140,6 +153,11 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
         nivel_grupa: form.nivel_grupa.trim() || null,
         feedback_general: form.feedback_general.trim() || null,
         ...form.skills,
+        ...(isEdit
+          ? stare === 'respinsa'
+            ? { stare: 'ciorna', motiv_respingere: null }
+            : {}
+          : { sesiune_id: sesiuneQ.data?.id ?? null }),
       }
       if (isEdit) {
         return updateEvaluare(evaluare!.id, base as UpdateDto<'evaluari'>)
@@ -174,7 +192,9 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
   }
 
   const canDelete =
-    isEdit && (isManagerOrHigher(role) || (isTeacher && evaluare?.teacher === teacherIdQ.data))
+    isEdit &&
+    !blocat &&
+    (isManagerOrHigher(role) || (isTeacher && evaluare?.teacher === teacherIdQ.data))
 
   return (
     <Modal
@@ -211,13 +231,26 @@ export function EvaluareForm({ open, evaluare, onClose }: Props) {
           <Button variant="secondary" onClick={onClose}>
             Anulează
           </Button>
-          <Button type="submit" form="evaluare-form" disabled={save.isPending}>
-            {save.isPending ? 'Se salvează…' : 'Salvează'}
-          </Button>
+          {!blocat && (
+            <Button type="submit" form="evaluare-form" disabled={save.isPending}>
+              {save.isPending ? 'Se salvează…' : 'Salvează'}
+            </Button>
+          )}
         </>
       }
     >
       <form id="evaluare-form" onSubmit={handleSubmit} className="space-y-4">
+        {blocat && (
+          <p className="rounded-md bg-neutral-bg px-3 py-2 text-sm text-neutral">
+            Evaluarea e „{STARE_LABEL[stare]}" — nu se mai poate edita. Managerul o poate
+            întoarce la instructor cu un motiv.
+          </p>
+        )}
+        {stare === 'respinsa' && evaluare?.motiv_respingere && (
+          <p className="rounded-md bg-danger-bg px-3 py-2 text-sm text-danger">
+            Întoarsă de manager: {evaluare.motiv_respingere}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Profesor" htmlFor="teacher" required>
             {isTeacher ? (

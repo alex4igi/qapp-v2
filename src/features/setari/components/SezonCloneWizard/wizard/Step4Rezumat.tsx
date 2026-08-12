@@ -43,6 +43,10 @@ export function Step4Rezumat({
           {cursuri.filter((c) => c.selected).length}
         </li>
         <li>
+          <strong>Runde de evaluare:</strong>{' '}
+          {tip === 'principal' ? '2 (mijloc + final de sezon)' : '—'}
+        </li>
+        <li>
           <strong>Vacanțe:</strong>{' '}
           {
             vacante.filter(
@@ -55,6 +59,13 @@ export function Step4Rezumat({
         Sezonul va fi creat cu stare <strong>planificat</strong>. Va deveni
         activ automat la <strong>{dataIncepere}</strong> prin cron-ul de seară.
       </p>
+      {tip === 'principal' && (
+        <p className="text-xs text-quasar-gray">
+          ⭐ Rundele de evaluare se creează ca <strong>ciorne</strong>, cu grupele
+          recurente atașate. Le găsești în <strong>Evaluări → Runde</strong>, unde poți
+          muta datele înainte să pornească contorul instructorilor.
+        </p>
+      )}
       <p className="rounded-lg bg-quasar-yellow/10 px-3 py-2 text-xs text-quasar-black">
         📚 După clonare, mergi la <strong>Metodologie</strong> ca să duplici structura
         lecțiilor pe noul sezon, să completezi datele calendarului și să asociezi

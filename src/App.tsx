@@ -58,7 +58,8 @@ import { OfertaPublicaPage } from '@/features/oferta-publica/OfertaPublicaPage'
 import { MetodologicPage } from '@/features/metodologic/pages/MetodologicPage'
 import { ProgramEditorPage } from '@/features/metodologic/pages/ProgramEditorPage'
 import { OrganizatiePage } from '@/features/setari/OrganizatiePage'
-import { EvaluariListPage } from '@/features/evaluari/EvaluariListPage'
+import { EvaluariPage } from '@/features/evaluari/EvaluariPage'
+import { EvaluareGrupaPage } from '@/features/evaluari/grupa/EvaluareGrupaPage'
 import { SalariulMeuPage } from '@/features/salariu-teacher/SalariulMeuPage'
 import { GrupeleMelePage } from '@/features/teacher-stats/GrupeleMelePage'
 import { NotificariPage } from '@/features/notificari/NotificariPage'
@@ -79,7 +80,8 @@ function App() {
 
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/evaluari']} />}>
             <Route element={<AppLayout />}>
-              <Route path="evaluari" element={<EvaluariListPage />} />
+              <Route path="evaluari" element={<EvaluariPage />} />
+              <Route path="evaluari/grupa/:cursId" element={<EvaluareGrupaPage />} />
             </Route>
           </Route>
 

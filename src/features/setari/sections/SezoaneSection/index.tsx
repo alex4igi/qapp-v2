@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, DataTable, Spinner, type Column } from '@/components/ui'
 import type { Sezon } from '@/types/db'
+import { genereazaRundeSezon } from '@/features/evaluari/flowApi'
 import {
   createSezon,
   deleteSezon,
@@ -55,7 +56,7 @@ export function SezoaneSection() {
     queryClient.invalidateQueries({ queryKey: ['sezoane'] })
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const payload = {
         numele_sezonului: form.numele_sezonului.trim(),
         tip: form.tip,
@@ -64,7 +65,12 @@ export function SezoaneSection() {
         scadenta_prima_rata: form.scadenta_prima_rata || null,
         scadenta_ultima_rata: form.scadenta_ultima_rata || null,
       }
-      return isEdit ? updateSezon(editing!.id, payload) : createSezon(payload)
+      if (isEdit) return updateSezon(editing!.id, payload)
+      const creat = await createSezon(payload)
+      // Rundele de evaluare intră în calendar odată cu sezonul, ca la clonare.
+      // Idempotent și fără efect pe sezoanele `extra`.
+      await genereazaRundeSezon(creat.id)
+      return creat
     },
     onSuccess: () => {
       void invalidate()

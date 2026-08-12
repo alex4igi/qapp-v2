@@ -8,7 +8,9 @@ import {
   Select,
   DataTable,
   Spinner,
+  Badge,
   type Column,
+  type BadgeTone,
 } from '@/components/ui'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
@@ -25,6 +27,8 @@ import {
   type EvaluareWithRefs,
 } from './api'
 import { skills } from './skills'
+import { formatStele } from './scale'
+import { STARE_LABEL, type StareEvaluare } from './flowApi'
 
 function avgScoreNum(e: EvaluareWithRefs): number | null {
   const vals = skills
@@ -37,10 +41,20 @@ function avgScoreNum(e: EvaluareWithRefs): number | null {
 function avgScore(e: EvaluareWithRefs): string {
   const avg = avgScoreNum(e)
   if (avg == null) return '—'
-  return `${avg.toFixed(1)} / 5`
+  // avgScoreNum lucrează în trepte (1–10); afișăm în stele.
+  return `${formatStele(avg)} / 5`
 }
 
-export function EvaluariListPage() {
+const STARE_TON: Record<StareEvaluare, BadgeTone> = {
+  ciorna: 'neutral',
+  de_verificat: 'warn',
+  aprobata: 'brand',
+  respinsa: 'danger',
+  trimisa: 'success',
+  expirata: 'neutral',
+}
+
+export function EvaluariListPage({ embedded }: { embedded?: boolean } = {}) {
   const { role } = useAuth()
   const isTeacher = role === 'teacher'
 
@@ -190,6 +204,15 @@ export function EvaluariListPage() {
       sortValue: (e) => avgScoreNum(e),
     },
     {
+      header: 'Stare',
+      cell: (e) => {
+        const st = (e.stare ?? 'ciorna') as StareEvaluare
+        return <Badge tone={STARE_TON[st]}>{STARE_LABEL[st]}</Badge>
+      },
+      className: 'w-32',
+      sortValue: (e) => e.stare,
+    },
+    {
       header: 'Observații',
       cell: (e) =>
         e.feedback_general ? (
@@ -209,8 +232,8 @@ export function EvaluariListPage() {
   if (isTeacher && teacherIdQ.isSuccess && !teacherIdQ.data) {
     return (
       <div>
-        <PageHeader title="Evaluări" />
-        <p className="text-sm text-red-600">
+        {!embedded && <PageHeader title="Evaluări" />}
+        <p className="text-sm text-danger">
           Contul tău nu este legat de un profesor în baza de date. Contactează
           administratorul.
         </p>
@@ -220,13 +243,20 @@ export function EvaluariListPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Evaluări"
-        subtitle={data ? `${data.total} evaluări` : undefined}
-        actions={
+      {embedded ? (
+        <div className="mb-4 flex items-center justify-between">
+          <span className="text-sm text-muted-2">
+            {data ? `${data.total} evaluări` : ''}
+          </span>
           <Button onClick={() => setFormOpen(true)}>+ Evaluare nouă</Button>
-        }
-      />
+        </div>
+      ) : (
+        <PageHeader
+          title="Evaluări"
+          subtitle={data ? `${data.total} evaluări` : undefined}
+          actions={<Button onClick={() => setFormOpen(true)}>+ Evaluare nouă</Button>}
+        />
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="w-64">
