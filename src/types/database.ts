@@ -10721,6 +10721,7 @@ export type Database = {
           suma_finala: number
         }[]
       }
+      proceseaza_cozi_sms: { Args: never; Returns: undefined }
       proceseaza_sesiuni_evaluare: { Args: never; Returns: Json }
       prune_expired_leads: { Args: never; Returns: number }
       recalculate_pool_discount: {
