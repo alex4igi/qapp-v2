@@ -26,7 +26,7 @@ const STATUS_CLS: Record<string, string> = {
 
 async function getCronJobsRecent(): Promise<CronRun[]> {
   const { data, error } = await supabase.rpc('get_cron_jobs_recent', {
-    p_days: 30,
+    p_days: 7,
   })
   if (error) throw error
   return (data ?? []) as CronRun[]
@@ -68,7 +68,7 @@ export function CronJobsSection() {
   return (
     <section className="rounded-lg border border-quasar-gray-light bg-white p-5">
       <h2 className="mb-2 text-sm font-bold text-quasar-black">
-        Cron jobs (pg_cron) — ultimele 30 zile
+        Cron jobs (pg_cron) — ultimele 7 zile
       </h2>
       <p className="mb-3 text-xs text-quasar-gray">
         Job-urile programate care rulează automat în baza de date. Util pentru
@@ -106,12 +106,12 @@ export function CronJobsSection() {
                   )}
                 </div>
                 <span className="text-xs text-quasar-gray">
-                  {runs.length} rulări (30 zile)
+                  {runs.length} rulări (7 zile)
                 </span>
               </div>
               {runs.length === 0 ? (
                 <p className="px-3 py-2 text-xs text-quasar-gray">
-                  Nicio rulare în ultimele 30 zile.
+                  Nicio rulare în ultimele 7 zile.
                 </p>
               ) : (
                 <table className="min-w-full text-xs">
