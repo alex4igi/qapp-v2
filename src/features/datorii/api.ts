@@ -181,28 +181,33 @@ export function rataRestantePct(r: {
   return Math.round((rest / baza) * 1000) / 10
 }
 
-// Soldul restant la finalul fiecărei luni (semantică de balanță — trend, nu headline).
-export type EvolutieRow = {
-  luna: string
-  sold_net: number
-  sold_oneoff: number
-  sold_total: number
+// Balanța pe grupe pentru o lună ('YYYY-MM'): încasat în lună (cash-in) ·
+// restant luna asta · restant luni anterioare din sezon. Doar grupe cu activitate.
+export type BalantaGrupaRow = {
+  id_curs: string
+  nume_curs: string
+  nume_locatie: string | null
+  incasat_luna: number
+  restant_luna: number
+  restant_anterior: number
+  nr_clienti_restanti: number
 }
 
-export async function getDatoriiEvolutie(
+export async function getBalantaGrupe(
+  luna: string,
   locatieId: string | null,
-  luni = 12,
-): Promise<EvolutieRow[]> {
-  const { data, error } = await supabase.rpc('get_datorii_evolutie', {
+): Promise<BalantaGrupaRow[]> {
+  const { data, error } = await supabase.rpc('get_balanta_grupe', {
+    p_luna: `${luna}-01`,
     ...(locatieId ? { p_locatie: locatieId } : {}),
-    p_luni: luni,
   })
   if (error) throw error
-  return ((data ?? []) as unknown as EvolutieRow[]).map((r) => ({
-    luna: r.luna,
-    sold_net: Number(r.sold_net ?? 0),
-    sold_oneoff: Number(r.sold_oneoff ?? 0),
-    sold_total: Number(r.sold_total ?? 0),
+  return ((data ?? []) as unknown as BalantaGrupaRow[]).map((r) => ({
+    ...r,
+    incasat_luna: Number(r.incasat_luna ?? 0),
+    restant_luna: Number(r.restant_luna ?? 0),
+    restant_anterior: Number(r.restant_anterior ?? 0),
+    nr_clienti_restanti: Number(r.nr_clienti_restanti ?? 0),
   }))
 }
 

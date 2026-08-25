@@ -9402,6 +9402,18 @@ export type Database = {
           venit: number
         }[]
       }
+      get_balanta_grupe: {
+        Args: { p_locatie?: string; p_luna: string }
+        Returns: {
+          id_curs: string
+          incasat_luna: number
+          nr_clienti_restanti: number
+          nume_curs: string
+          nume_locatie: string
+          restant_anterior: number
+          restant_luna: number
+        }[]
+      }
       get_bilete_membru: {
         Args: { p_client: string }
         Returns: {
@@ -9569,15 +9581,6 @@ export type Database = {
           rest_net: number
           rest_oneoff: number
           rest_prescris: number
-        }[]
-      }
-      get_datorii_evolutie: {
-        Args: { p_locatie?: string; p_luni?: number }
-        Returns: {
-          luna: string
-          sold_net: number
-          sold_oneoff: number
-          sold_total: number
         }[]
       }
       get_documente_client: {

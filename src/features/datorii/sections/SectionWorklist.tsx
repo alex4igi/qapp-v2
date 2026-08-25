@@ -17,16 +17,6 @@ import {
 } from '../api'
 import { WorklistTable } from '../WorklistTable'
 
-// Filtru de vechime venit din click pe barele „Restanțe pe vechime".
-export type BucketFilter = '0-30' | '31-60' | '61-90' | '90+'
-
-const BUCKET_RANGE: Record<BucketFilter, [number, number]> = {
-  '0-30': [1, 30],
-  '31-60': [31, 60],
-  '61-90': [61, 90],
-  '90+': [91, 99999],
-}
-
 const STATUS_OPTIONS = (
   Object.entries(STATUS_COLECTARE_LABEL) as [StatusColectare, string][]
 ).map(([value, label]) => ({ value, label }))
@@ -38,8 +28,6 @@ export function SectionWorklist({
   locatieId,
   filterLocatieNume,
   onClearLocatie,
-  bucket,
-  onClearBucket,
   canSuspend,
   onLog,
   onPlata,
@@ -47,8 +35,6 @@ export function SectionWorklist({
   locatieId: string | null
   filterLocatieNume?: string | null
   onClearLocatie?: () => void
-  bucket?: BucketFilter | null
-  onClearBucket?: () => void
   canSuspend: boolean
   onLog: (row: WorklistRow) => void
   onPlata: (row: WorklistRow) => void
@@ -113,10 +99,7 @@ export function SectionWorklist({
   const allRows = worklistQ.data ?? []
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const range = bucket ? BUCKET_RANGE[bucket] : null
     return allRows.filter((r) => {
-      if (range && (r.zile_depasire == null || r.zile_depasire < range[0] || r.zile_depasire > range[1]))
-        return false
       if (status && statusColectare(r) !== status) return false
       if (q) {
         const haystack = `${r.nume} ${r.prenume ?? ''} ${r.telefon ?? ''} ${r.cursuri ?? ''}`.toLowerCase()
@@ -124,7 +107,7 @@ export function SectionWorklist({
       }
       return true
     })
-  }, [allRows, search, status, bucket])
+  }, [allRows, search, status])
 
   const totalRest = useMemo(
     () => rows.reduce((a, r) => a + Number(r.rest_total ?? 0), 0),
@@ -212,26 +195,15 @@ export function SectionWorklist({
             </div>
           </Field>
         </div>
-        {(filterLocatieNume || bucket) && (
+        {filterLocatieNume && (
           <div className="flex items-center gap-2 pb-1">
-            {filterLocatieNume && (
-              <button
-                type="button"
-                onClick={onClearLocatie}
-                className="inline-flex items-center gap-1.5 rounded-full bg-quasar-yellow/20 px-3 py-1 text-xs font-medium text-quasar-black hover:bg-quasar-yellow/40"
-              >
-                📍 {filterLocatieNume} ✕
-              </button>
-            )}
-            {bucket && (
-              <button
-                type="button"
-                onClick={onClearBucket}
-                className="inline-flex items-center gap-1.5 rounded-full bg-quasar-yellow/20 px-3 py-1 text-xs font-medium text-quasar-black hover:bg-quasar-yellow/40"
-              >
-                vechime {bucket} zile ✕
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={onClearLocatie}
+              className="inline-flex items-center gap-1.5 rounded-full bg-quasar-yellow/20 px-3 py-1 text-xs font-medium text-quasar-black hover:bg-quasar-yellow/40"
+            >
+              📍 {filterLocatieNume} ✕
+            </button>
           </div>
         )}
       </div>
