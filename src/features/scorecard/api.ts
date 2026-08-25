@@ -131,24 +131,24 @@ export type RataRestante = {
 }
 
 // Rată restanțe de portofoliu (echipă/locație) pe o lună: rest ÷ de-încasat.
-// Restul = total_restant_net din view (definiția canonică — fără prescrise,
-// rezilieri, luni viitoare); agregat client-side când locatie=toate.
+// Sursa e RPC-ul `get_rata_restante` — ACEEAȘI bază ca pe /datorii: definiția
+// canonică (fără prescrise, rezilieri, luni viitoare) PLUS datoriile one-off
+// (bilete/taxe/merch), care lipseau când se citea direct restante_locatie_luna.
+// E cifra pe care se dau bonusurile lunare, deci nu are voie să difere de ecran.
 export async function getRataRestante(
   luna: string,
   locatieId: string | null,
 ): Promise<RataRestante> {
-  let q = supabase
-    .from('restante_locatie_luna')
-    .select('id_locatie, total_de_incasat, total_incasat, total_restant_net')
-    .eq('luna', luna)
-  if (locatieId) q = q.eq('id_locatie', locatieId)
-  const { data, error } = await q
+  const { data, error } = await supabase.rpc('get_rata_restante', {
+    p_luna: `${luna}-01`,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
   if (error) throw error
   let de = 0
   let rest = 0
-  for (const r of data ?? []) {
-    de += Number(r.total_de_incasat ?? 0)
-    rest += Number(r.total_restant_net ?? 0)
+  for (const r of (data ?? []) as unknown as { de_incasat: number; rest: number }[]) {
+    de += Number(r.de_incasat ?? 0)
+    rest += Number(r.rest ?? 0)
   }
   return {
     rest,

@@ -137,7 +137,7 @@ export function PraguriModal({ open, onClose }: Props) {
     )
   }
 
-  const PARAM_KEYS = ['recuperare_fereastra_zile', 'rata_restante']
+  const PARAM_KEYS = ['recuperare_fereastra_zile', 'rata_restante', 'restante_intarziate']
   const renderParams = () => {
     const params = (praguriQ.data ?? []).filter((p) =>
       PARAM_KEYS.includes(p.cheie),

@@ -123,6 +123,11 @@ export type DatoriiLocatieRow = {
   rest_oneoff: number
   rest_prescris: number
   nr_datornici: number
+  // Cifrele lunii curente — pe ele se conduce recuperarea (și bonusul lunar).
+  de_incasat_luna: number
+  rest_luna: number
+  rest_luna_oneoff: number
+  recuperat_luna: number
 }
 
 export async function getDatoriiDashboard(
@@ -140,6 +145,10 @@ export async function getDatoriiDashboard(
     rest_oneoff: Number(r.rest_oneoff ?? 0),
     rest_prescris: Number(r.rest_prescris ?? 0),
     nr_datornici: Number(r.nr_datornici ?? 0),
+    de_incasat_luna: Number(r.de_incasat_luna ?? 0),
+    rest_luna: Number(r.rest_luna ?? 0),
+    rest_luna_oneoff: Number(r.rest_luna_oneoff ?? 0),
+    recuperat_luna: Number(r.recuperat_luna ?? 0),
   }))
 }
 
@@ -155,6 +164,10 @@ export function sumDatorii(rows: DatoriiLocatieRow[]): DatoriiLocatieRow {
     rest_oneoff: 0,
     rest_prescris: 0,
     nr_datornici: 0,
+    de_incasat_luna: 0,
+    rest_luna: 0,
+    rest_luna_oneoff: 0,
+    recuperat_luna: 0,
   }
   return rows.reduce(
     (a, r) => ({
@@ -165,20 +178,35 @@ export function sumDatorii(rows: DatoriiLocatieRow[]): DatoriiLocatieRow {
       rest_oneoff: a.rest_oneoff + r.rest_oneoff,
       rest_prescris: a.rest_prescris + r.rest_prescris,
       nr_datornici: a.nr_datornici + r.nr_datornici,
+      de_incasat_luna: a.de_incasat_luna + r.de_incasat_luna,
+      rest_luna: a.rest_luna + r.rest_luna,
+      rest_luna_oneoff: a.rest_luna_oneoff + r.rest_luna_oneoff,
+      recuperat_luna: a.recuperat_luna + r.recuperat_luna,
     }),
     zero,
   )
 }
 
+// Restanța LUNII CURENTE (abonamente + one-off) — cifra „de acțiune" de pe /datorii.
+export function restLuna(r: { rest_luna: number; rest_luna_oneoff: number }): number {
+  return r.rest_luna + r.rest_luna_oneoff
+}
+
+// Restanța cumulată pe toate lunile (fără prescrise) — context, nu titlu.
+export function restTotal(r: { rest_net: number; rest_oneoff: number }): number {
+  return r.rest_net + r.rest_oneoff
+}
+
+// Rata restanțe pe LUNA CURENTĂ: rest ÷ de-încasat pe lună — aceeași formulă ca
+// rata de portofoliu din /scorecard (acolo doar abonamente; aici + one-off).
+// Lunară pentru că recuperarea se conduce și se bonusează lunar (user 08-25).
 export function rataRestantePct(r: {
-  incasat: number
-  rest_net: number
-  rest_oneoff: number
+  de_incasat_luna: number
+  rest_luna: number
+  rest_luna_oneoff: number
 }): number | null {
-  const rest = r.rest_net + r.rest_oneoff
-  const baza = r.incasat + rest
-  if (baza <= 0) return null
-  return Math.round((rest / baza) * 1000) / 10
+  if (r.de_incasat_luna <= 0) return null
+  return Math.round((restLuna(r) / r.de_incasat_luna) * 1000) / 10
 }
 
 // Balanța pe grupe pentru o lună ('YYYY-MM'): încasat în lună (cash-in) ·

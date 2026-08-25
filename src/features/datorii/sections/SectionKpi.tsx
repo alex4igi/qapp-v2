@@ -4,9 +4,9 @@ import { formatRON } from '@/lib/format'
 import { humanizeError } from '@/lib/errorMessage'
 import { KpiCard } from '@/features/statistici/KpiCard'
 import { listPraguri } from '@/features/scorecard/api'
-import { getDatoriiDashboard, rataRestantePct, sumDatorii } from '../api'
+import { getDatoriiDashboard, rataRestantePct, restLuna, restTotal, sumDatorii } from '../api'
 import { praguriRata, semaforRataRestante, SEMAFOR_TONE } from '../semafor'
-import { DATORII_QO } from './shared'
+import { DATORII_QO, LUNA_CURENTA_LABEL } from './shared'
 
 export function SectionKpi({ locatieId }: { locatieId: string | null }) {
   const dashQ = useQuery({
@@ -28,7 +28,7 @@ export function SectionKpi({ locatieId }: { locatieId: string | null }) {
   const rata = rataRestantePct(total)
   const semafor = semaforRataRestante(rata, praguriQ.data)
   const { peste, standard } = praguriRata(praguriQ.data)
-  const restRecuperabil = total.rest_net + total.rest_oneoff
+  const restRecuperabil = restLuna(total)
 
   return (
     <div>
@@ -37,32 +37,36 @@ export function SectionKpi({ locatieId }: { locatieId: string | null }) {
           label="Rest recuperabil"
           value={formatRON(restRecuperabil)}
           tone={restRecuperabil > 0 ? 'negative' : 'positive'}
-          hint="abonamente + one-off"
+          hint={`facturat în ${LUNA_CURENTA_LABEL}, încă neîncasat`}
         />
         <KpiCard
           label="din care one-off"
-          value={formatRON(total.rest_oneoff)}
+          value={formatRON(total.rest_luna_oneoff)}
           hint="bilete · taxe · merch"
         />
         <KpiCard
           label="Datornici"
           value={total.nr_datornici}
-          hint={locatieId ? 'clienți cu rest' : 'pe locații'}
+          hint={locatieId ? 'clienți cu rest, toate lunile' : 'pe locații, toate lunile'}
         />
         <KpiCard
-          label="Prescrise"
-          value={formatRON(total.rest_prescris)}
-          hint="peste 2 ani — nu intră în total"
+          label="Recuperat în lună"
+          value={formatRON(total.recuperat_luna)}
+          tone={total.recuperat_luna > 0 ? 'positive' : 'default'}
+          hint="încasat acum, din datorii mai vechi"
         />
         <KpiCard
           label="Rata restanțe"
           value={rata == null ? '—' : `${rata}%`}
           tone={semafor ? SEMAFOR_TONE[semafor] : 'default'}
-          hint={`țintă ≤${peste}% · atenție ≤${standard}%`}
+          hint={`pe ${LUNA_CURENTA_LABEL} · țintă ≤${peste}% · atenție ≤${standard}%`}
         />
       </div>
       <p className="mt-2 text-xs text-muted-2">
-        Definiție: net — fără prescrise, rezilieri și luni facturate în viitor;
+        Cifrele de sus sunt pe luna curentă — pe ea se conduce recuperarea. Sold
+        istoric: {formatRON(restTotal(total))} restant pe toate lunile (din care{' '}
+        {formatRON(total.rest_prescris)} prescris, peste 2 ani — nu se mai
+        urmărește). Definiție: net — fără rezilieri și luni facturate în viitor;
         include datoriile one-off. Aceeași bază în /financiar, worklist și SMS.
       </p>
     </div>

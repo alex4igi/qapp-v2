@@ -112,7 +112,8 @@ export function ScorecardRestanteTab({ luna }: { luna: string }) {
           </div>
           <p className="mt-0.5 text-xs text-quasar-gray">
             Rest {formatRON(rataQ.data.rest)} din{' '}
-            {formatRON(rataQ.data.de_incasat)} de încasat
+            {formatRON(rataQ.data.de_incasat)} de încasat · abonamente + one-off,
+            aceeași bază ca pe /datorii
           </p>
         </div>
       )}

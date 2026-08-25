@@ -9305,6 +9305,15 @@ export type Database = {
       current_client: { Args: never; Returns: string }
       current_familie: { Args: never; Returns: string }
       current_teacher_id: { Args: never; Returns: string }
+      datorii_luna: {
+        Args: { p_luna: string }
+        Returns: {
+          de_incasat: number
+          id_locatie: string
+          rest_abonament: number
+          rest_oneoff: number
+        }[]
+      }
       delete_curs_safe: {
         Args: { p_force?: boolean; p_id: string }
         Returns: undefined
@@ -9584,10 +9593,14 @@ export type Database = {
         Args: { p_locatie?: string }
         Returns: {
           de_incasat: number
+          de_incasat_luna: number
           id_locatie: string
           incasat: number
           nr_datornici: number
           nume_locatie: string
+          recuperat_luna: number
+          rest_luna: number
+          rest_luna_oneoff: number
           rest_net: number
           rest_oneoff: number
           rest_prescris: number
@@ -10023,6 +10036,14 @@ export type Database = {
           locatie_nume: string
           posibile: number
           prezenti: number
+        }[]
+      }
+      get_rata_restante: {
+        Args: { p_locatie?: string; p_luna: string }
+        Returns: {
+          de_incasat: number
+          id_locatie: string
+          rest: number
         }[]
       }
       get_ratable_activities_client: {

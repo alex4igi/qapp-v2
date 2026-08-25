@@ -3,9 +3,15 @@ import { DataTable, Spinner, type Column } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { humanizeError } from '@/lib/errorMessage'
 import { listPraguri, type Prag } from '@/features/scorecard/api'
-import { getDatoriiDashboard, rataRestantePct, type DatoriiLocatieRow } from '../api'
+import {
+  getDatoriiDashboard,
+  rataRestantePct,
+  restLuna,
+  restTotal,
+  type DatoriiLocatieRow,
+} from '../api'
 import { semaforRataRestante, SEMAFOR_DOT } from '../semafor'
-import { DATORII_QO } from './shared'
+import { DATORII_QO, LUNA_CURENTA_LABEL } from './shared'
 
 function columnsFor(praguri: Prag[] | undefined): Column<DatoriiLocatieRow>[] {
   return [
@@ -17,24 +23,26 @@ function columnsFor(praguri: Prag[] | undefined): Column<DatoriiLocatieRow>[] {
     {
       header: 'Rest recuperabil',
       cell: (r) => (
-        <span className="font-semibold text-red-600">
-          {formatRON(r.rest_net + r.rest_oneoff)}
-        </span>
+        <span className="font-semibold text-red-600">{formatRON(restLuna(r))}</span>
       ),
       className: 'w-36 text-right',
-      sortValue: (r) => r.rest_net + r.rest_oneoff,
+      sortValue: (r) => restLuna(r),
     },
     {
-      header: 'One-off',
-      cell: (r) => formatRON(r.rest_oneoff),
-      className: 'w-28 text-right',
-      sortValue: (r) => r.rest_oneoff,
+      header: 'Recuperat în lună',
+      cell: (r) => (
+        <span className={r.recuperat_luna > 0 ? 'font-medium text-emerald-600' : undefined}>
+          {formatRON(r.recuperat_luna)}
+        </span>
+      ),
+      className: 'w-32 text-right',
+      sortValue: (r) => r.recuperat_luna,
     },
     {
-      header: 'Prescris',
-      cell: (r) => <span className="text-quasar-gray">{formatRON(r.rest_prescris)}</span>,
-      className: 'w-28 text-right',
-      sortValue: (r) => r.rest_prescris,
+      header: 'Sold istoric',
+      cell: (r) => <span className="text-quasar-gray">{formatRON(restTotal(r))}</span>,
+      className: 'w-32 text-right',
+      sortValue: (r) => restTotal(r),
     },
     {
       header: 'Datornici',
@@ -87,13 +95,13 @@ export function SectionComparativLocatii({
     return <p className="text-sm text-red-600">Eroare: {humanizeError(dashQ.error)}</p>
 
   const rows = [...(dashQ.data ?? [])].sort(
-    (a, b) => b.rest_net + b.rest_oneoff - (a.rest_net + a.rest_oneoff),
+    (a, b) => restLuna(b) - restLuna(a) || restTotal(b) - restTotal(a),
   )
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <h3 className="mb-3 text-sm font-semibold text-quasar-black">
-        Comparativ locații
+        Comparativ locații · {LUNA_CURENTA_LABEL}
         {onPick && (
           <span className="ml-2 text-xs font-normal text-quasar-gray">
             clic pe o locație filtrează lista de datornici

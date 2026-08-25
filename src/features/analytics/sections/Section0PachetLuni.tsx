@@ -28,8 +28,12 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
   const grupeQ = useQuery({ queryKey: ['an', 'prezenta-grupe', scope], queryFn: () => getPrezentaSaptamanaGrupe(scope), ...ANALYTICS_QO })
   const ocupareQ = useQuery({ queryKey: ['an', 'ocupare', scope], queryFn: () => getGradOcupare(scope ?? null), ...ANALYTICS_QO })
   const praguriQ = useQuery({ queryKey: ['scorecard', 'praguri'], queryFn: listPraguri, ...ANALYTICS_QO })
-  // Ținta de restanțe vine din configul scorecard_praguri.rata_restante (nu hardcodat).
-  const tintaRestante = Number(praguriQ.data?.find((x) => x.cheie === 'rata_restante')?.prag_peste ?? 5)
+  // Ținta are cheie PROPRIE (`restante_intarziate`), nu o împrumută de la
+  // `rata_restante`: KPI-ul de aici numără doar ratele cu >7 zile peste scadență,
+  // deci intra-lună e alt număr decât rata de pe /datorii + /scorecard.
+  const tintaRestante = Number(
+    praguriQ.data?.find((x) => x.cheie === 'restante_intarziate')?.prag_standard ?? 5,
+  )
 
   const p = pachetQ.data
   // Cifrele pe leads (leads.locatia e text liber, ~93% null) afișează un caveat când se filtrează.
@@ -182,13 +186,13 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
           <GrupTitlu>D · Bani & capacitate</GrupTitlu>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <DeltaKpiCard
-              label="Restanțe (>7z peste scadență)"
+              label="Restanțe luna asta (>7z peste scadență)"
               value={formatRON(p.restante.suma)}
               sub={`${p.restante.familii} familii · ${p.restante.procent_facturare ?? 0}% din facturarea lunii`}
               deltaPrev={delta(p.restante.suma, p.restante.prev)}
               deltaYoy={delta(p.restante.suma, p.restante.yoy)}
               polaritateInversa
-              hint={`țintă sub ${tintaRestante}% din facturarea lunii`}
+              hint={`țintă sub ${tintaRestante}% din facturarea lunii · doar ce a depășit scadența cu >7z (până pe 22 arată 0) · fără one-off`}
             />
             <div>
               <DeltaKpiCard
