@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
+import { buildBulkSms, type SmsRecipient } from '@/features/notificari-sms/templates'
 
 export type CanalContact = Enums<'canal_contact'>
 export type RezultatContact = Enums<'rezultat_contact'>
@@ -19,6 +20,10 @@ export type WorklistRow = {
   promisiune_data: string | null
   promisiune_suma: number | null
   promisiune_logata_at: string | null
+  id_locatie: string | null
+  cursuri: string | null
+  suspendat: boolean
+  ultim_sms_at: string | null
 }
 
 // Worklist de recuperare: clienți Activ cu cel puțin o rată chiar depășită
@@ -46,6 +51,64 @@ export async function getRestanteWorklist(
 export function promisiuneIncalcata(r: WorklistRow): boolean {
   if (!r.promisiune_data) return false
   return r.promisiune_data <= new Date().toISOString().slice(0, 10)
+}
+
+// Status de colectare DERIVAT (nu stocat): Suspendat > Promisiune > Reminder
+// trimis (SMS de restanță în luna curentă) > De contactat.
+export type StatusColectare = 'suspendat' | 'promisiune' | 'reminder' | 'de_contactat'
+
+export const STATUS_COLECTARE_LABEL: Record<StatusColectare, string> = {
+  suspendat: 'Suspendat',
+  promisiune: 'Promisiune',
+  reminder: 'Reminder trimis',
+  de_contactat: 'De contactat',
+}
+
+export function statusColectare(r: WorklistRow): StatusColectare {
+  if (r.suspendat) return 'suspendat'
+  if (r.promisiune_data) return 'promisiune'
+  if (r.ultim_sms_at && r.ultim_sms_at.slice(0, 7) === new Date().toISOString().slice(0, 7))
+    return 'reminder'
+  return 'de_contactat'
+}
+
+// Suspendă / reactivează accesul (prezență + rezervări OPEN) — doar manager+,
+// gardul real e în RPC. Plata rămâne mereu permisă.
+export async function setSuspendareDatornic(
+  clientId: string,
+  suspendat: boolean,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_suspendare_datorii', {
+    p_client: clientId,
+    p_suspendat: suspendat,
+  })
+  if (error) throw error
+}
+
+// SMS individual de restanță: același template notificare_restante ca fluxul
+// bulk (regula „doar template"), pus în coada „De trimis" (situatie_sms_uri).
+export async function queueSmsRestanta(r: WorklistRow): Promise<void> {
+  if (!r.telefon?.trim()) throw new Error('Clientul nu are un telefon valid.')
+  const recipient: SmsRecipient = {
+    familia_id: r.client_id,
+    telefon: r.telefon,
+    locatie_nume: r.nume_locatie,
+    scadenta: null,
+    membri: [{ nume: `${r.nume} ${r.prenume ?? ''}`.trim(), rest: r.rest_total }],
+    total_restanta: r.rest_total,
+    zile_depasire: r.zile_depasire,
+    client_ids: [r.client_id],
+  }
+  const { error } = await supabase.from('situatie_sms_uri').insert({
+    telefon: r.telefon,
+    cod_mesaj: 'notificare_restante',
+    locatie: r.id_locatie,
+    clienti_vizati: [r.client_id],
+    mesaj: buildBulkSms('notificare_restante', recipient),
+    status: 'De trimis',
+    data_planificata: new Date().toISOString().slice(0, 10),
+  })
+  if (error) throw error
 }
 
 // Agregatul CANONIC al datoriilor (abonamente + one-off), per locație.

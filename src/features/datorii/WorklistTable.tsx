@@ -1,12 +1,22 @@
 import { Link } from 'react-router-dom'
 import { DataTable, Button, type Column } from '@/components/ui'
 import { formatRON } from '@/lib/format'
-import { promisiuneIncalcata, type WorklistRow } from './api'
+import {
+  promisiuneIncalcata,
+  statusColectare,
+  STATUS_COLECTARE_LABEL,
+  type StatusColectare,
+  type WorklistRow,
+} from './api'
 
 type Props = {
   rows: WorklistRow[]
   onLog: (row: WorklistRow) => void
   onPlata?: (row: WorklistRow) => void
+  onSms?: (row: WorklistRow) => void
+  smsQueuedIds?: Set<string>
+  canSuspend?: boolean
+  onSuspend?: (row: WorklistRow) => void
 }
 
 const MONTHS = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -23,7 +33,22 @@ const REZULTAT_LABEL: Record<string, string> = {
   pierdut: 'Pierdut',
 }
 
-export function WorklistTable({ rows, onLog, onPlata }: Props) {
+const STATUS_PILL: Record<StatusColectare, string> = {
+  suspendat: 'bg-danger-bg text-danger',
+  promisiune: 'bg-success-bg text-success',
+  reminder: 'bg-warn-bg text-warn',
+  de_contactat: 'bg-neutral-bg text-muted-2',
+}
+
+export function WorklistTable({
+  rows,
+  onLog,
+  onPlata,
+  onSms,
+  smsQueuedIds,
+  canSuspend,
+  onSuspend,
+}: Props) {
   const columns: Column<WorklistRow>[] = [
     {
       header: 'Client',
@@ -35,7 +60,7 @@ export function WorklistTable({ rows, onLog, onPlata }: Props) {
           {r.nume} {r.prenume ?? ''}
         </Link>
       ),
-      className: 'min-w-44',
+      className: 'min-w-40',
       sortValue: (r) => `${r.nume} ${r.prenume ?? ''}`.trim().toLowerCase(),
     },
     {
@@ -43,6 +68,19 @@ export function WorklistTable({ rows, onLog, onPlata }: Props) {
       cell: (r) => r.telefon ?? '—',
       className: 'w-32',
       sortValue: (r) => r.telefon,
+    },
+    {
+      header: 'Ce datorează',
+      cell: (r) => (
+        <div className="min-w-0">
+          <div className="truncate text-sm">{r.cursuri ?? '—'}</div>
+          <div className="text-xs text-quasar-gray">
+            {r.nr_rate_neachitate} {r.nr_rate_neachitate === 1 ? 'rată' : 'rate'}
+          </div>
+        </div>
+      ),
+      className: 'min-w-40 max-w-56',
+      sortValue: (r) => r.nr_rate_neachitate,
     },
     {
       header: 'Rest',
@@ -53,14 +91,6 @@ export function WorklistTable({ rows, onLog, onPlata }: Props) {
       ),
       className: 'w-28 text-right',
       sortValue: (r) => r.rest_total,
-    },
-    {
-      header: 'Rate',
-      cell: (r) => (
-        <span className="font-medium">{r.nr_rate_neachitate}</span>
-      ),
-      className: 'w-16 text-right',
-      sortValue: (r) => r.nr_rate_neachitate,
     },
     {
       header: 'Întârziere',
@@ -88,7 +118,7 @@ export function WorklistTable({ rows, onLog, onPlata }: Props) {
       cell: (r) => (
         <span className="text-quasar-gray">{fmtDate(r.ultima_prezenta)}</span>
       ),
-      className: 'w-32',
+      className: 'w-28',
       sortValue: (r) => r.ultima_prezenta,
     },
     {
@@ -103,7 +133,7 @@ export function WorklistTable({ rows, onLog, onPlata }: Props) {
         ) : (
           <span className="text-xs text-quasar-gray">niciodată</span>
         ),
-      className: 'w-36',
+      className: 'w-32',
     },
     {
       header: 'Promisiune',
@@ -124,7 +154,22 @@ export function WorklistTable({ rows, onLog, onPlata }: Props) {
         ) : (
           <span className="text-xs text-quasar-gray">—</span>
         ),
-      className: 'w-40',
+      className: 'w-36',
+    },
+    {
+      header: 'Status',
+      sortValue: (r) => statusColectare(r),
+      cell: (r) => {
+        const st = statusColectare(r)
+        return (
+          <span
+            className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_PILL[st]}`}
+          >
+            {STATUS_COLECTARE_LABEL[st]}
+          </span>
+        )
+      },
+      className: 'w-32',
     },
     {
       header: '',
@@ -138,16 +183,39 @@ export function WorklistTable({ rows, onLog, onPlata }: Props) {
               💰
             </Button>
           )}
-          <Link
-            to="/sms"
-            title="SMS datornici"
-            className="inline-flex items-center rounded-md border border-quasar-gray-light px-2.5 py-1.5 text-sm hover:border-quasar-yellow"
-          >
-            💬
-          </Link>
+          {onSms &&
+            (smsQueuedIds?.has(r.client_id) ? (
+              <span
+                className="inline-flex items-center rounded-md bg-success-bg px-2 py-1.5 text-xs font-medium text-success"
+                title="Reminder pus în coada De trimis"
+              >
+                ✓ SMS
+              </span>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={() => onSms(r)}
+                title="Trimite reminder SMS (template restanță, coada De trimis)"
+              >
+                💬
+              </Button>
+            ))}
+          {canSuspend && onSuspend && (
+            <Button
+              variant="secondary"
+              onClick={() => onSuspend(r)}
+              title={
+                r.suspendat
+                  ? 'Reactivează accesul la clase'
+                  : 'Suspendă accesul la clase (prezență + rezervări) până la achitare'
+              }
+            >
+              {r.suspendat ? '↩' : '⛔'}
+            </Button>
+          )}
         </div>
       ),
-      className: 'w-36 text-right',
+      className: 'w-44 text-right',
     },
   ]
 
@@ -156,7 +224,9 @@ export function WorklistTable({ rows, onLog, onPlata }: Props) {
       columns={columns}
       rows={rows}
       rowKey={(r) => r.client_id}
-      rowClassName={(r) => (promisiuneIncalcata(r) ? 'bg-red-50/60' : undefined)}
+      rowClassName={(r) =>
+        r.suspendat ? 'bg-neutral-bg/60' : promisiuneIncalcata(r) ? 'bg-red-50/60' : undefined
+      }
       emptyMessage="Niciun datornic activ cu rate depășite. 🎉"
     />
   )

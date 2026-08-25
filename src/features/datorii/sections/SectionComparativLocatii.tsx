@@ -63,7 +63,14 @@ function columnsFor(praguri: Prag[] | undefined): Column<DatoriiLocatieRow>[] {
 }
 
 // Vizibilă doar pe scopul „Toate locațiile" — comparativul per locație cu semafor.
-export function SectionComparativLocatii() {
+// Click pe un rând filtrează worklist-ul de mai jos pe locația respectivă.
+export function SectionComparativLocatii({
+  onPick,
+  activeId,
+}: {
+  onPick?: (row: DatoriiLocatieRow) => void
+  activeId?: string | null
+}) {
   const dashQ = useQuery({
     queryKey: ['datorii', 'dashboard', null],
     queryFn: () => getDatoriiDashboard(null),
@@ -85,11 +92,22 @@ export function SectionComparativLocatii() {
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="mb-3 text-sm font-semibold text-quasar-black">Comparativ locații</h3>
+      <h3 className="mb-3 text-sm font-semibold text-quasar-black">
+        Comparativ locații
+        {onPick && (
+          <span className="ml-2 text-xs font-normal text-quasar-gray">
+            clic pe o locație filtrează lista de datornici
+          </span>
+        )}
+      </h3>
       <DataTable
         columns={columnsFor(praguriQ.data)}
         rows={rows}
         rowKey={(r) => r.id_locatie ?? 'fara-locatie'}
+        onRowClick={onPick}
+        rowClassName={(r) =>
+          activeId && r.id_locatie === activeId ? 'bg-quasar-yellow/10' : undefined
+        }
         emptyMessage="Nicio datorie înregistrată. 🎉"
       />
     </div>

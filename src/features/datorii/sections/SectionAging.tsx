@@ -5,7 +5,15 @@ import { getRestanteAging } from '@/features/analytics/api'
 import { RestanteAgingChart } from '@/features/analytics/RestanteAgingChart'
 import { DATORII_QO } from './shared'
 
-export function SectionAging({ locatieId }: { locatieId: string | null }) {
+export function SectionAging({
+  locatieId,
+  onBucketClick,
+  activeBucket,
+}: {
+  locatieId: string | null
+  onBucketClick?: (bucket: string) => void
+  activeBucket?: string | null
+}) {
   const agingQ = useQuery({
     queryKey: ['datorii', 'aging', locatieId],
     queryFn: () => getRestanteAging(locatieId),
@@ -16,5 +24,11 @@ export function SectionAging({ locatieId }: { locatieId: string | null }) {
   if (agingQ.isError)
     return <p className="text-sm text-red-600">Eroare: {humanizeError(agingQ.error)}</p>
 
-  return <RestanteAgingChart rows={agingQ.data ?? []} />
+  return (
+    <RestanteAgingChart
+      rows={agingQ.data ?? []}
+      onBucketClick={onBucketClick}
+      activeBucket={activeBucket}
+    />
+  )
 }

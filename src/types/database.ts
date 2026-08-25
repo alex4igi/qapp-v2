@@ -690,6 +690,9 @@ export type Database = {
           prenume: string | null
           sexul: Database["public"]["Enums"]["sex"] | null
           status: Database["public"]["Enums"]["status_client"] | null
+          suspendat_datorii: boolean
+          suspendat_datorii_de: string | null
+          suspendat_datorii_la: string | null
           telefon: string | null
           telefonul_2: string | null
           unitate_invatamant: string | null
@@ -719,6 +722,9 @@ export type Database = {
           prenume?: string | null
           sexul?: Database["public"]["Enums"]["sex"] | null
           status?: Database["public"]["Enums"]["status_client"] | null
+          suspendat_datorii?: boolean
+          suspendat_datorii_de?: string | null
+          suspendat_datorii_la?: string | null
           telefon?: string | null
           telefonul_2?: string | null
           unitate_invatamant?: string | null
@@ -748,6 +754,9 @@ export type Database = {
           prenume?: string | null
           sexul?: Database["public"]["Enums"]["sex"] | null
           status?: Database["public"]["Enums"]["status_client"] | null
+          suspendat_datorii?: boolean
+          suspendat_datorii_de?: string | null
+          suspendat_datorii_la?: string | null
           telefon?: string | null
           telefonul_2?: string | null
           unitate_invatamant?: string | null
@@ -10098,6 +10107,8 @@ export type Database = {
         Args: { p_locatie?: string; p_luna?: string; p_sezon?: string }
         Returns: {
           client_id: string
+          cursuri: string
+          id_locatie: string
           nr_rate_neachitate: number
           nume: string
           nume_locatie: string
@@ -10106,9 +10117,11 @@ export type Database = {
           promisiune_logata_at: string
           promisiune_suma: number
           rest_total: number
+          suspendat: boolean
           telefon: string
           ultim_apel_at: string
           ultim_apel_rezultat: string
+          ultim_sms_at: string
           ultima_prezenta: string
           zile_depasire: number
         }[]
@@ -10875,6 +10888,10 @@ export type Database = {
           p_document_link: string
         }
         Returns: string
+      }
+      set_suspendare_datorii: {
+        Args: { p_client: string; p_suspendat: boolean }
+        Returns: undefined
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

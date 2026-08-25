@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { Button, LazySection, PageHeader } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { isAdminOrHigher } from '@/lib/rolesMatrix'
+import { isAdminOrHigher, isPrivileged } from '@/lib/rolesMatrix'
 import { PraguriModal } from '@/features/scorecard/PraguriModal'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { LogRecuperareModal, type RecuperareTarget } from './LogRecuperareModal'
-import type { WorklistRow } from './api'
+import type { DatoriiLocatieRow, WorklistRow } from './api'
 import { SectionKpi } from './sections/SectionKpi'
 import { SectionColectareDonut } from './sections/SectionColectareDonut'
 import { SectionAging } from './sections/SectionAging'
@@ -14,7 +14,7 @@ import { SectionEvolutie } from './sections/SectionEvolutie'
 import { SectionRecuperareActiva } from './sections/SectionRecuperareActiva'
 import { SectionComparativLocatii } from './sections/SectionComparativLocatii'
 import { SectionPromisiuni } from './sections/SectionPromisiuni'
-import { SectionWorklist } from './sections/SectionWorklist'
+import { SectionWorklist, type BucketFilter } from './sections/SectionWorklist'
 
 // Hub-ul de datorii: KPI + semafor pe definiția canonică, grafice de colectare,
 // promisiuni de plată și worklist-ul de sunat (fostul /recuperare, absorbit).
@@ -28,6 +28,9 @@ export function DatoriiPage() {
   const [praguriOpen, setPraguriOpen] = useState(false)
   const [target, setTarget] = useState<RecuperareTarget | null>(null)
   const [plataClientId, setPlataClientId] = useState<string | null>(null)
+  // Click-to-filter: bara de vechime + rândul din comparativ filtrează worklist-ul.
+  const [bucket, setBucket] = useState<BucketFilter | null>(null)
+  const [filterLoc, setFilterLoc] = useState<{ id: string; nume: string } | null>(null)
 
   const onLog = (r: WorklistRow) =>
     setTarget({
@@ -36,6 +39,16 @@ export function DatoriiPage() {
       rest: r.rest_total,
     })
   const onPlata = (r: WorklistRow) => setPlataClientId(r.client_id)
+  const onBucketClick = (raw: string) => {
+    if (raw === 'Nescadent') return // nu există în worklist (cere ≥1 zi depășire)
+    setBucket((prev) => (prev === raw ? null : (raw as BucketFilter)))
+  }
+  const onPickLocatie = (r: DatoriiLocatieRow) => {
+    if (!r.id_locatie) return
+    setFilterLoc((prev) =>
+      prev?.id === r.id_locatie ? null : { id: r.id_locatie!, nume: r.nume_locatie ?? '' },
+    )
+  }
 
   return (
     <div>
@@ -57,7 +70,11 @@ export function DatoriiPage() {
         <LazySection minHeight={320}>
           <div className="grid gap-6 lg:grid-cols-2">
             <SectionColectareDonut locatieId={locatieId} />
-            <SectionAging locatieId={locatieId} />
+            <SectionAging
+              locatieId={locatieId}
+              onBucketClick={onBucketClick}
+              activeBucket={bucket}
+            />
           </div>
         </LazySection>
 
@@ -71,7 +88,7 @@ export function DatoriiPage() {
 
         {locatieId === null && (
           <LazySection minHeight={260}>
-            <SectionComparativLocatii />
+            <SectionComparativLocatii onPick={onPickLocatie} activeId={filterLoc?.id} />
           </LazySection>
         )}
 
@@ -79,7 +96,16 @@ export function DatoriiPage() {
           <SectionPromisiuni locatieId={locatieId} onLog={onLog} />
         </LazySection>
 
-        <SectionWorklist locatieId={locatieId} onLog={onLog} onPlata={onPlata} />
+        <SectionWorklist
+          locatieId={filterLoc?.id ?? locatieId}
+          filterLocatieNume={filterLoc?.nume}
+          onClearLocatie={() => setFilterLoc(null)}
+          bucket={bucket}
+          onClearBucket={() => setBucket(null)}
+          canSuspend={isPrivileged(role)}
+          onLog={onLog}
+          onPlata={onPlata}
+        />
       </div>
 
       {target && (
