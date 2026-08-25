@@ -27,9 +27,11 @@ import { AnunturiPage } from '@/features/announcements/AnunturiPage'
 import { FinanciarPage } from '@/features/financiar/FinanciarPage'
 import { CfoPage } from '@/features/cfo/CfoPage'
 import { ScorecardPage } from '@/features/scorecard/ScorecardPage'
-import { RecuperarePage } from '@/features/recuperare/RecuperarePage'
 import { FacturarePage } from '@/features/facturare/FacturarePage'
 // Paginile de statistici trag recharts — code-split din bundle-ul inițial.
+const DatoriiPage = lazy(() =>
+  import('@/features/datorii/DatoriiPage').then((m) => ({ default: m.DatoriiPage })),
+)
 const AnalyticsPage = lazy(() =>
   import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
 )
@@ -165,7 +167,9 @@ function App() {
               <Route path="teacheri/:id" element={<TeacherProfilePage />} />
               <Route path="plati" element={<PlatiListPage />} />
               <Route path="leads" element={<LeadsPage />} />
-              <Route path="recuperare" element={<RecuperarePage />} />
+              <Route path="datorii" element={<DatoriiPage />} />
+              {/* /recuperare a fost absorbit de hub-ul /datorii */}
+              <Route path="recuperare" element={<Navigate to="/datorii" replace />} />
               <Route path="sms" element={<NotificariSmsPage />} />
               <Route path="facturare" element={<FacturarePage />} />
               <Route path="feedback" element={<FeedbackListPage />} />

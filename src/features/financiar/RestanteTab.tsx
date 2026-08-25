@@ -20,7 +20,7 @@ import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import {
   LogRecuperareModal,
   type RecuperareTarget,
-} from '@/features/recuperare/LogRecuperareModal'
+} from '@/features/datorii/LogRecuperareModal'
 import { listRestante, exportRestante, PAGE_SIZE, type RestantaRow } from './api'
 
 function columnsFor(onRecuperare: (r: RestantaRow) => void): Column<RestantaRow>[] {

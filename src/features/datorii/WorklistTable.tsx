@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import { DataTable, Button, type Column } from '@/components/ui'
 import { formatRON } from '@/lib/format'
-import type { WorklistRow } from './api'
+import { promisiuneIncalcata, type WorklistRow } from './api'
 
 type Props = {
   rows: WorklistRow[]
   onLog: (row: WorklistRow) => void
+  onPlata?: (row: WorklistRow) => void
 }
 
 const MONTHS = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -22,7 +23,7 @@ const REZULTAT_LABEL: Record<string, string> = {
   pierdut: 'Pierdut',
 }
 
-export function RecuperareWorklistTable({ rows, onLog }: Props) {
+export function WorklistTable({ rows, onLog, onPlata }: Props) {
   const columns: Column<WorklistRow>[] = [
     {
       header: 'Client',
@@ -105,13 +106,48 @@ export function RecuperareWorklistTable({ rows, onLog }: Props) {
       className: 'w-36',
     },
     {
+      header: 'Promisiune',
+      sortValue: (r) => r.promisiune_data,
+      cell: (r) =>
+        r.promisiune_data ? (
+          <span
+            className={
+              promisiuneIncalcata(r)
+                ? 'text-xs font-semibold text-red-600'
+                : 'text-xs font-medium text-amber-600'
+            }
+          >
+            {fmtDate(r.promisiune_data)}
+            {r.promisiune_suma != null && ` · ${formatRON(r.promisiune_suma)}`}
+            {promisiuneIncalcata(r) && ' · încălcată'}
+          </span>
+        ) : (
+          <span className="text-xs text-quasar-gray">—</span>
+        ),
+      className: 'w-40',
+    },
+    {
       header: '',
       cell: (r) => (
-        <Button variant="secondary" onClick={() => onLog(r)}>
-          📞 Loghează apel
-        </Button>
+        <div className="flex justify-end gap-1.5">
+          <Button variant="secondary" onClick={() => onLog(r)} title="Loghează apel de recuperare">
+            📞
+          </Button>
+          {onPlata && (
+            <Button variant="secondary" onClick={() => onPlata(r)} title="Plată nouă">
+              💰
+            </Button>
+          )}
+          <Link
+            to="/sms"
+            title="SMS datornici"
+            className="inline-flex items-center rounded-md border border-quasar-gray-light px-2.5 py-1.5 text-sm hover:border-quasar-yellow"
+          >
+            💬
+          </Link>
+        </div>
       ),
-      className: 'w-40 text-right',
+      className: 'w-36 text-right',
     },
   ]
 
@@ -120,6 +156,7 @@ export function RecuperareWorklistTable({ rows, onLog }: Props) {
       columns={columns}
       rows={rows}
       rowKey={(r) => r.client_id}
+      rowClassName={(r) => (promisiuneIncalcata(r) ? 'bg-red-50/60' : undefined)}
       emptyMessage="Niciun datornic activ cu rate depășite. 🎉"
     />
   )

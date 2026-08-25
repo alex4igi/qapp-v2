@@ -34,7 +34,9 @@ export async function listRestante({
   const rangeTo = rangeFrom + PAGE_SIZE - 1
 
   const buildBase = () => {
-    let q = supabase.from('plati_inrolari').select('*').gt('rest', 0)
+    // viitor=false: lunile facturate în avans (ex. reînscriere pe sezonul următor)
+    // nu sunt restanțe — definiția canonică, aliniată cu /datorii și worklist.
+    let q = supabase.from('plati_inrolari').select('*').gt('rest', 0).eq('viitor', false)
     if (locatieId) q = q.eq('id_locatie', locatieId)
     if (cursId) q = q.eq('id_curs', cursId)
     if (luna) {
@@ -80,7 +82,7 @@ export async function exportRestante(
 ): Promise<RestantaRow[]> {
   // Paginat: peste max_rows (1000) exportul ar fi tăiat silențios.
   return fetchAllRows(() => {
-    let q = supabase.from('plati_inrolari').select('*').gt('rest', 0)
+    let q = supabase.from('plati_inrolari').select('*').gt('rest', 0).eq('viitor', false)
     if (params.locatieId) q = q.eq('id_locatie', params.locatieId)
     if (params.cursId) q = q.eq('id_curs', params.cursId)
     if (params.luna) {

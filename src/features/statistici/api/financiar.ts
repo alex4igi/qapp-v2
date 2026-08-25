@@ -50,47 +50,47 @@ async function fetchBalanta(
   filterColumn: 'locatie' | 'curs' | null,
   filterValue: string | null,
 ): Promise<LunaBalanta[]> {
-  let qDe = supabase
-    .from('de_incasat_pe_luna')
-    .select('luna, de_incasat, locatie, curs')
-    .gte('luna', i.fromLuna)
-    .lte('luna', i.toLuna)
-  let qInc = supabase
-    .from('incasat_pe_luna')
-    .select('luna, incasat, locatie, curs')
-    .gte('luna', i.fromLuna)
-    .lte('luna', i.toLuna)
-
-  if (filterColumn && filterValue) {
-    qDe = qDe.eq(filterColumn, filterValue)
-    qInc = qInc.eq(filterColumn, filterValue)
+  // Datoria lunară = total_restant_net din view-urile restante_*_luna (definiția
+  // canonică: fără prescrise, rezilieri, luni viitoare) — nu mai derivăm
+  // „de încasat − încasat" (era brut și diverge de restul aplicației).
+  type Row = { luna: string | null; total_incasat: number | null; total_restant_net: number | null }
+  let rows: Row[]
+  if (filterColumn === 'curs') {
+    let q = supabase
+      .from('restante_curs_luna')
+      .select('luna, total_incasat, total_restant_net')
+      .gte('luna', i.fromLuna)
+      .lte('luna', i.toLuna)
+    if (filterValue) q = q.eq('id_curs', filterValue)
+    const { data, error } = await q
+    if (error) throw error
+    rows = data ?? []
+  } else {
+    let q = supabase
+      .from('restante_locatie_luna')
+      .select('luna, total_incasat, total_restant_net')
+      .gte('luna', i.fromLuna)
+      .lte('luna', i.toLuna)
+    if (filterColumn === 'locatie' && filterValue) q = q.eq('id_locatie', filterValue)
+    const { data, error } = await q
+    if (error) throw error
+    rows = data ?? []
   }
 
-  const [deRes, incRes] = await Promise.all([qDe, qInc])
-  if (deRes.error) throw deRes.error
-  if (incRes.error) throw incRes.error
-
-  const byLuna = new Map<string, { de_incasat: number; incasat: number }>()
-  for (const row of deRes.data ?? []) {
+  const byLuna = new Map<string, { incasat: number; datorie: number }>()
+  for (const row of rows) {
     const luna = row.luna ?? ''
     if (!luna) continue
-    const cur = byLuna.get(luna) ?? { de_incasat: 0, incasat: 0 }
-    cur.de_incasat += Number(row.de_incasat ?? 0)
-    byLuna.set(luna, cur)
-  }
-  for (const row of incRes.data ?? []) {
-    const luna = row.luna ?? ''
-    if (!luna) continue
-    const cur = byLuna.get(luna) ?? { de_incasat: 0, incasat: 0 }
-    cur.incasat += Number(row.incasat ?? 0)
+    const cur = byLuna.get(luna) ?? { incasat: 0, datorie: 0 }
+    cur.incasat += Number(row.total_incasat ?? 0)
+    cur.datorie += Number(row.total_restant_net ?? 0)
     byLuna.set(luna, cur)
   }
 
   const luniInterval = lunileInInterval(i.fromLuna, i.toLuna)
   return luniInterval.map((luna) => {
-    const v = byLuna.get(luna) ?? { de_incasat: 0, incasat: 0 }
-    const datorie = Math.max(0, v.de_incasat - v.incasat)
-    return { luna, incasat: v.incasat, datorie }
+    const v = byLuna.get(luna) ?? { incasat: 0, datorie: 0 }
+    return { luna, incasat: v.incasat, datorie: v.datorie }
   })
 }
 
@@ -116,7 +116,7 @@ export async function getBalantaTeacher(
 ): Promise<LunaBalanta[]> {
   let q = supabase
     .from('restante_teacher_luna')
-    .select('luna, id_teacher, total_de_incasat, total_incasat')
+    .select('luna, id_teacher, total_incasat, total_restant_net')
     .gte('luna', i.fromLuna)
     .lte('luna', i.toLuna)
   if (teacherId) q = q.eq('id_teacher', teacherId)
@@ -124,21 +124,20 @@ export async function getBalantaTeacher(
   const { data, error } = await q
   if (error) throw error
 
-  const byLuna = new Map<string, { de_incasat: number; incasat: number }>()
+  const byLuna = new Map<string, { incasat: number; datorie: number }>()
   for (const row of data ?? []) {
     const luna = row.luna ?? ''
     if (!luna) continue
-    const cur = byLuna.get(luna) ?? { de_incasat: 0, incasat: 0 }
-    cur.de_incasat += Number(row.total_de_incasat ?? 0)
+    const cur = byLuna.get(luna) ?? { incasat: 0, datorie: 0 }
     cur.incasat += Number(row.total_incasat ?? 0)
+    cur.datorie += Number(row.total_restant_net ?? 0)
     byLuna.set(luna, cur)
   }
 
   const luniInterval = lunileInInterval(i.fromLuna, i.toLuna)
   return luniInterval.map((luna) => {
-    const v = byLuna.get(luna) ?? { de_incasat: 0, incasat: 0 }
-    const datorie = Math.max(0, v.de_incasat - v.incasat)
-    return { luna, incasat: v.incasat, datorie }
+    const v = byLuna.get(luna) ?? { incasat: 0, datorie: 0 }
+    return { luna, incasat: v.incasat, datorie: v.datorie }
   })
 }
 

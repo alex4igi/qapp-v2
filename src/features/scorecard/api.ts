@@ -131,25 +131,25 @@ export type RataRestante = {
 }
 
 // Rată restanțe de portofoliu (echipă/locație) pe o lună: rest ÷ de-încasat.
-// Din view-ul restante_locatie_luna (agregat client-side când locatie=toate).
+// Restul = total_restant_net din view (definiția canonică — fără prescrise,
+// rezilieri, luni viitoare); agregat client-side când locatie=toate.
 export async function getRataRestante(
   luna: string,
   locatieId: string | null,
 ): Promise<RataRestante> {
   let q = supabase
     .from('restante_locatie_luna')
-    .select('id_locatie, total_de_incasat, total_incasat')
+    .select('id_locatie, total_de_incasat, total_incasat, total_restant_net')
     .eq('luna', luna)
   if (locatieId) q = q.eq('id_locatie', locatieId)
   const { data, error } = await q
   if (error) throw error
   let de = 0
-  let inc = 0
+  let rest = 0
   for (const r of data ?? []) {
     de += Number(r.total_de_incasat ?? 0)
-    inc += Number(r.total_incasat ?? 0)
+    rest += Number(r.total_restant_net ?? 0)
   }
-  const rest = Math.max(0, de - inc)
   return {
     rest,
     de_incasat: de,

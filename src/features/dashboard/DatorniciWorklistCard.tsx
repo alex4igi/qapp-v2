@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { formatRON } from '@/lib/format'
 import { sezonActivId } from '@/lib/lookups'
-import { getRestanteWorklist, type WorklistRow } from '@/features/recuperare/api'
+import { getRestanteWorklist, type WorklistRow } from '@/features/datorii/api'
 import {
   LogRecuperareModal,
   type RecuperareTarget,
-} from '@/features/recuperare/LogRecuperareModal'
+} from '@/features/datorii/LogRecuperareModal'
 
 const TOP = 8
 
@@ -58,7 +58,7 @@ export function DatorniciWorklistCard({
           </h2>
         </button>
         <Link
-          to="/recuperare"
+          to="/datorii"
           className="shrink-0 text-xs font-medium text-red-700 hover:underline"
         >
           Vezi toți →

@@ -583,6 +583,7 @@ export type Database = {
           created: string
           id: string
           observatii: string | null
+          promisiune_data: string | null
           rezultat: Database["public"]["Enums"]["rezultat_contact"]
           scop: string
           suma_promisa: number | null
@@ -594,6 +595,7 @@ export type Database = {
           created?: string
           id?: string
           observatii?: string | null
+          promisiune_data?: string | null
           rezultat: Database["public"]["Enums"]["rezultat_contact"]
           scop: string
           suma_promisa?: number | null
@@ -605,6 +607,7 @@ export type Database = {
           created?: string
           id?: string
           observatii?: string | null
+          promisiune_data?: string | null
           rezultat?: Database["public"]["Enums"]["rezultat_contact"]
           scop?: string
           suma_promisa?: number | null
@@ -8571,6 +8574,7 @@ export type Database = {
           suma_baza: number | null
           tip_plata: Database["public"]["Enums"]["tip_plata"] | null
           total_de_plata: number | null
+          viitor: boolean | null
         }
         Relationships: [
           {
@@ -8731,6 +8735,7 @@ export type Database = {
           nume_curs: string | null
           total_de_incasat: number | null
           total_incasat: number | null
+          total_restant_net: number | null
         }
         Relationships: []
       }
@@ -8742,6 +8747,7 @@ export type Database = {
           nume_locatie: string | null
           total_de_incasat: number | null
           total_incasat: number | null
+          total_restant_net: number | null
         }
         Relationships: []
       }
@@ -8753,6 +8759,7 @@ export type Database = {
           nume_sala: string | null
           total_de_incasat: number | null
           total_incasat: number | null
+          total_restant_net: number | null
         }
         Relationships: []
       }
@@ -8764,6 +8771,7 @@ export type Database = {
           nume_teacher: string | null
           total_de_incasat: number | null
           total_incasat: number | null
+          total_restant_net: number | null
         }
         Relationships: []
       }
@@ -8937,6 +8945,7 @@ export type Database = {
         Row: {
           id: string | null
           incasat: number | null
+          restant_net: number | null
           total: number | null
         }
         Relationships: []
@@ -9540,6 +9549,28 @@ export type Database = {
           suma_datorata: number
         }[]
       }
+      get_datorii_dashboard: {
+        Args: { p_locatie?: string }
+        Returns: {
+          de_incasat: number
+          id_locatie: string
+          incasat: number
+          nr_datornici: number
+          nume_locatie: string
+          rest_net: number
+          rest_oneoff: number
+          rest_prescris: number
+        }[]
+      }
+      get_datorii_evolutie: {
+        Args: { p_locatie?: string; p_luni?: number }
+        Returns: {
+          luna: string
+          sold_net: number
+          sold_oneoff: number
+          sold_total: number
+        }[]
+      }
       get_documente_client: {
         Args: { p_client: string }
         Returns: {
@@ -10063,14 +10094,6 @@ export type Database = {
           total: number
         }[]
       }
-      get_restante_totale: {
-        Args: { p_locatie?: string }
-        Returns: {
-          rest_net: number
-          rest_prescris: number
-          rest_total: number
-        }[]
-      }
       get_restante_worklist: {
         Args: { p_locatie?: string; p_luna?: string; p_sezon?: string }
         Returns: {
@@ -10079,6 +10102,9 @@ export type Database = {
           nume: string
           nume_locatie: string
           prenume: string
+          promisiune_data: string
+          promisiune_logata_at: string
+          promisiune_suma: number
           rest_total: number
           telefon: string
           ultim_apel_at: string

@@ -7,8 +7,8 @@ export type DashboardChartRow = {
 }
 
 // Bar chart pe dashboard: Incasări vs Restanțe per curs, pe luna curentă
-// (`luna` = YYYY-MM). Filtrarea pe lună exclude implicit datoriile prescrise
-// (>2 ani), care cad în luni dinaintea ferestrei curente.
+// (`luna` = YYYY-MM). Restanța = total_restant_net din view (definiția
+// canonică: fără prescrise, rezilieri, luni viitoare).
 export async function getDashboardChart(
   cursuri: Array<{ id: string; numele: string }>,
   luna: string,
@@ -17,7 +17,7 @@ export async function getDashboardChart(
   const cursIds = cursuri.map((c) => c.id)
   const { data, error } = await supabase
     .from('restante_curs_luna')
-    .select('id_curs, total_de_incasat, total_incasat')
+    .select('id_curs, total_incasat, total_restant_net')
     .in('id_curs', cursIds)
     .eq('luna', luna)
   if (error) throw error
@@ -31,10 +31,8 @@ export async function getDashboardChart(
     if (!r.id_curs) continue
     const existing = acc.get(r.id_curs)
     if (!existing) continue
-    const inc = Number(r.total_incasat ?? 0)
-    const total = Number(r.total_de_incasat ?? 0)
-    existing.incasari += inc
-    existing.restante += Math.max(0, total - inc)
+    existing.incasari += Number(r.total_incasat ?? 0)
+    existing.restante += Number(r.total_restant_net ?? 0)
   }
   return cursuri.map((c) => acc.get(c.id)!)
 }

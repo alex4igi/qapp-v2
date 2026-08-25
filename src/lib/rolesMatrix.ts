@@ -30,6 +30,8 @@ export const ROUTE_ACCESS = {
   // în pagină + în edge function (acțiunea `ingest`).
   '/facturare': ALL_STAFF,
   '/leads': ALL_STAFF,
+  '/datorii': ALL_STAFF,
+  // păstrat doar pentru redirectul guardat /recuperare → /datorii
   '/recuperare': ALL_STAFF,
   '/sms': ALL_STAFF,
   '/feedback': ALL_STAFF,

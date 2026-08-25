@@ -97,22 +97,6 @@ export async function getPrezentaSaptamanaGrupe(locatieId?: string | null): Prom
   }))
 }
 
-// ── Restanțe totale (net + prescris) — partajat cu dashboard/statistici ──────
-export type RestanteTotale = { rest_net: number; rest_prescris: number; rest_total: number }
-
-export async function getRestanteTotale(locatieId: string | null): Promise<RestanteTotale> {
-  const { data, error } = await supabase.rpc('get_restante_totale', {
-    p_locatie: locatieId ?? undefined,
-  })
-  if (error) throw error
-  const row = (data ?? [])[0]
-  return {
-    rest_net: Number(row?.rest_net ?? 0),
-    rest_prescris: Number(row?.rest_prescris ?? 0),
-    rest_total: Number(row?.rest_total ?? 0),
-  }
-}
-
 // ── 1. Retenție pe cohorte ───────────────────────────────────────────────────
 export type CohortaRow = {
   cohorta_luna: string

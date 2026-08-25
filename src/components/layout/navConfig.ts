@@ -39,7 +39,7 @@ export const navSections: NavSection[] = [
     color: '#2fbf71',
     items: [
       { label: 'Plăți',       path: '/plati' },
-      { label: 'Recuperare',  path: '/recuperare' },
+      { label: 'Datorii',     path: '/datorii' },
       { label: 'Facturare',   path: '/facturare' },
       { label: 'Reînscrieri', path: '/reinscrieri' },
       { label: 'Vouchere',    path: '/vouchere' },

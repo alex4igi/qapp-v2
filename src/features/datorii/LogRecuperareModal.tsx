@@ -40,6 +40,7 @@ export function LogRecuperareModal({ open, target, onClose }: Props) {
   const [canal, setCanal] = useState<CanalContact>('telefon')
   const [rezultat, setRezultat] = useState<RezultatContact>('reusit')
   const [sumaPromisa, setSumaPromisa] = useState('')
+  const [promisiuneData, setPromisiuneData] = useState('')
   const [observatii, setObservatii] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -48,6 +49,7 @@ export function LogRecuperareModal({ open, target, onClose }: Props) {
     setCanal('telefon')
     setRezultat('reusit')
     setSumaPromisa('')
+    setPromisiuneData('')
     setObservatii('')
     setError(null)
   }, [open])
@@ -59,11 +61,13 @@ export function LogRecuperareModal({ open, target, onClose }: Props) {
         canal,
         rezultat,
         sumaPromisa: sumaPromisa ? Number(sumaPromisa) : null,
+        promisiuneData: promisiuneData || null,
         observatii,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['scorecard'] })
       void queryClient.invalidateQueries({ queryKey: ['restante-worklist'] })
+      void queryClient.invalidateQueries({ queryKey: ['datorii'] })
       onClose()
     },
     onError: (e: unknown) =>
@@ -137,16 +141,26 @@ export function LogRecuperareModal({ open, target, onClose }: Props) {
           </div>
         </Field>
 
-        <Field label="Sumă promisă (opțional, RON)" htmlFor="lr-suma">
-          <TextInput
-            id="lr-suma"
-            type="number"
-            step="any"
-            value={sumaPromisa}
-            onChange={(e) => setSumaPromisa(e.target.value)}
-            placeholder="ex: 200"
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Sumă promisă (opțional, RON)" htmlFor="lr-suma">
+            <TextInput
+              id="lr-suma"
+              type="number"
+              step="any"
+              value={sumaPromisa}
+              onChange={(e) => setSumaPromisa(e.target.value)}
+              placeholder="ex: 200"
+            />
+          </Field>
+          <Field label="Promite plata până la" htmlFor="lr-promisiune">
+            <TextInput
+              id="lr-promisiune"
+              type="date"
+              value={promisiuneData}
+              onChange={(e) => setPromisiuneData(e.target.value)}
+            />
+          </Field>
+        </div>
 
         <Field label="Observații" htmlFor="lr-obs">
           <TextArea

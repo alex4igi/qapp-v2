@@ -1,0 +1,170 @@
+import { supabase } from '@/lib/supabase'
+import type { Enums } from '@/types/db'
+
+export type CanalContact = Enums<'canal_contact'>
+export type RezultatContact = Enums<'rezultat_contact'>
+
+export type WorklistRow = {
+  client_id: string
+  nume: string
+  prenume: string | null
+  telefon: string | null
+  nume_locatie: string | null
+  rest_total: number
+  nr_rate_neachitate: number
+  zile_depasire: number | null
+  ultima_prezenta: string | null
+  ultim_apel_at: string | null
+  ultim_apel_rezultat: string | null
+  promisiune_data: string | null
+  promisiune_suma: number | null
+  promisiune_logata_at: string | null
+}
+
+// Worklist de recuperare: clienți Activ cu cel puțin o rată chiar depășită
+// (nu doar luna curentă, neajunsă încă la scadență), sortați după zile de
+// întârziere. p_locatie/p_sezon = uuid sau null = toate (sezonul e aliniat cu
+// get_sms_recipients — UI presetează sezonul activ). luna (opțional, 'YYYY-MM')
+// = țintește doar clienții care au o rată neachitată facturată în luna
+// respectivă, dar totalul afișat rămâne cel complet (toate lunile lor restante).
+export async function getRestanteWorklist(
+  locatieId: string | null,
+  sezonId: string | null = null,
+  luna: string | null = null,
+): Promise<WorklistRow[]> {
+  const { data, error } = await supabase.rpc('get_restante_worklist', {
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+    ...(sezonId ? { p_sezon: sezonId } : {}),
+    ...(luna ? { p_luna: `${luna}-01` } : {}),
+  })
+  if (error) throw error
+  return (data ?? []) as unknown as WorklistRow[]
+}
+
+// O promisiune e „încălcată" dacă data promisă a trecut și clientul e încă în
+// worklist (rest > 0) — nu ținem un flag în DB, derivarea e suficientă.
+export function promisiuneIncalcata(r: WorklistRow): boolean {
+  if (!r.promisiune_data) return false
+  return r.promisiune_data <= new Date().toISOString().slice(0, 10)
+}
+
+// Agregatul CANONIC al datoriilor (abonamente + one-off), per locație.
+// locatieId null → un rând per locație (varianta comparativă „Toate locațiile").
+export type DatoriiLocatieRow = {
+  id_locatie: string | null
+  nume_locatie: string | null
+  de_incasat: number
+  incasat: number
+  rest_net: number
+  rest_oneoff: number
+  rest_prescris: number
+  nr_datornici: number
+}
+
+export async function getDatoriiDashboard(
+  locatieId: string | null,
+): Promise<DatoriiLocatieRow[]> {
+  const { data, error } = await supabase.rpc('get_datorii_dashboard', {
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
+  if (error) throw error
+  return ((data ?? []) as unknown as DatoriiLocatieRow[]).map((r) => ({
+    ...r,
+    de_incasat: Number(r.de_incasat ?? 0),
+    incasat: Number(r.incasat ?? 0),
+    rest_net: Number(r.rest_net ?? 0),
+    rest_oneoff: Number(r.rest_oneoff ?? 0),
+    rest_prescris: Number(r.rest_prescris ?? 0),
+    nr_datornici: Number(r.nr_datornici ?? 0),
+  }))
+}
+
+// Sumele KPI globale = suma rândurilor per locație. nr_datornici e „pe locații"
+// (un client cu datorii la 2 locații se numără la fiecare) — etichetat în UI.
+export function sumDatorii(rows: DatoriiLocatieRow[]): DatoriiLocatieRow {
+  const zero: DatoriiLocatieRow = {
+    id_locatie: null,
+    nume_locatie: null,
+    de_incasat: 0,
+    incasat: 0,
+    rest_net: 0,
+    rest_oneoff: 0,
+    rest_prescris: 0,
+    nr_datornici: 0,
+  }
+  return rows.reduce(
+    (a, r) => ({
+      ...a,
+      de_incasat: a.de_incasat + r.de_incasat,
+      incasat: a.incasat + r.incasat,
+      rest_net: a.rest_net + r.rest_net,
+      rest_oneoff: a.rest_oneoff + r.rest_oneoff,
+      rest_prescris: a.rest_prescris + r.rest_prescris,
+      nr_datornici: a.nr_datornici + r.nr_datornici,
+    }),
+    zero,
+  )
+}
+
+export function rataRestantePct(r: {
+  incasat: number
+  rest_net: number
+  rest_oneoff: number
+}): number | null {
+  const rest = r.rest_net + r.rest_oneoff
+  const baza = r.incasat + rest
+  if (baza <= 0) return null
+  return Math.round((rest / baza) * 1000) / 10
+}
+
+// Soldul restant la finalul fiecărei luni (semantică de balanță — trend, nu headline).
+export type EvolutieRow = {
+  luna: string
+  sold_net: number
+  sold_oneoff: number
+  sold_total: number
+}
+
+export async function getDatoriiEvolutie(
+  locatieId: string | null,
+  luni = 12,
+): Promise<EvolutieRow[]> {
+  const { data, error } = await supabase.rpc('get_datorii_evolutie', {
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+    p_luni: luni,
+  })
+  if (error) throw error
+  return ((data ?? []) as unknown as EvolutieRow[]).map((r) => ({
+    luna: r.luna,
+    sold_net: Number(r.sold_net ?? 0),
+    sold_oneoff: Number(r.sold_oneoff ?? 0),
+    sold_total: Number(r.sold_total ?? 0),
+  }))
+}
+
+// Loghează un apel de recuperare pe un client. Suma efectiv recuperată NU se ia
+// de aici — se citește din încasările reale care urmează apelului (apel precede
+// plata, fereastră de N zile) în get_scorecard_restante.
+export async function logRecuperareContact(input: {
+  clientId: string
+  canal: CanalContact
+  rezultat: RezultatContact
+  sumaPromisa?: number | null
+  promisiuneData?: string | null
+  observatii?: string
+}): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { error } = await supabase.from('client_contacte').insert({
+    client_id: input.clientId,
+    user_id: user?.id,
+    canal: input.canal,
+    rezultat: input.rezultat,
+    scop: 'recuperare',
+    suma_promisa: input.sumaPromisa ?? null,
+    promisiune_data: input.promisiuneData || null,
+    observatii: input.observatii?.trim() || null,
+  })
+  if (error) throw error
+}

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { getGradOcupare } from '@/features/ansamblu/api'
+import { listPraguri } from '@/features/scorecard/api'
 import { getPachetLuni, getPrezentaSaptamanaGrupe } from '../api'
 import { DeltaKpiCard } from '../DeltaKpiCard'
 import { ANALYTICS_QO, SectionTitle } from './shared'
@@ -26,6 +27,9 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
   const pachetQ = useQuery({ queryKey: ['an', 'pachet-luni', scope], queryFn: () => getPachetLuni(scope), ...ANALYTICS_QO })
   const grupeQ = useQuery({ queryKey: ['an', 'prezenta-grupe', scope], queryFn: () => getPrezentaSaptamanaGrupe(scope), ...ANALYTICS_QO })
   const ocupareQ = useQuery({ queryKey: ['an', 'ocupare', scope], queryFn: () => getGradOcupare(scope ?? null), ...ANALYTICS_QO })
+  const praguriQ = useQuery({ queryKey: ['scorecard', 'praguri'], queryFn: listPraguri, ...ANALYTICS_QO })
+  // Ținta de restanțe vine din configul scorecard_praguri.rata_restante (nu hardcodat).
+  const tintaRestante = Number(praguriQ.data?.find((x) => x.cheie === 'rata_restante')?.prag_peste ?? 5)
 
   const p = pachetQ.data
   // Cifrele pe leads (leads.locatia e text liber, ~93% null) afișează un caveat când se filtrează.
@@ -184,7 +188,7 @@ export function Section0PachetLuni({ scope }: { scope?: string | null }) {
               deltaPrev={delta(p.restante.suma, p.restante.prev)}
               deltaYoy={delta(p.restante.suma, p.restante.yoy)}
               polaritateInversa
-              hint="țintă sub 5% din facturarea lunii"
+              hint={`țintă sub ${tintaRestante}% din facturarea lunii`}
             />
             <div>
               <DeltaKpiCard
