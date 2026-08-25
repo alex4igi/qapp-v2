@@ -138,9 +138,10 @@ export function SectionWorklist({
   const exportCsv = () =>
     downloadCsv(
       `datornici-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Client', 'Telefon', 'Locatie', 'Ce datoreaza', 'Rate', 'Rest RON', 'Zile intarziere', 'Status', 'Promisiune'],
+      ['Client', 'Status client', 'Telefon', 'Locatie', 'Ce datoreaza', 'Rate', 'Rest RON', 'Zile intarziere', 'Status', 'Promisiune'],
       rows.map((r) => [
         `${r.nume} ${r.prenume ?? ''}`.trim(),
+        r.status_client ?? '',
         r.telefon ?? '',
         r.nume_locatie ?? '',
         r.cursuri ?? '',

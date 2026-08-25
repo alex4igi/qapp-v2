@@ -53,12 +53,22 @@ export function WorklistTable({
     {
       header: 'Client',
       cell: (r) => (
-        <Link
-          to={`/clienti/${r.client_id}`}
-          className="font-medium text-quasar-black hover:underline"
-        >
-          {r.nume} {r.prenume ?? ''}
-        </Link>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Link
+            to={`/clienti/${r.client_id}`}
+            className="font-medium text-quasar-black hover:underline"
+          >
+            {r.nume} {r.prenume ?? ''}
+          </Link>
+          {r.status_client && r.status_client !== 'Activ' && (
+            <span
+              className="rounded-full bg-neutral-bg px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-2"
+              title="Datoria nu se stinge la schimbarea statusului — doar la prescriere"
+            >
+              {r.status_client === 'EXclient' ? 'ex-client' : 'inactiv'}
+            </span>
+          )}
+        </div>
       ),
       className: 'min-w-40',
       sortValue: (r) => `${r.nume} ${r.prenume ?? ''}`.trim().toLowerCase(),

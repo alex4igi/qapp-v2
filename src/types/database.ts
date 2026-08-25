@@ -10117,6 +10117,7 @@ export type Database = {
           promisiune_logata_at: string
           promisiune_suma: number
           rest_total: number
+          status_client: string
           suspendat: boolean
           telefon: string
           ultim_apel_at: string

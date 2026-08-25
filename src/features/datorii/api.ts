@@ -24,11 +24,12 @@ export type WorklistRow = {
   cursuri: string | null
   suspendat: boolean
   ultim_sms_at: string | null
+  status_client: 'Activ' | 'Inactiv' | 'EXclient' | null
 }
 
-// Worklist de recuperare: clienți Activ cu cel puțin o rată chiar depășită
-// (nu doar luna curentă, neajunsă încă la scadență), sortați după zile de
-// întârziere. p_locatie/p_sezon = uuid sau null = toate (sezonul e aliniat cu
+// Worklist de recuperare: TOȚI clienții (indiferent de status — datoria se
+// stinge doar la prescriere) cu cel puțin o rată chiar depășită (nu doar luna
+// curentă, neajunsă încă la scadență), sortați după zile de întârziere. p_locatie/p_sezon = uuid sau null = toate (sezonul e aliniat cu
 // get_sms_recipients — UI presetează sezonul activ). luna (opțional, 'YYYY-MM')
 // = țintește doar clienții care au o rată neachitată facturată în luna
 // respectivă, dar totalul afișat rămâne cel complet (toate lunile lor restante).
