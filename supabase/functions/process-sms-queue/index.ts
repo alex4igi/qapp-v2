@@ -3,7 +3,12 @@
 // Mesajul e deja compus și stocat în rând — nu folosește buildSms.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { sendSms } from '../_shared/sms.ts'
-import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
+import {
+  deferUntil,
+  getQuietHoursConfig,
+  isQuiet,
+  localDateBucharest,
+} from '../_shared/quietHours.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,15 +52,21 @@ Deno.serve(async (req) => {
           invalid++
           continue
         }
+        // `sursa_id` = legătura înapoi spre rândul din listă; fără ea drain-ul nu
+        // are pe cine să treacă pe 'Trimis' și statusul 'Amanat' rămâne pe veci.
         await supabase.from('sms_amanate').insert({
           telefon: row.telefon,
           mesaj: row.mesaj,
           tip: 'manual',
           send_after: next,
+          sursa_id: row.id,
         })
         await supabase
           .from('situatie_sms_uri')
-          .update({ status: 'Amanat' })
+          .update({
+            status: 'Amanat',
+            data_planificata: localDateBucharest(new Date(next)),
+          })
           .eq('id', row.id)
         deferred++
       }

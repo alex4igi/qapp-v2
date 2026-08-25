@@ -80,3 +80,15 @@ export function deferUntil(now: Date, cfg: QuietHoursConfig): string {
   const minutesAhead = cur < end ? end - cur : 1440 - cur + end
   return new Date(now.getTime() + minutesAhead * 60_000).toISOString()
 }
+
+// Ziua calendaristică locală (Europe/Bucharest) pentru un moment dat — coloanele
+// `data_planificata` / `data_trimitere` sunt `date`, nu timestamptz, deci nu pot fi
+// derivate din ISO-ul UTC (după 21:00 local ar cădea pe ziua următoare).
+export function localDateBucharest(d: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Bucharest',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d) // "YYYY-MM-DD"
+}

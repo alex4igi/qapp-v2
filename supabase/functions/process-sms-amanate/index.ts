@@ -4,11 +4,18 @@
 //     (gardianul autoritar, imun la ora de vară/iarnă),
 //   - altfel trimite mesajul (deja compus) și marchează 'trimis'/'esuat',
 //   - dacă rândul provine dintr-un lead (lead_id + tip), loghează în sms_logs pentru
-//     dedup consecvent cu celelalte căi.
+//     dedup consecvent cu celelalte căi,
+//   - dacă rândul provine din lista manuală (sursa_id), scrie înapoi statusul final
+//     în situatie_sms_uri — altfel lista rămâne blocată pe 'Amanat'.
 // Apelată de pg_cron la ~1 min (vezi cron-setup.sql).
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { sendSms } from '../_shared/sms.ts'
-import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
+import {
+  deferUntil,
+  getQuietHoursConfig,
+  isQuiet,
+  localDateBucharest,
+} from '../_shared/quietHours.ts'
 
 Deno.serve(async (req) => {
   const cronSecret = Deno.env.get('CRON_SECRET')
@@ -30,7 +37,7 @@ Deno.serve(async (req) => {
 
   const { data: due, error } = await supabase
     .from('sms_amanate')
-    .select('id, telefon, mesaj, tip, lead_id')
+    .select('id, telefon, mesaj, tip, lead_id, sursa_id')
     .eq('status', 'in_asteptare')
     .lte('send_after', nowIso)
 
@@ -47,6 +54,17 @@ Deno.serve(async (req) => {
     return Response.json({ deferred: due?.length ?? 0, quiet: true })
   }
 
+  // Statusul final al rândului-sursă din listă (dacă amânarea a venit din batch manual).
+  const marcheazaSursa = async (
+    sursaId: string | null,
+    status: 'Trimis' | 'Esuat',
+  ) => {
+    if (!sursaId) return
+    const patch: Record<string, string> = { status }
+    if (status === 'Trimis') patch.data_trimitere = localDateBucharest(new Date())
+    await supabase.from('situatie_sms_uri').update(patch).eq('id', sursaId)
+  }
+
   let sent = 0
   let failed = 0
 
@@ -56,6 +74,7 @@ Deno.serve(async (req) => {
         .from('sms_amanate')
         .update({ status: 'esuat', error: 'fără telefon/mesaj' })
         .eq('id', row.id)
+      await marcheazaSursa(row.sursa_id, 'Esuat')
       failed++
       continue
     }
@@ -74,12 +93,14 @@ Deno.serve(async (req) => {
         .from('sms_amanate')
         .update({ status: 'trimis', trimis_la: new Date().toISOString() })
         .eq('id', row.id)
+      await marcheazaSursa(row.sursa_id, 'Trimis')
       sent++
     } else {
       await supabase
         .from('sms_amanate')
         .update({ status: 'esuat', error: result.error ?? 'eroare necunoscută' })
         .eq('id', row.id)
+      await marcheazaSursa(row.sursa_id, 'Esuat')
       failed++
     }
   }

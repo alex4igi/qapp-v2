@@ -24,6 +24,7 @@ import {
   listSmsQueue,
   deleteSmsQueueEntry,
   processSmsQueue,
+  getSmsAmanateInfo,
   PAGE_SIZE,
 } from './api'
 
@@ -53,6 +54,13 @@ export function NotificariSmsPage() {
     placeholderData: keepPreviousData,
   })
 
+  // „Amânat" nu e o eroare: sunt SMS-uri prinse în zona interzisă, care pleacă singure
+  // la ieșirea din fereastră. Fără contorul ăsta statusul arată ca un blocaj.
+  const { data: amanate } = useQuery({
+    queryKey: ['sms-amanate-info'],
+    queryFn: getSmsAmanateInfo,
+  })
+
   const totalPages = useMemo(
     () => (data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1),
     [data],
@@ -71,6 +79,7 @@ export function NotificariSmsPage() {
         `Procesate: ${res.total} · trimise: ${res.sent} · eșuate: ${res.failed}`,
       )
       void queryClient.invalidateQueries({ queryKey: ['sms-queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['sms-amanate-info'] })
     },
     onError: (e: unknown) =>
       setProcessMsg(`Eroare: ${humanizeError(e, 'Eroare la procesare.')}`),
@@ -165,6 +174,15 @@ export function NotificariSmsPage() {
           </>
         }
       />
+
+      {!!amanate?.count && (
+        <div className="mb-4 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2 text-sm text-purple-800">
+          <strong>{amanate.count}</strong>{' '}
+          {amanate.count === 1 ? 'SMS amânat' : 'SMS-uri amânate'} de zona
+          interzisă — pleacă automat {amanate.azi ? 'azi' : 'mâine'} la{' '}
+          {amanate.oraPlecare}. Nu trebuie să faci nimic.
+        </div>
+      )}
 
       <div className="mb-4 flex items-center gap-3">
         <div className="w-52">

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { getSmsQuietHours } from '@/features/setari/api/sms'
 import type { SituatieSms, InsertDto } from '@/types/db'
 import type { SmsBulkCod, SmsRecipient, SmsRecipientMembru } from './templates'
 
@@ -136,4 +137,52 @@ export async function getClientiVizatiLunaCurenta(
     for (const id of row.clienti_vizati ?? []) set.add(id)
   }
   return set
+}
+
+// ============================================================
+// SMS-uri amânate de zona interzisă (status 'Amanat')
+// ============================================================
+
+export type SmsAmanateInfo = {
+  count: number
+  // Ora locală la care iese din fereastra interzisă ("HH:MM"), din config.
+  oraPlecare: string
+  // true dacă ora de ieșire e azi (încă n-a trecut), false → mâine dimineață.
+  azi: boolean
+}
+
+// Minutele scurse din ziua locală (Europe/Bucharest) — aceeași convenție ca în
+// _shared/quietHours.ts, ca bannerul să nu mintă când browserul e pe alt fus.
+function minuteLocale(d: Date): number {
+  const [h, m] = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Bucharest',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+    .format(d)
+    .split(':')
+    .map(Number)
+  return h * 60 + m
+}
+
+export async function getSmsAmanateInfo(): Promise<SmsAmanateInfo> {
+  const [{ count, error }, cfg] = await Promise.all([
+    supabase
+      .from('situatie_sms_uri')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'Amanat'),
+    // Config-ul e citibil doar de admin/owner; pentru restul cade pe același default
+    // ca edge functions, ca bannerul să nu dispară pe rolurile mici.
+    getSmsQuietHours().catch(() => ({ enabled: true, start: '19:30', end: '10:00' })),
+  ])
+  if (error) throw error
+
+  const [h, m] = cfg.end.split(':').map(Number)
+  const acum = minuteLocale(new Date())
+  return {
+    count: count ?? 0,
+    oraPlecare: cfg.end,
+    azi: acum < (h || 0) * 60 + (m || 0),
+  }
 }

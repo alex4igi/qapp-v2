@@ -6852,6 +6852,7 @@ export type Database = {
           mesaj: string
           send_after: string
           status: string
+          sursa_id: string | null
           telefon: string
           tip: string | null
           trimis_la: string | null
@@ -6864,6 +6865,7 @@ export type Database = {
           mesaj: string
           send_after?: string
           status?: string
+          sursa_id?: string | null
           telefon: string
           tip?: string | null
           trimis_la?: string | null
@@ -6876,6 +6878,7 @@ export type Database = {
           mesaj?: string
           send_after?: string
           status?: string
+          sursa_id?: string | null
           telefon?: string
           tip?: string | null
           trimis_la?: string | null
@@ -6886,6 +6889,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_amanate_sursa_id_fkey"
+            columns: ["sursa_id"]
+            isOneToOne: false
+            referencedRelation: "situatie_sms_uri"
             referencedColumns: ["id"]
           },
         ]
