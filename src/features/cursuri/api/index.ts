@@ -2,7 +2,8 @@
 
 export { PAGE_SIZE } from './list'
 export type { CursuriListParams, CursuriListResult, CursuriScope } from './list'
-export { listCursuri, listCursuriFilterOptions } from './list'
+export { listCursuri, listCursuriFilterOptions, getCursuriChecklistFields } from './list'
+export type { CursChecklistRow } from './list'
 
 export {
   getCurs,

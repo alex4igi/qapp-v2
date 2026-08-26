@@ -93,6 +93,8 @@ export const ROUTE_ACCESS = {
   '/pontaj-staff': PRIVILEGED,
   '/notificari': WITH_TEACHER,
   '/audit': PRIVILEGED,
+  // Igienă de date: cine poate repara fișele (manager+) o și vede.
+  '/fise-incomplete': PRIVILEGED,
   '/organizatie': OWNER_ONLY,
 } as const satisfies Record<string, readonly AppRole[]>
 

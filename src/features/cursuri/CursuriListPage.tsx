@@ -21,8 +21,16 @@ import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { isTeacher, isManagerOrHigher } from '@/lib/rolesMatrix'
 import type { Enums, VListaCursuri } from '@/types/db'
+import { ChecklistBadge } from '@/components/checklist'
+import { evalueazaChecklist, type Rezultat } from '@/lib/checklist'
+import { CURS_CHECKLIST } from '@/lib/checklist/specs/curs'
 import { CursForm } from './CursForm'
-import { listCursuri, listCursuriFilterOptions, PAGE_SIZE } from './api'
+import {
+  getCursuriChecklistFields,
+  listCursuri,
+  listCursuriFilterOptions,
+  PAGE_SIZE,
+} from './api'
 import { formatOra } from './program'
 
 const FARA_LOCATIE = '— Fără locație —'
@@ -34,7 +42,9 @@ function tipLabel(c: VListaCursuri): string {
   return c.nivelul === 'Trupa' ? 'Recurent trupă' : 'Recurent'
 }
 
-const columns: Column<VListaCursuri>[] = [
+const makeColumns = (
+  checklistById: Map<string, Rezultat>,
+): Column<VListaCursuri>[] => [
   {
     header: 'Curs',
     cell: (c) => <span className="font-medium">{c.numele_cursului}</span>,
@@ -88,6 +98,21 @@ const columns: Column<VListaCursuri>[] = [
         : c.inscrisi,
     className: 'w-24',
     sortValue: (c) => c.inscrisi ?? 0,
+  },
+  {
+    header: 'Fișă',
+    cell: (c) => {
+      const rez = c.id ? checklistById.get(c.id) : undefined
+      return rez ? <ChecklistBadge rezultat={rez} compact /> : '—'
+    },
+    className: 'w-20',
+    // Esențialele cântăresc mai mult decât recomandatele, ca o sortare
+    // descrescătoare să ridice întâi grupele cu probleme reale.
+    sortValue: (c) => {
+      const rez = c.id ? checklistById.get(c.id) : undefined
+      if (!rez) return 0
+      return rez.lipsaEsentiale.length * 100 + rez.lipsaRecomandate.length
+    },
   },
 ]
 
@@ -199,6 +224,31 @@ export function CursuriListPage() {
     () => (data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1),
     [data],
   )
+
+  const rowIds = useMemo(
+    () =>
+      (data?.rows ?? [])
+        .map((r) => r.id)
+        .filter((id): id is string => Boolean(id)),
+    [data],
+  )
+
+  const checklistQ = useQuery({
+    queryKey: ['cursuri', 'checklist', rowIds],
+    queryFn: () => getCursuriChecklistFields(rowIds),
+    enabled: rowIds.length > 0,
+    placeholderData: keepPreviousData,
+  })
+
+  const checklistById = useMemo(() => {
+    const m = new Map<string, Rezultat>()
+    for (const row of checklistQ.data ?? []) {
+      m.set(row.id, evalueazaChecklist(CURS_CHECKLIST, row))
+    }
+    return m
+  }, [checklistQ.data])
+
+  const columns = useMemo(() => makeColumns(checklistById), [checklistById])
 
   const groups = useMemo(() => {
     const rows = data?.rows ?? []

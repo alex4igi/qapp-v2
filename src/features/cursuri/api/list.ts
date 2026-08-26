@@ -3,6 +3,10 @@ import { applyWordSearch } from '@/lib/search'
 import type { SelectOption } from '@/components/ui'
 import type { Enums, VListaCursuri } from '@/types/db'
 import { varstaCursOptions } from '@/lib/enums'
+import {
+  CURS_CHECKLIST_COLS,
+  type CursCheckInput,
+} from '@/lib/checklist/specs/curs'
 
 export const PAGE_SIZE = 25
 
@@ -94,4 +98,22 @@ export async function listCursuriFilterOptions(
       .map(([value, label]) => ({ value, label }))
       .sort(byLabel),
   }
+}
+
+// View-ul `lista_cursuri` nu conține câmpurile de care depinde checklistul
+// (link_whatsapp, varsta, ora, durata, prețuri, program metodologic). În loc să
+// extindem view-ul — ceea ce ar duplica regulile în SQL — aducem doar coloanele
+// necesare pentru cele max. 25 de rânduri ale paginii curente.
+export type CursChecklistRow = CursCheckInput & { id: string }
+
+export async function getCursuriChecklistFields(
+  ids: string[],
+): Promise<CursChecklistRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from('cursuri')
+    .select(CURS_CHECKLIST_COLS)
+    .in('id', ids)
+  if (error) throw error
+  return (data ?? []) as unknown as CursChecklistRow[]
 }

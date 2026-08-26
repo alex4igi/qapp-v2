@@ -28,6 +28,7 @@ import { FinanciarPage } from '@/features/financiar/FinanciarPage'
 import { CfoPage } from '@/features/cfo/CfoPage'
 import { ScorecardPage } from '@/features/scorecard/ScorecardPage'
 import { FacturarePage } from '@/features/facturare/FacturarePage'
+import { FiseIncompletePage } from '@/features/fise-incomplete/FiseIncompletePage'
 // Paginile de statistici trag recharts — code-split din bundle-ul inițial.
 const DatoriiPage = lazy(() =>
   import('@/features/datorii/DatoriiPage').then((m) => ({ default: m.DatoriiPage })),
@@ -259,6 +260,7 @@ function App() {
                 <Route path="inventar" element={<InventarListPage />} />
                 <Route path="pontaj-staff" element={<PontajStaffPage />} />
                 <Route path="audit" element={<AuditPage />} />
+                <Route path="fise-incomplete" element={<FiseIncompletePage />} />
               </Route>
             </Route>
           </Route>

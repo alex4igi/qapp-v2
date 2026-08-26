@@ -110,6 +110,7 @@ export const navSections: NavSection[] = [
       '/inventar',
       '/pontaj-staff',
       '/audit',
+      '/fise-incomplete',
       '/organizatie',
     ],
     items: [{ label: 'Administrare', path: '/administrare' }],

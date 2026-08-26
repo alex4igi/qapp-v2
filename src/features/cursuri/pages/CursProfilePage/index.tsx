@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Spinner, Tabs, WhatsAppIcon } from '@/components/ui'
 import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
+import { ChecklistBadge } from '@/components/checklist'
+import { evalueazaChecklist, type StareItem } from '@/lib/checklist'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { listSezoane } from '@/features/plati/api'
 import {
@@ -24,6 +26,7 @@ import {
 import { waGroupLink } from '@/lib/phone'
 import { ComposeMesajGrupaModal } from '@/features/announcements/ComposeMesajGrupaModal'
 import { CursForm } from '../../CursForm'
+import { CURS_CHECKLIST, type SectiuneCurs } from '@/lib/checklist/specs/curs'
 import {
   getCurs,
   getCursOcupare,
@@ -66,6 +69,7 @@ export function CursProfilePage() {
   const [tab, setTab] = useState<TabId>('activi')
   const [inactiviOpen, setInactiviOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [focusSection, setFocusSection] = useState<SectiuneCurs | undefined>()
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -202,6 +206,15 @@ export function CursProfilePage() {
 
   const curs = cursQuery.data
   const initials = getCursInitials(curs.numele)
+  // Derivat din rândul cursului — fără query suplimentar.
+  const checklist = evalueazaChecklist(CURS_CHECKLIST, curs)
+
+  const openEdit = (sectiune?: SectiuneCurs) => {
+    setFocusSection(sectiune)
+    setEditOpen(true)
+  }
+  const onFixChecklist = (item: StareItem) =>
+    openEdit(item.sectiune as SectiuneCurs | undefined)
 
   return (
     <>
@@ -211,6 +224,7 @@ export function CursProfilePage() {
         title={curs.numele}
         actions={
           <>
+            <ChecklistBadge rezultat={checklist} />
             {canSendMesajGrupa && (
               <Button variant="secondary" onClick={() => setMesajOpen(true)}>
                 💬 Mesaj grupă
@@ -228,7 +242,7 @@ export function CursProfilePage() {
                 Grup WhatsApp
               </a>
             )}
-            {canEdit && <Button onClick={() => setEditOpen(true)}>Editează</Button>}
+            {canEdit && <Button onClick={() => openEdit()}>Editează</Button>}
             {canArchive && (
               <Button
                 variant={curs.suspendat ? 'secondary' : 'ghost'}
@@ -256,6 +270,8 @@ export function CursProfilePage() {
             initials={initials}
             numele={curs.numele}
             ocupare={ocupareQuery.data}
+            checklist={checklist}
+            onFix={canEdit ? onFixChecklist : undefined}
           />
         }
       >
@@ -399,7 +415,15 @@ export function CursProfilePage() {
       </ProfileScaffold>
 
       {editOpen && (
-        <CursForm open curs={curs} onClose={() => setEditOpen(false)} />
+        <CursForm
+          open
+          curs={curs}
+          focusSection={focusSection}
+          onClose={() => {
+            setEditOpen(false)
+            setFocusSection(undefined)
+          }}
+        />
       )}
 
       {payClientId && (

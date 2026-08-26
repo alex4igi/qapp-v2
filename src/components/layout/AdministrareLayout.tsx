@@ -2,16 +2,17 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { canAccessRoute, type AppRoute } from '@/lib/rolesMatrix'
 
-// Hub „Administrare": cele 6 pagini de config, scoase din rail și adunate sub un
+// Hub „Administrare": paginile de config, scoase din rail și adunate sub un
 // tab-bar comun. Fiecare tab e un link către ruta existentă (paths neschimbate,
 // deci deep-link-urile și linkurile interne rămân valide).
 const TABS: { label: string; path: AppRoute }[] = [
-  { label: 'Setări',      path: '/setari' },
-  { label: 'Contracte',   path: '/contracte' },
-  { label: 'Inventar',    path: '/inventar' },
-  { label: 'Pontaj',      path: '/pontaj-staff' },
-  { label: 'Audit',       path: '/audit' },
-  { label: 'Organizație', path: '/organizatie' },
+  { label: 'Setări',          path: '/setari' },
+  { label: 'Contracte',       path: '/contracte' },
+  { label: 'Inventar',        path: '/inventar' },
+  { label: 'Pontaj',          path: '/pontaj-staff' },
+  { label: 'Audit',           path: '/audit' },
+  { label: 'Fișe incomplete', path: '/fise-incomplete' },
+  { label: 'Organizație',     path: '/organizatie' },
 ]
 
 export function AdministrareLayout() {

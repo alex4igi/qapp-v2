@@ -65,6 +65,10 @@ export function DetaliiTab({
         <DetailRow label="Sezon" value={sezonLabel} />
         <DetailRow label="Locație" value={locatieLabel} />
         <DetailRow label="Sală" value={salaLabel} />
+        <DetailRow
+          label="Link grup WhatsApp"
+          value={curs.link_whatsapp ?? ''}
+        />
         {curs.facultativ && (
           <DetailRow
             label="Rezervări online"

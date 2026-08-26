@@ -1,7 +1,9 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Checkbox, Modal, Spinner } from '@/components/ui'
+import { ChecklistRail } from '@/components/checklist'
+import { evalueazaChecklist } from '@/lib/checklist'
 import {
   teacheriOptions,
   saliWithLocatie,
@@ -10,6 +12,7 @@ import {
   sezonActivId,
 } from '@/lib/lookups'
 import type { Curs } from '@/types/db'
+import { CURS_CHECKLIST, type SectiuneCurs } from '@/lib/checklist/specs/curs'
 import {
   createCurs,
   updateCurs,
@@ -18,6 +21,7 @@ import {
   countPrezenteCurs,
 } from '../../api'
 import {
+  buildCursPayload,
   initialState,
   parseOra,
   toNum,
@@ -32,9 +36,11 @@ type Props = {
   open: boolean
   curs?: Curs | null
   onClose: () => void
+  /** Deschide formularul derulat la secțiunea unui câmp lipsă (din checklist). */
+  focusSection?: SectiuneCurs
 }
 
-export function CursForm({ open, curs, onClose }: Props) {
+export function CursForm({ open, curs, onClose, focusSection }: Props) {
   const queryClient = useQueryClient()
   const isEdit = Boolean(curs)
   const [form, setForm] = useState<FormState>(() => initialState(curs))
@@ -58,6 +64,7 @@ export function CursForm({ open, curs, onClose }: Props) {
   useEffect(() => {
     if (!mutaSezon) setMutareSezonOk(false)
   }, [mutaSezon])
+  const bodyRef = useRef<HTMLDivElement>(null)
 
   const sezonActivQ = useQuery({
     queryKey: ['lookup', 'sezon-activ'],
@@ -131,57 +138,15 @@ export function CursForm({ open, curs, onClose }: Props) {
   const set: SetField = (key, value) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
+  // Checklist live: evaluat pe EXACT obiectul care se va salva.
+  const payload = useMemo(() => buildCursPayload(form), [form])
+  const checklist = useMemo(
+    () => evalueazaChecklist(CURS_CHECKLIST, payload),
+    [payload],
+  )
+
   const mutation = useMutation({
     mutationFn: async () => {
-      const isTrupa = form.tip === 'recurent-trupa'
-      const nivelFinal = isTrupa ? 'Trupa' : form.nivelul || null
-      // Orar diferit pe zile: păstrează doar zilele selectate cu oră completată.
-      // `ora` rămâne populat (cu prima zi) ca fallback pentru căile vechi.
-      // Orele sunt normalizate la "HH:MM" (validate deja în handleSubmit).
-      const normOra = (raw: string) => {
-        const p = parseOra(raw)
-        return p.ok ? p.value : raw.trim() || null
-      }
-      const orePeZi = form.orarDiferit
-        ? Object.fromEntries(
-            form.zile
-              .filter((z) => form.orePeZi[z]?.trim())
-              .map((z) => [z, normOra(form.orePeZi[z])]),
-          )
-        : null
-      const orePeZiFinal = orePeZi && Object.keys(orePeZi).length ? orePeZi : null
-      const oraFinal = orePeZiFinal
-        ? Object.values(orePeZiFinal)[0]
-        : normOra(form.ora)
-      const payload = {
-        numele: form.numele.trim(),
-        stil: form.stil.trim() || null,
-        nivelul: nivelFinal as Curs['nivelul'],
-        varsta: (form.varsta || null) as Curs['varsta'],
-        teacher: form.teacher || null,
-        locatie: form.locatie || null,
-        sala: form.sala || null,
-        sezon: form.sezon || null,
-        zile: (form.zile.length ? form.zile : null) as Curs['zile'],
-        ora: oraFinal,
-        ore_pe_zi: orePeZiFinal as Curs['ore_pe_zi'],
-        link_whatsapp: form.link_whatsapp.trim() || null,
-        durata_cursului: toNum(form.durata_cursului),
-        capacitate_maxima: toNum(form.capacitate_maxima),
-        pret_anual: toNum(form.pret_anual),
-        pret_lunar: toNum(form.pret_lunar),
-        pret_sedinta: toNum(form.pret_sedinta),
-        pret_sedinta_reziliere:
-          form.tip === 'facultativ' ? null : toNum(form.pret_sedinta_reziliere),
-        pret_lunar_promo:
-          form.tip === 'facultativ' ? null : toNum(form.pret_lunar_promo),
-        facultativ: form.tip === 'facultativ',
-        one_time: form.one_time,
-        suspendat: form.suspendat,
-        // Membrii se pot programa online DOAR la facultative cu bifa activă.
-        rezervari_online: form.tip === 'facultativ' ? form.rezervari_online : false,
-        program_metodologic: form.program_metodologic || null,
-      }
       const saved = isEdit
         ? await updateCurs(curs!.id, payload)
         : await createCurs(payload)
@@ -274,53 +239,81 @@ export function CursForm({ open, curs, onClose }: Props) {
     locatii.isLoading ||
     sezoane.isLoading
 
+  // Deschidere din checklistul fișei: derulează direct la secțiunea câmpului lipsă.
+  useEffect(() => {
+    if (!open || !focusSection || lookupsLoading) return
+    bodyRef.current
+      ?.querySelector(`[data-sectiune="${focusSection}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [open, focusSection, lookupsLoading])
+
   const formBody = lookupsLoading ? (
     <Spinner />
   ) : (
-    <form id="curs-form" onSubmit={handleSubmit} className="space-y-3">
-      <DetaliiFields
-        form={form}
-        set={set}
-        setForm={setForm}
-        teacheri={teacheri.data ?? []}
-        coInstructorOptions={coInstructorOptions}
-      />
-      <ProgramFields
-        form={form}
-        set={set}
-        setForm={setForm}
-        locatii={locatii.data ?? []}
-        sezoane={sezoane.data ?? []}
-        saliOptions={saliOpts}
-        allSali={sali.data ?? []}
-        avertismentSezon={
-          cereConfirmareMutare ? (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
-              <p className="text-sm font-bold text-amber-900">
-                Muți o grupă care a fost deja predată
-              </p>
-              <p className="mt-1 text-sm text-amber-800">
-                Cursul are {prezenteQ.data} prezențe înregistrate, iar ele rămân
-                legate de el. După mutare grupa dispare din salariile și din
-                rapoartele lunilor în care a fost ținută, pentru că acestea se
-                citesc pe sezonul lunii. Pentru sezonul următor clonează sezonul —
-                clonarea lasă grupa de acum la locul ei.
-              </p>
-              <div className="mt-2">
-                <Checkbox
-                  id="confirma-mutare-sezon"
-                  label="Am înțeles, mută grupa oricum"
-                  checked={mutareSezonOk}
-                  onChange={(e) => setMutareSezonOk(e.target.checked)}
-                />
-              </div>
-            </div>
-          ) : null
-        }
-      />
-      <TarifFields form={form} set={set} />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </form>
+    <div
+      ref={bodyRef}
+      className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]"
+    >
+      <form id="curs-form" onSubmit={handleSubmit} className="min-w-0 space-y-3">
+        <div data-sectiune="detalii">
+          <DetaliiFields
+            form={form}
+            set={set}
+            setForm={setForm}
+            teacheri={teacheri.data ?? []}
+            coInstructorOptions={coInstructorOptions}
+          />
+        </div>
+        <div data-sectiune="program">
+          <ProgramFields
+            form={form}
+            set={set}
+            setForm={setForm}
+            locatii={locatii.data ?? []}
+            sezoane={sezoane.data ?? []}
+            saliOptions={saliOpts}
+            allSali={sali.data ?? []}
+            avertismentSezon={
+              cereConfirmareMutare ? (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+                  <p className="text-sm font-bold text-amber-900">
+                    Muți o grupă care a fost deja predată
+                  </p>
+                  <p className="mt-1 text-sm text-amber-800">
+                    Cursul are {prezenteQ.data} prezențe înregistrate, iar ele
+                    rămân legate de el. După mutare grupa dispare din salariile
+                    și din rapoartele lunilor în care a fost ținută, pentru că
+                    acestea se citesc pe sezonul lunii. Pentru sezonul următor
+                    clonează sezonul — clonarea lasă grupa de acum la locul ei.
+                  </p>
+                  <div className="mt-2">
+                    <Checkbox
+                      id="confirma-mutare-sezon"
+                      label="Am înțeles, mută grupa oricum"
+                      checked={mutareSezonOk}
+                      onChange={(e) => setMutareSezonOk(e.target.checked)}
+                    />
+                  </div>
+                </div>
+              ) : null
+            }
+          />
+        </div>
+        <div data-sectiune="tarif">
+          <TarifFields form={form} set={set} />
+        </div>
+        {/* Avertisment NON-BLOCANT: lipsa esențialelor nu oprește salvarea. */}
+        {checklist.lipsaEsentiale.length > 0 && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            ⚠️ Necompletate:{' '}
+            {checklist.lipsaEsentiale.map((s) => s.eticheta).join(', ')}. Poți
+            salva oricum — cursul rămâne marcat ca fișă incompletă.
+          </div>
+        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </form>
+      <ChecklistRail rezultat={checklist} />
+    </div>
   )
 
   return (
@@ -328,6 +321,7 @@ export function CursForm({ open, curs, onClose }: Props) {
       open={open}
       title={isEdit ? 'Editează curs' : 'Curs nou'}
       onClose={onClose}
+      size="xl"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
