@@ -10,9 +10,13 @@ export type CursChecklistRow = CursCheckInput & { id: string }
 // Toate cursurile nearhivate ale sezonului, pentru evaluare client-side.
 // `fetchAllRows` + tiebreaker pe `id`: fără paginare, PostgREST ar tăia tăcut
 // la max_rows=1000 și pagina ar raporta mai puține fișe incomplete decât există.
+//
+// DELIBERAT fără filtru de locație în query: `cursuri.locatie` e chiar unul
+// dintre câmpurile pe care pagina le verifică. Filtrat pe server, un curs fără
+// locație ar dispărea exact de pe pagina care trebuie să-i semnaleze lipsa.
+// Restrângerea la locația de lucru se face client-side, păstrând orfanii.
 export async function listCursuriPentruChecklist(params: {
   sezonId: string | null
-  locatieId: string | null
 }): Promise<CursChecklistRow[]> {
   const data = await fetchAllRows(() => {
     let q = supabase
@@ -20,7 +24,6 @@ export async function listCursuriPentruChecklist(params: {
       .select(CURS_CHECKLIST_COLS)
       .eq('suspendat', false)
     if (params.sezonId) q = q.eq('sezon', params.sezonId)
-    if (params.locatieId) q = q.eq('locatie', params.locatieId)
     return q.order('id', { ascending: true })
   })
   return data as unknown as CursChecklistRow[]

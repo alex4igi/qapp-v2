@@ -105,7 +105,7 @@ const makeColumns = (
       const rez = c.id ? checklistById.get(c.id) : undefined
       return rez ? <ChecklistBadge rezultat={rez} compact /> : '—'
     },
-    className: 'w-20',
+    className: 'w-36',
     // Esențialele cântăresc mai mult decât recomandatele, ca o sortare
     // descrescătoare să ridice întâi grupele cu probleme reale.
     sortValue: (c) => {

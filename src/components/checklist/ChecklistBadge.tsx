@@ -3,7 +3,11 @@ import type { Rezultat } from '@/lib/checklist'
 
 type Props = {
   rezultat: Rezultat
-  /** Variantă scurtă pentru celule de tabel: „⚠ 3" / „✓". */
+  /**
+   * Pentru celule de tabel: scurtează DOAR starea „completă" la „✓". Numărul
+   * de câmpuri lipsă își păstrează eticheta — o pilulă cu un număr gol nu spune
+   * din ce categorie lipsesc.
+   */
   compact?: boolean
   className?: string
 }
@@ -25,9 +29,9 @@ export function ChecklistBadge({ rezultat, compact, className }: Props) {
 
   let text: string
   if (nEs > 0) {
-    text = compact ? `⚠ ${nEs}` : `⚠ ${nEs} ${nEs === 1 ? 'esențial' : 'esențiale'}`
+    text = `⚠ ${nEs} ${nEs === 1 ? 'esențial' : 'esențiale'}`
   } else if (nRec > 0) {
-    text = compact ? `${nRec}` : `${nRec} ${nRec === 1 ? 'recomandat' : 'recomandate'}`
+    text = `${nRec} ${nRec === 1 ? 'recomandat' : 'recomandate'}`
   } else {
     text = compact ? '✓' : '✓ Fișă completă'
   }

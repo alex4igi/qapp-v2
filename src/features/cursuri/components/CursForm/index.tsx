@@ -302,12 +302,15 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
         <div data-sectiune="tarif">
           <TarifFields form={form} set={set} />
         </div>
-        {/* Avertisment NON-BLOCANT: lipsa esențialelor nu oprește salvarea. */}
+        {/* Avertisment NON-BLOCANT: lipsa esențialelor nu oprește salvarea.
+            Nu enumeră câmpurile — rail-ul de alături le listează deja. */}
         {checklist.lipsaEsentiale.length > 0 && (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            ⚠️ Necompletate:{' '}
-            {checklist.lipsaEsentiale.map((s) => s.eticheta).join(', ')}. Poți
-            salva oricum — cursul rămâne marcat ca fișă incompletă.
+            ⚠️ {checklist.lipsaEsentiale.length}{' '}
+            {checklist.lipsaEsentiale.length === 1
+              ? 'câmp esențial necompletat'
+              : 'câmpuri esențiale necompletate'}
+            . Poți salva oricum — cursul rămâne marcat ca fișă incompletă.
           </div>
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}

@@ -67,8 +67,8 @@ export function CursuriIncompleteSection({ sezonId, locatieId }: Props) {
   const navigate = useNavigate()
 
   const cursuriQ = useQuery({
-    queryKey: ['fise-incomplete', 'cursuri', sezonId, locatieId],
-    queryFn: () => listCursuriPentruChecklist({ sezonId, locatieId }),
+    queryKey: ['fise-incomplete', 'cursuri', sezonId],
+    queryFn: () => listCursuriPentruChecklist({ sezonId }),
   })
   const teacheri = useQuery({
     queryKey: ['lookup', 'teacheri'],
@@ -79,9 +79,16 @@ export function CursuriIncompleteSection({ sezonId, locatieId }: Props) {
     queryFn: locatiiOptions,
   })
 
+  // Locația se filtrează AICI, nu în query: cursurile fără locație rămân
+  // vizibile în orice locație de lucru — lipsa locației e ea însăși un defect
+  // pe care pagina trebuie să-l arate, nu un motiv să ascundă rândul.
+  const inLocatie = (c: CursChecklistRow) =>
+    !locatieId || c.locatie == null || c.locatie === locatieId
+
   // Cele cu esențiale lipsă întâi; la egalitate, cele cu mai multe recomandate.
   const randuri = useMemo<Rand[]>(() => {
     return (cursuriQ.data ?? [])
+      .filter(inLocatie)
       .map((curs) => ({ curs, rez: evalueazaChecklist(CURS_CHECKLIST, curs) }))
       .filter((r) => !r.rez.completa)
       .sort(
@@ -90,9 +97,9 @@ export function CursuriIncompleteSection({ sezonId, locatieId }: Props) {
           b.rez.lipsaRecomandate.length - a.rez.lipsaRecomandate.length ||
           a.curs.numele.localeCompare(b.curs.numele, 'ro'),
       )
-  }, [cursuriQ.data])
+  }, [cursuriQ.data, locatieId])
 
-  const total = cursuriQ.data?.length ?? 0
+  const total = (cursuriQ.data ?? []).filter(inLocatie).length
   const cuEsentiale = randuri.filter((r) => r.rez.lipsaEsentiale.length > 0).length
   const doarRecomandate = randuri.length - cuEsentiale
 
@@ -115,7 +122,7 @@ export function CursuriIncompleteSection({ sezonId, locatieId }: Props) {
     {
       header: 'Fișă',
       cell: (r) => <ChecklistBadge rezultat={r.rez} compact />,
-      className: 'w-20',
+      className: 'w-36',
       sortValue: (r) =>
         r.rez.lipsaEsentiale.length * 100 + r.rez.lipsaRecomandate.length,
     },
