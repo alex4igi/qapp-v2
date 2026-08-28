@@ -1,8 +1,8 @@
 // Barrel public pentru modulul cursuri/api.
 
 export { PAGE_SIZE } from './list'
-export type { CursuriListParams, CursuriListResult } from './list'
-export { listCursuri } from './list'
+export type { CursuriListParams, CursuriListResult, TipCursFilter } from './list'
+export { listCursuri, listOreStart } from './list'
 
 export { getCurs, createCurs, updateCurs, toggleCursArchived, deleteCurs } from './courses'
 

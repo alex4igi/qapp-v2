@@ -22,9 +22,23 @@ import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { isTeacher, isManagerOrHigher } from '@/lib/rolesMatrix'
 import type { VListaCursuri } from '@/types/db'
 import { CursForm } from './CursForm'
-import { listCursuri, PAGE_SIZE } from './api'
+import { listCursuri, listOreStart, PAGE_SIZE, type TipCursFilter } from './api'
+import { formatOra } from './program'
 
 const FARA_LOCATIE = '— Fără locație —'
+
+const TIP_OPTIONS = [
+  { value: 'recurent', label: 'Recurent' },
+  { value: 'recurent-trupa', label: 'Recurent trupă' },
+  { value: 'facultativ', label: 'Facultativ' },
+]
+
+// Aceeași derivare ca în CursForm/DetaliiTab: tipul nu e stocat, se citește din
+// facultativ + nivelul='Trupa'.
+function tipLabel(c: VListaCursuri): string {
+  if (c.facultativ) return 'Facultativ'
+  return c.nivelul === 'Trupa' ? 'Recurent trupă' : 'Recurent'
+}
 
 const columns: Column<VListaCursuri>[] = [
   {
@@ -47,6 +61,25 @@ const columns: Column<VListaCursuri>[] = [
     header: 'Zile',
     cell: (c) => (c.zile?.length ? c.zile.join(', ') : '—'),
     sortValue: (c) => c.zile?.join(', '),
+  },
+  {
+    header: 'Ora',
+    // Compact: orele de start distincte („17:00" sau „17:00 / 18:00"), cu
+    // detalierea pe zile în tooltip.
+    cell: (c) =>
+      c.ore_start?.length ? (
+        <span title={formatOra(c) || undefined}>{c.ore_start.join(' / ')}</span>
+      ) : (
+        '—'
+      ),
+    className: 'w-28',
+    sortValue: (c) => c.ora_start,
+  },
+  {
+    header: 'Tip',
+    cell: (c) => tipLabel(c),
+    className: 'w-32',
+    sortValue: (c) => tipLabel(c),
   },
   {
     header: 'Nivel',
@@ -76,6 +109,8 @@ export function CursuriListPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [sezonFilter, setSezonFilter] = useState('')
   const [sezonInit, setSezonInit] = useState(false)
+  const [tipFilter, setTipFilter] = useState<TipCursFilter | ''>('')
+  const [oraFilter, setOraFilter] = useState('')
 
   // Pentru teacher: limităm la cursurile asociate (via cursuri_teacheri M:N).
   // Fără filtru de sezon aici — pagina are selector propriu care se intersectează.
@@ -117,18 +152,51 @@ export function CursuriListPage() {
     setPage(0)
   }, [locatieFilter])
 
+  const filtersReady = (!teacherMode || teacherCursuriQ.isSuccess) && sezonInit
+
+  // Orele din dropdown urmăresc selecția curentă (sezon/locație/teacher), ca să
+  // nu ofere ore care n-au niciun curs.
+  const oreQ = useQuery({
+    queryKey: ['cursuri', 'ore-start', { locatieFilter, sezonFilter, tipFilter, teacherCursIds }],
+    queryFn: () =>
+      listOreStart({
+        locatieId: locatieFilter || null,
+        sezonId: sezonFilter || null,
+        tip: tipFilter || null,
+        cursIds: teacherCursIds,
+      }),
+    enabled: filtersReady,
+  })
+  const oreOptions = useMemo(
+    () => (oreQ.data ?? []).map((o) => ({ value: o, label: o })),
+    [oreQ.data],
+  )
+
+  // Dacă ora selectată nu mai există după schimbarea celorlalte filtre, o golim.
+  useEffect(() => {
+    if (oraFilter && oreQ.isSuccess && !(oreQ.data ?? []).includes(oraFilter)) {
+      setOraFilter('')
+      setPage(0)
+    }
+  }, [oraFilter, oreQ.isSuccess, oreQ.data])
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['cursuri', { search, page, locatieFilter, sezonFilter, teacherCursIds }],
+    queryKey: [
+      'cursuri',
+      { search, page, locatieFilter, sezonFilter, tipFilter, oraFilter, teacherCursIds },
+    ],
     queryFn: () =>
       listCursuri({
         search,
         page,
         locatieId: locatieFilter || null,
         sezonId: sezonFilter || null,
+        tip: tipFilter || null,
+        ora: oraFilter || null,
         cursIds: teacherCursIds,
       }),
     placeholderData: keepPreviousData,
-    enabled: (!teacherMode || teacherCursuriQ.isSuccess) && sezonInit,
+    enabled: filtersReady,
   })
 
   const totalPages = useMemo(
@@ -185,6 +253,34 @@ export function CursuriListPage() {
               value={sezonFilter}
               onChange={(e) => {
                 setSezonFilter(e.target.value)
+                setPage(0)
+              }}
+            />
+          </Field>
+        </div>
+        <div className="w-48">
+          <Field label="Tip curs" htmlFor="curs-tip">
+            <Select
+              id="curs-tip"
+              placeholder="Toate tipurile"
+              options={TIP_OPTIONS}
+              value={tipFilter}
+              onChange={(e) => {
+                setTipFilter(e.target.value as TipCursFilter | '')
+                setPage(0)
+              }}
+            />
+          </Field>
+        </div>
+        <div className="w-40">
+          <Field label="Ora începerii" htmlFor="curs-ora">
+            <Select
+              id="curs-ora"
+              placeholder="Toate orele"
+              options={oreOptions}
+              value={oraFilter}
+              onChange={(e) => {
+                setOraFilter(e.target.value)
                 setPage(0)
               }}
             />

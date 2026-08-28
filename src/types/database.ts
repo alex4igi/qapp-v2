@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -8462,6 +8462,7 @@ export type Database = {
         Row: {
           balance: number | null
           capacitate_maxima: number | null
+          facultativ: boolean | null
           id: string | null
           id_locatie: string | null
           id_teacher: string | null
@@ -8471,6 +8472,10 @@ export type Database = {
           nivelul: Database["public"]["Enums"]["nivel_curs"] | null
           nume: string | null
           numele_cursului: string | null
+          ora: string | null
+          ora_start: string | null
+          ore_pe_zi: Json | null
+          ore_start: string[] | null
           prenume: string | null
           sala: string | null
           sezon: string | null
