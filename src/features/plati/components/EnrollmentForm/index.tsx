@@ -224,16 +224,22 @@ export function EnrollmentForm({
     setSezonId(id)
     setCursId('')
     setEsteReinscriere(false)
-    const s = sezoaneDisponibile.find((x) => x.id === id)
-    const today = todayIso()
-    if (s?.data_incepere && s.data_final) {
-      setDataIncepere(
-        today >= s.data_incepere && today <= s.data_final
-          ? today
-          : s.data_incepere,
-      )
-    }
   }
+
+  // Data trebuie să cadă în sezonul curent al formularului — inclusiv când
+  // sezonul vine din afară (`defaultSezonId`) și nu s-a apăsat pe selector.
+  // Altfel formularul arată „Sezon 2026-2027" cu data de azi (august), iar
+  // înrolarea ar ateriza în sezonul de vară.
+  const lastSezonRef = useRef<string | null>(null)
+  useEffect(() => {
+    const s = sezonSelectat
+    if (!s?.data_incepere || !s.data_final) return
+    if (lastSezonRef.current === s.id) return
+    lastSezonRef.current = s.id
+    setDataIncepere((prev) =>
+      prev >= s.data_incepere! && prev <= s.data_final! ? prev : s.data_incepere!,
+    )
+  }, [sezonSelectat])
 
   // Opțiuni curs grupate vizual: Grupe → Trupe → Facultative, alfabetic în grup.
   const cursuriOpts: SelectOption[] = useMemo(() => {
@@ -499,11 +505,11 @@ export function EnrollmentForm({
     if (dataIncepere < todayIso()) {
       return setError('Data nu poate fi în trecut.')
     }
-    // Sezonul real al înrolării se deduce server-side din dată (getSezonForDate).
-    // Dacă data cade în afara sezonului ales, ratele s-ar genera în alt sezon
-    // decât cursul → blocăm în loc să producem tăcut date inconsistente.
+    // Sezonul real al înrolării se deduce din dată (getSezonForDate la recurent,
+    // luna calendaristică la facultativ), pe când `sezon_id` vine din curs. Dacă
+    // data cade în afara sezonului ales, cele două se contrazic → blocăm în loc
+    // să producem tăcut o înrolare de august pe un curs de toamnă.
     if (
-      !isFacultativ &&
       sezonSelectat?.data_incepere &&
       sezonSelectat.data_final &&
       (dataIncepere < sezonSelectat.data_incepere ||
