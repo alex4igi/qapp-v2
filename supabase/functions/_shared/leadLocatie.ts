@@ -18,6 +18,7 @@ export async function getProgramareSms(
     .select('ora, locatie')
     .eq('lead', leadId)
     .order('data_programarii', { ascending: false })
+    .order('created', { ascending: false })
     .limit(1)
     .maybeSingle()
 

@@ -9,6 +9,7 @@ export async function getLatestProgramareCurs(
     .select('cursul_programat')
     .eq('lead', leadId)
     .order('data_programarii', { ascending: false })
+    .order('created', { ascending: false })
     .limit(1)
     .maybeSingle()
   return data?.cursul_programat ?? null
@@ -24,6 +25,7 @@ export async function getLatestProgramare(
     .select('cursul_programat, eveniment_programat')
     .eq('lead', leadId)
     .order('data_programarii', { ascending: false })
+    .order('created', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (!data) return null

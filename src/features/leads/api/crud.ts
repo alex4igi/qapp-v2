@@ -102,6 +102,19 @@ export async function listLeads(): Promise<Lead[]> {
   return fetchLeadsPaged(false)
 }
 
+// Un singur lead, după id. Necesar pentru deep-link-uri din afara pipeline-ului
+// (ex. rosterul unui eveniment): leadul poate fi convertit sau în nurture, deci
+// nu se găsește în lista board-ului.
+export async function getLeadById(id: string): Promise<Lead | null> {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return (data as Lead) ?? null
+}
+
 // Pool-ul Nurture (separat de board). `range` taie server-side, ca filtrul de
 // perioadă din vederea Listă să nu aducă în memorie toți cei ~6000 de ex-clienți
 // când utilizatorul cere doar ultimele 30 de zile.

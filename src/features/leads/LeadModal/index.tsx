@@ -13,7 +13,12 @@ import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { ConversieModal, type ConversieResult } from '../ConversieModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
-import { campaniiOptions, locatiiOptions, sezonActiv } from '@/lib/lookups'
+import {
+  campaniiOptions,
+  locatiiOptions,
+  matchLocatieId,
+  sezonActiv,
+} from '@/lib/lookups'
 import type { Lead, GrupaLead } from '@/types/db'
 import {
   STATUS_CONFIG,
@@ -180,27 +185,7 @@ export function LeadModal({
   // normalizat (fără diacritice) + pe substring, nu pe egalitate strictă.
   // Rezolvă o locație dată ca text („Nicolina") SAU ca uuid → uuid din `locatii`.
   const resolveLocatieId = useCallback(
-    (raw: string | null) => {
-      if (!raw) return null
-      if (locatiiQ.data?.some((l) => l.value === raw)) return raw
-    const norm = (s: string) =>
-      s
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .trim()
-    // Studio-ul de copii apare în DB fie ca „Quasar 4 Kids", fie ca „Quasar for
-    // Kids" — match-ul substring nu le leagă (4 ⊄ for), așa că le tratăm ca
-    // sinonime: orice „quasar … kids" potrivește orice locație ce conține „kids".
-    const isKids = (s: string) => s.includes('quasar') && s.includes('kids')
-      const target = norm(raw)
-      const match = locatiiQ.data?.find((l) => {
-        const n = norm(l.label)
-        if (isKids(target)) return isKids(n)
-        return n === target || n.includes(target) || target.includes(n)
-      })
-      return match?.value ?? null
-    },
+    (raw: string | null) => matchLocatieId(raw, locatiiQ.data),
     [locatiiQ.data],
   )
 
@@ -699,6 +684,12 @@ export function LeadModal({
           open
           defaultClientId={enrollData.clientId}
           defaultCursId={enrollData.cursId ?? undefined}
+          sugestieVarsta={
+            form.grupa_varsta
+              ? GRUPA_TO_VARSTA_CURS[form.grupa_varsta as GrupaLead]
+              : null
+          }
+          sugestieLocatie={form.locatia || null}
           onEnrolled={() => {
             // Înrolarea a reușit → abia acum lead-ul devine convertit.
             void markLeadConvertit(enrollData.leadId).finally(() => {

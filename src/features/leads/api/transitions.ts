@@ -21,11 +21,16 @@ async function syncProgramarePrezenta(
         ? 'absent'
         : null
   if (!prezenta) return
+  // Tiebreaker pe `created`: două programări în ACEEAȘI zi (reprogramare pe alt
+  // slot din aceeași zi) fac ordonarea doar pe dată nedeterministă, iar prezența
+  // ajunge pe rândul greșit — vechea programare devine absentă, cea reală rămâne
+  // „programat" și contorul de neprezentări iese fals.
   const { data: latest } = await supabase
     .from('programari_leads')
     .select('id')
     .eq('lead', leadId)
     .order('data_programarii', { ascending: false })
+    .order('created', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (latest) {

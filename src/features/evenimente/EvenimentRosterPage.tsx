@@ -60,7 +60,12 @@ function ParticipantCard({
   // Scoatem din listă doar participanții adăugați manual care n-au plătit nimic
   // (cumpărătorii de bilet nu se scot — au tranzacție).
   const showRemove = row.manual && row.neplatit
-  const navTarget = isLead ? '/leads' : `/clienti/${row.refId}`
+  // Deep-link către fișa leadului, nu doar către pipeline: `?lead=` deschide
+  // modalul de editare direct (leadul poate fi și convertit/nurture, deci nu se
+  // găsește neapărat în lista implicită).
+  const navTarget = isLead
+    ? `/leads?lead=${row.refId}`
+    : `/clienti/${row.refId}`
   const waHref = waLink(row.telefon, waParticipantMessage(row.prenume, row.nume))
 
   const fullyPaid = !row.neplatit && row.rest === 0

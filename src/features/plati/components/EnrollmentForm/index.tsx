@@ -16,7 +16,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { clientiOptions } from '@/lib/lookups'
+import { clientiOptions, locatiiOptions, matchLocatieId } from '@/lib/lookups'
 import { listSezoane } from '@/features/setari/api'
 import { formatRON } from '@/lib/format'
 import type { Curs, Enrollment, Enums } from '@/types/db'
@@ -61,6 +61,11 @@ type Props = {
   // Sezonul pe care se deschide formularul (ex: selectorul din fișa clientului).
   // Ignorat dacă e un sezon deja încheiat — nu se poate înrola în trecut.
   defaultSezonId?: string
+  // Context de sugestie (lead venit la o clasă DEMO): vârsta grupei lui și
+  // locația preferată. Restrâng lista de cursuri la ce i se potrivește, cu
+  // posibilitatea de a o extinde la tot sezonul.
+  sugestieVarsta?: string | null
+  sugestieLocatie?: string | null
   // Apelat o singură dată când înrolarea s-a creat cu succes (independent de
   // încasare/bonus). Primește rândurile create (gol pentru fluxul OPEN per ședință).
   // Folosit de: conversia lead → marchează convertit; conversia ședință → abonament.
@@ -73,6 +78,8 @@ export function EnrollmentForm({
   defaultClientId,
   defaultCursId,
   defaultSezonId,
+  sugestieVarsta,
+  sugestieLocatie,
   onEnrolled,
 }: Props) {
   const queryClient = useQueryClient()
@@ -97,6 +104,7 @@ export function EnrollmentForm({
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
   const [overbook, setOverbook] = useState(false)
+  const [toateCursurile, setToateCursurile] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const clientiQ = useQuery({
@@ -241,9 +249,45 @@ export function EnrollmentForm({
     )
   }, [sezonSelectat])
 
+  // `leads.locatia` e text scurt („Ștefan cel Mare"), `cursuri.locatie` e FK.
+  const locatiiQ = useQuery({
+    queryKey: ['lookup', 'locatii'],
+    queryFn: locatiiOptions,
+    enabled: open && Boolean(sugestieLocatie),
+  })
+  const sugestieLocatieId = useMemo(
+    () => matchLocatieId(sugestieLocatie, locatiiQ.data),
+    [sugestieLocatie, locatiiQ.data],
+  )
+
+  // Sugestiile pentru un lead venit la demo: cursurile sezonului care i se
+  // potrivesc ca vârstă și locație. Cursurile „Mixt" și cele fără locație intră
+  // mereu. Dacă filtrul golește lista, cădem pe tot sezonul — mai bine o listă
+  // lungă decât un selector gol.
+  const areSugestii = Boolean(sugestieVarsta || sugestieLocatieId)
+  const cursuriSugerate = useMemo(() => {
+    if (!areSugestii) return cursuri
+    return cursuri.filter((c) => {
+      if (sugestieLocatieId && c.locatie && c.locatie !== sugestieLocatieId)
+        return false
+      if (
+        sugestieVarsta &&
+        c.varsta &&
+        c.varsta !== sugestieVarsta &&
+        c.varsta !== 'Mixt'
+      )
+        return false
+      return true
+    })
+  }, [cursuri, areSugestii, sugestieVarsta, sugestieLocatieId])
+
+  const sugestiiActive =
+    areSugestii && !toateCursurile && cursuriSugerate.length > 0
+  const cursuriAfisate = sugestiiActive ? cursuriSugerate : cursuri
+
   // Opțiuni curs grupate vizual: Grupe → Trupe → Facultative, alfabetic în grup.
   const cursuriOpts: SelectOption[] = useMemo(() => {
-    const decorated = cursuri.map((c) => {
+    const decorated = cursuriAfisate.map((c) => {
       const tip = deriveTip(c)!
       return {
         curs: c,
@@ -261,7 +305,7 @@ export function EnrollmentForm({
       return a.curs.numele.localeCompare(b.curs.numele, 'ro')
     })
     return decorated.map((d) => d.opt)
-  }, [cursuri])
+  }, [cursuriAfisate])
 
   // Prețul promo de reînscriere e o a doua valoare pe curs (`pret_lunar_promo`),
   // nu un override manual. Doar la GRUPE: trupele nu au preț promo (decizie
@@ -659,9 +703,39 @@ export function EnrollmentForm({
               onChange={setCursId}
             />
             <p className="mt-1 text-xs text-quasar-gray">
-              {locatieNume
-                ? <>Cursuri active la <strong>{locatieNume}</strong>. </>
-                : <>Cursuri active (toate locațiile). </>}
+              {sugestiiActive ? (
+                <>
+                  Sugestii pentru{' '}
+                  <strong>
+                    {[sugestieVarsta, sugestieLocatie].filter(Boolean).join(' · ')}
+                  </strong>{' '}
+                  ({cursuriSugerate.length}).{' '}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => setToateCursurile(true)}
+                  >
+                    Vezi toate cursurile din sezon
+                  </button>
+                  .{' '}
+                </>
+              ) : areSugestii ? (
+                <>
+                  Toate cursurile sezonului.{' '}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => setToateCursurile(false)}
+                  >
+                    Înapoi la sugestii
+                  </button>
+                  .{' '}
+                </>
+              ) : locatieNume ? (
+                <>Cursuri active la <strong>{locatieNume}</strong>. </>
+              ) : (
+                <>Cursuri active (toate locațiile). </>
+              )}
               {tipInrolare && (
                 <>Tip înrolare: <strong>{TIP_LABEL[tipInrolare]}</strong>.</>
               )}

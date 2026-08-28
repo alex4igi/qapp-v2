@@ -95,6 +95,31 @@ export async function sezonActivId(): Promise<string | null> {
   return data?.id ?? null
 }
 
+// Numele locațiilor diferă între surse: `locatii.nume` e forma canonică din DB
+// („Galeriile Stefan cel Mare", fără diacritice), leadurile poartă forma scurtă
+// („Ștefan cel Mare"), iar `evenimente.locatia` e text liber. Potrivim normalizat
+// (fără diacritice) + pe substring, nu pe egalitate strictă. Un uuid dat ca `raw`
+// trece direct.
+export function matchLocatieId(
+  raw: string | null | undefined,
+  optiuni: SelectOption[] | undefined,
+): string | null {
+  if (!raw) return null
+  if (optiuni?.some((l) => l.value === raw)) return raw
+  const norm = (s: string) =>
+    s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim()
+  // Studio-ul de copii apare fie ca „Quasar 4 Kids", fie ca „Quasar for Kids" —
+  // substring-ul nu le leagă (4 ⊄ for), deci le tratăm ca sinonime.
+  const isKids = (s: string) => s.includes('quasar') && s.includes('kids')
+  const target = norm(raw)
+  const match = optiuni?.find((l) => {
+    const n = norm(l.label)
+    if (isKids(target)) return isKids(n)
+    return n === target || n.includes(target) || target.includes(n)
+  })
+  return match?.value ?? null
+}
+
 // Sezonul activ cu datele de start/sfârșit (pt. prorata + prima lună la înrolare).
 export async function sezonActiv(): Promise<
   { id: string; data_incepere: string; data_final: string } | null

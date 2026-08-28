@@ -14,7 +14,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui'
 import { campaniiOptions } from '@/lib/lookups'
 import type { Lead, StatusLead } from '@/types/db'
-import { PIPELINE_COLUMNS, perioadaToRange } from './constants'
+import {
+  GRUPA_TO_VARSTA_CURS,
+  PIPELINE_COLUMNS,
+  perioadaToRange,
+} from './constants'
 import { KanbanColumn } from './KanbanColumn'
 import { LeadCard } from './LeadCard'
 import { LeadModal } from './LeadModal'
@@ -39,6 +43,7 @@ import { TodayPanel } from './TodayPanel'
 import {
   getEnrolledClientIds,
   getLatestProgramareCurs,
+  getLeadById,
   lastPrezentaByLead,
   listLeadIdsContactedToday,
   listLeads,
@@ -94,6 +99,9 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   const [waitingLead, setWaitingLead] = useState<Lead | null>(null)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
   const [enrollData, setEnrollData] = useState<ConversieResult | null>(null)
+  // Leadul convertit rămâne în memorie doar ca să dea sugestiile de curs
+  // (vârstă + locație) formularului de înrolare.
+  const [enrollLead, setEnrollLead] = useState<Lead | null>(null)
   const [logContactLead, setLogContactLead] = useState<Lead | null>(null)
   const [dragError, setDragError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -154,19 +162,35 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
 
   const leads = leadsQuery.data ?? []
 
-  // Deschidere directă a fișei unui lead via ?lead=<id> (ex: din rosterul grupei).
-  // Așteptăm ca lista să fie încărcată, apoi curățăm param-ul din URL.
+  // Deschidere directă a fișei unui lead via ?lead=<id> (ex: din rosterul grupei
+  // sau al unui eveniment DEMO). Dacă nu e în lista board-ului — convertit, în
+  // nurture, sau lista încă se încarcă — îl aducem punctual după id, altfel
+  // linkul ar duce în pipeline fără să deschidă nimic.
   const leadParam = searchParams.get('lead')
   useEffect(() => {
     if (!leadParam) return
-    const lead = leads.find((l) => l.id === leadParam)
-    if (lead) {
-      setEditingLead(lead)
+    let anulat = false
+    const clearParam = () => {
       const next = new URLSearchParams(searchParams)
       next.delete('lead')
       setSearchParams(next, { replace: true })
     }
-  }, [leadParam, leads, searchParams, setSearchParams])
+    const dinLista = leads.find((l) => l.id === leadParam)
+    if (dinLista) {
+      setEditingLead(dinLista)
+      clearParam()
+      return
+    }
+    if (leadsQuery.isLoading) return
+    void getLeadById(leadParam).then((l) => {
+      if (anulat || !l) return
+      setEditingLead(l)
+      clearParam()
+    })
+    return () => {
+      anulat = true
+    }
+  }, [leadParam, leads, leadsQuery.isLoading, searchParams, setSearchParams])
 
   // Leads cu client creat dar neconvertiți = înscriere începută, neterminată.
   // Verificăm care dintre clienții lor au deja o înrolare activă, ca să arătăm
@@ -191,6 +215,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   async function handleEnroll(lead: Lead) {
     if (!lead.id_client) return
     const cursId = await getLatestProgramareCurs(lead.id)
+    setEnrollLead(lead)
     setEnrollData({ clientId: lead.id_client, cursId, leadId: lead.id })
   }
 
@@ -447,6 +472,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
           lead={convertLead}
           onClose={() => setConvertLead(null)}
           onConverted={(result) => {
+            setEnrollLead(convertLead)
             setConvertLead(null)
             setEnrollData(result)
           }}
@@ -457,13 +483,22 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
           open
           defaultClientId={enrollData.clientId}
           defaultCursId={enrollData.cursId ?? undefined}
+          sugestieVarsta={
+            enrollLead?.grupa_varsta
+              ? GRUPA_TO_VARSTA_CURS[enrollLead.grupa_varsta]
+              : null
+          }
+          sugestieLocatie={enrollLead?.locatia ?? null}
           onEnrolled={() => {
             // Înrolarea a reușit → abia acum lead-ul devine convertit.
             void markLeadConvertit(enrollData.leadId).finally(() => {
               void queryClient.invalidateQueries({ queryKey: ['leads'] })
             })
           }}
-          onClose={() => setEnrollData(null)}
+          onClose={() => {
+            setEnrollData(null)
+            setEnrollLead(null)
+          }}
         />
       )}
       {logContactLead && (
