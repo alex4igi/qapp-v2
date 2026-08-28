@@ -10338,6 +10338,7 @@ export type Database = {
       get_sms_recipients: {
         Args: { p_cod?: string; p_locatie?: string; p_sezon?: string }
         Returns: {
+          are_promo: boolean
           client_ids: string[]
           familia_id: string
           membri: Json

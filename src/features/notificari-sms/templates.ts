@@ -39,7 +39,7 @@ export const SMS_BULK_CODES = [
 export type SmsBulkCod = (typeof SMS_BULK_CODES)[number]
 
 export const SMS_BULK_LABEL: Record<SmsBulkCod, string> = {
-  reminder_plata: 'Reminder plată (termen 15)',
+  reminder_plata: 'Reminder plată (termenul ratei)',
   notificare_restante: 'Notificare restanțe',
   avertisment_loc: 'Avertisment pierdere loc (50 zile)',
   mesaj_liber: 'Mesaj liber (ad-hoc)',
@@ -57,6 +57,9 @@ export type SmsRecipient = {
   total_restanta: number
   zile_depasire: number | null
   client_ids: string[]
+  // Are cel puțin o rată pe preț promo (reînscriere) în selecție — promo-ul se
+  // pierde dacă rata nu e achitată până la scadență, deci reminderul o spune.
+  are_promo: boolean
 }
 
 // Elimină diacriticele (NFD + strip combining marks U+0300–U+036F) — plasă de
@@ -106,6 +109,10 @@ export function buildBulkSms(
         : zilePanaLaTermen(azi)
       const cand =
         n > 1 ? `peste ${n} zile` : n === 1 ? 'maine' : 'astazi'
+      // Varianta promo e scurtată („la Quasar Dance") ca să încapă în 160 car.
+      if (r.are_promo) {
+        return `Buna ziua! Va reamintim ca ${cand} este termenul de plata la Quasar Dance. Dupa acest termen se pierde pretul promotional. Echipa Quasar Dance`
+      }
       return `Buna ziua! Va reamintim ca ${cand} este termenul de plata pentru cursurile Quasar Dance. Echipa Quasar Dance`
     }
 

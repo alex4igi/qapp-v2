@@ -132,10 +132,22 @@ export function SmsComposer({ open, onClose }: Props) {
       return next
     })
 
-  const samplePreview = useMemo(() => {
+  // La reminder_plata textul diferă pentru cei cu preț promo — arătăm ambele
+  // variante prezente în selecție, ca operatorul să vadă exact ce pleacă.
+  const samplePreviews = useMemo(() => {
+    const out: Array<{ eticheta: string | null; text: string }> = []
+    const faraPromo = selectedRecipients.find((r) => !r.are_promo)
+    const cuPromo = selectedRecipients.find((r) => r.are_promo)
+    if (cod === 'reminder_plata') {
+      if (faraPromo)
+        out.push({ eticheta: 'preț standard', text: buildBulkSms(cod, faraPromo, { textLiber }) })
+      if (cuPromo)
+        out.push({ eticheta: 'preț promo', text: buildBulkSms(cod, cuPromo, { textLiber }) })
+      return out
+    }
     const r = selectedRecipients[0]
-    if (!r) return ''
-    return buildBulkSms(cod, r, { textLiber })
+    if (r) out.push({ eticheta: null, text: buildBulkSms(cod, r, { textLiber }) })
+    return out
   }, [cod, selectedRecipients, textLiber])
 
   const save = useMutation({
@@ -295,6 +307,11 @@ export function SmsComposer({ open, onClose }: Props) {
                             <span className="text-quasar-gray">
                               — {r.membri.map((m) => m.nume).join(', ')}
                             </span>
+                            {cod === 'reminder_plata' && r.are_promo && (
+                              <span className="ml-2 rounded bg-quasar-yellow/40 px-1.5 py-0.5 text-xs font-medium text-quasar-black">
+                                pret promo
+                              </span>
+                            )}
                             {r.alreadySent && (
                               <span className="ml-2 text-xs text-quasar-gray">
                                 (trimis luna aceasta)
@@ -336,11 +353,26 @@ export function SmsComposer({ open, onClose }: Props) {
               </div>
             )}
 
-            {samplePreview && (
+            {samplePreviews.length > 0 && (
               <Field label="Previzualizare mesaj">
-                <p className="rounded-md bg-quasar-gray-light/30 p-3 text-sm text-quasar-black">
-                  {samplePreview}
-                </p>
+                <div className="space-y-2">
+                  {samplePreviews.map((s) => (
+                    <p
+                      key={s.eticheta ?? 'unic'}
+                      className="rounded-md bg-quasar-gray-light/30 p-3 text-sm text-quasar-black"
+                    >
+                      {s.eticheta && (
+                        <span className="mr-2 text-xs font-medium text-quasar-gray">
+                          {s.eticheta}:
+                        </span>
+                      )}
+                      {s.text}
+                      <span className="ml-2 text-xs text-quasar-gray">
+                        ({s.text.length} car.)
+                      </span>
+                    </p>
+                  ))}
+                </div>
               </Field>
             )}
           </>
