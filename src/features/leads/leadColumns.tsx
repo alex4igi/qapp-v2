@@ -7,6 +7,7 @@ import {
   DAY_MS,
   FOLLOWUP_DAYS,
   INACTIVE_DAYS,
+  isToday,
   waLeadMessage,
 } from './constants'
 import { timpRelativ } from './LeadHistory'
@@ -251,9 +252,20 @@ export function buildLeadColumns(opts: {
     },
     adaugat: {
       header: 'Adăugat',
-      cell: (l) => formatDate(l.created),
-      sortValue: (l) => l.created,
-      className: 'text-right',
+      cell: (l) => (
+        <span className="whitespace-nowrap">
+          {formatDate(l.created)}
+          {isToday(l.created) && (
+            <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+              Azi
+            </span>
+          )}
+        </span>
+      ),
+      sortValue: (l) => new Date(l.created).getTime(),
+      // Data intrării se citește invers: cele mai noi primele, de la primul click.
+      defaultDir: 'desc',
+      className: 'whitespace-nowrap',
     },
     actiuni: {
       header: '',

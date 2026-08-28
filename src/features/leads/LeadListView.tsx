@@ -10,13 +10,14 @@ import type { LeadFiltersValue } from './LeadFilters'
 const RENDER_CAP = 300
 
 const COLOANE: LeadColumnKey[] = [
-  'nume', 'telefon', 'locatie', 'status', 'ultimContact',
+  'nume', 'telefon', 'locatie', 'status', 'ultimContact', 'adaugat',
   'prezenta', 'interes', 'observatii', 'actiuni',
 ]
 
 // Lista se deschide ordonată după „Ultim contact" crescător — dar ca sortare
 // REALĂ a tabelului, nu ca pre-sortare a rândurilor: doar așa antetul se aprinde
-// cu ▲ și utilizatorul vede după ce e ordonat.
+// cu ▲ și utilizatorul vede după ce e ordonat. Cine vrea prioritizare pe intrare
+// dă click pe „Adăugat" (primul click = cele mai noi sus).
 const SORT_IMPLICIT = { idx: COLOANE.indexOf('ultimContact'), dir: 'asc' } as const
 
 // Contoarele + exportul, compacte, ca să încapă pe rândul de filtre în loc să

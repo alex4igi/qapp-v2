@@ -1,15 +1,18 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
+type SortDir = 'asc' | 'desc'
+
 export type Column<T> = {
   header: string
   cell: (row: T) => ReactNode
   className?: string
   // Dacă e setat, headerul devine sortabil (click → asc/desc) pe valoarea returnată.
   sortValue?: (row: T) => string | number | null | undefined
+  // Direcția la PRIMUL click pe antet. Implicit 'asc'; pune 'desc' unde util e
+  // capătul mare (date — cele mai noi primele), ca să nu ceară două click-uri.
+  defaultDir?: SortDir
 }
-
-type SortDir = 'asc' | 'desc'
 
 type Props<T> = {
   columns: Column<T>[]
@@ -62,7 +65,7 @@ export function DataTable<T>({
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     } else {
       setSortIdx(idx)
-      setSortDir('asc')
+      setSortDir(columns[idx]?.defaultDir ?? 'asc')
     }
   }
 
