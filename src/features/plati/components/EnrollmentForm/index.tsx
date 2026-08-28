@@ -264,9 +264,11 @@ export function EnrollmentForm({
   }, [cursuri])
 
   // Prețul promo de reînscriere e o a doua valoare pe curs (`pret_lunar_promo`),
-  // nu un override manual: se aplică doar la grupe/trupe plătite Per lună.
+  // nu un override manual. Doar la GRUPE: trupele nu au preț promo (decizie
+  // 2026-08-28) — se reînscriu la rata normală.
   const promoDisponibil =
     !isFacultativ &&
+    !isTrupa &&
     tipPlata === 'Per luna' &&
     cursSelectat?.pret_lunar_promo != null
   const aplicPromo = promoDisponibil && esteReinscriere

@@ -476,9 +476,9 @@ export async function createInrolari(
     )
   }
   if (params.esteReinscriere) {
-    if (!isRecurent || params.tipPlata !== 'Per luna') {
+    if (params.tipInrolare !== 'recurent-grupa' || params.tipPlata !== 'Per luna') {
       throw new Error(
-        'Prețul de reînscriere se aplică doar la grupe/trupe plătite Per lună.',
+        'Prețul de reînscriere se aplică doar la grupe recurente plătite Per lună (trupele nu au preț promo).',
       )
     }
     if (curs.pret_lunar_promo == null) {
