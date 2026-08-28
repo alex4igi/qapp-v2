@@ -108,7 +108,10 @@ export function LeadReports() {
   const [grupa, setGrupa] = useState('')
   const [perioada, setPerioada] = useState<Perioada>('sezon')
   const leadsQ = useQuery({ queryKey: ['leads'], queryFn: listLeads })
-  const sezonQ = useQuery({ queryKey: ['lookup', 'sezon-activ'], queryFn: sezonActiv })
+  const sezonQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ-detalii'],
+    queryFn: sezonActiv,
+  })
   const campaniiQ = useQuery({
     queryKey: ['lookup', 'campanii'],
     queryFn: campaniiOptions,

@@ -88,6 +88,7 @@ export async function listEvenimenteProgramabile(
     .from('evenimente')
     .select('id, nume_eveniment, ora, locatia')
     .eq('data', date)
+    .order('ora', { ascending: true, nullsFirst: false })
     .order('nume_eveniment', { ascending: true })
   if (error) throw error
   return (data ?? []) as EvenimentProgramabil[]

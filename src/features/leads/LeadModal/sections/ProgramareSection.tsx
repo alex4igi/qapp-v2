@@ -14,6 +14,8 @@ type Props = {
   grupaVarsta: string
   ignoreVarsta: boolean
   onIgnoreVarstaChange: (on: boolean) => void
+  /** Data aleasă cade în afara sezonului activ → doar clase DEMO, fără cursuri. */
+  intreSezoane: boolean
 }
 
 // Pasul „Programat": dată + curs/eveniment + excepția de grupă de vârstă.
@@ -28,6 +30,7 @@ export function ProgramareSection({
   grupaVarsta,
   ignoreVarsta,
   onIgnoreVarstaChange,
+  intreSezoane,
 }: Props) {
   return (
     <div style={{ marginTop: '18px', border: '1px solid #BBD8F0', background: '#F0F7FE', borderRadius: '13px', padding: '15px 16px' }}>
@@ -79,7 +82,11 @@ export function ProgramareSection({
       </label>
       <div style={{ display: 'flex', gap: '9px', marginTop: '12px', fontSize: '11.5px', color: '#3F6488', lineHeight: 1.45 }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3F6488" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }}><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></svg>
-        <span>La salvare leadul apare în rosterul grupei din acea zi. Confirmarea SMS pleacă după 5 minute (fereastră de corecții). Data nașterii nu e obligatorie.</span>
+        <span>
+          {intreSezoane
+            ? 'Dată în afara sezonului: se programează doar la clase DEMO (cursurile recurente nu se țin în perioada dintre sezoane). Confirmarea SMS pleacă după 5 minute.'
+            : 'La salvare leadul apare în rosterul grupei din acea zi. Confirmarea SMS pleacă după 5 minute (fereastră de corecții). Data nașterii nu e obligatorie.'}
+        </span>
       </div>
     </div>
   )

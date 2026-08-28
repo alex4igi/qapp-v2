@@ -69,7 +69,12 @@ export const categorieInventarOptions = opts(
 
 export const statusEvenimentOptions = opts('Urmator', 'Finalizat', 'Anulat')
 
-export const tipEvenimentOptions = opts('Eveniment', 'Workshop', 'Auditie')
+export const tipEvenimentOptions = opts(
+  'Eveniment',
+  'Workshop',
+  'Auditie',
+  'DEMO Class',
+)
 
 export const tipDocumentOptions = opts(
   'Contract',

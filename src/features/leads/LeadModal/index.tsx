@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { ConversieModal, type ConversieResult } from '../ConversieModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
-import { campaniiOptions, locatiiOptions, sezonActivId } from '@/lib/lookups'
+import { campaniiOptions, locatiiOptions, sezonActiv } from '@/lib/lookups'
 import type { Lead, GrupaLead } from '@/types/db'
 import {
   STATUS_CONFIG,
@@ -96,14 +96,17 @@ export function LeadModal({
     queryKey: ['lookup', 'campanii'],
     queryFn: campaniiOptions,
   })
+  // Cheie proprie: `['lookup','sezon-activ']` e folosită în alte module cu
+  // `sezonActivId` (string), iar aceeași cheie cu două forme de date se
+  // suprascriu reciproc în cache.
   const sezonActivQ = useQuery({
-    queryKey: ['lookup', 'sezon-activ'],
-    queryFn: sezonActivId,
+    queryKey: ['lookup', 'sezon-activ-detalii'],
+    queryFn: sezonActiv,
     enabled: open,
   })
   const cursuriQ = useQuery({
-    queryKey: ['cursuri', 'programabile', sezonActivQ.data ?? null],
-    queryFn: () => listCursuriProgramabile(sezonActivQ.data ?? null),
+    queryKey: ['cursuri', 'programabile', sezonActivQ.data?.id ?? null],
+    queryFn: () => listCursuriProgramabile(sezonActivQ.data?.id ?? null),
     enabled: open && sezonActivQ.isSuccess,
   })
   const locatiiQ = useQuery({
@@ -175,8 +178,11 @@ export function LeadModal({
   // (programari_leads.locatie e FK). Numele din tabela `locatii` diferă ca
   // formă („Galeriile Stefan cel Mare", fără diacritice), așa că potrivim
   // normalizat (fără diacritice) + pe substring, nu pe egalitate strictă.
-  const leadLocatieId = useMemo(() => {
-    if (!form.locatia) return null
+  // Rezolvă o locație dată ca text („Nicolina") SAU ca uuid → uuid din `locatii`.
+  const resolveLocatieId = useCallback(
+    (raw: string | null) => {
+      if (!raw) return null
+      if (locatiiQ.data?.some((l) => l.value === raw)) return raw
     const norm = (s: string) =>
       s
         .toLowerCase()
@@ -187,18 +193,35 @@ export function LeadModal({
     // Kids" — match-ul substring nu le leagă (4 ⊄ for), așa că le tratăm ca
     // sinonime: orice „quasar … kids" potrivește orice locație ce conține „kids".
     const isKids = (s: string) => s.includes('quasar') && s.includes('kids')
-    const target = norm(form.locatia)
-    const match = locatiiQ.data?.find((l) => {
-      const n = norm(l.label)
-      if (isKids(target)) return isKids(n)
-      return n === target || n.includes(target) || target.includes(n)
-    })
-    return match?.value ?? null
-  }, [form.locatia, locatiiQ.data])
+      const target = norm(raw)
+      const match = locatiiQ.data?.find((l) => {
+        const n = norm(l.label)
+        if (isKids(target)) return isKids(n)
+        return n === target || n.includes(target) || target.includes(n)
+      })
+      return match?.value ?? null
+    },
+    [locatiiQ.data],
+  )
+
+  const leadLocatieId = useMemo(
+    () => resolveLocatieId(form.locatia),
+    [form.locatia, resolveLocatieId],
+  )
 
   const weekday = form.data_programare
     ? ZILE_SAPTAMANA[new Date(form.data_programare).getDay()]
     : null
+
+  // O dată în afara sezonului activ (pauza dintre sezoane) nu are curs recurent
+  // valid: în intervalul ăla se ține doar „DEMO Class", deci scoatem cursurile din
+  // dropdown ca să nu poată fi alese din greșeală. Fără sezon activ = același caz.
+  const intreSezoane = Boolean(
+    form.data_programare &&
+      (!sezonActivQ.data ||
+        form.data_programare < sezonActivQ.data.data_incepere ||
+        form.data_programare > sezonActivQ.data.data_final),
+  )
 
   // Cursurile din ziua aleasă (filtrate pe grupă + zi + locație) + evenimentele zilei.
   const optiuni = useMemo(() => {
@@ -220,20 +243,34 @@ export function LeadModal({
       if (weekday && c.zile?.length && !c.zile.includes(weekday)) return false
       return true
     })
-    const cursList = filtered.length ? filtered : byLocatie
+    const cursList = intreSezoane ? [] : filtered.length ? filtered : byLocatie
     // Aceeași regulă pentru evenimente: dacă locația e aleasă, doar evenimentele
     // din ea (plus cele fără locație setată).
-    const evList = (evenimenteQ.data ?? []).filter((e) =>
-      leadLocatieId ? !e.locatia || e.locatia === leadLocatieId : true,
-    )
+    // `evenimente.locatia` e text liber („Nicolina"), nu FK ca la cursuri — deci
+    // trece prin același rezolvator, altfel niciun eveniment cu locație scrisă nu
+    // ar potrivi uuid-ul leadului și dropdown-ul ar rămâne gol.
+    const evList = (evenimenteQ.data ?? []).filter((e) => {
+      if (!leadLocatieId) return true
+      const evLoc = resolveLocatieId(e.locatia)
+      return !evLoc || evLoc === leadLocatieId
+    })
     return [
       ...cursList.map((c) => ({ label: c.numele, value: `curs:${c.id}` })),
       ...evList.map((e) => ({
-        label: `${e.nume_eveniment} (eveniment)`,
+        label: `${e.ora ? `${e.ora.slice(0, 5)} · ` : ''}${e.nume_eveniment} (eveniment)`,
         value: `ev:${e.id}`,
       })),
     ]
-  }, [cursuriQ.data, form.grupa_varsta, weekday, leadLocatieId, evenimenteQ.data, ignoreVarsta])
+  }, [
+    cursuriQ.data,
+    form.grupa_varsta,
+    weekday,
+    leadLocatieId,
+    evenimenteQ.data,
+    ignoreVarsta,
+    resolveLocatieId,
+    intreSezoane,
+  ])
 
   // Rezolvă curs/eveniment + oră din selecția curentă.
   const resolveSelectie = () => {
@@ -254,8 +291,11 @@ export function LeadModal({
     return {
       cursId: null as string | null,
       evenimentId: id,
+      // Locația programării o dă evenimentul, nu preferința leadului: SMS-ul de
+      // confirmare/reminder trimite adresa de aici, iar 2 din 3 leaduri n-au
+      // locația completată (fallback-ul ar da adresa greșită la demo la Nicolina).
       ora: ev?.ora ?? null,
-      locatie: leadLocatieId,
+      locatie: resolveLocatieId(ev?.locatia ?? null) ?? leadLocatieId,
     }
   }
 
@@ -553,6 +593,7 @@ export function LeadModal({
                       grupaVarsta={form.grupa_varsta}
                       ignoreVarsta={ignoreVarsta}
                       onIgnoreVarstaChange={setIgnoreVarsta}
+                      intreSezoane={intreSezoane}
                     />
                   )}
 

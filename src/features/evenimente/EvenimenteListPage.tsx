@@ -13,6 +13,7 @@ import {
   type Column,
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { tipEvenimentOptions } from '@/lib/enums'
 import { isPrivileged } from '@/lib/rolesMatrix'
 import { EvenimentForm } from './EvenimentForm'
 import {
@@ -36,10 +37,22 @@ const columns: Column<EvenimentCuGrupa>[] = [
     sortValue: (e) => e.nume_eveniment?.toLowerCase(),
   },
   {
+    header: 'Tip',
+    cell: (e) => e.tip ?? '—',
+    className: 'w-32',
+    sortValue: (e) => e.tip?.toLowerCase(),
+  },
+  {
     header: 'Data',
     cell: (e) => e.data ?? '—',
     className: 'w-32',
     sortValue: (e) => e.data,
+  },
+  {
+    header: 'Ora',
+    cell: (e) => e.ora?.slice(0, 5) ?? '—',
+    className: 'w-20',
+    sortValue: (e) => e.ora,
   },
   {
     header: 'Grupă',
@@ -77,6 +90,7 @@ export function EvenimenteListPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [an, setAn] = useState('')
+  const [tip, setTip] = useState('')
   const [temporal, setTemporal] = useState<Temporal>('all')
   const [formOpen, setFormOpen] = useState(false)
 
@@ -100,12 +114,13 @@ export function EvenimenteListPage() {
   )
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['evenimente', { search, page, an, temporal }],
+    queryKey: ['evenimente', { search, page, an, tip, temporal }],
     queryFn: () =>
       listEvenimente({
         search,
         page,
         an: an ? Number(an) : null,
+        tip: tip || null,
         temporal,
         today,
       }),
@@ -149,6 +164,18 @@ export function EvenimenteListPage() {
               value={an}
               onChange={(e) => {
                 setAn(e.target.value)
+                setPage(0)
+              }}
+            />
+          </Field>
+          <Field label="Tip" htmlFor="ev-tip">
+            <Select
+              id="ev-tip"
+              placeholder="Toate tipurile"
+              options={tipEvenimentOptions}
+              value={tip}
+              onChange={(e) => {
+                setTip(e.target.value)
                 setPage(0)
               }}
             />

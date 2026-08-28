@@ -9,6 +9,7 @@ export type EvenimenteListParams = {
   search: string
   page: number
   an?: number | null
+  tip?: string | null
   temporal?: 'all' | 'viitoare' | 'trecute'
   today?: string // YYYY-MM-DD, pasat din componentă pentru filtrul Viitoare/Trecute
 }
@@ -21,6 +22,7 @@ export async function listEvenimente({
   search,
   page,
   an,
+  tip,
   temporal = 'all',
   today,
 }: EvenimenteListParams): Promise<EvenimenteListResult> {
@@ -37,6 +39,9 @@ export async function listEvenimente({
 
   if (an) {
     query = query.gte('data', `${an}-01-01`).lte('data', `${an}-12-31`)
+  }
+  if (tip) {
+    query = query.eq('tip', tip as Eveniment['tip'])
   }
   if (today && temporal === 'viitoare') {
     query = query.gte('data', today)

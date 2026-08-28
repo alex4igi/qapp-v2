@@ -5,6 +5,7 @@ const TIP_EMOJI: Record<string, string> = {
   Eveniment: '🎉',
   Workshop: '🎓',
   Auditie: '🎤',
+  'DEMO Class': '🕺',
 }
 
 // Card de eveniment pe dashboard — intenționat mai mare și mai evident decât

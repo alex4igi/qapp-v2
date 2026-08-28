@@ -36,6 +36,8 @@ export async function listBiletSurse(): Promise<BiletSursaOption[]> {
   if (coRes.error) throw coRes.error
   const out: BiletSursaOption[] = []
   for (const e of evRes.data ?? []) {
+    // Clasele demo sunt gratuite (recrutare lead-uri) — n-au bilet de vândut.
+    if (e.tip === 'DEMO Class') continue
     const categorie = EVENIMENT_CATEGORIE[e.tip ?? ''] ?? null
     const prefix = e.tip && e.tip !== 'Eveniment' ? e.tip : 'Eveniment'
     out.push({
