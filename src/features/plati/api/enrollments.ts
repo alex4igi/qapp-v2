@@ -137,6 +137,10 @@ export type CreateInrolariParams = {
   sumaOverride?: number | null // dacă admin vrea să schimbe valoarea default
   forceReinrolare?: boolean // override pentru admin după reziliere în același sezon
   voucherId?: string | null // voucher aplicat manual pe toate înrolările generate
+  // Reînscriere: rata lunară vine din `cursuri.pret_lunar_promo` în loc de
+  // pret_anual/10, iar rândurile primesc `este_reinscriere=true` (flag pe care
+  // se sprijină cron-ul `cancel_expired_reinscrieri` + KPI-urile din /statistici).
+  esteReinscriere?: boolean
 }
 
 async function getVoucherById(id: string): Promise<Voucher> {
@@ -331,9 +335,9 @@ function buildRecurentPerAn(
 }
 
 // recurent + Per lună: N rânduri (prima zi a fiecărei luni rămase),
-// suma = pret_anual / 10. La GRUPĂ, dacă data semnării nu e ziua 1, prima
-// lună e prorata (suma = ședințe rămase × pret_sedinta).
-// La TRUPĂ nu se aplică prorata (toți încep la 1 septembrie).
+// suma = pret_anual / 10 (sau pret_lunar_promo la reînscriere). La GRUPĂ, dacă
+// data semnării nu e ziua 1, prima lună e prorata (suma = ședințe rămase ×
+// pret_sedinta). La TRUPĂ nu se aplică prorata (toți încep la 1 septembrie).
 function buildRecurentPerLuna(
   params: CreateInrolariParams,
   curs: Curs,
@@ -342,9 +346,14 @@ function buildRecurentPerLuna(
 ): InsertDto<'enrollments'>[] {
   if (!sezon.data_incepere || !sezon.data_final) return []
   const months = enumerateMonths(params.dataIncepere, sezon.data_final)
+  const esteReinscriere = params.esteReinscriere === true
   const sumaLunara =
     params.sumaOverride ??
-    (curs.pret_anual != null ? Math.round(curs.pret_anual / 10) : null)
+    (esteReinscriere
+      ? curs.pret_lunar_promo
+      : curs.pret_anual != null
+        ? Math.round(curs.pret_anual / 10)
+        : null)
   // Prima lună a sezonului (septembrie) = rată întreagă, cu data_incepere fixată
   // la startul sezonului (NU ziua 1 → nu cade în „gaura" dintre sezoane). Prorata
   // se aplică DOAR la înscriere TÂRZIE (lună ulterioară începutului de sezon),
@@ -398,6 +407,7 @@ function buildRecurentPerLuna(
         data_final: endOfMonth(m),
         activ: true,
         voucher: voucher?.id ?? null,
+        este_reinscriere: esteReinscriere,
       })
     } else if (isFirst && aplicProrata) {
       const fin = endOfMonth(m)
@@ -417,6 +427,7 @@ function buildRecurentPerLuna(
         data_final: fin,
         activ: true,
         voucher: voucher?.id ?? null,
+        este_reinscriere: esteReinscriere,
       })
     } else {
       inserts.push({
@@ -429,6 +440,7 @@ function buildRecurentPerLuna(
         data_final: endOfMonth(m),
         activ: true,
         voucher: voucher?.id ?? null,
+        este_reinscriere: esteReinscriere,
       })
     }
   }
@@ -455,6 +467,18 @@ export async function createInrolari(
     throw new Error(
       'Recurent admite doar Per lună sau Per an, nu Per ședință.',
     )
+  }
+  if (params.esteReinscriere) {
+    if (!isRecurent || params.tipPlata !== 'Per luna') {
+      throw new Error(
+        'Prețul de reînscriere se aplică doar la grupe/trupe plătite Per lună.',
+      )
+    }
+    if (curs.pret_lunar_promo == null) {
+      throw new Error(
+        'Cursul nu are „Preț lunar PROMO" configurat. Setează-l în Cursuri → fișa cursului.',
+      )
+    }
   }
 
   const voucher = params.voucherId ? await getVoucherById(params.voucherId) : null

@@ -438,6 +438,7 @@ export function ClientProfilePage() {
         <EnrollmentForm
           open
           defaultClientId={client.id}
+          defaultSezonId={effectiveSezonId || undefined}
           onClose={() => setEnrollOpen(false)}
         />
       )}

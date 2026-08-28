@@ -16,7 +16,8 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { clientiOptions, sezonActiv } from '@/lib/lookups'
+import { clientiOptions } from '@/lib/lookups'
+import { listSezoane } from '@/features/setari/api'
 import { formatRON } from '@/lib/format'
 import type { Curs, Enrollment, Enums } from '@/types/db'
 import { listAvailableVouchere } from '@/features/vouchere/api'
@@ -57,6 +58,9 @@ type Props = {
   onClose: () => void
   defaultClientId?: string
   defaultCursId?: string
+  // Sezonul pe care se deschide formularul (ex: selectorul din fișa clientului).
+  // Ignorat dacă e un sezon deja încheiat — nu se poate înrola în trecut.
+  defaultSezonId?: string
   // Apelat o singură dată când înrolarea s-a creat cu succes (independent de
   // încasare/bonus). Primește rândurile create (gol pentru fluxul OPEN per ședință).
   // Folosit de: conversia lead → marchează convertit; conversia ședință → abonament.
@@ -68,6 +72,7 @@ export function EnrollmentForm({
   onClose,
   defaultClientId,
   defaultCursId,
+  defaultSezonId,
   onEnrolled,
 }: Props) {
   const queryClient = useQueryClient()
@@ -76,9 +81,11 @@ export function EnrollmentForm({
   const { locatieId, locatieNume } = useWorkingLocatie()
   const [clientId, setClientId] = useState(defaultClientId ?? '')
   const [cursId, setCursId] = useState(defaultCursId ?? '')
+  const [sezonId, setSezonId] = useState('')
   const [tipPlata, setTipPlata] = useState<Enums<'tip_plata'>>('Per luna')
   const [dataIncepere, setDataIncepere] = useState(todayIso())
   const [voucherId, setVoucherId] = useState('')
+  const [esteReinscriere, setEsteReinscriere] = useState(false)
   const [forceReinrolare, setForceReinrolare] = useState(false)
   const [includeBonusIunie, setIncludeBonusIunie] = useState(false)
   // Încasare la înrolare (toate tipurile): cât se plătește ACUM (0..preț).
@@ -97,20 +104,35 @@ export function EnrollmentForm({
     queryFn: clientiOptions,
   })
 
-  // Cheie distinctă de `['lookup','sezon-activ']`: aceea e populată de `sezonActivId`
-  // (string), pe când aici folosim `sezonActiv` (obiect cu .id + date). Aceeași cheie
-  // = coliziune de cache → uneori `data` era string, `.id` ieșea undefined și lista de
-  // cursuri apărea NEfiltrată pe sezon (bug intermitent refresh-to-refresh).
-  const sezonActivQ = useQuery({
-    queryKey: ['lookup', 'sezon-activ-full'],
-    queryFn: sezonActiv,
-  })
+  // Sezonul în care se face înrolarea. NU e neapărat cel activ: la începutul lui
+  // septembrie recepția înscrie în sezonul care abia urmează (încă `planificat`).
+  // Se oferă doar sezoanele neîncheiate — în trecut nu se poate înrola oricum
+  // (garda „Data nu poate fi în trecut" din handleSubmit).
+  const sezoaneQ = useQuery({ queryKey: ['sezoane-list'], queryFn: listSezoane })
+  const sezoaneDisponibile = useMemo(() => {
+    const today = todayIso()
+    return (sezoaneQ.data ?? []).filter(
+      (s) => s.data_incepere && s.data_final && s.data_final >= today,
+    )
+  }, [sezoaneQ.data])
+
+  const sezonSelectat = useMemo(() => {
+    const list = sezoaneDisponibile
+    if (list.length === 0) return null
+    const pick = (id: string | undefined) =>
+      id ? (list.find((s) => s.id === id) ?? null) : null
+    return (
+      pick(sezonId) ??
+      pick(defaultSezonId) ??
+      list.find((s) => s.stare === 'activ') ??
+      list[list.length - 1]
+    )
+  }, [sezonId, defaultSezonId, sezoaneDisponibile])
 
   const cursuriQ = useQuery<Curs[]>({
-    queryKey: ['cursuri-pentru-inrolare', locatieId, sezonActivQ.data?.id ?? null],
-    queryFn: () =>
-      listCursuriPentruInrolare(locatieId, sezonActivQ.data?.id ?? null),
-    enabled: sezonActivQ.isSuccess,
+    queryKey: ['cursuri-pentru-inrolare', locatieId, sezonSelectat?.id ?? null],
+    queryFn: () => listCursuriPentruInrolare(locatieId, sezonSelectat?.id ?? null),
+    enabled: sezoaneQ.isSuccess,
   })
 
   // Dacă deschidem modalul cu un curs prestabilit care nu e la locația
@@ -195,6 +217,24 @@ export function EnrollmentForm({
     setIncasatTouched(false)
   }, [tipPlata])
 
+  // Schimbarea sezonului invalidează cursul ales (listele nu se intersectează) și
+  // mută data în interiorul noului sezon — altfel `createInrolari` ar deduce
+  // sezonul din dată și ar genera ratele în sezonul greșit.
+  const handleSezonChange = (id: string) => {
+    setSezonId(id)
+    setCursId('')
+    setEsteReinscriere(false)
+    const s = sezoaneDisponibile.find((x) => x.id === id)
+    const today = todayIso()
+    if (s?.data_incepere && s.data_final) {
+      setDataIncepere(
+        today >= s.data_incepere && today <= s.data_final
+          ? today
+          : s.data_incepere,
+      )
+    }
+  }
+
   // Opțiuni curs grupate vizual: Grupe → Trupe → Facultative, alfabetic în grup.
   const cursuriOpts: SelectOption[] = useMemo(() => {
     const decorated = cursuri.map((c) => {
@@ -217,6 +257,18 @@ export function EnrollmentForm({
     return decorated.map((d) => d.opt)
   }, [cursuri])
 
+  // Prețul promo de reînscriere e o a doua valoare pe curs (`pret_lunar_promo`),
+  // nu un override manual: se aplică doar la grupe/trupe plătite Per lună.
+  const promoDisponibil =
+    !isFacultativ &&
+    tipPlata === 'Per luna' &&
+    cursSelectat?.pret_lunar_promo != null
+  const aplicPromo = promoDisponibil && esteReinscriere
+
+  useEffect(() => {
+    if (!promoDisponibil) setEsteReinscriere(false)
+  }, [promoDisponibil])
+
   // Calculez sumă sugerată
   const sumaSugerata = useMemo(() => {
     if (!cursSelectat) return null
@@ -225,12 +277,12 @@ export function EnrollmentForm({
         ? cursSelectat.pret_sedinta
         : cursSelectat.pret_lunar
     }
-    return tipPlata === 'Per an'
-      ? cursSelectat.pret_anual
-      : cursSelectat.pret_anual != null
-        ? Math.round(cursSelectat.pret_anual / 10)
-        : null
-  }, [cursSelectat, isFacultativ, tipPlata])
+    if (tipPlata === 'Per an') return cursSelectat.pret_anual
+    if (aplicPromo) return cursSelectat.pret_lunar_promo
+    return cursSelectat.pret_anual != null
+      ? Math.round(cursSelectat.pret_anual / 10)
+      : null
+  }, [cursSelectat, isFacultativ, tipPlata, aplicPromo])
 
   const vouchereQ = useQuery({
     queryKey: ['vouchere-disponibile', cursId, tipPlata],
@@ -351,6 +403,7 @@ export function EnrollmentForm({
         sumaOverride: null,
         forceReinrolare: isAdmin ? forceReinrolare : false,
         voucherId: voucherId || null,
+        esteReinscriere: aplicPromo,
       })
     },
     onSuccess: async (result) => {
@@ -446,6 +499,20 @@ export function EnrollmentForm({
     if (dataIncepere < todayIso()) {
       return setError('Data nu poate fi în trecut.')
     }
+    // Sezonul real al înrolării se deduce server-side din dată (getSezonForDate).
+    // Dacă data cade în afara sezonului ales, ratele s-ar genera în alt sezon
+    // decât cursul → blocăm în loc să producem tăcut date inconsistente.
+    if (
+      !isFacultativ &&
+      sezonSelectat?.data_incepere &&
+      sezonSelectat.data_final &&
+      (dataIncepere < sezonSelectat.data_incepere ||
+        dataIncepere > sezonSelectat.data_final)
+    ) {
+      return setError(
+        `Data trebuie să fie în interiorul sezonului „${sezonSelectat.numele_sezonului}" (${sezonSelectat.data_incepere} — ${sezonSelectat.data_final}).`,
+      )
+    }
     if (dejaInrolat) {
       return setError(
         'Clientul e deja înrolat la acest curs în această perioadă.',
@@ -462,15 +529,16 @@ export function EnrollmentForm({
         isTrupa,
         tipPlata,
         cursSelectat,
-        sezonStart: sezonActivQ.data?.data_incepere ?? null,
+        sezonStart: sezonSelectat?.data_incepere ?? null,
+        sezonEnd: sezonSelectat?.data_final ?? null,
       }),
-    [dataIncepere, isFacultativ, isTrupa, tipPlata, cursSelectat, sezonActivQ.data],
+    [dataIncepere, isFacultativ, isTrupa, tipPlata, cursSelectat, sezonSelectat],
   )
 
   // Prorata (deci nevoie de preț) doar la înscriere TÂRZIE mid-lună — nu la
   // prima lună a sezonului (septembrie), care e rată întreagă.
-  const seasonFirstMonth = sezonActivQ.data?.data_incepere
-    ? sezonActivQ.data.data_incepere.slice(0, 7) + '-01'
+  const seasonFirstMonth = sezonSelectat?.data_incepere
+    ? sezonSelectat.data_incepere.slice(0, 7) + '-01'
     : null
   const primaLunaESezonStart =
     seasonFirstMonth != null && dataIncepere.slice(0, 7) + '-01' === seasonFirstMonth
@@ -551,6 +619,29 @@ export function EnrollmentForm({
 
           <ClientDebtAlert clientId={clientId} />
 
+          {sezoaneDisponibile.length > 1 && (
+            <Field label="Sezon" required htmlFor="sezon">
+              <Select
+                id="sezon"
+                options={sezoaneDisponibile.map((s) => ({
+                  value: s.id,
+                  label:
+                    s.stare === 'activ'
+                      ? `${s.numele_sezonului} (curent)`
+                      : s.numele_sezonului,
+                }))}
+                value={sezonSelectat?.id ?? ''}
+                onChange={(e) => handleSezonChange(e.target.value)}
+              />
+              {sezonSelectat?.stare === 'planificat' && (
+                <p className="mt-1 text-xs text-quasar-gray">
+                  Sezon viitor — înrolarea începe la{' '}
+                  <strong>{sezonSelectat.data_incepere}</strong>.
+                </p>
+              )}
+            </Field>
+          )}
+
           <Field label="Curs" required htmlFor="curs">
             <Combobox
               id="curs"
@@ -599,6 +690,23 @@ export function EnrollmentForm({
               />
             </Field>
           </div>
+
+          {promoDisponibil && (
+            <div className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2">
+              <Checkbox
+                label={`Preț de reînscriere — ${formatRON(cursSelectat!.pret_lunar_promo!)}/lună în loc de ${formatRON(Math.round((cursSelectat!.pret_anual ?? 0) / 10))}`}
+                checked={esteReinscriere}
+                onChange={(e) => {
+                  setEsteReinscriere(e.target.checked)
+                  setIncasatTouched(false)
+                }}
+              />
+              <p className="mt-1 text-xs text-purple-800">
+                Se aplică pe toate ratele sezonului. Promoția se anulează automat
+                dacă o rată rămâne neachitată după data de 15.
+              </p>
+            </div>
+          )}
 
           {/* Voucherul nu se aplică pe fluxul OPEN (rezervare per ședință). */}
           {!isFacultativPerSedinta && (

@@ -46,16 +46,23 @@ export function derivePreviewRecurent(params: {
   isTrupa: boolean
   tipPlata: string
   cursSelectat: Curs | null
-  // Data de start a sezonului activ. Prima lună a sezonului = rată întreagă;
+  // Data de start a sezonului ales. Prima lună a sezonului = rată întreagă;
   // prorata se aplică doar la înscriere TÂRZIE (lună ulterioară începutului).
   sezonStart?: string | null
+  // Finalul sezonului ales — dă numărul real de rate. Fără el cădem pe convenția
+  // istorică „sezonul se termină în iunie".
+  sezonEnd?: string | null
 }): PrevizualizareRecurent | null {
   if (params.isFacultativ || params.tipPlata !== 'Per luna') return null
   const d = new Date(params.dataIncepere)
   if (isNaN(d.getTime())) return null
-  const y = d.getFullYear()
-  const endY = d.getMonth() < 6 ? y : y + 1
-  const end = new Date(endY, 5, 30)
+  const end = params.sezonEnd
+    ? new Date(params.sezonEnd)
+    : (() => {
+        const y = d.getFullYear()
+        return new Date(d.getMonth() < 6 ? y : y + 1, 5, 30)
+      })()
+  if (isNaN(end.getTime())) return null
   const months =
     (end.getFullYear() - d.getFullYear()) * 12 +
     (end.getMonth() - d.getMonth()) +
