@@ -20,18 +20,12 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { isTeacher, isManagerOrHigher } from '@/lib/rolesMatrix'
-import type { VListaCursuri } from '@/types/db'
+import type { Enums, VListaCursuri } from '@/types/db'
 import { CursForm } from './CursForm'
-import { listCursuri, listOreStart, PAGE_SIZE, type TipCursFilter } from './api'
+import { listCursuri, listCursuriFilterOptions, PAGE_SIZE } from './api'
 import { formatOra } from './program'
 
 const FARA_LOCATIE = '— Fără locație —'
-
-const TIP_OPTIONS = [
-  { value: 'recurent', label: 'Recurent' },
-  { value: 'recurent-trupa', label: 'Recurent trupă' },
-  { value: 'facultativ', label: 'Facultativ' },
-]
 
 // Aceeași derivare ca în CursForm/DetaliiTab: tipul nu e stocat, se citește din
 // facultativ + nivelul='Trupa'.
@@ -109,8 +103,8 @@ export function CursuriListPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [sezonFilter, setSezonFilter] = useState('')
   const [sezonInit, setSezonInit] = useState(false)
-  const [tipFilter, setTipFilter] = useState<TipCursFilter | ''>('')
-  const [oraFilter, setOraFilter] = useState('')
+  const [varstaFilter, setVarstaFilter] = useState<Enums<'varsta_curs'> | ''>('')
+  const [teacherFilter, setTeacherFilter] = useState('')
 
   // Pentru teacher: limităm la cursurile asociate (via cursuri_teacheri M:N).
   // Fără filtru de sezon aici — pagina are selector propriu care se intersectează.
@@ -154,36 +148,38 @@ export function CursuriListPage() {
 
   const filtersReady = (!teacherMode || teacherCursuriQ.isSuccess) && sezonInit
 
-  // Orele din dropdown urmăresc selecția curentă (sezon/locație/teacher), ca să
-  // nu ofere ore care n-au niciun curs.
-  const oreQ = useQuery({
-    queryKey: ['cursuri', 'ore-start', { locatieFilter, sezonFilter, tipFilter, teacherCursIds }],
+  // Opțiunile de vârstă/teacher urmăresc selecția curentă (sezon + locația de
+  // lucru), ca să nu ofere filtre care întorc lista goală.
+  const optiuniQ = useQuery({
+    queryKey: ['cursuri', 'filtre', { locatieFilter, sezonFilter, teacherCursIds }],
     queryFn: () =>
-      listOreStart({
+      listCursuriFilterOptions({
         locatieId: locatieFilter || null,
         sezonId: sezonFilter || null,
-        tip: tipFilter || null,
         cursIds: teacherCursIds,
       }),
     enabled: filtersReady,
   })
-  const oreOptions = useMemo(
-    () => (oreQ.data ?? []).map((o) => ({ value: o, label: o })),
-    [oreQ.data],
-  )
 
-  // Dacă ora selectată nu mai există după schimbarea celorlalte filtre, o golim.
+  // Dacă opțiunea aleasă dispare după schimbarea sezonului/locației, o golim —
+  // altfel lista rămâne goală fără explicație.
   useEffect(() => {
-    if (oraFilter && oreQ.isSuccess && !(oreQ.data ?? []).includes(oraFilter)) {
-      setOraFilter('')
+    if (!optiuniQ.isSuccess) return
+    const { varste, teacheri } = optiuniQ.data
+    if (varstaFilter && !varste.some((o) => o.value === varstaFilter)) {
+      setVarstaFilter('')
       setPage(0)
     }
-  }, [oraFilter, oreQ.isSuccess, oreQ.data])
+    if (teacherFilter && !teacheri.some((o) => o.value === teacherFilter)) {
+      setTeacherFilter('')
+      setPage(0)
+    }
+  }, [optiuniQ.isSuccess, optiuniQ.data, varstaFilter, teacherFilter])
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [
       'cursuri',
-      { search, page, locatieFilter, sezonFilter, tipFilter, oraFilter, teacherCursIds },
+      { search, page, locatieFilter, sezonFilter, varstaFilter, teacherFilter, teacherCursIds },
     ],
     queryFn: () =>
       listCursuri({
@@ -191,8 +187,8 @@ export function CursuriListPage() {
         page,
         locatieId: locatieFilter || null,
         sezonId: sezonFilter || null,
-        tip: tipFilter || null,
-        ora: oraFilter || null,
+        varsta: varstaFilter || null,
+        teacherId: teacherFilter || null,
         cursIds: teacherCursIds,
       }),
     placeholderData: keepPreviousData,
@@ -259,28 +255,28 @@ export function CursuriListPage() {
           </Field>
         </div>
         <div className="w-48">
-          <Field label="Tip curs" htmlFor="curs-tip">
+          <Field label="Grupă vârstă" htmlFor="curs-varsta">
             <Select
-              id="curs-tip"
-              placeholder="Toate tipurile"
-              options={TIP_OPTIONS}
-              value={tipFilter}
+              id="curs-varsta"
+              placeholder="Toate vârstele"
+              options={optiuniQ.data?.varste ?? []}
+              value={varstaFilter}
               onChange={(e) => {
-                setTipFilter(e.target.value as TipCursFilter | '')
+                setVarstaFilter(e.target.value as Enums<'varsta_curs'> | '')
                 setPage(0)
               }}
             />
           </Field>
         </div>
-        <div className="w-40">
-          <Field label="Ora începerii" htmlFor="curs-ora">
+        <div className="w-56">
+          <Field label="Teacher" htmlFor="curs-teacher">
             <Select
-              id="curs-ora"
-              placeholder="Toate orele"
-              options={oreOptions}
-              value={oraFilter}
+              id="curs-teacher"
+              placeholder="Toți teacherii"
+              options={optiuniQ.data?.teacheri ?? []}
+              value={teacherFilter}
               onChange={(e) => {
-                setOraFilter(e.target.value)
+                setTeacherFilter(e.target.value)
                 setPage(0)
               }}
             />

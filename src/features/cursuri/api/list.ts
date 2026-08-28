@@ -1,58 +1,23 @@
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
-import type { VListaCursuri } from '@/types/db'
+import type { SelectOption } from '@/components/ui'
+import type { Enums, VListaCursuri } from '@/types/db'
+import { varstaCursOptions } from '@/lib/enums'
 
 export const PAGE_SIZE = 25
-
-// Tipul cursului nu e o coloană: se derivă din facultativ + nivelul='Trupa'
-// (aceeași regulă ca în CursForm — vezi components/CursForm/helpers.ts).
-export type TipCursFilter = 'recurent' | 'recurent-trupa' | 'facultativ'
 
 export type CursuriListParams = {
   search: string
   page: number
   locatieId?: string | null
   sezonId?: string | null
-  tip?: TipCursFilter | null
-  ora?: string | null
+  varsta?: Enums<'varsta_curs'> | null
+  teacherId?: string | null
 }
 
 export type CursuriListResult = {
   rows: VListaCursuri[]
   total: number
-}
-
-type BaseFilters = {
-  locatieId?: string | null
-  sezonId?: string | null
-  cursIds?: string[] | null
-  tip?: TipCursFilter | null
-  ora?: string | null
-}
-
-// Constrângere structurală (ca applyWordSearch): merge pe orice query builder.
-type Filterable<Q> = {
-  eq(column: string, value: unknown): Q
-  in(column: string, values: readonly string[]): Q
-  or(filter: string): Q
-  contains(column: string, value: readonly string[]): Q
-}
-
-function applyFilters<Q extends Filterable<Q>>(query: Q, f: BaseFilters): Q {
-  let q = query
-  if (f.locatieId) q = q.eq('id_locatie', f.locatieId)
-  if (f.sezonId) q = q.eq('sezon', f.sezonId)
-  if (f.cursIds) q = q.in('id', f.cursIds)
-  if (f.tip === 'facultativ') {
-    q = q.eq('facultativ', true)
-  } else if (f.tip === 'recurent-trupa') {
-    q = q.eq('facultativ', false).eq('nivelul', 'Trupa')
-  } else if (f.tip === 'recurent') {
-    q = q.eq('facultativ', false).or('nivelul.is.null,nivelul.neq.Trupa')
-  }
-  // Cursurile cu orar diferit pe zile au mai multe ore de start: match pe oricare.
-  if (f.ora) q = q.contains('ore_start', [f.ora])
-  return q
 }
 
 export async function listCursuri({
@@ -61,8 +26,8 @@ export async function listCursuri({
   locatieId,
   sezonId,
   cursIds,
-  tip,
-  ora,
+  varsta,
+  teacherId,
 }: CursuriListParams & { cursIds?: string[] | null }): Promise<CursuriListResult> {
   if (cursIds && cursIds.length === 0) return { rows: [], total: 0 }
   const from = page * PAGE_SIZE
@@ -76,24 +41,57 @@ export async function listCursuri({
     .range(from, to)
 
   query = applyWordSearch(query, search, ['numele_cursului'])
-  query = applyFilters(query, { locatieId, sezonId, cursIds, tip, ora })
+  if (locatieId) query = query.eq('id_locatie', locatieId)
+  if (sezonId) query = query.eq('sezon', sezonId)
+  if (cursIds) query = query.in('id', cursIds)
+  if (varsta) query = query.eq('varsta', varsta)
+  // Titularul (cursuri.teacher), coloana din listă. Co-instructorii M:N nu intră.
+  if (teacherId) query = query.eq('id_teacher', teacherId)
 
   const { data, error, count } = await query
   if (error) throw error
   return { rows: data ?? [], total: count ?? 0 }
 }
 
-// Orele de start prezente în selecția curentă (fără filtrul de oră), pentru
-// dropdown. Interogare ieftină: o singură coloană, fără paginare.
-export async function listOreStart(
-  f: Omit<BaseFilters, 'ora'>,
-): Promise<string[]> {
-  if (f.cursIds && f.cursIds.length === 0) return []
-  let query = supabase.from('lista_cursuri').select('ore_start').limit(2000)
-  query = applyFilters(query, f)
+export type CursuriScope = {
+  locatieId?: string | null
+  sezonId?: string | null
+  cursIds?: string[] | null
+}
+
+// Opțiunile pentru dropdown-urile de vârstă și teacher, derivate din CE E în
+// selecția curentă (sezon + locația de lucru + scope-ul de teacher). Enum-ul
+// complet de vârste și lista globală de teacheri ar oferi opțiuni moarte — ex.
+// un teacher care predă doar la Nicolina, cu locația de lucru pe Ștefan cel Mare.
+export async function listCursuriFilterOptions(
+  s: CursuriScope,
+): Promise<{ varste: SelectOption[]; teacheri: SelectOption[] }> {
+  if (s.cursIds && s.cursIds.length === 0) return { varste: [], teacheri: [] }
+  let query = supabase
+    .from('lista_cursuri')
+    .select('varsta, id_teacher, nume, prenume')
+    .limit(2000)
+  if (s.locatieId) query = query.eq('id_locatie', s.locatieId)
+  if (s.sezonId) query = query.eq('sezon', s.sezonId)
+  if (s.cursIds) query = query.in('id', s.cursIds)
+
   const { data, error } = await query
   if (error) throw error
-  const set = new Set<string>()
-  for (const r of data ?? []) for (const o of r.ore_start ?? []) set.add(o)
-  return [...set].sort()
+
+  const varste = new Set<string>()
+  const teacheri = new Map<string, string>()
+  for (const r of data ?? []) {
+    if (r.varsta) varste.add(r.varsta)
+    if (r.id_teacher) {
+      teacheri.set(r.id_teacher, `${r.nume} ${r.prenume ?? ''}`.trim())
+    }
+  }
+  const byLabel = (a: SelectOption, b: SelectOption) => a.label.localeCompare(b.label, 'ro')
+  return {
+    // Vârstele în ordinea enum-ului (Tiny → Adults), nu alfabetic.
+    varste: varstaCursOptions.filter((o) => varste.has(o.value)),
+    teacheri: [...teacheri]
+      .map(([value, label]) => ({ value, label }))
+      .sort(byLabel),
+  }
 }

@@ -8480,6 +8480,7 @@ export type Database = {
           sala: string | null
           sezon: string | null
           telefon: string | null
+          varsta: Database["public"]["Enums"]["varsta_curs"] | null
           zile: Database["public"]["Enums"]["zi_saptamana"][] | null
         }
         Relationships: [
@@ -11149,7 +11150,7 @@ export type Database = {
         | "Medical"
         | "Declaratie"
         | "Altul"
-      tip_eveniment: "Eveniment" | "Workshop" | "Auditie"
+      tip_eveniment: "Eveniment" | "Workshop" | "Auditie" | "DEMO Class"
       tip_feedback: "Sesizare" | "Review"
       tip_plata: "Per sedinta" | "Per luna" | "Per an"
       tip_voucher: "Valoare" | "Procent" | "Special"
@@ -11423,7 +11424,7 @@ export const Constants = {
         "Declaratie",
         "Altul",
       ],
-      tip_eveniment: ["Eveniment", "Workshop", "Auditie"],
+      tip_eveniment: ["Eveniment", "Workshop", "Auditie", "DEMO Class"],
       tip_feedback: ["Sesizare", "Review"],
       tip_plata: ["Per sedinta", "Per luna", "Per an"],
       tip_voucher: ["Valoare", "Procent", "Special"],
