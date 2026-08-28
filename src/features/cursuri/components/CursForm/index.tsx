@@ -1,7 +1,7 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Modal, Spinner } from '@/components/ui'
+import { Button, Checkbox, Modal, Spinner } from '@/components/ui'
 import {
   teacheriOptions,
   saliWithLocatie,
@@ -15,6 +15,7 @@ import {
   updateCurs,
   getCursTeacheri,
   setCursTeacheri,
+  countPrezenteCurs,
 } from '../../api'
 import {
   initialState,
@@ -38,6 +39,25 @@ export function CursForm({ open, curs, onClose }: Props) {
   const isEdit = Boolean(curs)
   const [form, setForm] = useState<FormState>(() => initialState(curs))
   const [error, setError] = useState<string | null>(null)
+  const [mutareSezonOk, setMutareSezonOk] = useState(false)
+
+  // Gard mutare între sezoane: un curs deja predat își duce istoria cu el (înrolări,
+  // prezențe), iar salariile și rapoartele se citesc pe sezonul lunii — schimbarea
+  // sezonului îl scoate tăcut din lunile în care a fost ținut. S-a întâmplat pe 28 aug
+  // 2026 cu 4 grupe de vară; trei instructori au rămas fără câte o grupă în fișa de
+  // salariu. Pentru sezonul nou se clonează, nu se mută.
+  const sezonInitial = curs?.sezon ?? ''
+  const mutaSezon = isEdit && Boolean(sezonInitial) && form.sezon !== sezonInitial
+  const prezenteQ = useQuery({
+    queryKey: ['curs', curs?.id, 'prezente-count'],
+    queryFn: () => countPrezenteCurs(curs!.id),
+    enabled: Boolean(curs?.id) && mutaSezon,
+  })
+  const cereConfirmareMutare = mutaSezon && (prezenteQ.data ?? 0) > 0
+
+  useEffect(() => {
+    if (!mutaSezon) setMutareSezonOk(false)
+  }, [mutaSezon])
 
   const sezonActivQ = useQuery({
     queryKey: ['lookup', 'sezon-activ'],
@@ -233,6 +253,17 @@ export function CursForm({ open, curs, onClose }: Props) {
         return
       }
     }
+    // Fără asta, un submit dat înainte să vină numărul de prezențe trece de gard.
+    if (mutaSezon && prezenteQ.isLoading) {
+      setError('Se verifică istoricul grupei — încearcă din nou într-o clipă.')
+      return
+    }
+    if (cereConfirmareMutare && !mutareSezonOk) {
+      setError(
+        'Cursul are prezențe înregistrate. Bifează confirmarea de la Sezon sau lasă-l în sezonul lui.',
+      )
+      return
+    }
     mutation.mutate()
   }
 
@@ -262,6 +293,30 @@ export function CursForm({ open, curs, onClose }: Props) {
         sezoane={sezoane.data ?? []}
         saliOptions={saliOpts}
         allSali={sali.data ?? []}
+        avertismentSezon={
+          cereConfirmareMutare ? (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+              <p className="text-sm font-bold text-amber-900">
+                Muți o grupă care a fost deja predată
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                Cursul are {prezenteQ.data} prezențe înregistrate, iar ele rămân
+                legate de el. După mutare grupa dispare din salariile și din
+                rapoartele lunilor în care a fost ținută, pentru că acestea se
+                citesc pe sezonul lunii. Pentru sezonul următor clonează sezonul —
+                clonarea lasă grupa de acum la locul ei.
+              </p>
+              <div className="mt-2">
+                <Checkbox
+                  id="confirma-mutare-sezon"
+                  label="Am înțeles, mută grupa oricum"
+                  checked={mutareSezonOk}
+                  onChange={(e) => setMutareSezonOk(e.target.checked)}
+                />
+              </div>
+            </div>
+          ) : null
+        }
       />
       <TarifFields form={form} set={set} />
       {error && <p className="text-sm text-red-600">{error}</p>}

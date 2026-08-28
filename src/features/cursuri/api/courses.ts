@@ -12,6 +12,21 @@ export async function getCurs(id: string): Promise<Curs> {
   return data
 }
 
+// Câte prezențe „Prezent" are cursul. Gard înainte de mutarea lui în alt sezon: un curs
+// deja predat își duce toată istoria cu el, iar salariile și rapoartele se citesc pe
+// sezonul lunii — mutarea îl scoate tăcut din lunile în care a fost ținut (vezi migrația
+// 20260828210000). JOIN pe curs, nu `.in(enrollmentIds)`: facultativele au sute de
+// înrolări și un `.in()` sparge URL-ul.
+export async function countPrezenteCurs(cursId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('prezente')
+    .select('id, enr:enrollments!inner(cursul)', { count: 'exact', head: true })
+    .eq('enr.cursul', cursId)
+    .eq('status', 'Prezent')
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function createCurs(dto: InsertDto<'cursuri'>): Promise<Curs> {
   const { data, error } = await supabase
     .from('cursuri')

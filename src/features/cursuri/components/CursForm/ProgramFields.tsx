@@ -19,6 +19,8 @@ type Props = {
   sezoane: SelectOption[]
   saliOptions: SelectOption[]
   allSali: Array<{ id: string; locatie: string | null }>
+  // Gard afișat sub selectorul de sezon când grupa mutată are deja prezențe.
+  avertismentSezon?: React.ReactNode
 }
 
 // Câmpurile de program ale cursului: locație, sală, sezon + zile + oră + durată.
@@ -31,6 +33,7 @@ export function ProgramFields({
   sezoane,
   saliOptions,
   allSali,
+  avertismentSezon,
 }: Props) {
   const onLocatieChange = (next: string) => {
     setForm((prev) => {
@@ -79,6 +82,8 @@ export function ProgramFields({
           />
         </Field>
       </div>
+
+      {avertismentSezon}
 
       <Field label="Zile">
         <CheckboxGroup

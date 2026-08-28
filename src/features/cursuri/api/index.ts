@@ -4,7 +4,14 @@ export { PAGE_SIZE } from './list'
 export type { CursuriListParams, CursuriListResult, CursuriScope } from './list'
 export { listCursuri, listCursuriFilterOptions } from './list'
 
-export { getCurs, createCurs, updateCurs, toggleCursArchived, deleteCurs } from './courses'
+export {
+  getCurs,
+  createCurs,
+  updateCurs,
+  toggleCursArchived,
+  deleteCurs,
+  countPrezenteCurs,
+} from './courses'
 
 export type { CursEnrollment } from './enrollments'
 export { getCursEnrollments } from './enrollments'
