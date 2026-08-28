@@ -10,7 +10,7 @@ import type {
 } from '@/types/db'
 import { applyVoucher } from '@/features/vouchere/calc'
 import { countSessionsBetween, endOfMonth, enumerateMonths } from './calendar'
-import { getSezonForDate, type SezonOption } from './sezoane'
+import { getSezonById, getSezonForDate, type SezonOption } from './sezoane'
 
 export type TipInrolare = 'facultativ' | 'recurent-grupa' | 'recurent-trupa'
 
@@ -345,7 +345,14 @@ function buildRecurentPerLuna(
   sezon: SezonOption,
 ): InsertDto<'enrollments'>[] {
   if (!sezon.data_incepere || !sezon.data_final) return []
-  const months = enumerateMonths(params.dataIncepere, sezon.data_final)
+  // Semnarea poate fi ÎNAINTEA sezonului (reînscriere în august pentru toamnă) —
+  // atunci ratele pornesc de la startul sezonului, nu din luna semnării, altfel
+  // ar apărea o rată în plus pentru o lună în care nu se ține cursul.
+  const startEfectiv =
+    params.dataIncepere < sezon.data_incepere
+      ? sezon.data_incepere
+      : params.dataIncepere
+  const months = enumerateMonths(startEfectiv, sezon.data_final)
   const esteReinscriere = params.esteReinscriere === true
   const sumaLunara =
     params.sumaOverride ??
@@ -491,7 +498,12 @@ export async function createInrolari(
         ? buildFacultativPerSedinta(params, curs, voucher)
         : buildFacultativPerLuna(params, curs, voucher)
   } else {
-    const sezon = await getSezonForDate(params.dataIncepere)
+    // Sezonul vine din CURS, nu din dată: la reînscrierile semnate în august
+    // pentru sezonul de toamnă, data ar cădea în sezonul de vară. Data rămâne
+    // ce e — data semnării — dar ratele se generează pe sezonul cursului.
+    const sezon =
+      (curs.sezon ? await getSezonById(curs.sezon) : null) ??
+      (await getSezonForDate(params.dataIncepere))
     if (!sezon || !sezon.data_final || !sezon.data_incepere) {
       throw new Error(
         'Nu am găsit un sezon care să conțină data începerii. Adaugă un sezon mai întâi.',

@@ -505,18 +505,12 @@ export function EnrollmentForm({
     if (dataIncepere < todayIso()) {
       return setError('Data nu poate fi în trecut.')
     }
-    // Sezonul real al înrolării se deduce din dată (getSezonForDate la recurent,
-    // luna calendaristică la facultativ), pe când `sezon_id` vine din curs. Dacă
-    // data cade în afara sezonului ales, cele două se contrazic → blocăm în loc
-    // să producem tăcut o înrolare de august pe un curs de toamnă.
-    if (
-      sezonSelectat?.data_incepere &&
-      sezonSelectat.data_final &&
-      (dataIncepere < sezonSelectat.data_incepere ||
-        dataIncepere > sezonSelectat.data_final)
-    ) {
+    // O semnare ÎNAINTEA sezonului e legitimă (reînscriere în august pentru
+    // toamnă) — ratele pornesc oricum de la startul sezonului. După finalul
+    // sezonului însă nu mai are ce genera.
+    if (sezonSelectat?.data_final && dataIncepere > sezonSelectat.data_final) {
       return setError(
-        `Data trebuie să fie în interiorul sezonului „${sezonSelectat.numele_sezonului}" (${sezonSelectat.data_incepere} — ${sezonSelectat.data_final}).`,
+        `Data depășește finalul sezonului „${sezonSelectat.numele_sezonului}" (${sezonSelectat.data_final}).`,
       )
     }
     if (dejaInrolat) {
@@ -530,7 +524,13 @@ export function EnrollmentForm({
   const previewRecurent = useMemo(
     () =>
       derivePreviewRecurent({
-        dataIncepere,
+        // Oglindește `startEfectiv` din buildRecurentPerLuna: semnarea dinaintea
+        // sezonului nu adaugă o rată pentru luna semnării.
+        dataIncepere:
+          sezonSelectat?.data_incepere &&
+          dataIncepere < sezonSelectat.data_incepere
+            ? sezonSelectat.data_incepere
+            : dataIncepere,
         isFacultativ,
         isTrupa,
         tipPlata,
