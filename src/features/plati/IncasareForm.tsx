@@ -12,8 +12,10 @@ import {
   Spinner,
 } from '@/components/ui'
 import { metodaPlataOptions } from '@/lib/enums'
+import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import type { VPlatiInrolari, Incasare } from '@/types/db'
 import { createIncasare, getEnrollmentIncasari } from './api'
+import { todayIso } from './modals/PlataNouaModal/helpers'
 
 type Props = {
   open: boolean
@@ -23,12 +25,13 @@ type Props = {
 
 export function IncasareForm({ open, enrollment, onClose }: Props) {
   const queryClient = useQueryClient()
+  const { locatieId, locatieNume } = useWorkingLocatie()
   const total = enrollment.total_de_plata ?? 0
   const platit = enrollment.platit ?? 0
   const rest = total - platit
 
   const [suma, setSuma] = useState(rest > 0 ? String(rest) : '')
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10))
+  const [data, setData] = useState(todayIso())
   const [metoda, setMetoda] = useState('')
   const [observatii, setObservatii] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -49,12 +52,16 @@ export function IncasareForm({ open, enrollment, onClose }: Props) {
         metoda: (metoda || null) as Incasare['metoda'],
         // plată legată de înrolare → mereu Abonament (altfel rămâne NULL)
         categorie: 'Abonament' as Incasare['categorie'],
+        // fără locație încasarea nu apare în Situația zilnică (filtrată pe locație)
+        locatie: locatieId,
         observatii: observatii.trim() || null,
       }
       return createIncasare(payload)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
+      void queryClient.invalidateQueries({ queryKey: ['plati-metode'] })
+      void queryClient.invalidateQueries({ queryKey: ['situatie-zi'] })
       void queryClient.invalidateQueries({
         queryKey: ['enrollment', enrollment.id_enrollment, 'incasari'],
       })
@@ -69,6 +76,10 @@ export function IncasareForm({ open, enrollment, onClose }: Props) {
     setError(null)
     if (!suma.trim() || Number(suma) <= 0) {
       setError('Introdu o sumă validă.')
+      return
+    }
+    if (!locatieId) {
+      setError('Setează locația de lucru din bara de sus (📍 lângă dată).')
       return
     }
     mutation.mutate()
@@ -145,6 +156,13 @@ export function IncasareForm({ open, enrollment, onClose }: Props) {
             onChange={(e) => setObservatii(e.target.value)}
           />
         </Field>
+
+        <div className="rounded-md bg-quasar-gray-light/30 px-3 py-2 text-xs text-quasar-gray">
+          📍 Se înregistrează la{' '}
+          <strong className="text-quasar-black">
+            {locatieNume ?? 'fără locație setată'}
+          </strong>
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
