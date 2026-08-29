@@ -13,11 +13,19 @@ import {
   type Column,
 } from '@/components/ui'
 import type { Teacher } from '@/types/db'
+import { ChecklistBadge } from '@/components/checklist'
+import { evalueazaChecklist } from '@/lib/checklist'
+import { TEACHER_CHECKLIST } from '@/lib/checklist/specs/teacher'
 import { locatiiOptions, sezoaneOptions, sezonActivId } from '@/lib/lookups'
+import { useAuth } from '@/hooks/useAuth'
+import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { TeacherForm } from './TeacherForm'
 import { listTeacheri, PAGE_SIZE } from './api'
 
+// Rândurile listei sunt rânduri `teacheri` complete, deci checklistul se
+// evaluează direct pe ele — spre deosebire de cursuri, nu e nevoie de un query
+// companion pentru câmpurile lipsă din view.
 const columns: Column<Teacher>[] = [
   {
     header: 'Nume',
@@ -33,8 +41,24 @@ const columns: Column<Teacher>[] = [
   { header: 'Nivel', cell: (t) => t.nivelul ?? '—', className: 'w-28', sortValue: (t) => t.nivelul?.toLowerCase() },
 ]
 
+const coloanaFisa: Column<Teacher> = {
+  header: 'Fișă',
+  cell: (t) => <ChecklistBadge rezultat={evalueazaChecklist(TEACHER_CHECKLIST, t)} compact />,
+  className: 'w-20',
+  // Esențialele cântăresc mai mult decât recomandatele, ca o sortare
+  // descrescătoare să ridice întâi instructorii cu probleme reale.
+  sortValue: (t) => {
+    const rez = evalueazaChecklist(TEACHER_CHECKLIST, t)
+    return rez.lipsaEsentiale.length * 100 + rez.lipsaRecomandate.length
+  },
+}
+
 export function TeacheriListPage() {
   const navigate = useNavigate()
+  const { role } = useAuth()
+  // Fișa instructorului conține date de HR (contract, dată naștere, cont) —
+  // starea ei o vede doar managementul.
+  const canSeeChecklist = isManagerOrHigher(role)
   const { locatieId: globalLocatieId } = useWorkingLocatie()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -158,7 +182,7 @@ export function TeacheriListPage() {
       ) : (
         <>
           <DataTable
-            columns={columns}
+            columns={canSeeChecklist ? [...columns, coloanaFisa] : columns}
             rows={data?.rows ?? []}
             rowKey={(t) => t.id}
             onRowClick={(t) => navigate(`/teacheri/${t.id}`)}

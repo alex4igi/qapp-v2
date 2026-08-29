@@ -1,14 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Field, PageHeader, Select, Spinner } from '@/components/ui'
+import { Field, PageHeader, Select, Spinner, Tabs } from '@/components/ui'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import { CursuriIncompleteSection } from './sections/CursuriIncompleteSection'
+import { TeacheriIncompleteSection } from './sections/TeacheriIncompleteSection'
 
-// Hub de igienă a datelor. Deocamdată o singură secțiune (cursuri); când apar
-// teacherii/clienții, se adaugă o secțiune per entitate + un tab-bar deasupra.
+// Hub de igienă a datelor: o secțiune per entitate. Filtrul de sezon e afișat
+// doar pe tab-ul de grupe — un instructor nu aparține unui sezon, îl moștenește
+// prin cursurile pe care le predă.
+type Tab = 'cursuri' | 'teacheri'
+
+const TABS = [
+  { id: 'cursuri', label: 'Grupe' },
+  { id: 'teacheri', label: 'Instructori' },
+]
+
 export function FiseIncompletePage() {
   const { locatieId } = useWorkingLocatie()
+  const [tab, setTab] = useState<Tab>('cursuri')
   const [sezonFilter, setSezonFilter] = useState('')
   const [sezonInit, setSezonInit] = useState(false)
 
@@ -33,31 +43,39 @@ export function FiseIncompletePage() {
     <div>
       <PageHeader
         title="Fișe incomplete"
-        subtitle="Grupe cărora le lipsesc câmpuri esențiale sau recomandate"
+        subtitle="Fișe cărora le lipsesc câmpuri esențiale sau recomandate"
       />
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div className="w-56">
-          <Field label="Sezon" htmlFor="fise-sezon">
-            <Select
-              id="fise-sezon"
-              placeholder="Toate sezoanele"
-              options={sezoaneQ.data ?? []}
-              value={sezonFilter}
-              onChange={(e) => setSezonFilter(e.target.value)}
-            />
-          </Field>
-        </div>
-      </div>
+      <Tabs tabs={TABS} active={tab} onChange={(t) => setTab(t as Tab)} />
 
-      {!sezonInit ? (
-        <Spinner />
-      ) : (
-        <CursuriIncompleteSection
-          sezonId={sezonFilter || null}
-          locatieId={locatieId ?? null}
-        />
+      {tab === 'cursuri' && (
+        <>
+          <div className="mb-4 flex flex-wrap items-end gap-3">
+            <div className="w-56">
+              <Field label="Sezon" htmlFor="fise-sezon">
+                <Select
+                  id="fise-sezon"
+                  placeholder="Toate sezoanele"
+                  options={sezoaneQ.data ?? []}
+                  value={sezonFilter}
+                  onChange={(e) => setSezonFilter(e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+
+          {!sezonInit ? (
+            <Spinner />
+          ) : (
+            <CursuriIncompleteSection
+              sezonId={sezonFilter || null}
+              locatieId={locatieId ?? null}
+            />
+          )}
+        </>
       )}
+
+      {tab === 'teacheri' && <TeacheriIncompleteSection />}
     </div>
   )
 }
