@@ -11,6 +11,9 @@ import {
   type Column,
 } from '@/components/ui'
 import type { Familie } from '@/types/db'
+import { ChecklistBadge } from '@/components/checklist'
+import { evalueazaChecklist } from '@/lib/checklist'
+import { FAMILIE_CHECKLIST } from '@/lib/checklist/specs/familie'
 import { FamilieForm } from './FamilieForm'
 import { listFamilii, PAGE_SIZE } from './api'
 
@@ -34,6 +37,17 @@ const columns: Column<Familie>[] = [
   },
   { header: 'Telefon', cell: (f) => f.telefon ?? '—', sortValue: (f) => f.telefon?.toLowerCase() },
   { header: 'Email', cell: (f) => f.email ?? '—', sortValue: (f) => f.email?.toLowerCase() },
+  {
+    header: 'Fișă',
+    cell: (f) => (
+      <ChecklistBadge rezultat={evalueazaChecklist(FAMILIE_CHECKLIST, f)} compact />
+    ),
+    className: 'w-20',
+    sortValue: (f) => {
+      const rez = evalueazaChecklist(FAMILIE_CHECKLIST, f)
+      return rez.lipsaEsentiale.length * 100 + rez.lipsaRecomandate.length
+    },
+  },
 ]
 
 export function FamiliiListPage() {

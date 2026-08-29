@@ -1,5 +1,5 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Modal,
@@ -9,6 +9,12 @@ import {
   Checkbox,
   Button,
 } from '@/components/ui'
+import { ChecklistRail } from '@/components/checklist'
+import { evalueazaChecklist } from '@/lib/checklist'
+import {
+  FAMILIE_CHECKLIST,
+  type SectiuneFamilie,
+} from '@/lib/checklist/specs/familie'
 import type { Familie } from '@/types/db'
 import { createFamilie, updateFamilie } from './api'
 import { createPortalAccount, suggestPortalPassword } from '@/lib/portalAccount'
@@ -17,6 +23,8 @@ type Props = {
   open: boolean
   familie?: Familie | null
   onClose: () => void
+  /** Deschide formularul derulat la secțiunea unui câmp lipsă (din checklist). */
+  focusSection?: SectiuneFamilie
 }
 
 type FormState = {
@@ -47,11 +55,38 @@ function initialState(familie?: Familie | null): FormState {
   }
 }
 
-export function FamilieForm({ open, familie, onClose }: Props) {
+export function FamilieForm({ open, familie, onClose, focusSection }: Props) {
   const queryClient = useQueryClient()
   const isEdit = Boolean(familie)
   const [form, setForm] = useState<FormState>(() => initialState(familie))
   const [error, setError] = useState<string | null>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+
+  // Datele de firmă nu se editează din modal (stau în tab-ul „Detalii
+  // personale"), deci vin din rândul salvat — la fel ca la contul teacherului.
+  const checklist = useMemo(
+    () =>
+      evalueazaChecklist(FAMILIE_CHECKLIST, {
+        nume_familie: form.nume_familie.trim(),
+        nume_reprezentant: form.nume_reprezentant.trim() || null,
+        prenume_reprezentant: form.prenume_reprezentant.trim() || null,
+        telefon: form.telefon.trim() || null,
+        email: form.email.trim() || null,
+        factura_pe_firma: familie?.factura_pe_firma ?? false,
+        firma_denumire: familie?.firma_denumire ?? null,
+        firma_cif: familie?.firma_cif ?? null,
+        firma_adresa: familie?.firma_adresa ?? null,
+      }),
+    [form, familie],
+  )
+
+  // Deschidere din checklistul fișei: derulează la secțiunea câmpului lipsă.
+  useEffect(() => {
+    if (!open || !focusSection) return
+    bodyRef.current
+      ?.querySelector(`[data-sectiune="${focusSection}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [open, focusSection])
   const [createPortal, setCreatePortal] = useState(false)
   const [portalPwd, setPortalPwd] = useState('')
 
@@ -131,6 +166,7 @@ export function FamilieForm({ open, familie, onClose }: Props) {
       open={open}
       title={isEdit ? 'Editează familie' : 'Familie nouă'}
       onClose={onClose}
+      size="xl"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -146,7 +182,12 @@ export function FamilieForm({ open, familie, onClose }: Props) {
         </>
       }
     >
-      <form id="familie-form" onSubmit={handleSubmit} className="space-y-3">
+      <div
+        ref={bodyRef}
+        className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]"
+      >
+      <form id="familie-form" onSubmit={handleSubmit} className="min-w-0 space-y-3">
+        <div data-sectiune="identitate">
         <Field label="Nume familie" required htmlFor="nume_familie">
           <TextInput
             id="nume_familie"
@@ -154,8 +195,9 @@ export function FamilieForm({ open, familie, onClose }: Props) {
             onChange={(e) => set('nume_familie', e.target.value)}
           />
         </Field>
+        </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3" data-sectiune="reprezentant">
           <Field label="Nume reprezentant" htmlFor="nume_rep">
             <TextInput
               id="nume_rep"
@@ -172,6 +214,7 @@ export function FamilieForm({ open, familie, onClose }: Props) {
           </Field>
         </div>
 
+        <div data-sectiune="contact" className="space-y-3">
         <Field label="Email" htmlFor="email">
           <TextInput
             id="email"
@@ -196,6 +239,7 @@ export function FamilieForm({ open, familie, onClose }: Props) {
               onChange={(e) => set('telefon_2', e.target.value)}
             />
           </Field>
+        </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -268,8 +312,18 @@ export function FamilieForm({ open, familie, onClose }: Props) {
           </div>
         )}
 
+        {/* Avertisment NON-BLOCANT: lipsa esențialelor nu oprește salvarea. */}
+        {checklist.lipsaEsentiale.length > 0 && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            ⚠️ Necompletate:{' '}
+            {checklist.lipsaEsentiale.map((x) => x.eticheta).join(', ')}. Poți
+            salva oricum — familia rămâne marcată ca fișă incompletă.
+          </div>
+        )}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
+      <ChecklistRail rezultat={checklist} />
+      </div>
     </Modal>
   )
 }

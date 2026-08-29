@@ -8,6 +8,14 @@ import {
   TEACHER_CHECKLIST_COLS,
   type TeacherCheckInput,
 } from '@/lib/checklist/specs/teacher'
+import {
+  CLIENT_CHECKLIST_COLS,
+  type ClientCheckInput,
+} from '@/lib/checklist/specs/client'
+import {
+  FAMILIE_CHECKLIST_COLS,
+  type FamilieCheckInput,
+} from '@/lib/checklist/specs/familie'
 
 export type CursChecklistRow = CursCheckInput & { id: string }
 
@@ -53,4 +61,46 @@ export async function listTeacheriPentruChecklist(): Promise<
       .order('id', { ascending: true }),
   )
   return data as unknown as TeacherChecklistRow[]
+}
+
+export type ClientChecklistRow = ClientCheckInput & { id: string }
+
+// Doar clienții ACTIVI. Fișa unui exclient nu se mai completează de nimeni, iar
+// fără filtru pagina ar aduce câteva mii de rânduri și ar îneca lista reală.
+export async function listClientiPentruChecklist(): Promise<ClientChecklistRow[]> {
+  const data = await fetchAllRows(() =>
+    supabase
+      .from('clienti')
+      .select(CLIENT_CHECKLIST_COLS)
+      .eq('status', 'Activ')
+      .order('id', { ascending: true }),
+  )
+  return data as unknown as ClientChecklistRow[]
+}
+
+export type FamilieChecklistRow = FamilieCheckInput & { id: string }
+
+// Doar familiile cu cel puțin un client activ — aceleași motive ca la clienți:
+// din 656 de familii, cele „vii" sunt ~200, restul sunt istoric.
+export async function listFamiliiPentruChecklist(): Promise<FamilieChecklistRow[]> {
+  const clienti = await fetchAllRows(() =>
+    supabase
+      .from('clienti')
+      .select('id, familia')
+      .eq('status', 'Activ')
+      .not('familia', 'is', null)
+      .order('id', { ascending: true }),
+  )
+  const ids = [
+    ...new Set((clienti as unknown as { familia: string }[]).map((c) => c.familia)),
+  ]
+  if (ids.length === 0) return []
+  const data = await fetchAllRows(() =>
+    supabase
+      .from('familii')
+      .select(FAMILIE_CHECKLIST_COLS)
+      .in('id', ids)
+      .order('id', { ascending: true }),
+  )
+  return data as unknown as FamilieChecklistRow[]
 }

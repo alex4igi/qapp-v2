@@ -15,6 +15,11 @@ import {
   type BadgeTone,
 } from '@/components/ui'
 import type { Client } from '@/types/db'
+import { ChecklistBadge } from '@/components/checklist'
+import { evalueazaChecklist } from '@/lib/checklist'
+import { CLIENT_CHECKLIST } from '@/lib/checklist/specs/client'
+import { useAuth } from '@/hooks/useAuth'
+import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import { ClientForm } from './ClientForm'
 import { LogReactivareModal } from './LogReactivareModal'
 import { listClienti, PAGE_SIZE } from './api'
@@ -58,8 +63,25 @@ const columns: Column<Client>[] = [
   },
 ]
 
+// Rândurile listei sunt rânduri `clienti` complete (`select('*')`), deci
+// checklistul se evaluează direct pe ele — fără query companion.
+const coloanaFisa: Column<Client> = {
+  header: 'Fișă',
+  cell: (c) => (
+    <ChecklistBadge rezultat={evalueazaChecklist(CLIENT_CHECKLIST, c)} compact />
+  ),
+  className: 'w-20',
+  sortValue: (c) => {
+    const rez = evalueazaChecklist(CLIENT_CHECKLIST, c)
+    return rez.lipsaEsentiale.length * 100 + rez.lipsaRecomandate.length
+  },
+}
+
 export function ClientiListPage() {
   const navigate = useNavigate()
+  const { role } = useAuth()
+  // Fișa clientului o completează recepția — teacherul o vede read-only oricum.
+  const vedeFisa = isFrontDeskOrHigher(role)
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
@@ -85,6 +107,7 @@ export function ClientiListPage() {
   // Pentru clienții inactivi/exclienți: buton de log reactivare (Faza 3 scorecard).
   const tableColumns: Column<Client>[] = [
     ...columns,
+    ...(vedeFisa ? [coloanaFisa] : []),
     {
       header: '',
       cell: (c) =>

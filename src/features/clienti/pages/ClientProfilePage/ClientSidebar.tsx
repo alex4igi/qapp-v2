@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Button, Select, Badge, type BadgeTone } from '@/components/ui'
+import { ChecklistCard } from '@/components/checklist'
+import type { Rezultat, StareItem } from '@/lib/checklist'
 import { DetailRow } from './helpers'
 
 type Props = {
@@ -18,6 +20,10 @@ type Props = {
   // nu se afișează (RLS pe enrollments oricum îl blochează).
   canEnroll: boolean
   onEnroll: () => void
+  /** Absent ⇒ rolul nu vede checklistul fișei (teacher). */
+  checklist?: Rezultat
+  /** Absent ⇒ card read-only (rolul nu poate edita clientul). */
+  onFixChecklist?: (item: StareItem) => void
 }
 
 function statusTone(status: string | null | undefined): BadgeTone {
@@ -46,8 +52,11 @@ export function ClientSidebar({
   cursuri,
   canEnroll,
   onEnroll,
+  checklist,
+  onFixChecklist,
 }: Props) {
   return (
+    <div className="space-y-4">
     <aside className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <div className="mb-3 flex justify-center">
         <div className="flex h-24 w-24 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-ink">
@@ -114,5 +123,10 @@ export function ClientSidebar({
         </Button>
       )}
     </aside>
+
+    {checklist && (
+      <ChecklistCard rezultat={checklist} onFix={onFixChecklist} />
+    )}
+    </div>
   )
 }

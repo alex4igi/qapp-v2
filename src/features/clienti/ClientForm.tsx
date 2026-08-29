@@ -1,5 +1,5 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Modal,
@@ -15,6 +15,12 @@ import {
   statusClientOptions,
   marimeTricouOptions,
 } from '@/lib/enums'
+import { ChecklistRail } from '@/components/checklist'
+import { evalueazaChecklist } from '@/lib/checklist'
+import {
+  CLIENT_CHECKLIST,
+  type SectiuneClient,
+} from '@/lib/checklist/specs/client'
 import { familiiOptions } from '@/lib/lookups'
 import { recordAuditLog } from '@/lib/auditLog'
 import type { Client } from '@/types/db'
@@ -47,6 +53,8 @@ type Props = {
   open: boolean
   client?: Client | null
   onClose: () => void
+  /** Deschide formularul derulat la secțiunea unui câmp lipsă (din checklist). */
+  focusSection?: SectiuneClient
 }
 
 type FormState = {
@@ -87,11 +95,36 @@ function countDigits(s: string): number {
   return (s.match(/\d/g) ?? []).length
 }
 
-export function ClientForm({ open, client, onClose }: Props) {
+export function ClientForm({ open, client, onClose, focusSection }: Props) {
   const queryClient = useQueryClient()
   const isEdit = Boolean(client)
   const [form, setForm] = useState<FormState>(() => initialState(client))
   const [error, setError] = useState<string | null>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+
+  // Toate câmpurile verificate sunt în formular, deci draftul e suficient —
+  // spre deosebire de teacher, unde contul vine din rândul salvat.
+  const checklist = useMemo(
+    () =>
+      evalueazaChecklist(CLIENT_CHECKLIST, {
+        nume: form.nume.trim(),
+        prenume: form.prenume.trim() || null,
+        telefon: form.telefon.trim() || null,
+        email: form.email.trim() || null,
+        data_nasterii: form.data_nasterii || null,
+        familia: form.familia || null,
+        link_contract: form.link_contract.trim() || null,
+      }),
+    [form],
+  )
+
+  // Deschidere din checklistul fișei: derulează la secțiunea câmpului lipsă.
+  useEffect(() => {
+    if (!open || !focusSection) return
+    bodyRef.current
+      ?.querySelector(`[data-sectiune="${focusSection}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [open, focusSection])
   const [newFamilieOpen, setNewFamilieOpen] = useState(false)
   const [newFamilieName, setNewFamilieName] = useState('')
 
@@ -205,6 +238,7 @@ export function ClientForm({ open, client, onClose }: Props) {
       open={open}
       title={isEdit ? 'Editează client' : 'Client nou'}
       onClose={onClose}
+      size="xl"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -220,8 +254,12 @@ export function ClientForm({ open, client, onClose }: Props) {
         </>
       }
     >
-      <form id="client-form" onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+      <div
+        ref={bodyRef}
+        className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]"
+      >
+      <form id="client-form" onSubmit={handleSubmit} className="min-w-0 space-y-3">
+        <div className="grid grid-cols-2 gap-3" data-sectiune="identitate">
           <Field label="Nume" required htmlFor="nume">
             <TextInput
               id="nume"
@@ -238,6 +276,7 @@ export function ClientForm({ open, client, onClose }: Props) {
           </Field>
         </div>
 
+        <div data-sectiune="contact" className="space-y-3">
         <Field label="Email" htmlFor="email">
           <TextInput
             id="email"
@@ -264,8 +303,9 @@ export function ClientForm({ open, client, onClose }: Props) {
             />
           </Field>
         </div>
+        </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3" data-sectiune="personale">
           <Field label="Data nașterii" htmlFor="data_nasterii">
             <DateInput
               id="data_nasterii"
@@ -305,6 +345,7 @@ export function ClientForm({ open, client, onClose }: Props) {
           </Field>
         </div>
 
+        <div data-sectiune="familie">
         <Field label="Familie" htmlFor="familia">
           {newFamilieOpen ? (
             <div className="flex gap-2">
@@ -358,6 +399,7 @@ export function ClientForm({ open, client, onClose }: Props) {
             </div>
           )}
         </Field>
+        </div>
 
         <Field label="Unitatea de învățământ" htmlFor="unitate_invatamant">
           <TextInput
@@ -368,16 +410,28 @@ export function ClientForm({ open, client, onClose }: Props) {
           />
         </Field>
 
-        <Field label="Link contract" htmlFor="link_contract">
-          <TextInput
-            id="link_contract"
-            value={form.link_contract}
-            onChange={(e) => set('link_contract')(e.target.value)}
-          />
-        </Field>
+        <div data-sectiune="altele">
+          <Field label="Link contract" htmlFor="link_contract">
+            <TextInput
+              id="link_contract"
+              value={form.link_contract}
+              onChange={(e) => set('link_contract')(e.target.value)}
+            />
+          </Field>
+        </div>
 
+        {/* Avertisment NON-BLOCANT: lipsa esențialelor nu oprește salvarea. */}
+        {checklist.lipsaEsentiale.length > 0 && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            ⚠️ Necompletate:{' '}
+            {checklist.lipsaEsentiale.map((s) => s.eticheta).join(', ')}. Poți
+            salva oricum — clientul rămâne marcat ca fișă incompletă.
+          </div>
+        )}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
+      <ChecklistRail rezultat={checklist} />
+      </div>
     </Modal>
   )
 }

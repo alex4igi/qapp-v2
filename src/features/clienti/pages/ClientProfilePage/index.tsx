@@ -23,6 +23,12 @@ import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentS
 import { ConvertSedinteAbonamentModal } from '@/features/plati/ConvertSedinteAbonamentModal'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import { ChecklistBadge } from '@/components/checklist'
+import { evalueazaChecklist, type StareItem } from '@/lib/checklist'
+import {
+  CLIENT_CHECKLIST,
+  type SectiuneClient,
+} from '@/lib/checklist/specs/client'
 import { waLink } from '@/lib/phone'
 import { ClientForm } from '../../ClientForm'
 import {
@@ -49,6 +55,7 @@ export function ClientProfilePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
+  const [focusSection, setFocusSection] = useState<SectiuneClient | undefined>()
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [plataOpen, setPlataOpen] = useState(false)
   const [confirmCursId, setConfirmCursId] = useState<string | null>(null)
@@ -265,6 +272,8 @@ export function ClientProfilePage() {
   const client = clientQuery.data
   const initials = getInitials(client.nume, client.prenume)
   const varsta = calcAge(client.data_nasterii)
+  // Derivat din rândul clientului — fără query suplimentar.
+  const checklist = evalueazaChecklist(CLIENT_CHECKLIST, client)
   const familiaLabel = familiaQuery.data?.nume_familie ?? ''
 
   return (
@@ -275,6 +284,7 @@ export function ClientProfilePage() {
         title={`${client.nume} ${client.prenume ?? ''}`.trim()}
         actions={
           <>
+            {!teacherMode && <ChecklistBadge rezultat={checklist} />}
             {!teacherMode && (
               <Button variant="secondary" onClick={() => setPlataOpen(true)}>
                 ＄ Plată
@@ -331,6 +341,15 @@ export function ClientProfilePage() {
           cursuri={cursuriSezon}
           canEnroll={isFrontDeskOrHigher(role)}
           onEnroll={() => setEnrollOpen(true)}
+          checklist={teacherMode ? undefined : checklist}
+          onFixChecklist={
+            teacherMode
+              ? undefined
+              : (item: StareItem) => {
+                  setFocusSection(item.sectiune as SectiuneClient | undefined)
+                  setEditOpen(true)
+                }
+          }
           />
         }
       >
@@ -431,7 +450,15 @@ export function ClientProfilePage() {
       </ProfileScaffold>
 
       {editOpen && (
-        <ClientForm open client={client} onClose={() => setEditOpen(false)} />
+        <ClientForm
+          open
+          client={client}
+          focusSection={focusSection}
+          onClose={() => {
+            setEditOpen(false)
+            setFocusSection(undefined)
+          }}
+        />
       )}
 
       {enrollOpen && (

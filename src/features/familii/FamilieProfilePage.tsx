@@ -11,6 +11,12 @@ import {
   TextInput,
 } from '@/components/ui'
 import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
+import { ChecklistBadge, ChecklistCard } from '@/components/checklist'
+import { evalueazaChecklist, type Rezultat, type StareItem } from '@/lib/checklist'
+import {
+  FAMILIE_CHECKLIST,
+  type SectiuneFamilie,
+} from '@/lib/checklist/specs/familie'
 import type { Client, Familie } from '@/types/db'
 import { useAuth } from '@/hooks/useAuth'
 import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
@@ -63,6 +69,7 @@ export function FamilieProfilePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [editOpen, setEditOpen] = useState(false)
+  const [focusSection, setFocusSection] = useState<SectiuneFamilie | undefined>()
   const [addMembersOpen, setAddMembersOpen] = useState(false)
   const [tab, setTab] = useState<TabId>('inrolari')
   const [sezonId, setSezonId] = useState<string>('')
@@ -154,6 +161,19 @@ export function FamilieProfilePage() {
   const familie = familieQuery.data
   const initials = getFamilieInitials(familie.nume_familie)
   const members = membersQuery.data ?? []
+  // Derivat din rândul familiei — fără query suplimentar.
+  const checklist = evalueazaChecklist(FAMILIE_CHECKLIST, familie)
+
+  // Datele de firmă stau în secțiunea din tab-ul „Detalii personale", nu în
+  // modal — itemul lor deschide tab-ul.
+  const onFixChecklist = (item: StareItem) => {
+    if (item.sectiune === 'firma') {
+      setTab('date')
+      return
+    }
+    setFocusSection(item.sectiune as SectiuneFamilie | undefined)
+    setEditOpen(true)
+  }
 
   return (
     <>
@@ -161,7 +181,12 @@ export function FamilieProfilePage() {
         section="Familii"
         backTo="/familii"
         title={`Familia ${familie.nume_familie}`}
-        actions={<Button onClick={() => setEditOpen(true)}>Editează</Button>}
+        actions={
+          <>
+            <ChecklistBadge rezultat={checklist} />
+            <Button onClick={() => setEditOpen(true)}>Editează</Button>
+          </>
+        }
         sidebar={
           <Sidebar
           initials={initials}
@@ -182,6 +207,8 @@ export function FamilieProfilePage() {
           members={members}
           onNavigateMember={(cid) => navigate(`/clienti/${cid}`)}
           onAddMembers={() => setAddMembersOpen(true)}
+          checklist={checklist}
+          onFixChecklist={onFixChecklist}
           />
         }
       >
@@ -210,7 +237,11 @@ export function FamilieProfilePage() {
         <FamilieForm
           open
           familie={familie}
-          onClose={() => setEditOpen(false)}
+          focusSection={focusSection}
+          onClose={() => {
+            setEditOpen(false)
+            setFocusSection(undefined)
+          }}
         />
       )}
 
@@ -242,14 +273,18 @@ type SidebarProps = {
   members: Client[]
   onNavigateMember: (id: string) => void
   onAddMembers: () => void
+  checklist: Rezultat
+  onFixChecklist: (item: StareItem) => void
 }
 
 function Sidebar({
   initials, numeFamilie, reprezentanti, numeReprezentantText,
   balanta, sezoaneOptions, sezonValue, onSezonChange,
   members, onNavigateMember, onAddMembers,
+  checklist, onFixChecklist,
 }: SidebarProps) {
   return (
+    <div className="space-y-4">
     <aside className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <div className="mb-3 flex justify-center">
         <div className="flex h-32 w-32 items-center justify-center rounded-full bg-quasar-yellow font-display text-3xl font-bold text-ink shadow-sm">
@@ -368,6 +403,9 @@ function Sidebar({
         + Adaugă membru
       </Button>
     </aside>
+
+    <ChecklistCard rezultat={checklist} onFix={onFixChecklist} />
+    </div>
   )
 }
 

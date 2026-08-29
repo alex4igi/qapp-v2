@@ -5,15 +5,19 @@ import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import { CursuriIncompleteSection } from './sections/CursuriIncompleteSection'
 import { TeacheriIncompleteSection } from './sections/TeacheriIncompleteSection'
+import { ClientiIncompleteSection } from './sections/ClientiIncompleteSection'
+import { FamiliiIncompleteSection } from './sections/FamiliiIncompleteSection'
 
 // Hub de igienă a datelor: o secțiune per entitate. Filtrul de sezon e afișat
 // doar pe tab-ul de grupe — un instructor nu aparține unui sezon, îl moștenește
 // prin cursurile pe care le predă.
-type Tab = 'cursuri' | 'teacheri'
+type Tab = 'cursuri' | 'teacheri' | 'clienti' | 'familii'
 
 const TABS = [
   { id: 'cursuri', label: 'Grupe' },
   { id: 'teacheri', label: 'Instructori' },
+  { id: 'clienti', label: 'Clienți activi' },
+  { id: 'familii', label: 'Familii' },
 ]
 
 export function FiseIncompletePage() {
@@ -76,6 +80,8 @@ export function FiseIncompletePage() {
       )}
 
       {tab === 'teacheri' && <TeacheriIncompleteSection />}
+      {tab === 'clienti' && <ClientiIncompleteSection />}
+      {tab === 'familii' && <FamiliiIncompleteSection />}
     </div>
   )
 }
