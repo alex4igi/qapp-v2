@@ -27,9 +27,11 @@ export function CursuriIncompleteSection({ sezonId, locatieId }: Props) {
     queryKey: ['fise-incomplete', 'cursuri', sezonId],
     queryFn: () => listCursuriPentruChecklist({ sezonId }),
   })
+  // Hartă de etichete, nu selector: arhivații trebuie să-și păstreze numele,
+  // altfel coloana „Teacher" ar arăta „—" pentru grupele lor.
   const teacheri = useQuery({
-    queryKey: ['lookup', 'teacheri'],
-    queryFn: () => teacheriOptions(),
+    queryKey: ['lookup', 'teacheri', 'cu-arhivati'],
+    queryFn: () => teacheriOptions(undefined, { includeArhivati: true }),
   })
   const locatii = useQuery({
     queryKey: ['lookup', 'locatii'],

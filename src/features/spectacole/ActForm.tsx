@@ -60,8 +60,8 @@ export function ActForm({
     queryFn: () => cursuriOptions(null, null),
   })
   const teacheriQ = useQuery({
-    queryKey: ['lookup', 'teacheri', 'all'],
-    queryFn: () => teacheriOptions(null),
+    queryKey: ['lookup', 'teacheri', 'all', act?.responsabil ?? null],
+    queryFn: () => teacheriOptions(null, { includeId: act?.responsabil }),
   })
 
   const invalidate = () =>

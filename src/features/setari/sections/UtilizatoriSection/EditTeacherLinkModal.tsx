@@ -28,8 +28,8 @@ export function EditTeacherLinkModal({
   const [teacherId, setTeacherId] = useState(user.teacher_id ?? '')
 
   const teacheriQ = useQuery({
-    queryKey: ['lookup', 'teacheri'],
-    queryFn: () => teacheriOptions(),
+    queryKey: ['lookup', 'teacheri', user.teacher_id ?? null],
+    queryFn: () => teacheriOptions(null, { includeId: user.teacher_id }),
   })
 
   const linked = Boolean(user.teacher_id)

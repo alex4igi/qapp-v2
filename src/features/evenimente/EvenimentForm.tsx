@@ -70,8 +70,8 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const teacheri = useQuery({
-    queryKey: ['lookup', 'teacheri'],
-    queryFn: () => teacheriOptions(),
+    queryKey: ['lookup', 'teacheri', eveniment?.organizator ?? null],
+    queryFn: () => teacheriOptions(null, { includeId: eveniment?.organizator }),
   })
   // Toate grupele sezonului activ, indiferent de locația de lucru.
   const cursuri = useCursuriOptions({ locatieId: null })

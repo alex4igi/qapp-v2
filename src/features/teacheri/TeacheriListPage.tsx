@@ -10,6 +10,8 @@ import {
   Spinner,
   Select,
   Field,
+  Checkbox,
+  Badge,
   type Column,
 } from '@/components/ui'
 import type { Teacher } from '@/types/db'
@@ -32,6 +34,11 @@ const columns: Column<Teacher>[] = [
     cell: (t) => (
       <span className="font-medium">
         {t.nume} {t.prenume ?? ''}
+        {t.arhivat && (
+          <Badge tone="neutral" className="ml-2">
+            arhivat
+          </Badge>
+        )}
       </span>
     ),
     sortValue: (t) => `${t.nume ?? ''} ${t.prenume ?? ''}`.trim().toLowerCase(),
@@ -67,6 +74,7 @@ export function TeacheriListPage() {
   const [locatieId, setLocatieId] = useState<string>(globalLocatieId ?? '')
   const [sezonId, setSezonId] = useState('')
   const [sezonInit, setSezonInit] = useState(false)
+  const [includeArhivati, setIncludeArhivati] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -105,13 +113,14 @@ export function TeacheriListPage() {
   }, [sezonInit, sezonActivQ.isSuccess, sezonActivQ.data])
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['teacheri', { search, page, locatieId, sezonId }],
+    queryKey: ['teacheri', { search, page, locatieId, sezonId, includeArhivati }],
     queryFn: () =>
       listTeacheri({
         search,
         page,
         locatieId: locatieId || null,
         sezonId: sezonId || null,
+        includeArhivati,
       }),
     placeholderData: keepPreviousData,
     enabled: sezonInit,
@@ -170,6 +179,17 @@ export function TeacheriListPage() {
               }}
             />
           </Field>
+        </div>
+        <div className="pb-2">
+          <Checkbox
+            id="teach-arhivati"
+            label="Arată arhivații"
+            checked={includeArhivati}
+            onChange={(e) => {
+              setIncludeArhivati(e.target.checked)
+              setPage(0)
+            }}
+          />
         </div>
       </div>
 

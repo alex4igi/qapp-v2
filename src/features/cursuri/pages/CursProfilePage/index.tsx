@@ -162,9 +162,10 @@ export function CursProfilePage() {
       tab === 'restantieri',
   })
 
+  // Hartă de etichete: un titular arhivat trebuie să apară în continuare pe fișă.
   const teacheri = useQuery({
-    queryKey: ['lookup', 'teacheri'],
-    queryFn: () => teacheriOptions(),
+    queryKey: ['lookup', 'teacheri', 'cu-arhivati'],
+    queryFn: () => teacheriOptions(undefined, { includeArhivati: true }),
     enabled: tab === 'detalii',
   })
   const sali = useQuery({

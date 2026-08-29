@@ -74,8 +74,8 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
   // Teacherii se filtrează pe sezonul cursului (la curs nou: sezonul activ).
   const sezonFiltru = form.sezon || sezonActivQ.data || null
   const teacheri = useQuery({
-    queryKey: ['lookup', 'teacheri', sezonFiltru],
-    queryFn: () => teacheriOptions(sezonFiltru),
+    queryKey: ['lookup', 'teacheri', sezonFiltru, curs?.teacher ?? null],
+    queryFn: () => teacheriOptions(sezonFiltru, { includeId: curs?.teacher }),
     enabled: Boolean(form.sezon) || sezonActivQ.isSuccess,
   })
   const sali = useQuery({

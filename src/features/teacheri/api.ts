@@ -63,6 +63,8 @@ export type TeacheriListParams = {
   page: number
   locatieId?: string | null
   sezonId?: string | null
+  /** Implicit arhivații sunt ascunși — pagina are un toggle pentru ei. */
+  includeArhivati?: boolean
 }
 
 export type TeacheriListResult = {
@@ -158,6 +160,7 @@ export async function teacheriOptionsFiltrate(
     .from('teacheri')
     .select('id, nume, prenume')
     .in('id', ids)
+    .eq('arhivat', false)
     .order('nume', { ascending: true })
   if (error) throw error
   return (data ?? []).map((t) => ({
@@ -171,6 +174,7 @@ export async function listTeacheri({
   page,
   locatieId,
   sezonId,
+  includeArhivati,
 }: TeacheriListParams): Promise<TeacheriListResult> {
   const from = page * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
@@ -180,6 +184,8 @@ export async function listTeacheri({
     .select('*', { count: 'exact' })
     .order('nume', { ascending: true })
     .range(from, to)
+
+  if (!includeArhivati) query = query.eq('arhivat', false)
 
   if (locatieId || sezonId) {
     const [filtrati, faraCursuri] = await Promise.all([

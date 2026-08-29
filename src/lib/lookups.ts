@@ -6,6 +6,12 @@ import type { SelectOption } from '@/components/ui'
 // via cursuri.teacher sau co-instructor via cursuri_teacheri M:N). Fără el, toți.
 export async function teacheriOptions(
   sezonId?: string | null,
+  opts?: {
+    /** Pentru hărți de etichete (nu selectoare): păstrează și arhivații. */
+    includeArhivati?: boolean
+    /** Valoarea deja salvată, păstrată chiar dacă e arhivată. */
+    includeId?: string | null
+  },
 ): Promise<SelectOption[]> {
   let allowed: Set<string> | null = null
   if (sezonId) {
@@ -31,14 +37,21 @@ export async function teacheriOptions(
   }
   const { data, error } = await supabase
     .from('teacheri')
-    .select('id, nume, prenume')
+    .select('id, nume, prenume, arhivat')
     .order('nume', { ascending: true })
   if (error) throw error
   return (data ?? [])
     .filter((t) => !allowed || allowed.has(t.id))
+    // Arhivații ies din selectoare, DAR valoarea deja salvată rămâne (`includeId`):
+    // altfel un curs cu titular arhivat s-ar deschide cu câmpul gol și prima
+    // salvare i-ar șterge tăcut titularul.
+    .filter(
+      (t) => !t.arhivat || opts?.includeArhivati || t.id === opts?.includeId,
+    )
     .map((t) => ({
       value: t.id,
-      label: `${t.nume} ${t.prenume ?? ''}`.trim(),
+      label:
+        `${t.nume} ${t.prenume ?? ''}`.trim() + (t.arhivat ? ' (arhivat)' : ''),
     }))
 }
 
