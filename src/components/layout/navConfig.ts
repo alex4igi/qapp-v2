@@ -38,11 +38,12 @@ export const navSections: NavSection[] = [
     label: 'Încasări',
     color: '#2fbf71',
     items: [
-      { label: 'Plăți',       path: '/plati' },
-      { label: 'Datorii',     path: '/datorii' },
-      { label: 'Facturare',   path: '/facturare' },
-      { label: 'Reînscrieri', path: '/reinscrieri' },
-      { label: 'Vouchere',    path: '/vouchere' },
+      { label: 'Plăți',            path: '/plati' },
+      { label: 'Situație zilnică', path: '/situatie-zilnica' },
+      { label: 'Datorii',          path: '/datorii' },
+      { label: 'Facturare',        path: '/facturare' },
+      { label: 'Reînscrieri',      path: '/reinscrieri' },
+      { label: 'Vouchere',         path: '/vouchere' },
     ],
   },
   {
@@ -68,6 +69,7 @@ export const navSections: NavSection[] = [
     label: 'Marketing',
     color: '#a78bfa',
     items: [
+      { label: 'Reconciliere ads', path: '/marketing' },
       { label: 'Campanii',        path: '/campanii' },
       { label: 'SMS',             path: '/sms' },
       { label: 'Ofertă publică',  path: '/oferta-publica' },
@@ -81,7 +83,6 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Panou',            path: '/analytics' },
       { label: 'CFO',              path: '/cfo' },
-      { label: 'Situație zilnică', path: '/situatie-zilnica' },
       { label: 'Overview',         path: '/overview' },
       { label: 'Financiar',        path: '/financiar' },
       { label: 'Statistici',       path: '/statistici' },

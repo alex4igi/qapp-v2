@@ -19,9 +19,13 @@ import { GRAPH, parseLeadFields, type FieldDatum } from '../_shared/meta.ts'
 type GraphLead = {
   id: string
   created_time?: string
+  ad_id?: string
   ad_name?: string
+  adset_id?: string
+  adset_name?: string
   campaign_name?: string
   campaign_id?: string
+  platform?: string
   field_data?: FieldDatum[]
 }
 
@@ -67,6 +71,18 @@ Deno.serve(async (req) => {
       const id = row.extern_id as string | null
       if (id) seen.add(id)
     }
+    // ȘI din logul de intake: un lead respins la dedup pe telefon NU lasă rând în
+    // `leads`, deci fără asta ar fi re-procesat la fiecare tick (cron la 15 min pe
+    // o fereastră de 3 zile ⇒ sute de reluări + tot atâtea rânduri de log).
+    const { data: logged } = await supabase
+      .from('leads_intake_log')
+      .select('extern_id')
+      .not('extern_id', 'is', null)
+      .gte('created', new Date(Date.now() - (days + 1) * 86_400_000).toISOString())
+    for (const row of logged ?? []) {
+      const id = row.extern_id as string | null
+      if (id) seen.add(id)
+    }
 
     const sursa = lazyCampanie(supabase, 'Meta Ads')
 
@@ -97,7 +113,8 @@ Deno.serve(async (req) => {
         )
         let next: string | null =
           `${GRAPH}/${form.id}/leads` +
-          `?fields=id,created_time,ad_name,campaign_name,campaign_id,field_data` +
+          `?fields=id,created_time,ad_id,ad_name,adset_id,adset_name,` +
+          `campaign_name,campaign_id,platform,field_data` +
           `&filtering=${filtering}&limit=50&access_token=${pageToken}`
 
         let guard = 0
@@ -114,9 +131,8 @@ Deno.serve(async (req) => {
 
             const parsed = parseLeadFields(lead.field_data ?? [])
             // Doar răspunsurile nemapate din formular — alea sunt despre om.
-            // Marcajul merge în extern_id, campania în utm_campaign; numele
-            // reclamei nu se stochează (se ia din Meta). `observatii` rămâne a
-            // recepției.
+            // Identificatorii reclamei stau în coloanele lor (atribuire), NU în
+            // observații: `observatii` rămâne notița recepției.
             const note: string[] = [...parsed.notes]
 
             const result = await insertLead(
@@ -135,8 +151,16 @@ Deno.serve(async (req) => {
                 utm_source: 'meta',
                 utm_medium: 'lead_ads',
                 utm_campaign: lead.campaign_name ?? lead.campaign_id ?? null,
+                platform: lead.platform ?? 'meta',
+                campaign_id: lead.campaign_id ?? null,
+                ad_id: lead.ad_id ?? null,
+                ad_name: lead.ad_name ?? null,
+                adset_id: lead.adset_id ?? null,
+                adset_name: lead.adset_name ?? null,
+                form_id: form.id,
               },
               await sursa(),
+              { canal: 'meta_poller' },
             )
             if (result.created) created++
             else skipped++

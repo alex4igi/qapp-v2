@@ -43,6 +43,28 @@ Content-Type: application/json
 | `utm_source` | nu | text | pentru tracking ROI |
 | `utm_medium` | nu | text | |
 | `utm_campaign` | nu | text | |
+| `campaign_id` | nu | text | id-ul campaniei din platforma de ads |
+| `gclid` | nu | text | **Google Ads** — vezi mai jos |
+
+### `gclid` (Google Ads)
+
+Când cineva ajunge pe site dintr-o reclamă Google, Google adaugă în URL un
+parametru `?gclid=…`. E identificatorul acelui click.
+
+Ca să putem reconcilia lead-urile cu ce raportează Google Ads — și, mai
+târziu, să trimitem înapoi în Google conversiile offline (cine s-a înscris
+efectiv) — formularul trebuie să-l preia din query string și să-l trimită
+în payload:
+
+```js
+const gclid = new URLSearchParams(location.search).get('gclid')
+```
+
+Recomandare: salvați-l în `sessionStorage` la prima încărcare a paginii —
+vizitatorul poate naviga pe site înainte să completeze formularul, iar
+parametrul se pierde din URL între timp.
+
+Fără `gclid`, lead-urile Google rămân atribuite doar prin UTM-uri.
 
 ### Valori acceptate
 

@@ -253,6 +253,69 @@ export type IntakeLead = {
   utm_source?: string | null
   utm_medium?: string | null
   utm_campaign?: string | null
+  // Atribuire la nivel de reclamă. Generice, nu `meta_*`: aceleași câmpuri
+  // servesc Google Ads (unde `gclid` e și precondiția pentru conversii offline).
+  platform?: string | null
+  campaign_id?: string | null
+  ad_id?: string | null
+  ad_name?: string | null
+  adset_id?: string | null
+  adset_name?: string | null
+  form_id?: string | null
+  gclid?: string | null
+}
+
+export type IntakeCanal = 'meta_webhook' | 'meta_poller' | 'website' | 'sheets'
+export type IntakeRezultat =
+  | 'creat'
+  | 'duplicat_telefon'
+  | 'duplicat_extern_id'
+  | 'respins_validare'
+
+// Scrie un rând în `leads_intake_log` pentru FIECARE eveniment primit, inclusiv
+// cele care nu produc un lead.
+//
+// Fără asta, dedup-ul de mai jos aruncă tăcut evenimentele repetate și
+// reconcilierea cu Meta/Google nu se poate închide: platforma raportează 50,
+// CRM-ul arată 43, iar cei 7 rămân inexplicabili.
+//
+// Logarea nu are voie să rupă intake-ul: o eroare aici se raportează și se ignoră.
+export async function logIntake(
+  supabase: SupabaseClient,
+  entry: {
+    canal: IntakeCanal
+    rezultat: IntakeRezultat
+    leadId?: string | null
+    lead?: IntakeLead | null
+    telefon?: string | null
+    detalii?: Record<string, unknown> | null
+  },
+): Promise<void> {
+  const l = entry.lead
+  try {
+    const { error } = await supabase.from('leads_intake_log').insert({
+      canal: entry.canal,
+      rezultat: entry.rezultat,
+      lead_id: entry.leadId ?? null,
+      extern_id: l?.extern_id?.trim() || null,
+      platform: l?.platform?.trim() || null,
+      campaign_id: l?.campaign_id?.trim() || null,
+      campaign_name: l?.utm_campaign?.trim() || null,
+      ad_id: l?.ad_id?.trim() || null,
+      ad_name: l?.ad_name?.trim() || null,
+      adset_id: l?.adset_id?.trim() || null,
+      adset_name: l?.adset_name?.trim() || null,
+      form_id: l?.form_id?.trim() || null,
+      utm_source: l?.utm_source?.trim() || null,
+      utm_medium: l?.utm_medium?.trim() || null,
+      utm_campaign: l?.utm_campaign?.trim() || null,
+      telefon: entry.telefon ?? (l?.telefon ? normalizeTelefon(l.telefon) : null),
+      detalii: entry.detalii ?? null,
+    })
+    if (error) console.error('[intake-log] insert eșuat:', error.message)
+  } catch (e) {
+    console.error('[intake-log] excepție:', e)
+  }
 }
 
 // Inserează un lead în status 'nou'. Deduplică pe telefon normalizat:
@@ -261,7 +324,7 @@ export async function insertLead(
   supabase: SupabaseClient,
   lead: IntakeLead,
   sursaId: string | null,
-  opts?: { status?: string },
+  opts?: { status?: string; canal?: IntakeCanal },
 ): Promise<{ created: boolean; leadId: string | null; reason?: string }> {
   const telefon = lead.telefon ? normalizeTelefon(lead.telefon) : null
 
@@ -273,6 +336,17 @@ export async function insertLead(
       .limit(1)
       .maybeSingle()
     if (existing) {
+      // Nu e „nimic” — e o persoană pe care campania a re-atins-o. O logăm, ca
+      // diferența față de raportul platformei să fie explicabilă.
+      if (opts?.canal) {
+        await logIntake(supabase, {
+          canal: opts.canal,
+          rezultat: 'duplicat_telefon',
+          leadId: existing.id,
+          lead,
+          telefon,
+        })
+      }
       return { created: false, leadId: existing.id, reason: 'telefon existent' }
     }
   }
@@ -320,9 +394,37 @@ export async function insertLead(
       utm_source: lead.utm_source?.trim() || null,
       utm_medium: lead.utm_medium?.trim() || null,
       utm_campaign: lead.utm_campaign?.trim() || null,
+      platform: lead.platform?.trim() || null,
+      campaign_id: lead.campaign_id?.trim() || null,
+      ad_id: lead.ad_id?.trim() || null,
+      ad_name: lead.ad_name?.trim() || null,
+      adset_id: lead.adset_id?.trim() || null,
+      adset_name: lead.adset_name?.trim() || null,
+      form_id: lead.form_id?.trim() || null,
+      gclid: lead.gclid?.trim() || null,
     })
     .select('id')
     .single()
-  if (error) return { created: false, leadId: null, reason: error.message }
+  if (error) {
+    if (opts?.canal) {
+      await logIntake(supabase, {
+        canal: opts.canal,
+        rezultat: 'respins_validare',
+        lead,
+        telefon,
+        detalii: { eroare: error.message },
+      })
+    }
+    return { created: false, leadId: null, reason: error.message }
+  }
+  if (opts?.canal) {
+    await logIntake(supabase, {
+      canal: opts.canal,
+      rezultat: 'creat',
+      leadId: data.id,
+      lead,
+      telefon,
+    })
+  }
   return { created: true, leadId: data.id }
 }

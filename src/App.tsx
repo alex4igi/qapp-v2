@@ -53,6 +53,7 @@ import { ConcursuriListPage } from '@/features/concursuri/ConcursuriListPage'
 import { SpectacoleListPage } from '@/features/spectacole/SpectacoleListPage'
 import { SpectacolProfilePage } from '@/features/spectacole/SpectacolProfilePage'
 import { CampaniiListPage } from '@/features/campanii/CampaniiListPage'
+import { MarketingPage } from '@/features/marketing/MarketingPage'
 import { ContracteListPage } from '@/features/contracte/ContracteListPage'
 import { ReinscrieriPage } from '@/features/reinscrieri/ReinscrieriPage'
 import { SetariPage } from '@/features/setari/SetariPage'
@@ -166,7 +167,6 @@ function App() {
               <Route path="teacheri" element={<TeacheriListPage />} />
               <Route path="teacheri/:id" element={<TeacherProfilePage />} />
               <Route path="plati" element={<PlatiListPage />} />
-              <Route path="leads" element={<LeadsPage />} />
               <Route path="datorii" element={<DatoriiPage />} />
               {/* /recuperare a fost absorbit de hub-ul /datorii */}
               <Route path="recuperare" element={<Navigate to="/datorii" replace />} />
@@ -177,9 +177,23 @@ function App() {
             </Route>
           </Route>
 
+          {/* Leads are gard propriu (nu blocul /clienti): agenția externă de ads
+              vede fișele de lead, dar nimic din clienți/plăți/facturare. */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/leads']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="leads" element={<LeadsPage />} />
+            </Route>
+          </Route>
+
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/campanii']} />}>
             <Route element={<AppLayout />}>
               <Route path="campanii" element={<CampaniiListPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/marketing']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="marketing" element={<MarketingPage />} />
             </Route>
           </Route>
 

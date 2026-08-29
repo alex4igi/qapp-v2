@@ -10,7 +10,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { isManagerOrHigher } from '@/lib/rolesMatrix'
+import { canEditLeads, isManagerOrHigher } from '@/lib/rolesMatrix'
 import { ConversieModal, type ConversieResult } from '../ConversieModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import {
@@ -552,6 +552,7 @@ export function LeadModal({
                     canStartConvert={isEdit && Boolean(lead)}
                     onPickStatus={(s) => set('status', s)}
                     onStartConvert={() => setConvertFlow(true)}
+                    readOnly={!canEditLeads(role)}
                   />
 
                   {form.status === 'convertit' && (
@@ -656,7 +657,7 @@ export function LeadModal({
             )}
             <div style={{ flex: 1 }} />
             <button type="button" onClick={onClose} style={{ height: '40px', padding: '0 16px', border: '1px solid #E4E0D7', background: '#fff', borderRadius: '9px', fontSize: '13.5px', fontWeight: 600, color: 'var(--color-ink)', cursor: 'pointer' }}>Anulează</button>
-            {tab === 'detalii' && (
+            {tab === 'detalii' && canEditLeads(role) && (
               <button type="submit" form="lead-form" disabled={save.isPending} className="qbtnp" style={{ height: '40px', padding: '0 20px', border: 'none', background: 'var(--color-quasar-yellow)', borderRadius: '9px', fontSize: '13.5px', fontWeight: 700, color: 'var(--color-ink)', cursor: 'pointer' }}>
                 {save.isPending ? 'Se salvează…' : isEdit ? 'Salvează' : 'Adaugă lead'}
               </button>

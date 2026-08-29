@@ -10,6 +10,9 @@ type Props = {
   canStartConvert: boolean
   onPickStatus: (status: StatusLead) => void
   onStartConvert: () => void
+  /** Vizualizator fără drept de scriere (agenția de ads): stepper-ul rămâne
+   *  lizibil, dar nu mai e acționabil. */
+  readOnly?: boolean
 }
 
 // Stepper-ul pipeline (nou → contactat → programat → convertit) + pastilele
@@ -19,6 +22,7 @@ export function PipelineStepper({
   canStartConvert,
   onPickStatus,
   onStartConvert,
+  readOnly = false,
 }: Props) {
   const activeIdx = (STEP_ORDER as readonly string[]).indexOf(status)
   return (
@@ -33,6 +37,7 @@ export function PipelineStepper({
               key={key}
               type="button"
               className="qstep"
+              disabled={readOnly}
               onClick={() => {
                 // „Convertit" e atomic: nu se forțează statusul, ci se
                 // pornește fluxul real (client + înrolare). Doar pe lead
@@ -43,7 +48,7 @@ export function PipelineStepper({
                   onPickStatus(key)
                 }
               }}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', padding: '11px 4px 10px', border: '1px solid ' + (isActive ? '#F0D98A' : '#EFEBE2'), background: isActive ? '#FFFBEF' : '#fff', borderRadius: '11px', cursor: 'pointer' }}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', padding: '11px 4px 10px', border: '1px solid ' + (isActive ? '#F0D98A' : '#EFEBE2'), background: isActive ? '#FFFBEF' : '#fff', borderRadius: '11px', cursor: readOnly ? 'default' : 'pointer' }}
             >
               <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: done ? '#1E8A5B' : isActive ? '#FFD600' : '#fff', border: '2px solid ' + (done ? '#1E8A5B' : isActive ? '#FFD600' : '#DAD5CA'), color: done ? '#fff' : isActive ? '#1A1814' : '#B5B0A6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px' }}>
                 {done ? '✓' : i + 1}
@@ -64,8 +69,9 @@ export function PipelineStepper({
               key={key}
               type="button"
               className="qexit"
+              disabled={readOnly}
               onClick={() => onPickStatus(key)}
-              style={{ height: '32px', padding: '0 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: on ? '#fff' : t.fg, background: on ? t.fg : t.bg, border: '1px solid ' + (on ? t.fg : t.bd) }}
+              style={{ height: '32px', padding: '0 14px', borderRadius: '20px', cursor: readOnly ? 'default' : 'pointer', fontSize: '12px', fontWeight: 600, color: on ? '#fff' : t.fg, background: on ? t.fg : t.bg, border: '1px solid ' + (on ? t.fg : t.bd) }}
             >
               {STATUS_CONFIG[key].label}
             </button>

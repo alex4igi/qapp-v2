@@ -8,4 +8,5 @@ export const ALL_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: 'manager',    label: 'Manager' },
   { value: 'teacher',    label: 'Instructor' },
   { value: 'front_desk', label: 'Front Desk' },
+  { value: 'marketing',  label: 'Marketing (agenție)' },
 ]

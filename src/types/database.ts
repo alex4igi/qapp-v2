@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -4337,6 +4337,11 @@ export type Database = {
       }
       leads: {
         Row: {
+          ad_id: string | null
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          campaign_id: string | null
           cod_voucher: string | null
           created: string
           curs_interes: string | null
@@ -4351,6 +4356,8 @@ export type Database = {
           flag_reminder: boolean
           flag_reminder_at: string | null
           flag_streak: number
+          form_id: string | null
+          gclid: string | null
           grupa_varsta: Database["public"]["Enums"]["grupa_lead"] | null
           id: string
           id_client: string | null
@@ -4365,6 +4372,7 @@ export type Database = {
           opt_out_la: string | null
           opt_out_marketing: boolean
           opt_out_motiv: string | null
+          platform: string | null
           prenume: string | null
           responsabil_id: string | null
           sexul: Database["public"]["Enums"]["sex"] | null
@@ -4380,6 +4388,11 @@ export type Database = {
           varsta: number | null
         }
         Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          campaign_id?: string | null
           cod_voucher?: string | null
           created?: string
           curs_interes?: string | null
@@ -4394,6 +4407,8 @@ export type Database = {
           flag_reminder?: boolean
           flag_reminder_at?: string | null
           flag_streak?: number
+          form_id?: string | null
+          gclid?: string | null
           grupa_varsta?: Database["public"]["Enums"]["grupa_lead"] | null
           id?: string
           id_client?: string | null
@@ -4408,6 +4423,7 @@ export type Database = {
           opt_out_la?: string | null
           opt_out_marketing?: boolean
           opt_out_motiv?: string | null
+          platform?: string | null
           prenume?: string | null
           responsabil_id?: string | null
           sexul?: Database["public"]["Enums"]["sex"] | null
@@ -4423,6 +4439,11 @@ export type Database = {
           varsta?: number | null
         }
         Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          campaign_id?: string | null
           cod_voucher?: string | null
           created?: string
           curs_interes?: string | null
@@ -4437,6 +4458,8 @@ export type Database = {
           flag_reminder?: boolean
           flag_reminder_at?: string | null
           flag_streak?: number
+          form_id?: string | null
+          gclid?: string | null
           grupa_varsta?: Database["public"]["Enums"]["grupa_lead"] | null
           id?: string
           id_client?: string | null
@@ -4451,6 +4474,7 @@ export type Database = {
           opt_out_la?: string | null
           opt_out_marketing?: boolean
           opt_out_motiv?: string | null
+          platform?: string | null
           prenume?: string | null
           responsabil_id?: string | null
           sexul?: Database["public"]["Enums"]["sex"] | null
@@ -4520,6 +4544,80 @@ export type Database = {
             columns: ["sursa"]
             isOneToOne: false
             referencedRelation: "campanii_promovare"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads_intake_log: {
+        Row: {
+          ad_id: string | null
+          ad_name: string | null
+          adset_id: string | null
+          adset_name: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          canal: string
+          created: string
+          detalii: Json | null
+          extern_id: string | null
+          form_id: string | null
+          id: string
+          lead_id: string | null
+          platform: string | null
+          rezultat: string
+          telefon: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          canal: string
+          created?: string
+          detalii?: Json | null
+          extern_id?: string | null
+          form_id?: string | null
+          id?: string
+          lead_id?: string | null
+          platform?: string | null
+          rezultat: string
+          telefon?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          adset_id?: string | null
+          adset_name?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          canal?: string
+          created?: string
+          detalii?: Json | null
+          extern_id?: string | null
+          form_id?: string | null
+          id?: string
+          lead_id?: string | null
+          platform?: string | null
+          rezultat?: string
+          telefon?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_intake_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -9804,6 +9902,23 @@ export type Database = {
           luna: string
         }[]
       }
+      get_marketing_reconciliere: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          campanie_ads: string
+          contactati: number
+          convertiti: number
+          intake_creat: number
+          intake_duplicat: number
+          intake_evenimente: number
+          intake_respins: number
+          leads_in_crm: number
+          platforma: string
+          prezenti: number
+          sursa_crm: string
+          zi: string
+        }[]
+      }
       get_membri_familie: {
         Args: never
         Returns: {
@@ -10894,6 +11009,13 @@ export type Database = {
           p_suma2?: number
         }
         Returns: string
+      }
+      rls_marketing_gap_report: {
+        Args: never
+        Returns: {
+          problema: string
+          tabel: string
+        }[]
       }
       rls_parinte_gap_report: {
         Args: never

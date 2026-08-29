@@ -154,7 +154,8 @@ export function UtilizatoriSection() {
       header: 'Locație',
       cell: (u) => {
         const label = u.locatie_id ? locatieLabelById.get(u.locatie_id) : null
-        const canHaveLocked = u.role === 'front_desk' || u.role === 'teacher'
+        const canHaveLocked =
+          u.role === 'front_desk' || u.role === 'teacher' || u.role === 'marketing'
         return (
           <button
             type="button"

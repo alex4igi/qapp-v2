@@ -14,6 +14,8 @@ import type { CampaniePromovare } from '@/types/db'
 import { formatRON } from '@/lib/format'
 import { CampanieForm } from './CampanieForm'
 import { listCampanii, type CampanieWithLeadCount } from './api'
+import { useAuth } from '@/hooks/useAuth'
+import { canEditLeads } from '@/lib/rolesMatrix'
 
 // Cheia de grupare pe canal: Offline e un singur grup; Online se desparte pe sub-canal.
 function groupKey(c: CampanieWithLeadCount): string {
@@ -40,7 +42,10 @@ function cacLabel(c: CampanieWithLeadCount): string {
   return `${formatRON(Math.round(buget / c.nr_leads))}/lead`
 }
 
-const columns: Column<CampanieWithLeadCount>[] = [
+// Bugetul și CAC-ul sunt cifre interne: agenția de ads își știe propriul cost,
+// dar coloanele astea sunt ale noastre. Le construim condiționat.
+function buildColumns(aratăBuget: boolean): Column<CampanieWithLeadCount>[] {
+  const cols: Column<CampanieWithLeadCount>[] = [
   {
     header: 'Nume',
     cell: (c) => <span className="font-medium">{c.nume}</span>,
@@ -59,15 +64,6 @@ const columns: Column<CampanieWithLeadCount>[] = [
     sortValue: (c) => c.canale_online?.toLowerCase(),
   },
   {
-    header: 'Buget',
-    cell: (c) => {
-      const b = parseBani(c.bani)
-      return b != null ? formatRON(b) : (c.bani ?? '—')
-    },
-    className: 'w-28 text-right',
-    sortValue: (c) => parseBani(c.bani) ?? 0,
-  },
-  {
     header: 'Rezultate vizate',
     cell: (c) => (c.rezultate != null ? String(c.rezultate) : '—'),
     className: 'w-32 text-right',
@@ -79,19 +75,36 @@ const columns: Column<CampanieWithLeadCount>[] = [
     className: 'w-24 text-right',
     sortValue: (c) => c.nr_leads ?? 0,
   },
-  {
-    header: 'CAC (cost/lead)',
-    cell: (c) => <span className="font-medium">{cacLabel(c)}</span>,
-    className: 'w-32 text-right',
-    sortValue: (c) => {
-      const buget = parseBani(c.bani)
-      if (buget == null || c.nr_leads <= 0) return null
-      return Math.round(buget / c.nr_leads)
-    },
-  },
-]
+  ]
+
+  if (aratăBuget) {
+    cols.splice(3, 0, {
+      header: 'Buget',
+      cell: (c) => {
+        const b = parseBani(c.bani)
+        return b != null ? formatRON(b) : (c.bani ?? '—')
+      },
+      className: 'w-28 text-right',
+      sortValue: (c) => parseBani(c.bani) ?? 0,
+    })
+    cols.push({
+      header: 'CAC (cost/lead)',
+      cell: (c) => <span className="font-medium">{cacLabel(c)}</span>,
+      className: 'w-32 text-right',
+      sortValue: (c) => {
+        const buget = parseBani(c.bani)
+        if (buget == null || c.nr_leads <= 0) return null
+        return Math.round(buget / c.nr_leads)
+      },
+    })
+  }
+  return cols
+}
 
 export function CampaniiListPage() {
+  const { role } = useAuth()
+  const poateEdita = canEditLeads(role)
+  const columns = useMemo(() => buildColumns(poateEdita), [poateEdita])
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<CampaniePromovare | null>(null)
   const [search, setSearch] = useState('')
@@ -133,7 +146,9 @@ export function CampaniiListPage() {
         title="Campanii promovare"
         subtitle={data ? `${totalFiltrate} campanii` : undefined}
         actions={
-          <Button onClick={() => setFormOpen(true)}>+ Campanie nouă</Button>
+          poateEdita ? (
+            <Button onClick={() => setFormOpen(true)}>+ Campanie nouă</Button>
+          ) : undefined
         }
       />
 
@@ -175,7 +190,7 @@ export function CampaniiListPage() {
                 columns={columns}
                 rows={g.rows}
                 rowKey={(c) => c.id}
-                onRowClick={(c) => setEditing(c)}
+                onRowClick={poateEdita ? (c) => setEditing(c) : undefined}
                 emptyMessage="Nicio campanie."
               />
             </section>

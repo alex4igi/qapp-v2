@@ -8,7 +8,13 @@ import {
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
-export type AppRole = 'owner' | 'admin' | 'manager' | 'teacher' | 'front_desk'
+export type AppRole =
+  | 'owner'
+  | 'admin'
+  | 'manager'
+  | 'teacher'
+  | 'front_desk'
+  | 'marketing'
 
 type AuthContextValue = {
   session: Session | null
@@ -37,7 +43,8 @@ function roleFromUser(user: User | null): AppRole {
     r === 'admin' ||
     r === 'manager' ||
     r === 'teacher' ||
-    r === 'front_desk'
+    r === 'front_desk' ||
+    r === 'marketing'
   ) {
     return r
   }

@@ -88,7 +88,7 @@ type Props = {
   prezentaByLead?: Map<string, string>
   contactatiAzi: Set<string>
   onLeadClick: (lead: Lead) => void
-  onLogContact: (lead: Lead) => void
+  onLogContact?: (lead: Lead) => void
 }
 
 export function LeadListView({

@@ -12,6 +12,8 @@ import {
 } from '@dnd-kit/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import { canEditLeads } from '@/lib/rolesMatrix'
 import { campaniiOptions } from '@/lib/lookups'
 import type { Lead, StatusLead } from '@/types/db'
 import {
@@ -156,8 +158,16 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
     return map
   }, [campaniiQuery.data])
 
+  const { role } = useAuth()
+  // Agenția de ads vede pipeline-ul, nu-l mută. Fără senzori dnd-kit nu pornește
+  // niciun drag — statusul nu se poate schimba nici accidental.
+  const poateEdita = canEditLeads(role)
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, {
+      activationConstraint: poateEdita
+        ? { distance: 5 }
+        : { distance: Number.POSITIVE_INFINITY },
+    }),
   )
 
   const leads = leadsQuery.data ?? []
@@ -269,6 +279,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveId(null)
+    if (!poateEdita) return
     const { active, over } = event
     if (!over) return
 
@@ -359,7 +370,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
         <TodayPanel
           leads={leads}
           onLeadClick={setEditingLead}
-          onLogContact={setLogContactLead}
+          onLogContact={poateEdita ? setLogContactLead : undefined}
         />
       )}
 
@@ -370,7 +381,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
           prezentaByLead={prezenteQuery.data}
           contactatiAzi={contactatiAzi}
           onLeadClick={setEditingLead}
-          onLogContact={setLogContactLead}
+          onLogContact={poateEdita ? setLogContactLead : undefined}
         />
       ) : (
       <DndContext
@@ -397,7 +408,9 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
                 )
               }
               onLeadClick={(lead) => setEditingLead(lead)}
-              onAddLead={(status) => setAddingToStatus(status)}
+              onAddLead={
+                poateEdita ? (status) => setAddingToStatus(status) : undefined
+              }
               onLogContact={(lead) => setLogContactLead(lead)}
               onEnroll={handleEnroll}
               enrolledClientIds={enrolledClientIds}

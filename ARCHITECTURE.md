@@ -88,7 +88,9 @@ features/<domain>/
 
 ## Rute & acces (snapshot)
 
-5 roluri: `owner`, `admin`, `manager`, `front_desk`, `teacher` (parinte rămâne scope viitor).
+6 roluri: `owner`, `admin`, `manager`, `front_desk`, `teacher`, `marketing` (parinte rămâne scope viitor).
+
+`marketing` = agenția externă de ads, read-only. NU e staff: nu intră în `ALL_STAFF`, iar fiecare rută care i se deschide se enumeră explicit (azi: `/marketing`, `/leads`, `/campanii`). Restricția reală e în DB — vezi regula de gard RLS din `CLAUDE.md`; UI-ul doar ascunde butoanele (`canEditLeads`).
 
 Grupuri pre-definite în `rolesMatrix.ts`:
 - `ALL_STAFF` = owner+admin+manager+front_desk
@@ -96,6 +98,7 @@ Grupuri pre-definite în `rolesMatrix.ts`:
 - `ADMIN_OR_OWNER` = owner+admin
 - `OWNER_ONLY` = owner
 - `WITH_TEACHER` = ALL_STAFF + teacher
+- `WITH_MARKETING` = ALL_STAFF + marketing
 - `TEACHER_ONLY` = teacher
 
 Pentru lista completă rută → roluri permise, vezi `ROUTE_ACCESS` în `src/lib/rolesMatrix.ts`. Aceasta este referința unică — atât `ProtectedRoute`, cât și `navConfig.visibleSections()` derivă din ea.

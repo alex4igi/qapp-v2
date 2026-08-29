@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { canAccessRoute, roleLabel } from '@/lib/rolesMatrix'
+import { canAccessRoute, canEditLeads, roleLabel } from '@/lib/rolesMatrix'
 import { ClientForm } from '@/features/clienti/ClientForm'
 import { LeadModal } from '@/features/leads/LeadModal'
 import { sectionMatches, visibleSections } from './navConfig'
@@ -293,7 +293,9 @@ function RailActions({ collapsed }: { collapsed: boolean }) {
   const [leadOpen, setLeadOpen] = useState(false)
   const [clientOpen, setClientOpen] = useState(false)
 
-  if (role === 'teacher') return null
+  // Cine nu poate scrie lead-uri/clienți nu vede nici scurtăturile de creare
+  // (teacher, agenția de ads).
+  if (!canEditLeads(role)) return null
 
   if (collapsed) {
     return (

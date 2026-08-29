@@ -9,6 +9,9 @@ export const PRIVILEGED: AppRole[] = ['owner', 'admin', 'manager']
 export const ADMIN_OR_OWNER: AppRole[] = ['owner', 'admin']
 export const OWNER_ONLY: AppRole[] = ['owner']
 export const WITH_TEACHER: AppRole[] = [...ALL_STAFF, 'teacher']
+// Agenția externă de ads (read-only). NU face parte din ALL_STAFF: e un terț, nu
+// personal — orice rută care i se deschide trebuie enumerată explicit.
+export const WITH_MARKETING: AppRole[] = [...ALL_STAFF, 'marketing']
 
 // Matrice rută → roluri permise
 // Notă: gating-ul de acțiuni (create/edit/delete) intern paginii se face
@@ -29,7 +32,9 @@ export const ROUTE_ACCESS = {
   // Facturare FGO: recepția lucrează lista; upload-ul extrasului e gardat la admin/owner
   // în pagină + în edge function (acțiunea `ingest`).
   '/facturare': ALL_STAFF,
-  '/leads': ALL_STAFF,
+  // Fișele de lead sunt deschise și agenției de ads (verifică atribuirea pe
+  // campanie). Editarea e blocată în UI (canEditLeads) și în RLS.
+  '/leads': WITH_MARKETING,
   '/datorii': ALL_STAFF,
   // păstrat doar pentru redirectul guardat /recuperare → /datorii
   '/recuperare': ALL_STAFF,
@@ -62,8 +67,10 @@ export const ROUTE_ACCESS = {
   // Spectacole / recitaluri (producție lineup) — owner/admin/manager. Teacherii pot
   // fi responsabili de act, dar gestiunea rămâne la privilegiați (ca la concursuri).
   '/spectacole': PRIVILEGED,
-  '/campanii': ALL_STAFF,
+  '/campanii': WITH_MARKETING,
   '/reinscrieri': PRIVILEGED,
+  // Reconciliere CRM ↔ Google/Meta Ads. Landing-ul rolului `marketing`.
+  '/marketing': WITH_MARKETING,
   '/contracte': PRIVILEGED,
   // Editor vizual de template-uri — modifică structura legală a contractelor,
   // mai restrâns decât trimiterea din /contracte (care include manager).
@@ -128,6 +135,8 @@ export function defaultRouteForRole(role: AppRole): string {
   // ei nu-i interesează ce ore sunt azi, ci numerele. Operaționalul zilei rămâne
   // la 1 click (buton „Operațional zi" + meniu).
   if (isAdminOrHigher(role)) return '/analytics'
+  // Agenția de ads nu are acces la Dashboard — ar intra în buclă de redirect.
+  if (isMarketing(role)) return '/marketing'
   // Restul aterizează pe Dashboard. Pentru teacher, Dashboard-ul afișează grupele
   // zilei (filtrate via cursuri_teacheri M:N) și butoane de marcare prezență.
   return '/'
@@ -163,6 +172,16 @@ export function isTeacher(role: AppRole): boolean {
   return role === 'teacher'
 }
 
+export function isMarketing(role: AppRole): boolean {
+  return role === 'marketing'
+}
+
+// Cine poate modifica lead-uri și campanii. Oglindește allowlist-ul din RLS
+// (`leads_user_insert/update`): agenția de ads și teacherii citesc, nu scriu.
+export function canEditLeads(role: AppRole): boolean {
+  return isFrontDeskOrHigher(role)
+}
+
 // Capabilități cross-cutting
 export function canChangeLocatie(role: AppRole): boolean {
   return isManagerOrHigher(role)
@@ -182,7 +201,12 @@ export function canMesajGrupa(role: AppRole): boolean {
 export function canManageRole(currentRole: AppRole, targetRole: AppRole): boolean {
   if (currentRole === 'owner') return true
   if (currentRole === 'admin') {
-    return targetRole === 'manager' || targetRole === 'front_desk' || targetRole === 'teacher'
+    return (
+      targetRole === 'manager' ||
+      targetRole === 'front_desk' ||
+      targetRole === 'teacher' ||
+      targetRole === 'marketing'
+    )
   }
   if (currentRole === 'manager') {
     return targetRole === 'front_desk' || targetRole === 'teacher'
@@ -197,6 +221,7 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   manager: 'Manager',
   front_desk: 'Front Desk',
   teacher: 'Instructor',
+  marketing: 'Marketing (agenție)',
 }
 
 /**

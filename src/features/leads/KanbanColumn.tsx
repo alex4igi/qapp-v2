@@ -21,7 +21,7 @@ type Props = {
   collapsed?: boolean
   onToggleCollapse?: () => void
   onLeadClick: (lead: Lead) => void
-  onAddLead: (status: string) => void
+  onAddLead?: (status: string) => void
   onLogContact: (lead: Lead) => void
   onEnroll: (lead: Lead) => void
   enrolledClientIds: Set<string>
@@ -209,6 +209,7 @@ export function KanbanColumn({
               </svg>
             </button>
           )}
+          {onAddLead && (
           <button
             type="button"
             onClick={() => onAddLead(column.status)}
@@ -229,6 +230,7 @@ export function KanbanColumn({
               />
             </svg>
           </button>
+          )}
         </div>
       </div>
 

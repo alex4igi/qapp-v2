@@ -3,7 +3,13 @@
 // prin supabase.functions.invoke.
 import { supabase } from '@/lib/supabase'
 
-export type UserRole = 'owner' | 'admin' | 'manager' | 'teacher' | 'front_desk'
+export type UserRole =
+  | 'owner'
+  | 'admin'
+  | 'manager'
+  | 'teacher'
+  | 'front_desk'
+  | 'marketing'
 
 export type UserRow = {
   id: string
@@ -23,6 +29,7 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   manager: 'Manager',
   teacher: 'Instructor',
   front_desk: 'Front Desk',
+  marketing: 'Marketing (agenție)',
 }
 
 export async function listUsers(): Promise<UserRow[]> {

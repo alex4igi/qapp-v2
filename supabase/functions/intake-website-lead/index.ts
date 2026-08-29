@@ -2,7 +2,10 @@
 // Formularul face POST cu:
 //   { nume, prenume?, nume_parinte?, telefon, email?, data_nasterii?,
 //     interes?, grupa_varsta?, locatia?, mesaj?, campanie?,
-//     utm_source?, utm_medium?, utm_campaign? }.
+//     utm_source?, utm_medium?, utm_campaign?, gclid?, campaign_id? }.
+// `gclid` = click id-ul Google Ads (îl pune Google în URL-ul de landing). E
+// precondiția pentru upload de conversii offline înapoi în Google Ads — site-ul
+// trebuie să-l preia din query string și să-l trimită aici.
 // Câmpurile aliniate 1:1 cu LeadModal (recepție) — widget-ul colectează aceleași
 // date pe care le-ar introduce manual recepția.
 // Validare:
@@ -17,6 +20,7 @@ import {
   insertLead,
   isValidRoMobile,
   isValidEmail,
+  logIntake,
 } from '../_shared/intake.ts'
 
 const cors = {
@@ -40,13 +44,35 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}))
     const nume = String(body.nume ?? '').trim()
     const telefon = String(body.telefon ?? '').trim()
+    const supabase = serviceClient()
+
+    // Submisiile respinse se loghează: altfel „am trimis X formulare, voi aveți
+    // Y lead-uri" nu se poate explica. Fără PII — doar motivul + atribuirea.
+    const respins = (motiv: string) =>
+      logIntake(supabase, {
+        canal: 'website',
+        rezultat: 'respins_validare',
+        lead: {
+          nume: '',
+          utm_source: body.utm_source ?? null,
+          utm_medium: body.utm_medium ?? null,
+          utm_campaign: body.utm_campaign ?? null,
+          campaign_id: body.campaign_id ?? null,
+          platform: body.utm_source ?? null,
+        },
+        detalii: { motiv },
+      })
+
     if (!nume || !telefon) {
+      await respins('nume sau telefon lipsă')
       return json({ error: 'nume si telefon sunt obligatorii' }, 400)
     }
     if (nume.length < 2) {
+      await respins('nume prea scurt')
       return json({ error: 'Nume invalid (prea scurt)' }, 400)
     }
     if (!isValidRoMobile(telefon)) {
+      await respins('telefon nu e mobil RO')
       return json(
         {
           error:
@@ -64,7 +90,6 @@ Deno.serve(async (req) => {
     const warnings: string[] = []
     if (emailRaw && !emailValid) warnings.push('email_invalid_ignorat')
 
-    const supabase = serviceClient()
     const campanieNume = String(
       body.campanie ?? 'Website quasardance.ro',
     ).trim()
@@ -86,8 +111,12 @@ Deno.serve(async (req) => {
         utm_source: body.utm_source ?? null,
         utm_medium: body.utm_medium ?? null,
         utm_campaign: body.utm_campaign ?? null,
+        platform: body.utm_source ?? null,
+        campaign_id: body.campaign_id ?? null,
+        gclid: body.gclid ?? null,
       },
       sursaId,
+      { canal: 'website' },
     )
 
     console.log(

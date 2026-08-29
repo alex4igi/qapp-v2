@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader, Button } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import { canEditLeads } from '@/lib/rolesMatrix'
 import { LeadModal } from './LeadModal'
 import { LeadImportModal } from './LeadImportModal'
 import { KanbanBoard } from './KanbanBoard'
@@ -23,6 +25,10 @@ const VIEWS = [
 type View = (typeof VIEWS)[number]['key']
 
 export function LeadsPage() {
+  const { role } = useAuth()
+  // Agenția de ads citește pipeline-ul ca să verifice atribuirea, dar nu-l
+  // atinge. RLS refuză oricum scrierea — aici doar nu arătăm butoane moarte.
+  const poateEdita = canEditLeads(role)
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -72,7 +78,7 @@ export function LeadsPage() {
                 </button>
               ))}
             </div>
-            {view !== 'rapoarte' && (
+            {view !== 'rapoarte' && poateEdita && (
               <>
                 <Button variant="secondary" onClick={() => setImportOpen(true)}>
                   Import CSV

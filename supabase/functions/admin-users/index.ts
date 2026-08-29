@@ -4,8 +4,10 @@
 //
 // Reguli RBAC:
 // - owner: poate orice (tot + manage owner/admin)
-// - admin: poate manage {manager, front_desk, teacher} oriunde; NU poate atinge owner/admin
+// - admin: poate manage {manager, front_desk, teacher, marketing} oriunde; NU poate atinge owner/admin
 // - manager: poate manage {front_desk, teacher} doar la locația lui
+// - `marketing` = agenția externă de ads, read-only. Se creează fără locație
+//   (vede toate) și doar de owner/admin — un manager nu dă acces unui terț.
 // - protecții: nu se șterge/degrada ultimul owner; nu se șterge/degrada ultimul admin
 //
 // Rol vs. profil de instructor sunt ORTOGONALE: rolul dă permisiunile, legătura
@@ -21,7 +23,14 @@ const corsHeaders = {
     'authorization, x-client-info, apikey, content-type',
 }
 
-const VALID_ROLES = ['owner', 'admin', 'manager', 'teacher', 'front_desk'] as const
+const VALID_ROLES = [
+  'owner',
+  'admin',
+  'manager',
+  'teacher',
+  'front_desk',
+  'marketing',
+] as const
 type Role = (typeof VALID_ROLES)[number]
 
 type ListPayload = { action: 'list' }
@@ -73,7 +82,12 @@ type AppMeta = { role?: string; locatie_id?: string | null }
 function canManageRole(callerRole: string, targetRole: string): boolean {
   if (callerRole === 'owner') return true
   if (callerRole === 'admin') {
-    return targetRole === 'manager' || targetRole === 'front_desk' || targetRole === 'teacher'
+    return (
+      targetRole === 'manager' ||
+      targetRole === 'front_desk' ||
+      targetRole === 'teacher' ||
+      targetRole === 'marketing'
+    )
   }
   if (callerRole === 'manager') {
     return targetRole === 'front_desk' || targetRole === 'teacher'
@@ -182,7 +196,7 @@ Deno.serve(async (req) => {
         targetLocatie = callerLocatie
       }
 
-      // Locația e opțională pentru front_desk și teacher:
+      // Locația e opțională pentru front_desk, teacher și marketing:
       //   - cu locație = fix pe acea locație (blocat din header)
       //   - null = lucrează/predă la mai multe locații, basculează liber din header
       //     (front_desk vede toate; teacher vede cursurile lui via M:N cursuri_teacheri)

@@ -7,7 +7,7 @@ import { timpRelativ } from './LeadHistory'
 type Props = {
   leads: Lead[]
   onLeadClick: (lead: Lead) => void
-  onLogContact: (lead: Lead) => void
+  onLogContact?: (lead: Lead) => void
 }
 
 type TodayGroups = {
@@ -129,7 +129,7 @@ function Row({
   lead: Lead
   extra: React.ReactNode
   onLeadClick: (l: Lead) => void
-  onLogContact: (l: Lead) => void
+  onLogContact?: (l: Lead) => void
 }) {
   const fullName =
     [lead.prenume, lead.nume].filter(Boolean).join(' ') || lead.nume
@@ -148,6 +148,7 @@ function Row({
       )}
       {lead.interes && <InteresBadge interes={lead.interes} />}
       <span className="shrink-0 text-xs">{extra}</span>
+      {onLogContact && (
       <button
         type="button"
         onClick={(e) => {
@@ -159,6 +160,7 @@ function Row({
       >
         📞
       </button>
+      )}
     </div>
   )
 }
@@ -178,7 +180,7 @@ function Group({
   leads: Lead[]
   extraOf: (l: Lead) => React.ReactNode
   onLeadClick: (l: Lead) => void
-  onLogContact: (l: Lead) => void
+  onLogContact?: (l: Lead) => void
 }) {
   const [showAll, setShowAll] = useState(false)
   if (!leads.length) return null

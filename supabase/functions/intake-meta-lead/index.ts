@@ -71,7 +71,8 @@ Deno.serve(async (req) => {
         // NU loga URL-ul (conține token-ul).
         const res = await fetch(
           `${GRAPH}/${leadgenId}` +
-            `?fields=field_data,form_id,ad_id,ad_name,campaign_id,campaign_name,created_time` +
+            `?fields=field_data,form_id,ad_id,ad_name,adset_id,adset_name,` +
+            `campaign_id,campaign_name,platform,created_time` +
             `&access_token=${pageToken}`,
         )
         if (!res.ok) {
@@ -83,9 +84,9 @@ Deno.serve(async (req) => {
         const parsed = parseLeadFields(data.field_data ?? [])
 
         // Doar răspunsurile din formular care n-au putut fi mapate pe câmpuri —
-        // alea sunt informație despre om. Marcajul, campania și numele reclamei
-        // NU intră în observații: `observatii` e notița recepției, iar datele
-        // tehnice ale reclamei se iau din Meta.
+        // alea sunt informație despre om. Identificatorii reclamei stau în
+        // coloanele lor de atribuire, NU în observații: `observatii` e notița
+        // recepției.
         const note = [...parsed.notes]
 
         const result = await insertLead(
@@ -104,8 +105,16 @@ Deno.serve(async (req) => {
             utm_source: 'meta',
             utm_medium: 'lead_ads',
             utm_campaign: data.campaign_name ?? data.campaign_id ?? null,
+            platform: data.platform ?? 'meta',
+            campaign_id: data.campaign_id ?? null,
+            ad_id: data.ad_id ?? null,
+            ad_name: data.ad_name ?? null,
+            adset_id: data.adset_id ?? null,
+            adset_name: data.adset_name ?? null,
+            form_id: data.form_id ?? null,
           },
           await sursa(),
+          { canal: 'meta_webhook' },
         )
         if (result.created) created++
         else skipped++

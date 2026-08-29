@@ -106,9 +106,10 @@ Deno.serve(async (req) => {
           utm_source: 'meta',
           utm_medium: 'lead_ads_sheet',
           utm_campaign: r.campaign ?? null,
+          platform: 'meta',
         },
         await sursa(),
-        { status },
+        { status, canal: 'sheets' },
       )
       if (result.created) created++
       else skipped++
