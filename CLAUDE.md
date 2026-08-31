@@ -55,4 +55,9 @@ Pentru fiecare modul nou sau refactor:
 
 ## Context business
 
+**Regulile de preț și reduceri** (promo reînscriere, −10% family/cross-sell,
+penalizarea pe scadență) stau în **[docs/reguli-preturi-reduceri.md](./docs/reguli-preturi-reduceri.md)** —
+sursa de adevăr, cu maparea regulă → loc în cod. Citește-o înainte să atingi
+`recalculate_pool_discount`, `preview_pool_discount` sau `cancel_discount_familie_restant`.
+
 Pentru detalii despre Quasar Dance (companie, instructori, trupe, abonamente, locații, surse leads, pipeline conversie), vezi memoria persistentă (`MEMORY.md` și fișierele `project_*.md` din `~/.claude/projects/.../memory/`). Memoriile sunt sursa principală de adevăr pentru context business — ARCHITECTURE.md descrie doar codul.
