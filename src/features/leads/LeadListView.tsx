@@ -14,11 +14,11 @@ const COLOANE: LeadColumnKey[] = [
   'prezenta', 'interes', 'observatii', 'actiuni',
 ]
 
-// Lista se deschide ordonată după „Ultim contact" crescător — dar ca sortare
-// REALĂ a tabelului, nu ca pre-sortare a rândurilor: doar așa antetul se aprinde
-// cu ▲ și utilizatorul vede după ce e ordonat. Cine vrea prioritizare pe intrare
-// dă click pe „Adăugat" (primul click = cele mai noi sus).
-const SORT_IMPLICIT = { idx: COLOANE.indexOf('ultimContact'), dir: 'asc' } as const
+// Lista se deschide ordonată după „Adăugat" descrescător — cele mai noi lead-uri
+// sus. E sortare REALĂ a tabelului, nu pre-sortare a rândurilor: doar așa antetul
+// se aprinde cu ▼ și utilizatorul vede după ce e ordonat. Cine vrea prioritizarea
+// pe neglijare dă click pe „Ultim contact".
+const SORT_IMPLICIT = { idx: COLOANE.indexOf('adaugat'), dir: 'desc' } as const
 
 // Contoarele + exportul, compacte, ca să încapă pe rândul de filtre în loc să
 // ocupe o bară proprie. Fiecare contor e un filtru cu un click.
