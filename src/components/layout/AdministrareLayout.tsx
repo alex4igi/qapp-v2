@@ -1,6 +1,6 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Navigate, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { canAccessRoute, type AppRoute } from '@/lib/rolesMatrix'
+import { canAccessRoute, defaultRouteForRole, type AppRoute } from '@/lib/rolesMatrix'
 
 // Hub „Administrare": paginile de config, scoase din rail și adunate sub un
 // tab-bar comun. Fiecare tab e un link către ruta existentă (paths neschimbate,
@@ -14,6 +14,17 @@ const TABS: { label: string; path: AppRoute }[] = [
   { label: 'Fișe incomplete', path: '/fise-incomplete' },
   { label: 'Organizație',     path: '/organizatie' },
 ]
+
+/**
+ * Landing-ul `/administrare`: sare pe primul tab pe care rolul chiar îl poate
+ * deschide. Hub-ul e accesibil întregului staff, dar paginile de sub el nu sunt
+ * (recepția vede doar Contracte) — o țintă fixă ar trimite-o într-un 403.
+ */
+export function AdministrareIndex() {
+  const { role } = useAuth()
+  const first = TABS.find((t) => canAccessRoute(role, t.path))
+  return <Navigate to={first?.path ?? defaultRouteForRole(role)} replace />
+}
 
 export function AdministrareLayout() {
   const { role } = useAuth()

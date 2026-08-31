@@ -2,8 +2,12 @@
 // Bucket-ul `contracte-templates` nu are nicio policy RLS pe storage.objects —
 // orice upload/citire/copiere trece obligatoriu prin service_role, aici.
 // CRUD-ul pe rândul `contract_templates` însuși merge direct din client
-// (RLS `is_admin()` pe tabel permite owner/admin) — nu duplicăm aici.
+// (RLS `contract_templates_write_staff` permite tot staff-ul) — nu duplicăm aici,
+// dar ținem allowlist-ul de mai jos oglindă a acelei policy.
 import { serviceClient } from '../_shared/contracte.ts'
+
+// Oglindește RLS-ul `contract_templates_write_staff` (migrația 20260831201000).
+const STAFF_ROLES = ['owner', 'admin', 'manager', 'front_desk']
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +49,7 @@ Deno.serve(async (req) => {
     const { data: userRes, error: userErr } = await admin.auth.getUser(jwt)
     if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
     const role = (userRes.user.app_metadata as { role?: string })?.role ?? 'front_desk'
-    if (!['owner', 'admin'].includes(role)) return json({ error: 'forbidden' }, 403)
+    if (!STAFF_ROLES.includes(role)) return json({ error: 'forbidden' }, 403)
 
     const body = (await req.json()) as Record<string, unknown>
     const action = body.action as string

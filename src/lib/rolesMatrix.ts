@@ -71,19 +71,24 @@ export const ROUTE_ACCESS = {
   '/reinscrieri': PRIVILEGED,
   // Reconciliere CRM ↔ Google/Meta Ads. Landing-ul rolului `marketing`.
   '/marketing': WITH_MARKETING,
-  '/contracte': PRIVILEGED,
-  // Editor vizual de template-uri — modifică structura legală a contractelor,
-  // mai restrâns decât trimiterea din /contracte (care include manager).
-  '/contracte/sabloane': ADMIN_OR_OWNER,
+  // Trimitere contracte + întreținerea șabloanelor: tot staff-ul, recepția
+  // inclusă (ea pregătește dosarele familiilor).
+  '/contracte': ALL_STAFF,
+  // Editorul vizual modifică structura legală a contractelor, dar un șablon
+  // deja folosit e imutabil în DB (`locked_at` + trg_contract_template_lock):
+  // se poate doar clona într-o versiune nouă, care pornește inactivă.
+  '/contracte/sabloane': ALL_STAFF,
   '/oferta-publica': PRIVILEGED,
   // Structura metodologică a sezonului (calendar + programe de lecții). Managementul
   // o stabilește; teacherii o consumă din fișa cursului și din pagina grupei.
   '/metodologic': PRIVILEGED,
   '/setari': PRIVILEGED,
   // Hub „Administrare" — landing cu tab-uri peste paginile de config (Setări,
-  // Contracte, Inventar, Pontaj, Audit, Organizație). Vizibilitatea fiecărui tab
-  // rămâne per rută; hub-ul e deschis privilegiaților (tab-ul Organizație doar owner).
-  '/administrare': PRIVILEGED,
+  // Contracte, Inventar, Pontaj, Audit, Organizație). Deschis întregului staff
+  // DOAR ca landing: fiecare pagină de sub hub își păstrează propriul gard de
+  // rută (front_desk ajunge astfel la Contracte, nu și la Setări/Audit), iar
+  // landing-ul redirectează spre primul tab accesibil rolului.
+  '/administrare': ALL_STAFF,
   '/opt-out': PRIVILEGED,
   // Rutele „mele" de instructor: deschise oricărui rol, dar condiționate de
   // existența unui profil legat (vezi REQUIRES_TEACHER_PROFILE). Un manager care

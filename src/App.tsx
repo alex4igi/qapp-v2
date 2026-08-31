@@ -4,7 +4,7 @@ import { Spinner } from '@/components/ui'
 import { AuthProvider } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { AdministrareLayout } from '@/components/layout/AdministrareLayout'
+import { AdministrareIndex, AdministrareLayout } from '@/components/layout/AdministrareLayout'
 import { Placeholder } from '@/components/Placeholder'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -248,15 +248,30 @@ function App() {
           {/* Hub „Administrare" — cele 6 pagini de config sub un tab-bar comun
               (AdministrareLayout). Paths neschimbate → deep-link-uri & linkuri
               interne rămân valide. Organizație (owner-only) are gard propriu. */}
+          {/* Landing-ul hub-ului e deschis întregului staff, dar sare pe primul
+              tab permis rolului — paginile de sub el au garduri separate. */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/administrare']} />}>
             <Route element={<AppLayout />}>
-              <Route path="administrare" element={<Navigate to="/setari" replace />} />
+              <Route path="administrare" element={<AdministrareIndex />} />
+            </Route>
+          </Route>
+
+          {/* Contracte — singurul tab al hub-ului deschis și recepției. */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/contracte']} />}>
+            <Route element={<AppLayout />}>
               <Route element={<AdministrareLayout />}>
-                <Route path="setari" element={<SetariPage />} />
                 <Route path="contracte" element={<ContracteListPage />} />
                 {/* Tab „Șabloane" trăiește în ContracteListPage; ruta separată
                     există ca intrare directă (bookmark) — auto-selectează tab-ul. */}
                 <Route path="contracte/sabloane" element={<ContracteListPage />} />
+              </Route>
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/setari']} />}>
+            <Route element={<AppLayout />}>
+              <Route element={<AdministrareLayout />}>
+                <Route path="setari" element={<SetariPage />} />
                 <Route path="inventar" element={<InventarListPage />} />
                 <Route path="pontaj-staff" element={<PontajStaffPage />} />
                 <Route path="audit" element={<AuditPage />} />

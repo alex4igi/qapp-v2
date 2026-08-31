@@ -14,7 +14,7 @@ import {
 } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
 import { useAuth } from '@/hooks/useAuth'
-import { isAdminOrHigher } from '@/lib/rolesMatrix'
+import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import {
   anuleazaContract,
   getContractEvents,
@@ -79,7 +79,9 @@ function EventsModal({ contract, onClose }: { contract: ContractRow; onClose: ()
 
 export function ContracteListPage() {
   const { role } = useAuth()
-  const canEditSabloane = isAdminOrHigher(role)
+  // Întreținerea șabloanelor e deschisă întregului staff; imutabilitatea
+  // legală a unui șablon deja trimis o ține `locked_at` în DB, nu rolul.
+  const canEditSabloane = isFrontDeskOrHigher(role)
   const location = useLocation()
   const [activeTab, setActiveTab] = useState<'contracte' | 'sabloane'>(
     location.pathname.startsWith('/contracte/sabloane') ? 'sabloane' : 'contracte',
