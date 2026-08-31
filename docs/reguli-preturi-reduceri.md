@@ -94,7 +94,10 @@ pune `promo_anulat_la` și `este_reinscriere = false` la orice reziliere a unei
 `createInrolari` refuză bifa de reînscriere — se reintră la preț întreg.
 
 Suspendarea automată se distinge de cea manuală prin `suspendat_datorii_de`:
-`NULL` = cron, un uuid = persoana care a apăsat butonul din /datorii.
+`NULL` = cron, un uuid = persoana care a apăsat butonul din /datorii. În worklist-ul
+din /datorii, cele automate apar cu badge-ul roșu **„Loc de anulat"** (status propriu,
+filtrabil), cele manuale rămân „Suspendat" — managerul vede dintr-o privire pe cine
+mai are de decis.
 
 ## 4. Termenele de plată
 

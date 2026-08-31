@@ -34,6 +34,7 @@ const REZULTAT_LABEL: Record<string, string> = {
 }
 
 const STATUS_PILL: Record<StatusColectare, string> = {
+  loc_de_anulat: 'bg-danger text-white font-semibold',
   suspendat: 'bg-danger-bg text-danger',
   promisiune: 'bg-success-bg text-success',
   reminder: 'bg-warn-bg text-warn',
@@ -174,6 +175,11 @@ export function WorklistTable({
         return (
           <span
             className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_PILL[st]}`}
+            title={
+              st === 'loc_de_anulat'
+                ? 'Peste 50 de zile de la termen. Accesul a fost suspendat automat — confirmă anularea locului (reziliere) sau reactivează-l dacă achită.'
+                : undefined
+            }
           >
             {STATUS_COLECTARE_LABEL[st]}
           </span>

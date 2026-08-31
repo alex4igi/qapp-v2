@@ -25,6 +25,9 @@ export type WorklistRow = {
   suspendat: boolean
   ultim_sms_at: string | null
   status_client: 'Activ' | 'Inactiv' | 'EXclient' | null
+  // Suspendat de cron-ul „50 de zile", nu de un om ⇒ locul așteaptă decizia
+  // managerului. Vezi docs/reguli-preturi-reduceri.md §3b.
+  suspendat_automat: boolean
 }
 
 // Worklist de recuperare: TOȚI clienții (indiferent de status — datoria se
@@ -54,11 +57,17 @@ export function promisiuneIncalcata(r: WorklistRow): boolean {
   return r.promisiune_data <= new Date().toISOString().slice(0, 10)
 }
 
-// Status de colectare DERIVAT (nu stocat): Suspendat > Promisiune > Reminder
-// trimis (SMS de restanță în luna curentă) > De contactat.
-export type StatusColectare = 'suspendat' | 'promisiune' | 'reminder' | 'de_contactat'
+// Status de colectare DERIVAT (nu stocat): Loc de anulat > Suspendat >
+// Promisiune > Reminder trimis (SMS de restanță în luna curentă) > De contactat.
+export type StatusColectare =
+  | 'loc_de_anulat'
+  | 'suspendat'
+  | 'promisiune'
+  | 'reminder'
+  | 'de_contactat'
 
 export const STATUS_COLECTARE_LABEL: Record<StatusColectare, string> = {
+  loc_de_anulat: 'Loc de anulat',
   suspendat: 'Suspendat',
   promisiune: 'Promisiune',
   reminder: 'Reminder trimis',
@@ -66,6 +75,9 @@ export const STATUS_COLECTARE_LABEL: Record<StatusColectare, string> = {
 }
 
 export function statusColectare(r: WorklistRow): StatusColectare {
+  // Suspendarea automată cere o decizie (reziliere sau reactivare), cea manuală
+  // înseamnă că decizia a fost deja luată de un om.
+  if (r.suspendat && r.suspendat_automat) return 'loc_de_anulat'
   if (r.suspendat) return 'suspendat'
   if (r.promisiune_data) return 'promisiune'
   if (r.ultim_sms_at && r.ultim_sms_at.slice(0, 7) === new Date().toISOString().slice(0, 7))
