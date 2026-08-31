@@ -1,6 +1,8 @@
 import type { Enums, Voucher } from '@/types/db'
 import { applyVoucher } from '@/features/vouchere/calc'
 
+export type MotivPolitica = 'frati' | 'cross-sell' | null
+
 type Props = {
   sumaSugerata: number | null
   voucherSelectat: Voucher | null
@@ -8,6 +10,10 @@ type Props = {
   isFacultativ: boolean
   policyPreview?: { politica_discount: number; suma_finala: number } | null
   esteReinscriere?: boolean
+  // Rata lunară nepromo a cursului (pret_anual / 10) — baza pe care serverul
+  // calculează −10% când rândul stă pe preț de reînscriere.
+  rataNormala?: number | null
+  motivPolitica?: MotivPolitica
 }
 
 // Info-box cu prețul sugerat (din curs) și — dacă există voucher selectat —
@@ -19,6 +25,8 @@ export function PriceSummary({
   isFacultativ,
   policyPreview,
   esteReinscriere,
+  rataNormala,
+  motivPolitica,
 }: Props) {
   if (sumaSugerata == null) {
     return (
@@ -44,6 +52,19 @@ export function PriceSummary({
         : tipPlata === 'Per sedinta'
           ? 'pe ședință'
           : ''
+
+  // Eticheta reducerii spune recepției EXACT ce să-i repete părintelui: de ce
+  // se aplică (frați / al 2-lea abonament) și pe ce bază s-a calculat.
+  const motivText =
+    motivPolitica === 'frati'
+      ? 'al 2-lea abonament din familie'
+      : motivPolitica === 'cross-sell'
+        ? 'al 2-lea abonament al clientului'
+        : 'al 2-lea abonament'
+  const bazaPromo = esteReinscriere && rataNormala != null
+  const reducereLabel = bazaPromo
+    ? `Reducere 10% — ${motivText}, din prețul normal (${rataNormala} RON)`
+    : `Reducere 10% — ${motivText}`
 
   return (
     <div className="rounded-md border border-quasar-gray-light bg-quasar-gray-light/30 px-3 py-2 text-sm">
@@ -74,11 +95,7 @@ export function PriceSummary({
       {showPolicy && policyPreview && (
         <>
           <div className="mt-1 flex items-baseline justify-between text-xs text-quasar-gray">
-            <span>
-              {esteReinscriere
-                ? 'Politică cross-sell/family (nu se cumulează cu promo)'
-                : 'Politică cross-sell/family'}
-            </span>
+            <span>{reducereLabel}</span>
             <span>− {policyPreview.politica_discount.toFixed(2)} RON</span>
           </div>
           <div className="mt-1 flex items-baseline justify-between border-t border-quasar-gray-light pt-1">
@@ -88,6 +105,14 @@ export function PriceSummary({
               {!isFacultativ && tipPlata === 'Per luna' && ' / lună'}
             </span>
           </div>
+          {bazaPromo && (
+            <p className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+              💬 De spus părintelui: reducerile nu se cumulează. Am aplicat
+              varianta mai avantajoasă — <strong>{policyPreview.suma_finala} RON</strong>{' '}
+              (preț normal {rataNormala} RON − 10%), în loc de {sumaSugerata} RON
+              (preț de reînscriere).
+            </p>
+          )}
         </>
       )}
     </div>

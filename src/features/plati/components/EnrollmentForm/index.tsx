@@ -20,7 +20,10 @@ import { clientiOptions, locatiiOptions, matchLocatieId } from '@/lib/lookups'
 import { listSezoane } from '@/features/setari/api'
 import { formatRON } from '@/lib/format'
 import type { Curs, Enrollment, Enums } from '@/types/db'
-import { listAvailableVouchere } from '@/features/vouchere/api'
+import {
+  getClientEligibilityContext,
+  listAvailableVouchere,
+} from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
 import { getCursOcupare } from '@/features/cursuri/api/profile'
 import { EligibilityAlerts } from '@/features/vouchere/EligibilityAlerts'
@@ -50,7 +53,7 @@ import {
   deriveTip,
   todayIso,
 } from './helpers'
-import { PriceSummary } from './PriceSummary'
+import { PriceSummary, type MotivPolitica } from './PriceSummary'
 import { RecurentPreview } from './RecurentPreview'
 
 type Props = {
@@ -376,6 +379,29 @@ export function EnrollmentForm({
   })
   const policyPreview =
     voucherId || isFacultativPerSedinta ? null : (previewQ.data ?? null)
+
+  // Același queryKey ca în EligibilityAlerts → react-query servește din cache,
+  // fără request în plus. Recepția trebuie să poată spune DE CE se aplică −10%.
+  const eligibilityQ = useQuery({
+    queryKey: ['client-eligibility', clientId],
+    queryFn: () => getClientEligibilityContext(clientId ?? ''),
+    enabled: Boolean(clientId) && tipPlata === 'Per luna' && !isFacultativ,
+    staleTime: 30_000,
+  })
+  const motivPolitica: MotivPolitica = (eligibilityQ.data?.fratiActivi.length ?? 0) > 0
+    ? 'frati'
+    : (eligibilityQ.data?.altCursActivRecurent.length ?? 0) > 0
+      ? 'cross-sell'
+      : null
+
+  // Rata nepromo a cursului: baza reală pe care serverul calculează −10% când
+  // înrolarea stă pe preț de reînscriere (reducerile nu se cumulează).
+  const rataNormala = useMemo(() => {
+    if (!cursSelectat || isFacultativ || tipPlata !== 'Per luna') return null
+    return cursSelectat.pret_anual != null
+      ? Math.round(cursSelectat.pret_anual / 10)
+      : null
+  }, [cursSelectat, isFacultativ, tipPlata])
 
   // Gard anti-dublură (oglindește createInrolari): dacă are deja o înrolare
   // activă ne-Per-ședință pe acest curs care acoperă data începerii sau mai
@@ -839,6 +865,8 @@ export function EnrollmentForm({
               isFacultativ={isFacultativ}
               policyPreview={policyPreview}
               esteReinscriere={aplicPromo}
+              rataNormala={rataNormala}
+              motivPolitica={motivPolitica}
             />
           )}
 

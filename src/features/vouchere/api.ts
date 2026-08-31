@@ -111,16 +111,20 @@ export async function getClientEligibilityContext(
     .single()
   if (clientErr) throw clientErr
 
-  // 2. Înrolări active recurente ale clientului (cross-sell)
+  // 2. Înrolări recurente neîncheiate ale clientului (cross-sell)
   // Doar `Per luna`: politica −10% se aplică exclusiv pe înrolări lunare.
   // O înrolare `Per an` NU declanșează cross-sell (vezi recalculate_pool_discount).
+  // Includem și înrolările care ÎNCĂ NU au început: recalculate_pool_discount
+  // lucrează pe lunile ≥ luna curentă, deci în perioada de reînscrieri (august,
+  // pentru un sezon care începe în septembrie) politica se aplică deja, chiar
+  // dacă nicio înrolare nu e „în curs" azi. Filtrarea pe data_incepere ≤ azi
+  // ascundea exact cazul în care recepția are cea mai mare nevoie de alertă.
   const { data: ownEnrollments, error: ownErr } = await supabase
     .from('enrollments')
     .select('cursul, cursuri:cursul(numele)')
     .eq('client', clientId)
     .eq('reziliat', false)
     .eq('tip_plata', 'Per luna')
-    .lte('data_incepere', today)
     .or(`data_final.is.null,data_final.gte.${today}`)
   if (ownErr) throw ownErr
 
@@ -135,7 +139,7 @@ export async function getClientEligibilityContext(
     altCursActivRecurent.push({ cursId: e.cursul, cursulNume: c.numele })
   }
 
-  // 3. Frați cu înrolări active recurente
+  // 3. Frați cu înrolări recurente neîncheiate (inclusiv sezonul care urmează)
   let fratiActivi: EligibilityContext['fratiActivi'] = []
   if (client?.familia) {
     const { data: siblings, error: sibErr } = await supabase
@@ -153,7 +157,6 @@ export async function getClientEligibilityContext(
         .in('client', siblingIds)
         .eq('reziliat', false)
         .eq('tip_plata', 'Per luna')
-        .lte('data_incepere', today)
         .or(`data_final.is.null,data_final.gte.${today}`)
       if (sibEnrErr) throw sibEnrErr
 
