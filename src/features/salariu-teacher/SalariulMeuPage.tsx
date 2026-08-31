@@ -6,8 +6,16 @@ import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
 import { listSalariiTeacher, previewSalariuTeacher } from '@/features/teacheri/api'
 import type { SalariuGrupa, SalariuPreview } from '@/features/teacheri/api'
 import { getSezonActiv } from '@/features/setari/api'
+import {
+  cuLuniConfirmate,
+  monthRange,
+  primaLunaSalarii,
+} from '@/features/teacheri/lunileSalariilor'
 import { formatRON } from '@/lib/format'
 import type { SalariuTeacher } from '@/types/db'
+
+// Identitate stabilă: `?? []` ar face un array nou la fiecare render.
+const FARA_SNAPSHOTS: SalariuTeacher[] = []
 
 const RO_LUNI = [
   'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
@@ -35,24 +43,6 @@ function grupeFor(item: LunaItem): SalariuGrupa[] {
   return Array.isArray(item.data.breakdown)
     ? (item.data.breakdown as unknown as SalariuGrupa[])
     : []
-}
-
-function monthRange(
-  start: { y: number; m: number },
-  end: { y: number; m: number },
-) {
-  const out: { y: number; m: number }[] = []
-  let y = end.y
-  let m = end.m
-  while (y > start.y || (y === start.y && m >= start.m)) {
-    out.push({ y, m })
-    m -= 1
-    if (m === 0) {
-      m = 12
-      y -= 1
-    }
-  }
-  return out
 }
 
 function SalariuCard({ item }: { item: LunaItem }) {
@@ -160,25 +150,25 @@ export function SalariulMeuPage() {
     enabled: Boolean(teacherId),
   })
 
-  // Fereastra afișată: de la începutul sezonului activ (fallback: ultimele 12 luni)
-  // până la luna curentă — aceeași regulă ca în tabul de salarii al adminului.
-  const months = useMemo(() => {
-    let startY = currentYear
-    let startM = currentMonth - 11
-    while (startM <= 0) {
-      startM += 12
-      startY -= 1
-    }
-    const s = sezonQ.data
-    if (s?.data_incepere) {
-      const d = new Date(s.data_incepere)
-      startY = d.getFullYear()
-      startM = d.getMonth() + 1
-    }
-    return monthRange({ y: startY, m: startM }, { y: currentYear, m: currentMonth })
-  }, [sezonQ.data, currentYear, currentMonth])
+  const snapshots = salariiQ.data ?? FARA_SNAPSHOTS
 
-  const snapshots = salariiQ.data ?? []
+  // Fereastra afișată: de la începutul sezonului activ (fallback: ultimele 12 luni)
+  // până la luna curentă, plus lunile confirmate — aceeași regulă ca în tabul de
+  // salarii al adminului.
+  const months = useMemo(
+    () =>
+      cuLuniConfirmate(
+        monthRange(
+          primaLunaSalarii(sezonQ.data?.data_incepere, {
+            y: currentYear,
+            m: currentMonth,
+          }),
+          { y: currentYear, m: currentMonth },
+        ),
+        snapshots,
+      ),
+    [sezonQ.data, currentYear, currentMonth, snapshots],
+  )
   const monthsNeedingPreview = SHOW_ESTIMARI
     ? months.filter(
         (mo) => !snapshots.some((s) => s.anul === mo.y && s.luna === mo.m),

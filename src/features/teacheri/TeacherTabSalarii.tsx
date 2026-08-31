@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import type { SalariuTeacher } from '@/types/db'
 import { getSezonActiv } from '../setari/api'
+import { cuLuniConfirmate, monthRange, primaLunaSalarii } from './lunileSalariilor'
 import {
   confirmaSalariuTeacher,
   getTeacher,
@@ -22,6 +23,9 @@ const MODEL_OPTIONS = [
   { value: 'per_client', label: 'Per client (recurent)' },
   { value: 'per_prezenta', label: 'Per prezențe (facultativ)' },
 ]
+
+// Identitate stabilă: `?? []` ar face un array nou la fiecare render.
+const FARA_SNAPSHOTS: SalariuTeacher[] = []
 
 const LUNI_RO = [
   'Ianuarie',
@@ -238,22 +242,6 @@ function LunaAccordion({
   )
 }
 
-function monthRange(start: { y: number; m: number }, end: { y: number; m: number }) {
-  // start = mai vechi, end = mai recent. Întoarce listă desc (recent → vechi).
-  const out: { y: number; m: number }[] = []
-  let y = end.y
-  let m = end.m
-  while (y > start.y || (y === start.y && m >= start.m)) {
-    out.push({ y, m })
-    m -= 1
-    if (m === 0) {
-      m = 12
-      y -= 1
-    }
-  }
-  return out
-}
-
 export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
   const { role } = useAuth()
   const isAdmin = isAdminOrHigher(role)
@@ -287,28 +275,26 @@ export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
     queryFn: () => listSalariiTeacher(teacherId),
   })
 
-  // Range: de la începutul sezonului activ (sau ultimele 12 luni fallback) → luna curentă
-  const months = useMemo(() => {
-    let startY = currentYear
-    let startM = currentMonth - 11
-    while (startM <= 0) {
-      startM += 12
-      startY -= 1
-    }
-    const s = sezonQuery.data
-    if (s?.data_incepere) {
-      const d = new Date(s.data_incepere)
-      startY = d.getFullYear()
-      startM = d.getMonth() + 1
-    }
-    return monthRange(
-      { y: startY, m: startM },
-      { y: currentYear, m: currentMonth },
-    )
-  }, [sezonQuery.data, currentYear, currentMonth])
-
   // Lunile fără snapshot → cerem preview live
-  const snapshots = snapshotsQuery.data ?? []
+  const snapshots = snapshotsQuery.data ?? FARA_SNAPSHOTS
+
+  // Range: de la începutul sezonului activ (sau ultimele 12 luni fallback) → luna
+  // curentă, plus lunile deja confirmate. Vezi `lunileSalariilor.ts` pentru de ce
+  // fereastra nu poate începe după luna curentă.
+  const months = useMemo(
+    () =>
+      cuLuniConfirmate(
+        monthRange(
+          primaLunaSalarii(sezonQuery.data?.data_incepere, {
+            y: currentYear,
+            m: currentMonth,
+          }),
+          { y: currentYear, m: currentMonth },
+        ),
+        snapshots,
+      ),
+    [sezonQuery.data, currentYear, currentMonth, snapshots],
+  )
   const monthsNeedingPreview = months.filter(
     (mo) => !snapshots.some((s) => s.anul === mo.y && s.luna === mo.m),
   )
