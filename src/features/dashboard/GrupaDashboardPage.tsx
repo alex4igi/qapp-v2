@@ -6,12 +6,12 @@ import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useAuth } from '@/hooks/useAuth'
-import { canMesajGrupa, isFrontDeskOrHigher } from '@/lib/rolesMatrix'
+import { canMesajGrupa, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { ComposeMesajGrupaModal } from '@/features/announcements/ComposeMesajGrupaModal'
 import { LectieBanner } from '@/features/metodologic/components/LectieBanner'
 import { EvaluariCountdown } from '@/features/evaluari/components/EvaluariCountdown'
 import { upsertPrezenta } from '@/features/prezente/api'
-import { updateLeadStatus } from '@/features/leads/api'
+import { marcheazaPrezentaLeadCurs, updateLeadStatus } from '@/features/leads/api'
 import { formatRON, formatDate, formatMonth } from '@/lib/format'
 import { vineLaLabel } from '@/lib/ultimaPrezenta'
 import { waLink, waGroupLink } from '@/lib/phone'
@@ -551,8 +551,25 @@ export function GrupaDashboardPage() {
   const toggleMut = useMutation({
     mutationFn: async (row: GrupaRosterRow) => {
       if (row.kind === 'lead') {
-        const newStatus = row.status === 'prezent' ? 'nu_a_venit' : 'a_venit'
-        await updateLeadStatus(row.refId, newStatus)
+        const prezent = row.status !== 'prezent'
+        // Teacherul nu poate scrie în leads/programari_leads (RLS) — RPC-ul
+        // marchează doar prezența, fără efectele de pipeline ale recepției.
+        if (isTeacher(role)) {
+          await marcheazaPrezentaLeadCurs(
+            row.refId,
+            cursId!,
+            date,
+            prezent ? 'prezent' : 'absent',
+          )
+        } else {
+          // Scope pe (curs, zi): fără el, prezența ateriza pe ultima programare a
+          // lead-ului — putea fi alt curs sau altă zi.
+          await updateLeadStatus(
+            row.refId,
+            prezent ? 'a_venit' : 'nu_a_venit',
+            { cursId: cursId!, data: date },
+          )
+        }
       } else {
         await upsertPrezenta({
           enrollmentId: row.enrollmentId!,

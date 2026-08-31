@@ -13,6 +13,7 @@ import {
 import type { CampaniePromovare } from '@/types/db'
 import { formatRON } from '@/lib/format'
 import { CampanieForm } from './CampanieForm'
+import { RaportDemoSection } from './RaportDemoSection'
 import { listCampanii, type CampanieWithLeadCount } from './api'
 import { useAuth } from '@/hooks/useAuth'
 import { canEditLeads } from '@/lib/rolesMatrix'
@@ -197,6 +198,8 @@ export function CampaniiListPage() {
           ))}
         </div>
       )}
+
+      <RaportDemoSection />
 
       {formOpen && (
         <CampanieForm open onClose={() => setFormOpen(false)} />

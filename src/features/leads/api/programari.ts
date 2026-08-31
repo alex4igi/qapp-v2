@@ -1,18 +1,24 @@
 import { supabase } from '@/lib/supabase'
 
 // Cursul ultimei programări a lead-ului (pentru precompletarea înrolării).
+//
+// Programarea pe o clasă demo n-are `cursul_programat` — cade pe `curs_tinta`
+// (grupa reală spre care duce demoul). Altfel formularul de înrolare venea gol
+// exact pentru leadurile care tocmai fuseseră la demo.
 export async function getLatestProgramareCurs(
   leadId: string,
 ): Promise<string | null> {
   const { data } = await supabase
     .from('programari_leads')
-    .select('cursul_programat')
+    .select('cursul_programat, eveniment_rel:evenimente(curs_tinta)')
     .eq('lead', leadId)
     .order('data_programarii', { ascending: false })
     .order('created', { ascending: false })
     .limit(1)
     .maybeSingle()
-  return data?.cursul_programat ?? null
+  if (!data) return null
+  const ev = data.eveniment_rel as { curs_tinta: string | null } | null
+  return data.cursul_programat ?? ev?.curs_tinta ?? null
 }
 
 // Ultima programare (curs SAU eveniment) — pentru pre-completarea selecției în

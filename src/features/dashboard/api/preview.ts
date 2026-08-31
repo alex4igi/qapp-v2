@@ -57,7 +57,7 @@ export async function getProgramariAzi(
 ): Promise<ProgramareAziRow[]> {
   let q = supabase
     .from('programari_leads')
-    .select('id, cursul_programat, lead:leads(nume, prenume)')
+    .select('id, cursul_programat, eveniment_programat, lead:leads(nume, prenume)')
     .eq('data_programarii', date)
   if (locatieId) q = q.eq('locatie', locatieId)
   const { data, error } = await q
@@ -65,21 +65,32 @@ export async function getProgramariAzi(
   const rows = (data ?? []) as unknown as Array<{
     id: string
     cursul_programat: string | null
+    eveniment_programat: string | null
     lead: { nume: string | null; prenume: string | null } | null
   }>
   const cursIds = [...new Set(rows.map((r) => r.cursul_programat).filter(Boolean))] as string[]
+  // Programările pe clase demo n-au curs — numele vine din eveniment, altfel
+  // toată săptămâna demo apărea ca „—" în agenda zilei.
+  const evIds = [...new Set(rows.map((r) => r.eveniment_programat).filter(Boolean))] as string[]
   const names = new Map<string, string>()
-  if (cursIds.length) {
-    const { data: cs } = await supabase
-      .from('cursuri')
-      .select('id, numele')
-      .in('id', cursIds)
-    for (const c of cs ?? []) names.set(c.id, c.numele)
-  }
+  const evNames = new Map<string, string>()
+  const [cs, evs] = await Promise.all([
+    cursIds.length
+      ? supabase.from('cursuri').select('id, numele').in('id', cursIds)
+      : Promise.resolve({ data: [] as { id: string; numele: string }[] }),
+    evIds.length
+      ? supabase.from('evenimente').select('id, nume_eveniment').in('id', evIds)
+      : Promise.resolve({ data: [] as { id: string; nume_eveniment: string }[] }),
+  ])
+  for (const c of cs.data ?? []) names.set(c.id, c.numele)
+  for (const e of evs.data ?? []) evNames.set(e.id, e.nume_eveniment)
   return rows.map((r) => ({
     id: r.id,
     nume: personName(r.lead),
-    grupa: (r.cursul_programat && names.get(r.cursul_programat)) || '—',
+    grupa:
+      (r.cursul_programat && names.get(r.cursul_programat)) ||
+      (r.eveniment_programat && evNames.get(r.eveniment_programat)) ||
+      '—',
   }))
 }
 

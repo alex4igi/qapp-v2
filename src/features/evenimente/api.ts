@@ -31,7 +31,10 @@ export async function listEvenimente({
 
   let query = supabase
     .from('evenimente')
-    .select('*, curs_rel:cursuri(numele)', { count: 'exact' })
+    // FK explicit: `evenimente` are DOUĂ relații către `cursuri` (`curs` = eveniment
+    // exclusiv unei grupe, `curs_tinta` = grupa spre care duce o clasă demo), iar
+    // fără dezambiguizare PostgREST refuză embed-ul (PGRST201).
+    .select('*, curs_rel:cursuri!evenimente_curs_fkey(numele)', { count: 'exact' })
     .order('data', { ascending: false, nullsFirst: false })
     .range(from, to)
 
@@ -145,6 +148,10 @@ export type EvenimentRosterRow = {
   scheduled: boolean
   /** Pentru lead-urile programate: starea prezenței. null pentru clienți/bilete. */
   prezenta: 'programat' | 'prezent' | 'absent' | null
+  /** Rândul din programari_leads vizat de marcarea prezenței. */
+  programareId: string | null
+  /** Statusul global al lead-ului — doar pentru afișare (convertit / pierdut). */
+  statusLead: string | null
 }
 
 export type EvenimentRoster = {
@@ -155,6 +162,7 @@ export type EvenimentRoster = {
   ora: string | null
   locatia: string | null
   pretBilet: number | null
+  capacitate: number | null
   participant: string[]
   roster: EvenimentRosterRow[]
 }
@@ -168,7 +176,9 @@ export async function getEvenimentRoster(
 ): Promise<EvenimentRoster> {
   const evRes = await supabase
     .from('evenimente')
-    .select('id, nume_eveniment, tip, data, ora, locatia, pret_bilet, participant')
+    .select(
+      'id, nume_eveniment, tip, data, ora, locatia, pret_bilet, capacitate, participant',
+    )
     .eq('id', evenimentId)
     .single()
   if (evRes.error) throw evRes.error
@@ -240,6 +250,8 @@ export async function getEvenimentRoster(
       manual: kind === 'client' && manualSet.has(refId),
       scheduled: false,
       prezenta: null,
+      programareId: null,
+      statusLead: null,
     }
   }
 
@@ -252,57 +264,81 @@ export async function getEvenimentRoster(
   }
 
   // Lead-urile programate la acest eveniment (oră demonstrativă) — din
-  // programari_leads.eveniment_programat. Statusul lead-ului dă starea prezenței.
+  // programari_leads.eveniment_programat.
+  //
+  // Prezența vine din `programari_leads.prezenta` (per programare), NU din
+  // `leads.status` (global). Statusul se schimbă în timp — un lead care a venit
+  // la demo și s-a înscris devine `convertit` și dispărea complet din roster,
+  // exact persoana pe care demoul o urmărește. Același raționament ca la rosterul
+  // grupei (dashboard/api/grupa.ts).
   const progRes = await supabase
     .from('programari_leads')
-    .select('lead:leads(id, nume, prenume, status, telefon)')
+    .select(
+      'id, prezenta, created, lead:leads(id, nume, prenume, status, id_client, telefon)',
+    )
     .eq('eveniment_programat', evenimentId)
+    .order('created', { ascending: true })
   if (progRes.error) throw progRes.error
-  const prezentaDinStatus = (
-    status: string | null,
-  ): 'programat' | 'prezent' | 'absent' | null => {
-    if (status === 'a_venit') return 'prezent'
-    if (status === 'nu_a_venit') return 'absent'
-    if (status === 'nou' || status === 'contactat' || status === 'programat')
-      return 'programat'
-    return null // convertit / pierdut / nurture / waiting_list — nu apar
-  }
-  const existingLeadIds = new Set(
-    roster.filter((r) => r.kind === 'lead').map((r) => r.refId),
-  )
+
+  const scheduledLeadIds = new Set<string>()
+  // Clienții rezultați din conversia unui lead prezent aici: rândul de lead e cel
+  // care poartă prezența, deci pe cel de client îl scoatem ca să nu apară de două ori.
+  const convertedClientIds = new Set<string>()
+
   for (const p of (progRes.data ?? []) as unknown as Array<{
+    id: string
+    prezenta: 'programat' | 'prezent' | 'absent' | null
     lead: {
       id: string
       nume: string
       prenume: string | null
       status: string | null
+      id_client: string | null
       telefon: string | null
     } | null
   }>) {
-    if (!p.lead) continue
-    const prezenta = prezentaDinStatus(p.lead.status)
-    if (!prezenta) continue
-    const existing = roster.find(
-      (r) => r.kind === 'lead' && r.refId === p.lead!.id,
-    )
-    if (existing) {
-      existing.scheduled = true
-      existing.prezenta = prezenta
-      continue
-    }
-    if (existingLeadIds.has(p.lead.id)) continue
-    existingLeadIds.add(p.lead.id)
-    const row = buildRow(
-      p.lead.id,
-      'lead',
-      p.lead.nume,
-      p.lead.prenume,
-      null,
-      p.lead.telefon,
-    )
+    if (!p.lead || scheduledLeadIds.has(p.lead.id)) continue
+    scheduledLeadIds.add(p.lead.id)
+    if (p.lead.id_client) convertedClientIds.add(p.lead.id_client)
+
+    const row =
+      roster.find((r) => r.kind === 'lead' && r.refId === p.lead!.id) ??
+      (() => {
+        const fresh = buildRow(
+          p.lead!.id,
+          'lead',
+          p.lead!.nume,
+          p.lead!.prenume,
+          null,
+          p.lead!.telefon,
+        )
+        roster.push(fresh)
+        return fresh
+      })()
     row.scheduled = true
-    row.prezenta = prezenta
-    roster.push(row)
+    row.prezenta = p.prezenta ?? 'programat'
+    row.programareId = p.id
+    row.statusLead = p.lead.status
+  }
+
+  for (let i = roster.length - 1; i >= 0; i--) {
+    const r = roster[i]
+    if (r.kind === 'client' && convertedClientIds.has(r.refId) && !r.manual) {
+      roster.splice(i, 1)
+    }
+  }
+
+  // Cursanții înscriși explicit (evenimente_participanti) — au prezență proprie.
+  // `evenimente.participant[]` rămâne sincronizat prin dual-write, dar prezența
+  // trăiește doar în tabel: un array de uuid-uri n-are unde s-o țină.
+  const partRes = await supabase
+    .from('evenimente_participanti')
+    .select('client, prezenta, adus_de')
+    .eq('eveniment', evenimentId)
+  if (partRes.error) throw partRes.error
+  for (const p of partRes.data ?? []) {
+    const row = roster.find((r) => r.kind === 'client' && r.refId === p.client)
+    if (row) row.prezenta = p.prezenta ?? 'programat'
   }
 
   roster.sort((a, b) =>
@@ -317,6 +353,7 @@ export async function getEvenimentRoster(
     ora: ev.ora,
     locatia: ev.locatia,
     pretBilet: pret,
+    capacitate: ev.capacitate ?? null,
     participant: ev.participant ?? [],
     roster,
   }

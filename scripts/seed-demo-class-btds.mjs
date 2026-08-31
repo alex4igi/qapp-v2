@@ -1,3 +1,8 @@
+// ⚠️ ONE-SHOT, RULAT DEJA (2026-08-28). NU RE-RULA cu --apply.
+// Cele 16 sloturi există în producție și au primit între timp `locatie_id`,
+// campanie și (manual) sală/capacitate/grupă țintă. O re-rulare le-ar suprascrie
+// cu valorile de mai jos. Păstrat doar ca referință pentru orarul campaniei.
+//
 // Creează cele 16 clase demo („DEMO Class") din campania Back to Dance School
 // (7–11 septembrie 2026, quasardance.ro/back-to-dance-school) ca evenimente, ca
 // recepția să poată programa lead-uri pe ele din LeadModal.
@@ -84,8 +89,9 @@ for (const s of SLOTURI) {
     notite: NOTITE,
     public: false,       // gratuit — nu se vinde bilet pe portal
     pret_bilet: null,
-    capacitate: null,    // o completează Alex per sală
     curs: null,          // NU e eveniment de grupă (n-are ce căuta în calendarul membrilor)
+    // `capacitate` NU se mai scrie: la un update ar șterge valoarea introdusă
+    // manual din /evenimente.
   }
   const hit = byKey.get(key(s.data, s.ora, s.loc))
   if (hit) {

@@ -71,7 +71,7 @@ export function CalendarPage() {
         subtitle={
           teacherMode
             ? 'Calendar ocupare — click pe un slot liber pentru a-ți rezerva sala.'
-            : 'Calendar ocupare (cursuri + închirieri) — click pe un slot liber pentru a rezerva.'
+            : 'Calendar ocupare (cursuri + evenimente + închirieri) — click pe un slot liber pentru a rezerva.'
         }
       />
 

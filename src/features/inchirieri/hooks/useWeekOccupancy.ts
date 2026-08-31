@@ -4,6 +4,7 @@ import { timeToMinutes } from '@/lib/inchirieriPricing'
 import {
   cursStartMinForWeekday,
   listCursuriForCalendar,
+  listEvenimenteWeek,
   listInchirieriWeek,
   renterLabel,
   type InchiriereCalendar,
@@ -31,6 +32,14 @@ export function useWeekOccupancy(params: {
     queryKey: ['inchirieri', 'week', locatieId, mondayIso],
     queryFn: () =>
       listInchirieriWeek({ fromIso: days[0], toIso: days[6], locatieId }),
+    enabled: Boolean(locatieId),
+  })
+
+  // Evenimentele cu sală (clase demo, workshop-uri) — independent de sezon.
+  const evenimenteQ = useQuery({
+    queryKey: ['inchirieri-calendar-evenimente', locatieId, mondayIso],
+    queryFn: () =>
+      listEvenimenteWeek({ fromIso: days[0], toIso: days[6], locatieId }),
     enabled: Boolean(locatieId),
   })
 
@@ -78,13 +87,29 @@ export function useWeekOccupancy(params: {
       })
     }
 
+    // Evenimente cu sală → pe data lor.
+    for (const e of evenimenteQ.data ?? []) {
+      if (e.sala !== salaId) continue
+      const startMin = timeToMinutes(e.ora)
+      if (startMin == null) continue
+      const arr = map.get(e.data)
+      if (!arr) continue
+      arr.push({
+        startMin,
+        endMin: startMin + (e.durata_min ?? 60),
+        label: e.nume_eveniment,
+        kind: e.tip === 'DEMO Class' ? 'demo' : 'eveniment',
+      })
+    }
+
     for (const arr of map.values()) arr.sort((a, b) => a.startMin - b.startMin)
     return map
-  }, [cursuriQ.data, inchirieriQ.data, days, salaId])
+  }, [cursuriQ.data, inchirieriQ.data, evenimenteQ.data, days, salaId])
 
   return {
     days,
     byDate,
-    isLoading: cursuriQ.isLoading || inchirieriQ.isLoading,
+    isLoading:
+      cursuriQ.isLoading || inchirieriQ.isLoading || evenimenteQ.isLoading,
   }
 }

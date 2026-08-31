@@ -7,12 +7,22 @@ import { normalize, type LeadForm } from './crud'
 export type CanalContact = Enums<'canal_contact'>
 export type RezultatContact = Enums<'rezultat_contact'>
 
+// Programarea vizată de o marcare de prezență. Absent (kanban, drag) = „ultima
+// programare a leadului"; prezent = fix ora la care s-a bifat.
+//
+// Fără scope, marcarea prezenței la clasa demo de azi răsturna programarea de
+// săptămâna viitoare a aceluiași lead — ordonarea pe dată descrescătoare alegea
+// mereu programarea cea mai îndepărtată în viitor, nu pe cea marcată.
+export type PrezentaScope =
+  | { evenimentId: string }
+  | { cursId: string; data: string }
+
 // Sincronizează prezența în programari_leads cu statusul lead-ului:
-// a_venit → prezent, nu_a_venit → absent. Atinge cea mai recentă programare
-// (corecțiile prezent↔absent trebuie să se reflecte; reprogramările vechi rămân).
+// a_venit → prezent, nu_a_venit → absent.
 async function syncProgramarePrezenta(
   leadId: string,
   status: StatusLead,
+  scope?: PrezentaScope,
 ): Promise<void> {
   const prezenta =
     status === 'a_venit'
@@ -25,10 +35,13 @@ async function syncProgramarePrezenta(
   // slot din aceeași zi) fac ordonarea doar pe dată nedeterministă, iar prezența
   // ajunge pe rândul greșit — vechea programare devine absentă, cea reală rămâne
   // „programat" și contorul de neprezentări iese fals.
-  const { data: latest } = await supabase
-    .from('programari_leads')
-    .select('id')
-    .eq('lead', leadId)
+  let q = supabase.from('programari_leads').select('id').eq('lead', leadId)
+  if (scope && 'evenimentId' in scope) {
+    q = q.eq('eveniment_programat', scope.evenimentId)
+  } else if (scope) {
+    q = q.eq('cursul_programat', scope.cursId).eq('data_programarii', scope.data)
+  }
+  const { data: latest } = await q
     .order('data_programarii', { ascending: false })
     .order('created', { ascending: false })
     .limit(1)
@@ -49,8 +62,11 @@ async function syncProgramarePrezenta(
 // mai există o programare azi/viitoare — altfel leadul dispare din roster (care
 // filtrează pe status global) deși are o programare validă. Nurture-ul îl preia
 // prune-ul abia după ce toate programările au trecut.
-async function resolveNoShow(leadId: string): Promise<StatusLead> {
-  await syncProgramarePrezenta(leadId, 'nu_a_venit')
+async function resolveNoShow(
+  leadId: string,
+  scope?: PrezentaScope,
+): Promise<StatusLead> {
+  await syncProgramarePrezenta(leadId, 'nu_a_venit', scope)
   const { data } = await supabase
     .from('leads')
     .select('nr_neprezentari')
@@ -100,7 +116,7 @@ export type ContactIntent = 'incercare' | 'reusit'
 export async function updateLead(
   id: string,
   form: Partial<LeadForm>,
-  opts?: { contact?: ContactIntent },
+  opts?: { contact?: ContactIntent; scope?: PrezentaScope },
 ): Promise<Lead> {
   const { data: current, error: fetchError } = await supabase
     .from('leads')
@@ -148,7 +164,7 @@ export async function updateLead(
   // A 2-a neprezentare → nurture direct (fără SMS). resolveNoShow marchează deja
   // programarea absent și recalculează nr_neprezentari.
   if (payload.status === 'nu_a_venit' && current.status !== 'nu_a_venit') {
-    const effective = await resolveNoShow(id)
+    const effective = await resolveNoShow(id, opts?.scope)
     payload.status = effective
     if (effective === 'nurture') {
       payload.sub_status = null
@@ -184,7 +200,7 @@ export async function updateLead(
     .single()
   if (error) throw error
 
-  if (statusChanging) await syncProgramarePrezenta(id, data.status)
+  if (statusChanging) await syncProgramarePrezenta(id, data.status, opts?.scope)
   await triggerLeadSms(current.status, data)
   return data
 }
@@ -192,6 +208,7 @@ export async function updateLead(
 export async function updateLeadStatus(
   id: string,
   status: StatusLead,
+  scope?: PrezentaScope,
 ): Promise<Lead> {
   const { data: current, error: fetchError } = await supabase
     .from('leads')
@@ -202,7 +219,8 @@ export async function updateLeadStatus(
 
   // A 2-a neprezentare → nurture direct (fără SMS). resolveNoShow marchează deja
   // programarea absent, deci nu mai apelăm syncProgramarePrezenta pe această cale.
-  const effective = status === 'nu_a_venit' ? await resolveNoShow(id) : status
+  const effective =
+    status === 'nu_a_venit' ? await resolveNoShow(id, scope) : status
 
   const updates: UpdateDto<'leads'> = { status: effective }
   if (effective === 'convertit') {
@@ -226,7 +244,7 @@ export async function updateLeadStatus(
     .single()
   if (error) throw error
 
-  if (status !== 'nu_a_venit') await syncProgramarePrezenta(id, effective)
+  if (status !== 'nu_a_venit') await syncProgramarePrezenta(id, effective, scope)
   await triggerLeadSms(current.status, data)
   return data
 }

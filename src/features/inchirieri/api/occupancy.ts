@@ -187,3 +187,37 @@ export function cursStartMinForWeekday(
   const ora = map?.[zi] ?? c.ora
   return timeToMinutes(ora)
 }
+
+export type EvenimentCalendar = {
+  id: string
+  nume_eveniment: string
+  tip: Enums<'tip_eveniment'>
+  data: string
+  ora: string | null
+  durata_min: number | null
+  sala: string
+}
+
+// Evenimentele cu sală dintr-un interval de date.
+//
+// Spre deosebire de cursuri, AICI NU filtrăm pe sezonul activ: o clasă demo se
+// ține oricând — între sezoane, în vacanță, în afara orarului. Exact ăsta e
+// scopul: să nu se rezerve sala peste ea. Garda de sezon trăiește doar în
+// `listCursuriForCalendar`, deci fără sezon activ dispar cursurile, nu demourile.
+export async function listEvenimenteWeek(params: {
+  fromIso: string
+  toIso: string
+  locatieId?: string | null
+}): Promise<EvenimentCalendar[]> {
+  let q = supabase
+    .from('evenimente')
+    .select('id, nume_eveniment, tip, data, ora, durata_min, sala')
+    .not('sala', 'is', null)
+    .gte('data', params.fromIso)
+    .lte('data', params.toIso)
+    .or('status.is.null,status.neq.Anulat')
+  if (params.locatieId) q = q.eq('locatie_id', params.locatieId)
+  const { data, error } = await q
+  if (error) throw error
+  return (data ?? []) as EvenimentCalendar[]
+}

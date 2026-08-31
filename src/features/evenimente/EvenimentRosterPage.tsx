@@ -4,12 +4,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Button, Spinner, Combobox, Field } from '@/components/ui'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { useAuth } from '@/hooks/useAuth'
-import { isPrivileged } from '@/lib/rolesMatrix'
+import { isPrivileged, isTeacher } from '@/lib/rolesMatrix'
 import { clientiOptions } from '@/lib/lookups'
 import { formatRON } from '@/lib/format'
 import { waLink } from '@/lib/phone'
-import { updateLeadStatus } from '@/features/leads/api'
+import { marcheazaPrezentaLeadDemo, updateLeadStatus } from '@/features/leads/api'
 import { EvenimentForm } from './EvenimentForm'
+import { InscriereDemoModal } from './modals/InscriereDemoModal'
+import { DemoFunnelStrip } from './components/DemoFunnelStrip'
+import { marcheazaPrezentaClientDemo, anuleazaInscriereDemo } from './apiDemo'
 import { BileteOnlineSection } from './BileteOnlineSection'
 import { RatingSummary } from '@/features/feedback/RatingSummary'
 import {
@@ -31,17 +34,23 @@ const PREZENTA_LABEL: Record<'programat' | 'prezent' | 'absent', string> = {
   absent: 'Absent',
 }
 
+const STATUS_INACTIV = new Set(['convertit', 'pierdut', 'nurture'])
+
 function ParticipantCard({
   row,
   pretBilet,
+  isDemo,
   onPay,
   onRemove,
   removePending,
   onPresence,
   presencePending,
+  onRemoveDemo,
 }: {
   row: EvenimentRosterRow
   pretBilet: number | null
+  isDemo: boolean
+  onRemoveDemo: () => void
   onPay: (clientId: string) => void
   onRemove: (row: EvenimentRosterRow) => void
   removePending: boolean
@@ -52,14 +61,18 @@ function ParticipantCard({
   const name = [row.nume, row.prenume].filter(Boolean).join(', ')
   const isLead = row.kind === 'lead'
   // Lead programat la ora demonstrativă → card cu prezență, nu cu plată.
-  const isScheduled = row.scheduled
-  const showPay = !isLead && (row.neplatit || row.rest > 0)
+  // Prezența (nu „e lead programat") decide dacă apar bifele: la o clasă demo și
+  // cursanții înscriși au prezență proprie.
+  const isScheduled = row.prezenta != null
+  // O clasă demo e gratuită — nimic de încasat, deci nici buton de plată.
+  const showPay = !isDemo && !isLead && (row.neplatit || row.rest > 0)
   const payLabel = row.neplatit
     ? 'Nu a plătit biletul'
     : `Rest de plată: ${formatRON(row.rest)}`
   // Scoatem din listă doar participanții adăugați manual care n-au plătit nimic
-  // (cumpărătorii de bilet nu se scot — au tranzacție).
-  const showRemove = row.manual && row.neplatit
+  // (cumpărătorii de bilet nu se scot — au tranzacție). La demo nu există bani,
+  // deci orice înscriere se poate anula.
+  const showRemove = isDemo || (row.manual && row.neplatit)
   // Deep-link către fișa leadului, nu doar către pipeline: `?lead=` deschide
   // modalul de editare direct (leadul poate fi și convertit/nurture, deci nu se
   // găsește neapărat în lista implicită).
@@ -101,6 +114,11 @@ function ParticipantCard({
       <span className="mb-1 text-center text-sm font-medium text-quasar-black">
         {name}
       </span>
+      {row.statusLead && STATUS_INACTIV.has(row.statusLead) && (
+        <span className="mb-1 rounded bg-white/70 px-1.5 text-[10px] uppercase tracking-wide text-quasar-gray">
+          {row.statusLead === 'convertit' ? 'Convertit' : row.statusLead}
+        </span>
+      )}
       <span className="mb-2 text-center text-xs text-quasar-gray">
         {isScheduled
           ? PREZENTA_LABEL[row.prezenta ?? 'programat']
@@ -183,7 +201,7 @@ function ParticipantCard({
         {showRemove && (
           <button
             type="button"
-            onClick={() => onRemove(row)}
+            onClick={() => (isDemo ? onRemoveDemo() : onRemove(row))}
             disabled={removePending}
             className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50"
             aria-label="Scoate din listă"
@@ -216,6 +234,7 @@ export function EvenimentRosterPage() {
   const canManage = isPrivileged(role)
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [inscriereOpen, setInscriereOpen] = useState(false)
 
   const rosterKey = ['eveniment-roster', evenimentId]
   const { data, isLoading, isError } = useQuery({
@@ -248,9 +267,48 @@ export function EvenimentRosterPage() {
       removeEvenimentParticipant(evenimentId!, clientId),
     onSuccess: invalidateRoster,
   })
+  const removeDemoMut = useMutation({
+    mutationFn: ({ refId, kind }: { refId: string; kind: 'client' | 'lead' }) =>
+      anuleazaInscriereDemo({
+        evenimentId: evenimentId!,
+        leadId: kind === 'lead' ? refId : null,
+        clientId: kind === 'client' ? refId : null,
+      }),
+    onSuccess: () => {
+      void invalidateRoster()
+      void queryClient.invalidateQueries({ queryKey: ['leads'] })
+    },
+  })
+  // Teacherul nu poate scrie direct în leads/programari_leads (RLS) — trece prin
+  // RPC-ul care marchează DOAR prezența. Recepția păstrează calea completă
+  // (status + follow-up SMS + nurture la a 2-a neprezentare), dar acum legată de
+  // programarea ACESTUI eveniment, nu de ultima programare a leadului.
+  const teacherOnly = isTeacher(role)
   const presenceMut = useMutation({
-    mutationFn: ({ leadId, present }: { leadId: string; present: boolean }) =>
-      updateLeadStatus(leadId, present ? 'a_venit' : 'nu_a_venit'),
+    mutationFn: async ({
+      leadId,
+      present,
+      kind,
+    }: {
+      leadId: string
+      present: boolean
+      kind: 'client' | 'lead'
+    }) => {
+      const prezenta = present ? 'prezent' : 'absent'
+      // Un cursant venit să încerce alt stil n-are lead și n-are înrolare pe grupa
+      // demoului — prezența lui stă în `evenimente_participanti`.
+      if (kind === 'client') {
+        await marcheazaPrezentaClientDemo(evenimentId!, leadId, prezenta)
+        return
+      }
+      if (teacherOnly) {
+        await marcheazaPrezentaLeadDemo(evenimentId!, leadId, prezenta)
+        return
+      }
+      await updateLeadStatus(leadId, present ? 'a_venit' : 'nu_a_venit', {
+        evenimentId: evenimentId!,
+      })
+    },
     onSuccess: () => {
       void invalidateRoster()
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
@@ -269,6 +327,7 @@ export function EvenimentRosterPage() {
     )
   }
 
+  const isDemo = data.tip === 'DEMO Class'
   const subtitle = [data.tip, data.data, data.ora, data.locatia]
     .filter(Boolean)
     .join(' · ')
@@ -305,31 +364,45 @@ export function EvenimentRosterPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-6 rounded-md border border-quasar-gray-light bg-white px-4 py-3">
-        <Counter label="Participanți" value={data.roster.length} />
-        <Counter label="Plătit integral" value={platitIntegral} />
-        <Counter label="De încasat" value={deIncasat} />
-        {leaduriProgramate > 0 && (
-          <Counter label="Leaduri programate" value={leaduriProgramate} />
-        )}
-      </div>
+      {isDemo && <DemoFunnelStrip evenimentId={data.id} data={data.data} />}
 
-      <div className="mb-6 max-w-md">
-        <Field label="Adaugă participant (înscris manual)">
-          <Combobox
-            placeholder="Caută cursant (nume sau telefon)…"
-            options={addOptions}
-            value=""
-            onChange={(id) => id && addMut.mutate(id)}
-            disabled={addMut.isPending}
-          />
-        </Field>
-      </div>
+      {/* La demo, DemoFunnelStrip acoperă deja înscriși/prezenți/absenți. */}
+      {!isDemo && (
+        <div className="mb-4 flex flex-wrap items-center gap-6 rounded-md border border-quasar-gray-light bg-white px-4 py-3">
+          <Counter label="Participanți" value={data.roster.length} />
+          <Counter label="Plătit integral" value={platitIntegral} />
+          <Counter label="De încasat" value={deIncasat} />
+          {leaduriProgramate > 0 && (
+            <Counter label="Leaduri programate" value={leaduriProgramate} />
+          )}
+        </div>
+      )}
+
+      {isDemo ? (
+        <div className="mb-6">
+          <Button onClick={() => setInscriereOpen(true)}>
+            + Înscrie participant
+          </Button>
+        </div>
+      ) : (
+        <div className="mb-6 max-w-md">
+          <Field label="Adaugă participant (înscris manual)">
+            <Combobox
+              placeholder="Caută cursant (nume sau telefon)…"
+              options={addOptions}
+              value=""
+              onChange={(id) => id && addMut.mutate(id)}
+              disabled={addMut.isPending}
+            />
+          </Field>
+        </div>
+      )}
 
       {data.roster.length === 0 ? (
         <p className="rounded-lg border border-quasar-gray-light bg-white p-6 text-center text-sm text-quasar-gray">
-          Niciun participant. Adaugă cursanți manual de mai sus sau înregistrează o
-          plată de bilet legată de acest eveniment.
+          {isDemo
+            ? 'Niciun participant înscris. Folosește „+ Înscrie participant".'
+            : 'Niciun participant. Adaugă cursanți manual de mai sus sau înregistrează o plată de bilet legată de acest eveniment.'}
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -338,23 +411,27 @@ export function EvenimentRosterPage() {
               key={`${r.kind}:${r.refId}`}
               row={r}
               pretBilet={data.pretBilet}
+              isDemo={isDemo}
               onPay={(id) => setPayClientId(id)}
               onRemove={(row) => removeMut.mutate(row.refId)}
               removePending={
                 removeMut.isPending && removeMut.variables === r.refId
               }
               onPresence={(leadId, present) =>
-                presenceMut.mutate({ leadId, present })
+                presenceMut.mutate({ leadId, present, kind: r.kind })
               }
               presencePending={
                 presenceMut.isPending && presenceMut.variables?.leadId === r.refId
+              }
+              onRemoveDemo={() =>
+                removeDemoMut.mutate({ refId: r.refId, kind: r.kind })
               }
             />
           ))}
         </div>
       )}
 
-      <BileteOnlineSection evenimentId={evenimentId!} />
+      {!isDemo && <BileteOnlineSection evenimentId={evenimentId!} />}
 
       <div className="mt-6">
         <RatingSummary evenimentId={evenimentId!} />
@@ -370,6 +447,16 @@ export function EvenimentRosterPage() {
             setPayClientId(null)
             void invalidateRoster()
           }}
+        />
+      )}
+
+      {inscriereOpen && (
+        <InscriereDemoModal
+          open
+          evenimentId={evenimentId!}
+          ocupat={data.roster.length}
+          capacitate={data.capacitate}
+          onClose={() => setInscriereOpen(false)}
         />
       )}
 

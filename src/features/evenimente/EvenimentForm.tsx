@@ -12,9 +12,10 @@ import {
   Button,
 } from '@/components/ui'
 import { statusEvenimentOptions, tipEvenimentOptions } from '@/lib/enums'
-import { teacheriOptions } from '@/lib/lookups'
+import { locatiiOptions, teacheriOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import type { Eveniment } from '@/types/db'
+import { DemoSection, type DemoFields } from './components/DemoSection'
 import { createEveniment, updateEveniment, deleteEveniment } from './api'
 
 type Props = {
@@ -40,7 +41,7 @@ type FormState = {
   notite: string
   public: boolean
   curs: string
-}
+} & DemoFields
 
 function initialState(e?: Eveniment | null): FormState {
   return {
@@ -57,6 +58,13 @@ function initialState(e?: Eveniment | null): FormState {
     notite: e?.notite ?? '',
     public: e?.public ?? false,
     curs: e?.curs ?? '',
+    locatie_id: e?.locatie_id ?? '',
+    sala: e?.sala ?? '',
+    durata_min: e?.durata_min != null ? String(e.durata_min) : '',
+    varsta: e?.varsta ?? '',
+    stil: e?.stil ?? '',
+    curs_tinta: e?.curs_tinta ?? '',
+    campanie: e?.campanie ?? '',
   }
 }
 
@@ -76,12 +84,26 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
   // Toate grupele sezonului activ, indiferent de locația de lucru.
   const cursuri = useCursuriOptions({ locatieId: null })
   const isGrupa = Boolean(form.curs)
+  const isDemo = form.tip === 'DEMO Class'
+  // Numele locației oglindit în `locatia` (text liber) — coloana e încă citită de
+  // portalul membri (get_evenimente_client) și de căutarea din listă.
+  const locatii = useQuery({
+    queryKey: ['lookup', 'locatii'],
+    queryFn: locatiiOptions,
+    enabled: isDemo,
+  })
 
   const set = (key: keyof FormState) => (value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
+  const patchDemo = (p: Partial<DemoFields>) =>
+    setForm((prev) => ({ ...prev, ...p }))
+
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['evenimente'] })
+
+  const locatieNume =
+    (locatii.data ?? []).find((o) => o.value === form.locatie_id)?.label ?? ''
 
   const save = useMutation({
     mutationFn: () => {
@@ -91,14 +113,23 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
         descriere: form.descriere.trim() || null,
         data: form.data || null,
         ora: form.ora.trim() || null,
-        locatia: form.locatia.trim() || null,
+        locatia: (isDemo ? locatieNume : form.locatia.trim()) || null,
         organizator: form.organizator || null,
         capacitate: toNum(form.capacitate),
-        pret_bilet: form.curs ? null : toNum(form.pret_bilet),
+        // Un demo e gratuit, nu se vinde pe portal si nu e eveniment de grupa
+        // (constrangerea `evenimente_demo_coerenta` o impune si in DB).
+        pret_bilet: form.curs || isDemo ? null : toNum(form.pret_bilet),
         status: (form.status || null) as Eveniment['status'],
         notite: form.notite.trim() || null,
-        public: form.curs ? false : form.public,
-        curs: form.curs || null,
+        public: form.curs || isDemo ? false : form.public,
+        curs: isDemo ? null : form.curs || null,
+        locatie_id: form.locatie_id || null,
+        sala: form.sala || null,
+        durata_min: toNum(form.durata_min),
+        varsta: (form.varsta || null) as Eveniment['varsta'],
+        stil: form.stil.trim() || null,
+        curs_tinta: form.curs_tinta || null,
+        campanie: form.campanie || null,
       }
       return isEdit
         ? updateEveniment(eveniment!.id, payload)
@@ -135,6 +166,10 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
     }
     if (form.curs && !form.data) {
       setError('Un eveniment de grupă are nevoie de o dată — apare în calendarul membrilor.')
+      return
+    }
+    if (isDemo && !form.data) {
+      setError('O clasă demo are nevoie de o dată.')
       return
     }
     save.mutate()
@@ -232,25 +267,31 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
               onChange={(e) => set('ora')(e.target.value)}
             />
           </Field>
-          <Field label="Locație" htmlFor="locatia">
-            <TextInput
-              id="locatia"
-              value={form.locatia}
-              onChange={(e) => set('locatia')(e.target.value)}
-            />
-          </Field>
+          {!isDemo && (
+            <Field label="Locație" htmlFor="locatia">
+              <TextInput
+                id="locatia"
+                value={form.locatia}
+                onChange={(e) => set('locatia')(e.target.value)}
+              />
+            </Field>
+          )}
         </div>
 
-        <Field label="Grupă (opțional — eveniment exclusiv grupei)" htmlFor="curs">
-          <Select
-            id="curs"
-            placeholder="— eveniment pentru tot studioul —"
-            options={cursuri.data ?? []}
-            value={form.curs}
-            onChange={(e) => set('curs')(e.target.value)}
-          />
-        </Field>
-        {isGrupa && (
+        {isDemo && <DemoSection value={form} onChange={patchDemo} />}
+
+        {!isDemo && (
+          <Field label="Grupă (opțional — eveniment exclusiv grupei)" htmlFor="curs">
+            <Select
+              id="curs"
+              placeholder="— eveniment pentru tot studioul —"
+              options={cursuri.data ?? []}
+              value={form.curs}
+              onChange={(e) => set('curs')(e.target.value)}
+            />
+          </Field>
+        )}
+        {isGrupa && !isDemo && (
           <p className="text-xs text-quasar-gray">
             Vizibil în calendarul portalului doar pentru cursanții grupei.
             Informativ — fără bilete și fără afișare pe /servicii.
@@ -288,7 +329,7 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
               onChange={(e) => set('capacitate')(e.target.value)}
             />
           </Field>
-          {!isGrupa && (
+          {!isGrupa && !isDemo && (
             <Field label="Preț bilet" htmlFor="pret_bilet">
               <TextInput
                 id="pret_bilet"
@@ -310,6 +351,11 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
           />
         </Field>
 
+        {isDemo ? (
+          <p className="text-xs text-quasar-gray">
+            Clasa demo e gratuită și nu se afișează pe /servicii.
+          </p>
+        ) : (
         <div className="rounded-md border border-quasar-gray-light p-3">
           <Checkbox
             id="eveniment-public"
@@ -330,6 +376,7 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
             </p>
           )}
         </div>
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>

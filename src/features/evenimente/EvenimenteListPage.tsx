@@ -38,8 +38,23 @@ const columns: Column<EvenimentCuGrupa>[] = [
   },
   {
     header: 'Tip',
-    cell: (e) => e.tip ?? '—',
-    className: 'w-32',
+    // Cele 16 clase demo migrate din campania Back to Dance School n-au încă
+    // sală/capacitate — câmpuri care nu existau când au fost create. Badge-ul e
+    // reminderul de completare; rândul rămâne perfect funcțional fără ele.
+    cell: (e) => (
+      <span className="flex items-center gap-1.5">
+        {e.tip ?? '—'}
+        {e.tip === 'DEMO Class' && (!e.sala || e.capacitate == null) && (
+          <span
+            title="Completează sala și capacitatea"
+            className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-800"
+          >
+            ⚠ incomplet
+          </span>
+        )}
+      </span>
+    ),
+    className: 'w-44',
     sortValue: (e) => e.tip?.toLowerCase(),
   },
   {

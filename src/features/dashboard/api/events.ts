@@ -14,7 +14,9 @@ export type DashboardEvent = {
 
 // Evenimentele zilei (data == ziua de lucru), exclus cele anulate. Numărul de
 // participanți = persoane distincte din `participant[]` (adăugați manual) reunite
-// cu cumpărătorii de bilet (incasari.bilet = eveniment_id, client sau lead).
+// cu cumpărătorii de bilet (incasari.bilet = eveniment_id, client sau lead) și cu
+// lead-urile programate (o clasă demo n-are bilete: arăta „0 participanți" chiar
+// cu 12 lead-uri înscrise).
 // Fără filtru de locație — `evenimente.locatia` e text liber, nu FK.
 export async function getDashboardEvents(
   date: string,
@@ -54,9 +56,30 @@ export async function getDashboardEvents(
     set.add(key)
   }
 
+  // Lead-urile programate la evenimentele zilei — sursa reală de participanți
+  // pentru clasele demo.
+  const evIds = events.map((e) => e.id)
+  const leadsByEvent = new Map<string, Set<string>>()
+  if (evIds.length) {
+    const { data: progRows } = await supabase
+      .from('programari_leads')
+      .select('lead, eveniment_programat')
+      .in('eveniment_programat', evIds)
+    for (const r of progRows ?? []) {
+      if (!r.eveniment_programat || !r.lead) continue
+      let set = leadsByEvent.get(r.eveniment_programat)
+      if (!set) {
+        set = new Set<string>()
+        leadsByEvent.set(r.eveniment_programat, set)
+      }
+      set.add(r.lead)
+    }
+  }
+
   return events.map((e) => {
     const distinct = new Set<string>(e.participant ?? [])
     for (const id of buyersByEvent.get(e.id) ?? []) distinct.add(id)
+    for (const id of leadsByEvent.get(e.id) ?? []) distinct.add(id)
     return {
       id: e.id,
       nume: e.nume_eveniment,

@@ -1,6 +1,9 @@
-// Interval ocupat pe un slot din calendar (curs recurent proiectat SAU închiriere).
+// Interval ocupat pe un slot din calendar (curs recurent proiectat, închiriere,
+// clasă demo sau alt eveniment cu sală).
 export type OccupKind =
   | 'curs'
+  | 'demo'
+  | 'eveniment'
   | 'inchiriere-achitata'
   | 'inchiriere-restanta'
   | 'inchiriere-gratis'
