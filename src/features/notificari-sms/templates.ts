@@ -59,7 +59,7 @@ export type SmsRecipient = {
   client_ids: string[]
   // Are cel puțin o rată pe preț promo (reînscriere) în selecție — promo-ul se
   // pierde dacă rata nu e achitată până la scadență, deci reminderul o spune.
-  are_promo: boolean
+  are_reducere: boolean
 }
 
 // Elimină diacriticele (NFD + strip combining marks U+0300–U+036F) — plasă de
@@ -109,9 +109,9 @@ export function buildBulkSms(
         : zilePanaLaTermen(azi)
       const cand =
         n > 1 ? `peste ${n} zile` : n === 1 ? 'maine' : 'astazi'
-      // Varianta promo e scurtată („la Quasar Dance") ca să încapă în 160 car.
-      if (r.are_promo) {
-        return `Buna ziua! Va reamintim ca ${cand} este termenul de plata la Quasar Dance. Dupa acest termen se pierde pretul promotional. Echipa Quasar Dance`
+      // Varianta cu reducere e scurtată („la Quasar Dance") ca să încapă în 160 car.
+      if (r.are_reducere) {
+        return `Buna ziua! Va reamintim ca ${cand} este termenul de plata la Quasar Dance. Dupa acest termen se pierde reducerea de familie. Echipa Quasar Dance`
       }
       return `Buna ziua! Va reamintim ca ${cand} este termenul de plata pentru cursurile Quasar Dance. Echipa Quasar Dance`
     }

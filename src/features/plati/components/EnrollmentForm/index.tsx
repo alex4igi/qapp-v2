@@ -818,8 +818,9 @@ export function EnrollmentForm({
                 }}
               />
               <p className="mt-1 text-xs text-purple-800">
-                Se aplică pe toate ratele sezonului. Promoția se anulează automat
-                dacă o rată rămâne neachitată după data de 15.
+                Se aplică pe toate ratele sezonului și rămâne fix, indiferent
+                dacă plata se face la termen. Dacă o rată nu e achitată până la
+                termen, se pierde reducerea de familie pentru luna respectivă.
               </p>
             </div>
           )}

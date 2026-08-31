@@ -80,12 +80,14 @@ Buna {prenume}! Iti confirmam locul in grupa {nume curs}, in zilele de {zile}, l
 ```
 Buna ziua! Va reamintim ca {N zile/maine/astazi} este termenul de plata pentru cursurile Quasar Dance. Echipa Quasar Dance
 ```
-**Varianta „preț promo"** (2026-08-28) — destinatarii cu cel puțin o rată pe preț
-promoțional (reînscriere) în selecție primesc avertismentul că pierd discountul.
-`get_sms_recipients` întoarce `are_promo`; composer-ul arată ambele variante în
-previzualizare + badge „pret promo" în listă.
+**Varianta „reducere de familie"** (2026-08-31) — destinatarii cu cel puțin o rată
+care are reducere de familie/cross-sell (`politica_discount > 0`) primesc
+avertismentul că o pierd pe luna respectivă dacă depășesc termenul. Prețul promo
+NU se mai pierde niciodată (regula din 2026-08-31), deci nu el e miza avertismentului.
+`get_sms_recipients` întoarce `are_reducere`; composer-ul arată ambele variante în
+previzualizare + badge „reducere familie" în listă.
 ```
-Buna ziua! Va reamintim ca {N zile/maine/astazi} este termenul de plata la Quasar Dance. Dupa acest termen se pierde pretul promotional. Echipa Quasar Dance
+Buna ziua! Va reamintim ca {N zile/maine/astazi} este termenul de plata la Quasar Dance. Dupa acest termen se pierde reducerea de familie. Echipa Quasar Dance
 ```
 > Textul e scurtat („la Quasar Dance" în loc de „pentru cursurile Quasar Dance")
 > ca să încapă în 160 car. la worst-case „peste 19 zile" (148 car.).
@@ -155,7 +157,7 @@ Buna ziua! Pentru a pastra {locul lui X / locurile lui X si Y} la Quasar Dance, 
 - `confirmare` (#1) — 162 car. worst-case (2 SMS la combinațiile lungi)
 - `reminder` (#2) — 162 car. worst-case
 - `waiting_list` (#5) — 153 car. ✓
-- `reminder_plata` (#6) — 114 car. ✓ standard / 148 car. ✓ varianta preț promo
+- `reminder_plata` (#6) — 114 car. ✓ standard / 149 car. ✓ varianta reducere familie
 
 ---
 

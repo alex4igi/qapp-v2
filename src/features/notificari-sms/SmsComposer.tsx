@@ -136,13 +136,13 @@ export function SmsComposer({ open, onClose }: Props) {
   // variante prezente în selecție, ca operatorul să vadă exact ce pleacă.
   const samplePreviews = useMemo(() => {
     const out: Array<{ eticheta: string | null; text: string }> = []
-    const faraPromo = selectedRecipients.find((r) => !r.are_promo)
-    const cuPromo = selectedRecipients.find((r) => r.are_promo)
+    const faraReducere = selectedRecipients.find((r) => !r.are_reducere)
+    const cuReducere = selectedRecipients.find((r) => r.are_reducere)
     if (cod === 'reminder_plata') {
-      if (faraPromo)
-        out.push({ eticheta: 'preț standard', text: buildBulkSms(cod, faraPromo, { textLiber }) })
-      if (cuPromo)
-        out.push({ eticheta: 'preț promo', text: buildBulkSms(cod, cuPromo, { textLiber }) })
+      if (faraReducere)
+        out.push({ eticheta: 'preț standard', text: buildBulkSms(cod, faraReducere, { textLiber }) })
+      if (cuReducere)
+        out.push({ eticheta: 'preț promo', text: buildBulkSms(cod, cuReducere, { textLiber }) })
       return out
     }
     const r = selectedRecipients[0]
@@ -307,9 +307,9 @@ export function SmsComposer({ open, onClose }: Props) {
                             <span className="text-quasar-gray">
                               — {r.membri.map((m) => m.nume).join(', ')}
                             </span>
-                            {cod === 'reminder_plata' && r.are_promo && (
+                            {cod === 'reminder_plata' && r.are_reducere && (
                               <span className="ml-2 rounded bg-quasar-yellow/40 px-1.5 py-0.5 text-xs font-medium text-quasar-black">
-                                pret promo
+                                reducere familie
                               </span>
                             )}
                             {r.alreadySent && (

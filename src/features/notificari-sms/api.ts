@@ -103,7 +103,7 @@ export async function getSmsRecipients({
     total_restanta: Number(r.total_restanta ?? 0),
     zile_depasire: r.zile_depasire,
     client_ids: r.client_ids ?? [],
-    are_promo: r.are_promo ?? false,
+    are_reducere: r.are_reducere ?? false,
   }))
 }
 

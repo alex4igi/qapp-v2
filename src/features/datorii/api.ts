@@ -99,7 +99,7 @@ export async function queueSmsRestanta(r: WorklistRow): Promise<void> {
     total_restanta: r.rest_total,
     zile_depasire: r.zile_depasire,
     client_ids: [r.client_id],
-    are_promo: false, // irelevant pentru notificare_restante (doar reminder_plata îl folosește)
+    are_reducere: false, // irelevant pentru notificare_restante (doar reminder_plata îl folosește)
   }
   const { error } = await supabase.from('situatie_sms_uri').insert({
     telefon: r.telefon,
