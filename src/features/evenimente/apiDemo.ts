@@ -1,7 +1,9 @@
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
+import { inscrieLaDemo, type SursaInscriere } from '@/lib/inscrieriDemo'
 
-export type SursaInscriere = 'receptie' | 'walk_in' | 'recomandare'
+export { inscrieLaDemo }
+export type { SursaInscriere }
 
 export type LeadSearchRow = {
   id: string
@@ -25,26 +27,6 @@ export async function searchLeads(term: string): Promise<LeadSearchRow[]> {
   const { data, error } = await query
   if (error) throw error
   return (data ?? []) as LeadSearchRow[]
-}
-
-export async function inscrieLaDemo(input: {
-  evenimentId: string
-  leadId?: string | null
-  clientId?: string | null
-  sursa?: SursaInscriere
-  adusDe?: string | null
-  permiteOverbook?: boolean
-}): Promise<string> {
-  const { data, error } = await supabase.rpc('inscrie_la_demo', {
-    p_eveniment: input.evenimentId,
-    p_lead: input.leadId ?? undefined,
-    p_client: input.clientId ?? undefined,
-    p_sursa: input.sursa ?? 'receptie',
-    p_adus_de: input.adusDe ?? undefined,
-    p_permite_overbook: input.permiteOverbook ?? false,
-  })
-  if (error) throw error
-  return data as string
 }
 
 export type WalkInResult = {

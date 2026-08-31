@@ -10993,6 +10993,7 @@ export type Database = {
         Args: {
           p_adus_de?: string
           p_client?: string
+          p_data_programarii?: string
           p_eveniment: string
           p_lead?: string
           p_permite_overbook?: boolean

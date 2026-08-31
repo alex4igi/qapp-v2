@@ -42,6 +42,7 @@ import {
   getLeadConversionInfo,
   type LeadForm,
 } from '../api'
+import { inscrieLaDemo } from '@/lib/inscrieriDemo'
 import { waLink } from '@/lib/phone'
 import { LeadHistory } from '../LeadHistory'
 import { LogContactModal } from '../LogContactModal'
@@ -346,14 +347,27 @@ export function LeadModal({
       }
       if (scheduleChanged && leadId) {
         const sel = resolveSelectie()!
-        await createProgramareLead({
-          lead: leadId,
-          cursul_programat: sel.cursId,
-          eveniment_programat: sel.evenimentId,
-          locatie: sel.locatie,
-          data_programarii: form.data_programare.slice(0, 10),
-          ora: sel.ora,
-        })
+        if (sel.evenimentId) {
+          // Programarea pe un eveniment (clasa demo) trece prin RPC, nu prin insert
+          // direct: verifică locurile rămase și e idempotentă. Un insert brut ar fi
+          // picat cu 23505 la reprogramarea pe un slot pe care leadul a mai fost
+          // (index unic parțial pe (lead, eveniment_programat)).
+          await inscrieLaDemo({
+            evenimentId: sel.evenimentId,
+            leadId,
+            sursa: 'receptie',
+            dataProgramarii: form.data_programare.slice(0, 10),
+          })
+        } else {
+          await createProgramareLead({
+            lead: leadId,
+            cursul_programat: sel.cursId,
+            eveniment_programat: null,
+            locatie: sel.locatie,
+            data_programarii: form.data_programare.slice(0, 10),
+            ora: sel.ora,
+          })
+        }
         // Confirmarea SMS pleacă după 5 min (fereastră de undo).
         await enqueueConfirmareProgramare(leadId)
       }
