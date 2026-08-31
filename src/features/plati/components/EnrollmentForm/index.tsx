@@ -355,13 +355,21 @@ export function EnrollmentForm({
   // Preview al discountului automat de politică (cross-sell/family). Voucherul
   // manual și politica sunt mutual exclusive → nu-l interogăm dacă e voucher ales.
   const previewQ = useQuery({
-    queryKey: ['preview-pool-discount', clientId, cursId, tipPlata, sumaSugerata],
+    queryKey: [
+      'preview-pool-discount',
+      clientId,
+      cursId,
+      tipPlata,
+      sumaSugerata,
+      aplicPromo,
+    ],
     queryFn: () =>
       previewPoolDiscount({
         client: clientId,
         cursId: cursId || null,
         tipPlata,
         sumaBaza: sumaSugerata!,
+        esteReinscriere: aplicPromo,
       }),
     enabled: Boolean(clientId) && sumaSugerata != null && !voucherId,
     staleTime: 30_000,
@@ -830,6 +838,7 @@ export function EnrollmentForm({
               tipPlata={tipPlata}
               isFacultativ={isFacultativ}
               policyPreview={policyPreview}
+              esteReinscriere={aplicPromo}
             />
           )}
 

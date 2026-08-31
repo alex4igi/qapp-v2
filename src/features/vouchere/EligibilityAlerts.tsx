@@ -41,7 +41,7 @@ export function EligibilityAlerts({ clientId, tipPlata, isFacultativ }: Props) {
       .join(', ')
     alerts.push({
       key: 'family',
-      text: `Frați activi în aceeași familie: ${frati}. Politica family se aplică automat — în pool-ul familiei cel mai scump abonament rămâne integral, restul primesc −10%.`,
+      text: `Frați activi în aceeași familie: ${frati}. Politica family se aplică automat — în pool-ul familiei cel mai scump abonament rămâne integral, restul primesc −10%. Reducerile nu se cumulează: pe preț de reînscriere se aplică doar varianta cea mai avantajoasă.`,
     })
   }
 

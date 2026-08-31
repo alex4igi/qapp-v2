@@ -10909,6 +10909,7 @@ export type Database = {
         Args: {
           p_client: string
           p_curs?: string
+          p_este_reinscriere?: boolean
           p_suma_baza: number
           p_tip_plata: Database["public"]["Enums"]["tip_plata"]
         }

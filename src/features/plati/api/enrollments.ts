@@ -161,10 +161,14 @@ export async function previewPoolDiscount(p: {
   tipPlata: Enums<'tip_plata'>
   sumaBaza: number
   cursId?: string | null // exclude cursul țintă din pool (dublură ≠ cross-sell)
+  // Pe preț promo reducerile nu se cumulează: serverul alege între promo și
+  // −10% pe rata normală, deci are nevoie de flag ca să nu promită ambele.
+  esteReinscriere?: boolean
 }): Promise<{ politica_discount: number; suma_finala: number } | null> {
   const { data, error } = await supabase.rpc('preview_pool_discount', {
     p_client: p.client,
     p_curs: p.cursId ?? undefined,
+    p_este_reinscriere: p.esteReinscriere ?? false,
     p_tip_plata: p.tipPlata,
     p_suma_baza: p.sumaBaza,
   })

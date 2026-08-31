@@ -7,6 +7,7 @@ type Props = {
   tipPlata: Enums<'tip_plata'>
   isFacultativ: boolean
   policyPreview?: { politica_discount: number; suma_finala: number } | null
+  esteReinscriere?: boolean
 }
 
 // Info-box cu prețul sugerat (din curs) și — dacă există voucher selectat —
@@ -17,6 +18,7 @@ export function PriceSummary({
   tipPlata,
   isFacultativ,
   policyPreview,
+  esteReinscriere,
 }: Props) {
   if (sumaSugerata == null) {
     return (
@@ -28,7 +30,9 @@ export function PriceSummary({
   }
 
   const preview = voucherSelectat ? applyVoucher(sumaSugerata, voucherSelectat) : null
-  // Politica automată −10% (cross-sell/family). Exclusivă cu voucherul manual.
+  // Politica automată (cross-sell/family). Exclusivă cu voucherul manual. Pe
+  // preț de reînscriere nu e −10% fix: serverul alege reducerea unică cea mai
+  // bună (promo vs −10% pe rata normală), deci afișăm doar diferența rezultată.
   const showPolicy =
     !preview && policyPreview != null && policyPreview.politica_discount > 0
 
@@ -46,7 +50,9 @@ export function PriceSummary({
       <div className="flex items-baseline justify-between">
         <span className="text-quasar-gray">
           Preț {pretLabel}
-          {!isFacultativ && tipPlata === 'Per luna' && <> (preț anual / 10)</>}
+          {!isFacultativ && tipPlata === 'Per luna' && (
+            <> ({esteReinscriere ? 'preț de reînscriere' : 'preț anual / 10'})</>
+          )}
         </span>
         <span className="font-medium text-quasar-black">{sumaSugerata} RON</span>
       </div>
@@ -68,7 +74,11 @@ export function PriceSummary({
       {showPolicy && policyPreview && (
         <>
           <div className="mt-1 flex items-baseline justify-between text-xs text-quasar-gray">
-            <span>Politică cross-sell/family</span>
+            <span>
+              {esteReinscriere
+                ? 'Politică cross-sell/family (nu se cumulează cu promo)'
+                : 'Politică cross-sell/family'}
+            </span>
             <span>− {policyPreview.politica_discount.toFixed(2)} RON</span>
           </div>
           <div className="mt-1 flex items-baseline justify-between border-t border-quasar-gray-light pt-1">
