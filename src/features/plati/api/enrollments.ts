@@ -138,8 +138,9 @@ export type CreateInrolariParams = {
   forceReinrolare?: boolean // override pentru admin după reziliere în același sezon
   voucherId?: string | null // voucher aplicat manual pe toate înrolările generate
   // Reînscriere: rata lunară vine din `cursuri.pret_lunar_promo` în loc de
-  // pret_anual/10, iar rândurile primesc `este_reinscriere=true` (flag pe care
-  // se sprijină cron-ul `cancel_expired_reinscrieri` + KPI-urile din /statistici).
+  // pret_anual/10, iar rândurile primesc `este_reinscriere=true`. Prețul rămâne
+  // fix pe sezon; se încheie doar odată cu locul (reziliere) — vezi
+  // docs/reguli-preturi-reduceri.md.
   esteReinscriere?: boolean
 }
 
@@ -488,6 +489,21 @@ export async function createInrolari(
     if (curs.pret_lunar_promo == null) {
       throw new Error(
         'Cursul nu are „Preț lunar PROMO" configurat. Setează-l în Cursuri → fișa cursului.',
+      )
+    }
+    // Promo-ul se încheie odată cu locul: dacă o înrolare anterioară pe același
+    // curs a fost reziliată cât era pe promo, triggerul i-a pus `promo_anulat_la`.
+    // Reîntoarcerea se face la preț întreg (vezi docs/reguli-preturi-reduceri.md).
+    const { count: promoPierdut, error: promoErr } = await supabase
+      .from('enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('client', params.client)
+      .eq('cursul', params.cursId)
+      .not('promo_anulat_la', 'is', null)
+    if (promoErr) throw promoErr
+    if ((promoPierdut ?? 0) > 0) {
+      throw new Error(
+        'Prețul de reînscriere s-a încheiat odată cu locul (înrolare reziliată anterior pe acest curs). Reînscrierea se face la preț întreg.',
       )
     }
   }

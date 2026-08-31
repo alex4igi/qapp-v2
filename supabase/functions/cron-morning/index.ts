@@ -12,6 +12,7 @@ import {
   sendSms,
 } from '../_shared/sms.ts'
 import { getProgramareSms } from '../_shared/leadLocatie.ts'
+import { sendEmail } from '../_shared/messaging.ts'
 
 function startOfDay(date: Date) {
   const d = new Date(date)
@@ -46,6 +47,79 @@ function localWeekdayBucharest(d: Date): string {
     timeZone: 'Europe/Bucharest',
     weekday: 'short',
   }).format(d)
+}
+
+
+// Regula „50 de zile" (2026-08-31): cine depășește cu 50 de zile termenul unei
+// rate DIN SEZONUL LUI e suspendat automat (nu mai intră la ore, nu mai rezervă)
+// și managerul primește pe email lista, ca să confirme anularea locului din
+// /datorii. Rezilierea rămâne act de om — e ireversibilă și zeroizează lunile
+// viitoare. Vezi docs/reguli-preturi-reduceri.md.
+type SuspendatRow = {
+  client_id: string
+  nume: string | null
+  prenume: string | null
+  zile_depasire: number | null
+  rest: number | null
+  cursuri: string | null
+}
+
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://qapp.quasardance.ro'
+
+// Destinatarii = conturile de staff cu rol de decizie. Lista se întreține singură:
+// cine devine manager primește emailul, fără configurare separată.
+async function getManagerEmails(
+  supabase: ReturnType<typeof createClient>,
+): Promise<string[]> {
+  const { data, error } = await supabase.auth.admin.listUsers({ perPage: 200 })
+  if (error) throw error
+  const roluri = new Set(['owner', 'admin', 'manager'])
+  return (data?.users ?? [])
+    .filter((u) => roluri.has(String(u.app_metadata?.role ?? '')))
+    .map((u) => u.email)
+    .filter((e): e is string => Boolean(e))
+}
+
+function buildSuspendariEmail(rows: SuspendatRow[]): { subject: string; html: string; text: string } {
+  const linii = rows.map((r) => {
+    const nume = `${r.nume ?? ''} ${r.prenume ?? ''}`.trim() || 'Client fără nume'
+    return {
+      nume,
+      zile: r.zile_depasire ?? 0,
+      rest: Math.round(Number(r.rest ?? 0)),
+      cursuri: r.cursuri ?? '—',
+    }
+  })
+  const n = linii.length
+  const subject =
+    n === 1
+      ? `Quasar: 1 cursant a depășit 50 de zile — locul e de anulat`
+      : `Quasar: ${n} cursanți au depășit 50 de zile — locurile sunt de anulat`
+
+  const rowsHtml = linii
+    .map(
+      (l) =>
+        `<tr><td style="padding:6px 12px 6px 0">${l.nume}</td>` +
+        `<td style="padding:6px 12px 6px 0">${l.cursuri}</td>` +
+        `<td style="padding:6px 12px 6px 0;text-align:right">${l.zile} zile</td>` +
+        `<td style="padding:6px 0;text-align:right"><strong>${l.rest} RON</strong></td></tr>`,
+    )
+    .join('')
+
+  const html =
+    `<p>Următorii cursanți au depășit cu peste 50 de zile termenul unei rate din sezonul curent. ` +
+    `Accesul lor a fost <strong>suspendat automat</strong> (nu mai pot intra la ore și nu mai pot rezerva).</p>` +
+    `<table style="border-collapse:collapse;font-family:system-ui,sans-serif;font-size:14px">${rowsHtml}</table>` +
+    `<p>Anularea locului în grupă nu s-a făcut automat — o confirmi tu din ` +
+    `<a href="${APP_URL}/datorii">pagina Datorii</a>. La reziliere, prețul promo se încheie odată cu locul.</p>` +
+    `<p style="color:#666;font-size:12px">Mesaj automat Qapp. Dacă rata se achită între timp, reactivează clientul tot din Datorii.</p>`
+
+  const text =
+    `Au depasit 50 de zile de la termenul unei rate din sezonul curent si au fost suspendati automat:\n\n` +
+    linii.map((l) => `- ${l.nume} (${l.cursuri}) - ${l.zile} zile, ${l.rest} RON`).join('\n') +
+    `\n\nAnularea locului o confirmi din ${APP_URL}/datorii. La reziliere, pretul promo se incheie odata cu locul.`
+
+  return { subject, html, text }
 }
 
 Deno.serve(async (req) => {
@@ -353,8 +427,39 @@ Deno.serve(async (req) => {
     }
   }
 
+  // --- Regula 50 de zile: suspendare automată + email către manageri ---
+  let suspendati = 0
+  let emailuriTrimise = 0
+  {
+    const { data: rows, error } = await supabase.rpc('suspenda_datornici_50_zile')
+    if (error) {
+      errors.push(`suspendare 50 zile: ${error.message}`)
+    } else {
+      const lista = (rows ?? []) as SuspendatRow[]
+      suspendati = lista.length
+      // Fără suspendări noi nu trimitem nimic — managerul nu primește zilnic un
+      // email gol, altfel învață să le ignore exact când contează.
+      if (lista.length > 0) {
+        try {
+          const destinatari = await getManagerEmails(supabase)
+          if (destinatari.length === 0) {
+            errors.push('suspendare 50 zile: niciun cont cu rol owner/admin/manager')
+          }
+          const { subject, html, text } = buildSuspendariEmail(lista)
+          for (const to of destinatari) {
+            const res = await sendEmail({ to, subject, html, text })
+            if (res.ok) emailuriTrimise++
+            else errors.push(`email suspendari → ${to}: ${res.error ?? 'eșec'}`)
+          }
+        } catch (e) {
+          errors.push(`email suspendari: ${e instanceof Error ? e.message : String(e)}`)
+        }
+      }
+    }
+  }
+
   console.log(
-    `[cron/morning] remindere: ${sent.length}, followup: ${followupSent}, confirmari: ${confirmariSent}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, followup: ${followupSent}, confirmari: ${confirmariSent}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, erori: ${errors.length}`,
   )
   return Response.json({
     sent,
@@ -362,6 +467,8 @@ Deno.serve(async (req) => {
     confirmari: confirmariSent,
     aVenitFlagged,
     aVenitNurtured,
+    suspendati50z: suspendati,
+    emailuriSuspendari: emailuriTrimise,
     errors,
     rulatLa: now.toISOString(),
   })
