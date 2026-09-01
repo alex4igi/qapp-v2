@@ -91,6 +91,9 @@ export function LeadModal({
   // Selecția cursului/evenimentului pentru programare: `curs:<id>` / `ev:<id>`.
   const [selectie, setSelectie] = useState('')
   const [ignoreVarsta, setIgnoreVarsta] = useState(false)
+  // Suprarezervarea unei clase demo pline — decizie explicită, manager+ (v. RPC
+  // `inscrie_la_demo`, care refuză altfel înscrierea).
+  const [overbook, setOverbook] = useState(false)
   // Valorile programării la deschidere — ca să nu re-creăm o programare la edituri
   // care nu schimbă data/cursul.
   const [initial, setInitial] = useState<{ data: string; selectie: string }>({
@@ -142,6 +145,7 @@ export function LeadModal({
     setTab('detalii')
     setSelectie('')
     setIgnoreVarsta(false)
+    setOverbook(false)
     setInitial({ data: lead?.data_programare?.slice(0, 10) ?? '', selectie: '' })
   }, [open, lead, defaultStatus, startScheduling])
 
@@ -242,10 +246,15 @@ export function LeadModal({
     })
     return [
       ...cursList.map((c) => ({ label: c.numele, value: `curs:${c.id}` })),
-      ...evList.map((e) => ({
-        label: `${e.ora ? `${e.ora.slice(0, 5)} · ` : ''}${e.nume_eveniment} (eveniment)`,
-        value: `ev:${e.id}`,
-      })),
+      ...evList.map((e) => {
+        const plin = e.capacitate != null && e.ocupat >= e.capacitate
+        const locuri =
+          e.capacitate != null ? ` [${e.ocupat}/${e.capacitate}]` : ''
+        return {
+          label: `${e.ora ? `${e.ora.slice(0, 5)} · ` : ''}${e.nume_eveniment} (eveniment)${locuri}${plin ? ' — COMPLET' : ''}`,
+          value: `ev:${e.id}`,
+        }
+      }),
     ]
   }, [
     cursuriQ.data,
@@ -257,6 +266,19 @@ export function LeadModal({
     resolveLocatieId,
     intreSezoane,
   ])
+
+  // Evenimentul selectat + ocuparea lui (null când s-a ales un curs recurent).
+  const evSelectat = selectie.startsWith('ev:')
+    ? (evenimenteQ.data?.find((e) => e.id === selectie.slice(3)) ?? null)
+    : null
+  const locuriSelectie =
+    evSelectat && evSelectat.capacitate != null
+      ? { ocupat: evSelectat.ocupat, capacitate: evSelectat.capacitate }
+      : null
+  const selectiePlina = Boolean(
+    locuriSelectie && locuriSelectie.ocupat >= locuriSelectie.capacitate,
+  )
+  const poateSuprarezerva = isManagerOrHigher(role)
 
   // Rezolvă curs/eveniment + oră din selecția curentă.
   const resolveSelectie = () => {
@@ -357,6 +379,7 @@ export function LeadModal({
             leadId,
             sursa: 'receptie',
             dataProgramarii: form.data_programare.slice(0, 10),
+            permiteOverbook: overbook && poateSuprarezerva,
           })
         } else {
           await createProgramareLead({
@@ -586,7 +609,10 @@ export function LeadModal({
                       dataProgramare={form.data_programare}
                       onDataChange={(v) => set('data_programare', v)}
                       selectie={selectie}
-                      onSelectieChange={setSelectie}
+                      onSelectieChange={(v) => {
+                        setSelectie(v)
+                        setOverbook(false)
+                      }}
                       optiuni={optiuni}
                       cursuri={cursuriQ.data ?? []}
                       cursuriLoading={cursuriQ.isLoading}
@@ -594,6 +620,11 @@ export function LeadModal({
                       ignoreVarsta={ignoreVarsta}
                       onIgnoreVarstaChange={setIgnoreVarsta}
                       intreSezoane={intreSezoane}
+                      locuri={locuriSelectie}
+                      plin={selectiePlina}
+                      poateSuprarezerva={poateSuprarezerva}
+                      overbook={overbook}
+                      onOverbookChange={setOverbook}
                     />
                   )}
 

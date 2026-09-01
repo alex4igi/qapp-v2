@@ -85,21 +85,38 @@ export type EvenimentProgramabil = {
   nume_eveniment: string
   ora: string | null
   locatia: string | null
+  capacitate: number | null
+  /** Locuri ocupate — aceeași sumă ca `locuri_ocupate_eveniment()` din DB. */
+  ocupat: number
 }
 
 // Evenimentele dintr-o anumită zi — apar în dropdown-ul de programare alături de
 // cursurile recurente (orele demonstrative/gratuite pot fi create ca evenimente).
+//
+// Ocuparea vine odată cu ele: fără ea recepția afla că slotul e plin abia din
+// eroarea de la salvare, cu clientul pe fir.
 export async function listEvenimenteProgramabile(
   date: string,
 ): Promise<EvenimentProgramabil[]> {
   const { data, error } = await supabase
     .from('evenimente')
-    .select('id, nume_eveniment, ora, locatia')
+    .select(
+      'id, nume_eveniment, ora, locatia, capacitate, programari_leads(count), evenimente_participanti(count)',
+    )
     .eq('data', date)
     .order('ora', { ascending: true, nullsFirst: false })
     .order('nume_eveniment', { ascending: true })
   if (error) throw error
-  return (data ?? []) as EvenimentProgramabil[]
+  return (data ?? []).map((e) => ({
+    id: e.id,
+    nume_eveniment: e.nume_eveniment,
+    ora: e.ora,
+    locatia: e.locatia,
+    capacitate: e.capacitate ?? null,
+    ocupat:
+      (e.programari_leads?.[0]?.count ?? 0) +
+      (e.evenimente_participanti?.[0]?.count ?? 0),
+  }))
 }
 
 // Creează rândul de programare care leagă lead-ul de un curs la o dată.

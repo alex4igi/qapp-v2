@@ -16,6 +16,12 @@ type Props = {
   onIgnoreVarstaChange: (on: boolean) => void
   /** Data aleasă cade în afara sezonului activ → doar clase DEMO, fără cursuri. */
   intreSezoane: boolean
+  /** Ocuparea evenimentului selectat; null la cursuri sau fără capacitate setată. */
+  locuri: { ocupat: number; capacitate: number } | null
+  plin: boolean
+  poateSuprarezerva: boolean
+  overbook: boolean
+  onOverbookChange: (on: boolean) => void
 }
 
 // Pasul „Programat": dată + curs/eveniment + excepția de grupă de vârstă.
@@ -31,6 +37,11 @@ export function ProgramareSection({
   ignoreVarsta,
   onIgnoreVarstaChange,
   intreSezoane,
+  locuri,
+  plin,
+  poateSuprarezerva,
+  overbook,
+  onOverbookChange,
 }: Props) {
   return (
     <div style={{ marginTop: '18px', border: '1px solid #BBD8F0', background: '#F0F7FE', borderRadius: '13px', padding: '15px 16px' }}>
@@ -53,6 +64,31 @@ export function ProgramareSection({
           </select>
         </div>
       </div>
+      {locuri && (
+        <div style={{ marginTop: '11px', fontSize: '12px', color: plin ? '#B42318' : '#1F6FB2' }}>
+          <strong>
+            Locuri: {locuri.ocupat}/{locuri.capacitate}
+          </strong>
+          {plin && ' — COMPLET'}
+        </div>
+      )}
+      {plin && (
+        poateSuprarezerva ? (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '9px', fontSize: '12px', color: '#B42318', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={overbook}
+              onChange={(e) => onOverbookChange(e.target.checked)}
+              style={{ width: '15px', height: '15px', accentColor: '#B42318', cursor: 'pointer' }}
+            />
+            Înscrie peste capacitate (decizie de manager)
+          </label>
+        ) : (
+          <div style={{ marginTop: '9px', fontSize: '11.5px', color: '#B42318' }}>
+            Cere unui manager să înscrie peste capacitate — sau alege alt slot.
+          </div>
+        )
+      )}
       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '11px', fontSize: '12px', color: '#1F6FB2', cursor: 'pointer', userSelect: 'none' }}>
         <input
           type="checkbox"

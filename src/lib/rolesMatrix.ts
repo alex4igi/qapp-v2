@@ -36,6 +36,10 @@ export const ROUTE_ACCESS = {
   // campanie). Editarea e blocată în UI (canEditLeads) și în RLS.
   '/leads': WITH_MARKETING,
   '/datorii': ALL_STAFF,
+  // Lista zilnică de recuperare a cursanților tăcuți de 21 de zile. Titularul de
+  // recepție o lucrează în fiecare zi, deci tot staff-ul non-teacher o vede;
+  // ceasul de 48h se scrie doar prin RPC, nu direct din UI.
+  '/absente-21z': ALL_STAFF,
   // păstrat doar pentru redirectul guardat /recuperare → /datorii
   '/recuperare': ALL_STAFF,
   '/sms': ALL_STAFF,
@@ -101,6 +105,10 @@ export const ROUTE_ACCESS = {
   // Igienă de date: cine poate repara fișele (manager+) o și vede.
   '/fise-incomplete': PRIVILEGED,
   '/organizatie': OWNER_ONLY,
+  // Configurarea bonusurilor per angajat (ponderi, praguri, sume). Nu e
+  // PRIVILEGED: managerul PL folosește raportul lunar, dar nu setează numerele
+  // după care e plătit omul lui.
+  '/grile-kpi': ADMIN_OR_OWNER,
 } as const satisfies Record<string, readonly AppRole[]>
 
 export type AppRoute = keyof typeof ROUTE_ACCESS

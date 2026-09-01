@@ -33,6 +33,9 @@ import { FiseIncompletePage } from '@/features/fise-incomplete/FiseIncompletePag
 const DatoriiPage = lazy(() =>
   import('@/features/datorii/DatoriiPage').then((m) => ({ default: m.DatoriiPage })),
 )
+const Absente21zPage = lazy(() => import('@/features/absente21z/Absente21zPage'))
+const GrileKpiPage = lazy(() => import('@/features/grile-kpi/GrileKpiPage'))
+const GrilaEditorPage = lazy(() => import('@/features/grile-kpi/GrilaEditorPage'))
 const AnalyticsPage = lazy(() =>
   import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
 )
@@ -171,6 +174,7 @@ function App() {
               <Route path="datorii" element={<DatoriiPage />} />
               {/* /recuperare a fost absorbit de hub-ul /datorii */}
               <Route path="recuperare" element={<Navigate to="/datorii" replace />} />
+              <Route path="absente-21z" element={<Absente21zPage />} />
               <Route path="sms" element={<NotificariSmsPage />} />
               <Route path="facturare" element={<FacturarePage />} />
               <Route path="feedback" element={<FeedbackListPage />} />
@@ -284,6 +288,17 @@ function App() {
             <Route element={<AppLayout />}>
               <Route element={<AdministrareLayout />}>
                 <Route path="organizatie" element={<OrganizatiePage />} />
+              </Route>
+            </Route>
+          </Route>
+
+          {/* Config bonusuri: bloc propriu, admin/owner. Blocul /setari e
+              PRIVILEGED, deci ar deschide grilele și managerului PL. */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/grile-kpi']} />}>
+            <Route element={<AppLayout />}>
+              <Route element={<AdministrareLayout />}>
+                <Route path="grile-kpi" element={<GrileKpiPage />} />
+                <Route path="grile-kpi/:grilaId" element={<GrilaEditorPage />} />
               </Route>
             </Route>
           </Route>

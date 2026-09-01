@@ -15,6 +15,19 @@ export type EvenimenteListParams = {
 }
 export type EvenimentCuGrupa = Eveniment & {
   curs_rel: { numele: string } | null
+  // Agregatele PostgREST vin ca listă cu un singur rând.
+  programari_leads: { count: number }[] | null
+  evenimente_participanti: { count: number }[] | null
+}
+
+// Locurile ocupate ale unei clase demo = leaduri programate + cursanți înscriși.
+// Aceeași sumă pe care o face `locuri_ocupate_eveniment()` în DB — dacă una se
+// schimbă, se schimbă amândouă.
+export function ocupareEveniment(e: EvenimentCuGrupa): number {
+  return (
+    (e.programari_leads?.[0]?.count ?? 0) +
+    (e.evenimente_participanti?.[0]?.count ?? 0)
+  )
 }
 export type EvenimenteListResult = { rows: EvenimentCuGrupa[]; total: number }
 
@@ -34,7 +47,10 @@ export async function listEvenimente({
     // FK explicit: `evenimente` are DOUĂ relații către `cursuri` (`curs` = eveniment
     // exclusiv unei grupe, `curs_tinta` = grupa spre care duce o clasă demo), iar
     // fără dezambiguizare PostgREST refuză embed-ul (PGRST201).
-    .select('*, curs_rel:cursuri!evenimente_curs_fkey(numele)', { count: 'exact' })
+    .select(
+      '*, curs_rel:cursuri!evenimente_curs_fkey(numele), programari_leads(count), evenimente_participanti(count)',
+      { count: 'exact' },
+    )
     .order('data', { ascending: false, nullsFirst: false })
     .range(from, to)
 

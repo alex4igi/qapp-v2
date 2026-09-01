@@ -12,6 +12,7 @@ const TABS: { label: string; path: AppRoute }[] = [
   { label: 'Pontaj',          path: '/pontaj-staff' },
   { label: 'Audit',           path: '/audit' },
   { label: 'Fișe incomplete', path: '/fise-incomplete' },
+  { label: 'Grile KPI',       path: '/grile-kpi' },
   { label: 'Organizație',     path: '/organizatie' },
 ]
 

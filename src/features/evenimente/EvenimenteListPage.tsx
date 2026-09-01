@@ -19,6 +19,7 @@ import { EvenimentForm } from './EvenimentForm'
 import {
   listEvenimente,
   listEvenimenteAni,
+  ocupareEveniment,
   PAGE_SIZE,
   type EvenimentCuGrupa,
 } from './api'
@@ -56,6 +57,33 @@ const columns: Column<EvenimentCuGrupa>[] = [
     ),
     className: 'w-44',
     sortValue: (e) => e.tip?.toLowerCase(),
+  },
+  // Ocuparea contează doar la clasele demo cu capacitate: la spectacole
+  // participanții vin din bilete, nu din înscrieri.
+  {
+    header: 'Locuri',
+    cell: (e) => {
+      if (e.tip !== 'DEMO Class' || e.capacitate == null) return '—'
+      const ocupat = ocupareEveniment(e)
+      const plin = ocupat >= e.capacitate
+      return (
+        <span className="flex items-center gap-1.5">
+          <span className={plin ? 'font-bold text-red-600' : 'font-medium'}>
+            {ocupat}/{e.capacitate}
+          </span>
+          {plin && (
+            <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-red-700">
+              complet
+            </span>
+          )}
+        </span>
+      )
+    },
+    className: 'w-32',
+    sortValue: (e) =>
+      e.tip === 'DEMO Class' && e.capacitate
+        ? ocupareEveniment(e) / e.capacitate
+        : -1,
   },
   {
     header: 'Data',

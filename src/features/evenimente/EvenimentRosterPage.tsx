@@ -338,6 +338,10 @@ export function EvenimentRosterPage() {
     (r) => !r.scheduled && (r.neplatit || r.rest > 0),
   ).length
   const leaduriProgramate = data.roster.filter((r) => r.scheduled).length
+  // La demo rosterul e exact populația numărată de `locuri_ocupate_eveniment`
+  // (leaduri programate + cursanți înscriși), deci lungimea lui e ocuparea.
+  const ocupat = data.roster.length
+  const plin = data.capacitate != null && ocupat >= data.capacitate
 
   // Cursanți care nu sunt deja în roster (manual sau cumpărători de bilet).
   const inRoster = new Set(
@@ -379,10 +383,28 @@ export function EvenimentRosterPage() {
       )}
 
       {isDemo ? (
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
           <Button onClick={() => setInscriereOpen(true)}>
             + Înscrie participant
           </Button>
+          {data.capacitate != null && (
+            <span
+              className={[
+                'rounded-md px-2.5 py-1 text-sm font-bold',
+                plin
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-quasar-gray-light/60 text-quasar-black',
+              ].join(' ')}
+            >
+              {plin ? 'COMPLET' : 'Locuri'} {ocupat}/{data.capacitate}
+            </span>
+          )}
+          {plin && (
+            <span className="text-sm text-quasar-gray">
+              Managerii au fost notificați — se poate înscrie peste capacitate
+              sau programa o clasă demo nouă.
+            </span>
+          )}
         </div>
       ) : (
         <div className="mb-6 max-w-md">
