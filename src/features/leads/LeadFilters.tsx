@@ -63,15 +63,26 @@ export const STATUSURI_DE_SUNAT: StatusLead[] = [
 
 const TOT_PIPELINE = PIPELINE_COLUMNS.map((c) => c.status)
 const CU_NURTURE = ALL_STATUS_COLUMNS.map((c) => c.status)
+const DOAR_NURTURE = ['nurture']
 
 // Presetările înlocuiesc rândul de 9 chips: owner-ul gândește în „pe cine sun",
 // nu în combinații de statusuri. „Personalizat" descoperă chips-urile la nevoie.
-export type StatusPreset = 'de_sunat' | 'pipeline' | 'nurture' | 'custom'
+export type StatusPreset =
+  | 'de_sunat'
+  | 'pipeline'
+  | 'nurture'
+  | 'cu_nurture'
+  | 'custom'
 
+// `nurture` = DOAR pool-ul de reactivare. A însemnat cândva „pipeline + nurture",
+// iar tabul „♻️ Nurture" arăta toate cele 9 statusuri: în lista promisă ca Nurture
+// apăreau lead-uri Programat / Nou și părea că un lead poate fi în două locuri
+// deodată. `status` e un singur câmp — vederea combinată își are acum presetul ei.
 const STATUS_PRESETS: { value: StatusPreset; label: string; set: string[] }[] = [
   { value: 'de_sunat', label: 'De sunat', set: STATUSURI_DE_SUNAT },
   { value: 'pipeline', label: 'Tot pipeline-ul', set: TOT_PIPELINE },
-  { value: 'nurture', label: 'Cu Nurture', set: CU_NURTURE },
+  { value: 'nurture', label: 'Doar Nurture', set: DOAR_NURTURE },
+  { value: 'cu_nurture', label: 'Pipeline + Nurture', set: CU_NURTURE },
 ]
 
 export function statusSetForPreset(p: string | null): string[] {
