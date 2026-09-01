@@ -1,3 +1,6 @@
+// Primul import din aplicație: completează API-uri pe care browserele mai vechi
+// de la recepție nu le au încă (vezi lib/polyfills.ts).
+import './lib/polyfills'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
