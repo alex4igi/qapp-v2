@@ -55,6 +55,30 @@ function localWeekdayBucharest(d: Date): string {
 // și managerul primește pe email lista, ca să confirme anularea locului din
 // /datorii. Rezilierea rămâne act de om — e ireversibilă și zeroizează lunile
 // viitoare. Vezi docs/reguli-preturi-reduceri.md.
+// Rata lunară din SMS-ul de confirmare = ce plătește CLIENTUL, nu prețul de
+// catalog al cursului: promo de reînscriere, −10% pe pool și voucherul stau pe
+// rândurile din `enrollments` (`suma`), nu pe `cursuri`. Rândul din coadă e prima
+// lună, care poate fi prorata la înscriere târzie — de aia luăm rata care se
+// REPETĂ peste luni (mode), nu suma rândului. Vezi docs/reguli-preturi-reduceri.md.
+function rataCareSeRepeta(sume: (number | null)[]): number | null {
+  const valide = sume
+    .map((s) => Number(s ?? 0))
+    .filter((s) => Number.isFinite(s) && s > 0)
+  if (!valide.length) return null
+  const freq = new Map<number, number>()
+  for (const s of valide) freq.set(s, (freq.get(s) ?? 0) + 1)
+  let best = valide[0]
+  let bestN = 0
+  for (const [suma, n] of freq) {
+    // La egalitate de frecvență ia rata mai mare: prorata e mereu <= rata plină.
+    if (n > bestN || (n === bestN && suma > best)) {
+      best = suma
+      bestN = n
+    }
+  }
+  return Math.round(best)
+}
+
 type SuspendatRow = {
   client_id: string
   nume: string | null
@@ -282,7 +306,7 @@ Deno.serve(async (req) => {
   for (const row of dueConfirmari ?? []) {
     const { data: enr } = await supabase
       .from('enrollments')
-      .select('id, activ, reziliat, client, cursul')
+      .select('id, activ, reziliat, client, cursul, tip_plata, data_incepere, suma')
       .eq('id', row.enrollment_id)
       .maybeSingle()
     if (!enr || enr.reziliat || !enr.activ || !enr.cursul || !enr.client) {
@@ -329,9 +353,30 @@ Deno.serve(async (req) => {
       instructor = [t?.prenume, t?.nume].filter(Boolean).join(' ') || null
     }
 
-    const pretLunar =
-      curs.pret_lunar ??
-      (curs.pret_anual != null ? Math.round(curs.pret_anual / 10) : null)
+    let pretLunar: number | null = null
+    if (enr.tip_plata === 'Per an') {
+      // Plata integrală = un singur rând pe sezon; sezonul are 10 rate prin
+      // convenție (pret_anual = 10 × rată), deci rata lunară e suma / 10.
+      pretLunar = enr.suma != null ? Math.round(Number(enr.suma) / 10) : null
+    } else {
+      const { data: rate } = await supabase
+        .from('enrollments')
+        .select('suma, suma_baza, activ, reziliat')
+        .eq('client', enr.client)
+        .eq('cursul', enr.cursul)
+        .eq('tip_plata', 'Per luna')
+        .gte('data_incepere', enr.data_incepere ?? '0001-01-01')
+      const vii = (rate ?? []).filter((r) => r.activ && !r.reziliat)
+      pretLunar =
+        rataCareSeRepeta(vii.map((r) => r.suma)) ??
+        rataCareSeRepeta(vii.map((r) => r.suma_baza))
+    }
+    // Fallback pe prețul de catalog doar dacă rândurile n-au sumă (date vechi).
+    if (pretLunar == null) {
+      pretLunar =
+        curs.pret_lunar ??
+        (curs.pret_anual != null ? Math.round(curs.pret_anual / 10) : null)
+    }
     const mesaj = buildConfirmareInrolareSms({
       prenume: client.prenume || client.nume,
       curs: curs.numele,

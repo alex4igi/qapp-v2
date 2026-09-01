@@ -69,7 +69,12 @@ Buna {prenume}! Iti confirmam locul in grupa {nume curs}, in zilele de {zile}, l
 ```
 - `{nume curs}` = `cursuri.numele` · `{zile}` = `cursuri.zile` · `{ora}` = `cursuri.ora`
 - `{nume instructor}` = titular din `cursuri_teacheri` (rol='titular'), fallback `cursuri.teacher`
-- `{pret}` = `cursuri.pret_lunar` (fallback `round(pret_anual / 10)`)
+- `{pret}` = rata lunară REALĂ a înrolării, din `enrollments.suma` — nu prețul de
+  catalog al cursului. Include promo de reînscriere, −10% pe pool și voucherul.
+  Se ia rata care se **repetă** peste lunile sezonului (prima lună poate fi
+  prorata la înscriere târzie). La plată integrală (`Per an`): `suma / 10`.
+  Fallback pe `cursuri.pret_lunar` / `round(pret_anual / 10)` doar dacă rândurile
+  n-au sumă. Vezi `docs/reguli-preturi-reduceri.md`.
 - `{link_whatsapp}` = `cursuri.link_whatsapp` (editat manual în profilul cursului)
 
 ---
