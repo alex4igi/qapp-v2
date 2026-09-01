@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
+  Checkbox,
   Field,
   Modal,
   Select,
@@ -12,7 +13,11 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { sezonActivId } from '@/lib/lookups'
-import { listCursuriPentruInrolare, moveEnrollmentToCurs } from './api'
+import {
+  listCursuriPentruInrolare,
+  moveEnrollmentToCurs,
+  previewMoveEnrollment,
+} from './api'
 
 type Props = {
   enrollmentId: string
@@ -55,6 +60,7 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
   const { locatieId } = useWorkingLocatie()
   const [newCursId, setNewCursId] = useState('')
   const [motiv, setMotiv] = useState('')
+  const [aplicaTarif, setAplicaTarif] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const infoQ = useQuery({
@@ -74,10 +80,25 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
     enabled: open && sezonActivQ.isSuccess,
   })
 
+  // Preview server-side: aceleași garduri ca mutarea reală (dublură pe cursul
+  // nou, sezon, tarif lipsă), deci un preview în eroare = mutare imposibilă.
+  const previewQ = useQuery({
+    queryKey: ['move-enrollment-preview', enrollmentId, newCursId, aplicaTarif],
+    queryFn: () =>
+      previewMoveEnrollment({
+        enrollmentId,
+        newCursId,
+        aplicaTarifNou: aplicaTarif,
+      }),
+    enabled: open && !!newCursId,
+    retry: false,
+  })
+
   useEffect(() => {
     if (!open) {
       setNewCursId('')
       setMotiv('')
+      setAplicaTarif(true)
       setError(null)
     }
   }, [open])
@@ -88,6 +109,7 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
         enrollmentId,
         newCursId,
         motiv,
+        aplicaTarifNou: aplicaTarif,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['client'] })
@@ -125,6 +147,11 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
     .filter((c) => c.id !== infoQ.data?.curs_id)
     .map((c) => ({ value: c.id, label: c.numele ?? '—' }))
 
+  const preview = previewQ.data
+  const luni = preview?.luni ?? []
+  const perioada =
+    luni.length > 1 ? `${luni[0]} → ${luni[luni.length - 1]}` : (luni[0] ?? '—')
+
   return (
     <Modal
       open={open}
@@ -138,7 +165,7 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
           <Button
             type="submit"
             form="move-enrollment-form"
-            disabled={save.isPending || infoQ.isLoading}
+            disabled={save.isPending || infoQ.isLoading || previewQ.isError}
           >
             {save.isPending ? 'Se mută…' : 'Mută'}
           </Button>
@@ -178,6 +205,44 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
             />
           </Field>
 
+          <Checkbox
+            id="move-tarif"
+            checked={aplicaTarif}
+            onChange={(e) => setAplicaTarif(e.target.checked)}
+            label="Aplică tariful noului curs pe lunile viitoare neplătite"
+          />
+
+          {newCursId && previewQ.isLoading && (
+            <p className="text-xs text-quasar-gray">Se verifică mutarea…</p>
+          )}
+          {previewQ.isError && (
+            <p className="text-sm text-red-600">
+              {humanizeError(previewQ.error, 'Mutarea nu e posibilă.')}
+            </p>
+          )}
+          {preview && (
+            <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-quasar-black">
+              <p>
+                Se mută <strong>{preview.mutate}</strong>{' '}
+                {preview.mutate === 1 ? 'înrolare' : 'înrolări'} ({perioada}).
+              </p>
+              {preview.repretuite > 0 && (
+                <p className="text-quasar-gray">
+                  {preview.repretuite}{' '}
+                  {preview.repretuite === 1 ? 'lună trece' : 'luni trec'} pe tariful
+                  cursului nou.
+                </p>
+              )}
+              {preview.platite > 0 && (
+                <p className="text-quasar-gray">
+                  {preview.platite}{' '}
+                  {preview.platite === 1 ? 'lună rămâne' : 'luni rămân'} la prețul
+                  actual (au deja încasări).
+                </p>
+              )}
+            </div>
+          )}
+
           <Field label="Motiv mutare" required htmlFor="move-motiv">
             <TextArea
               id="move-motiv"
@@ -189,8 +254,9 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
           </Field>
 
           <p className="text-xs text-quasar-gray">
-            Plățile existente rămân la fel (fără prorata). Înrolarea va fi vizibilă
-            la noul curs în prezența + roster. Mutarea se înregistrează în jurnalul de audit.
+            Mutarea ia toată seria: luna aleasă + toate lunile ulterioare de pe cursul
+            vechi. Lunile anterioare rămân în istoric, iar încasările nu se mișcă.
+            Mutarea se înregistrează în jurnalul de audit.
           </p>
 
           {error && <p className="text-sm text-red-600">{error}</p>}

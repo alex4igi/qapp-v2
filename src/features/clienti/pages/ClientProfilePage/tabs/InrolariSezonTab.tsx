@@ -111,7 +111,7 @@ export function InrolariSezonTab({
                   actions.push({
                     icon: '📦',
                     label: 'Mută',
-                    title: 'Mută înrolarea la alt curs (păstrează plata)',
+                    title: 'Mută la alt curs luna asta + toate lunile ulterioare (banii nu se mișcă)',
                     onClick: () => onMoveCurs(r.id_enrollment),
                   })
                 if (onCorectDate)

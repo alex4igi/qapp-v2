@@ -76,6 +76,7 @@ export {
   getClientCredit,
   useClientCredit,
   moveEnrollmentToCurs,
+  previewMoveEnrollment,
   corecteazaDataInrolare,
   getSedinteToAbonamentPreview,
   convertSedinteInAbonament,
@@ -97,6 +98,7 @@ export type {
   AbonamentToSedintePreview,
   MotivareAbsentaContext,
   MotivareAbsentaResult,
+  MoveEnrollmentResult,
 } from './enrollment-admin'
 
 export type {

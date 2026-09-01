@@ -806,61 +806,76 @@ export async function convertAbonamentInSedinte(params: {
   return result
 }
 
-// Mută o înrolare la alt curs (păstrează plata curentă, fără prorata).
-// Auditată cu motiv.
+// ── Mutare între cursuri ─────────────────────────────────────────────────────
+// O mutare mută SERIA: luna selectată + toate lunile ulterioare pe cursul vechi.
+// Gardurile (rol, dublură pe cursul nou, sezonul cursului nou) + repreţuirea
+// lunilor viitoare stau în RPC-ul atomic `muta_inrolare_curs`.
+export type MoveEnrollmentResult = {
+  simulare: boolean
+  mutate: number
+  luni: string[]
+  repretuite: number
+  platite: number
+  tarif: number | null
+  tarif_promo: number | null
+}
+
+// Preview cu aceleași garduri ca mutarea reală, fără scriere — modalul îl
+// folosește ca să arate ce se mută și să blocheze submit-ul pe conflicte.
+export async function previewMoveEnrollment(params: {
+  enrollmentId: string
+  newCursId: string
+  aplicaTarifNou: boolean
+}): Promise<MoveEnrollmentResult> {
+  const { data, error } = await supabase.rpc('muta_inrolare_curs', {
+    p_enrollment: params.enrollmentId,
+    p_curs_nou: params.newCursId,
+    p_motiv: 'preview',
+    p_aplica_tarif_nou: params.aplicaTarifNou,
+    p_simulare: true,
+  })
+  if (error) throw error
+  return data as MoveEnrollmentResult
+}
+
 export async function moveEnrollmentToCurs(params: {
   enrollmentId: string
   newCursId: string
   motiv: string
-}): Promise<void> {
+  aplicaTarifNou?: boolean
+}): Promise<MoveEnrollmentResult> {
   const motiv = params.motiv.trim()
   if (!motiv) throw new Error('Motivul e obligatoriu.')
 
   const { data: cur, error: gErr } = await supabase
     .from('enrollments')
-    .select('id, cursul, client, data_incepere')
+    .select('id, cursul, client')
     .eq('id', params.enrollmentId)
     .single()
   if (gErr) throw gErr
-  if (cur.cursul === params.newCursId) {
-    throw new Error('Cursul nou e identic cu cel curent.')
-  }
 
   const locatieId = await getLocatieFromCurs(params.newCursId)
 
-  const { error: uErr } = await supabase
-    .from('enrollments')
-    .update({ cursul: params.newCursId, updated: new Date().toISOString() })
-    .eq('id', params.enrollmentId)
-  if (uErr) throw uErr
-
-  // Închide lunile viitoare rămase pe cursul VECHI (cele de după luna mutată),
-  // altfel rămân `activ=true` și cursantul apare fantomă în rosterul grupei
-  // vechi. Mutarea afectează un singur rând; restul seriei trebuie închis.
-  if (cur.data_incepere && cur.client && cur.cursul) {
-    const cutoff = endOfMonth(`${cur.data_incepere.slice(0, 7)}-01`)
-    const { error: closeErr } = await supabase
-      .from('enrollments')
-      .update({
-        reziliat: true,
-        activ: false,
-        data_reziliere: new Date().toISOString(),
-        motiv_reziliere: `Mutat la alt curs: ${motiv}`,
-      })
-      .eq('client', cur.client)
-      .eq('cursul', cur.cursul)
-      .neq('id', params.enrollmentId)
-      .eq('reziliat', false)
-      .gt('data_incepere', cutoff)
-    if (closeErr) throw closeErr
-  }
+  const { data, error } = await supabase.rpc('muta_inrolare_curs', {
+    p_enrollment: params.enrollmentId,
+    p_curs_nou: params.newCursId,
+    p_motiv: motiv,
+    p_aplica_tarif_nou: params.aplicaTarifNou ?? true,
+    p_simulare: false,
+  })
+  if (error) throw error
+  const result = data as MoveEnrollmentResult
 
   await recordAuditLog({
     action: 'enrollment_moved',
     entityType: 'enrollment',
     entityId: params.enrollmentId,
-    oldValue: { cursul: cur.cursul },
-    newValue: { cursul: params.newCursId },
+    oldValue: { cursul: cur.cursul, luni: result.luni },
+    newValue: {
+      cursul: params.newCursId,
+      mutate: result.mutate,
+      repretuite: result.repretuite,
+    },
     reason: motiv,
     locatieId,
   })
@@ -872,10 +887,13 @@ export async function moveEnrollmentToCurs(params: {
       p_enrollment: params.enrollmentId,
       p_from_curs: cur.cursul,
       p_to_curs: params.newCursId,
-      p_motiv: motiv,
+      p_motiv:
+        result.mutate > 1 ? `${motiv} (${result.mutate} luni)` : motiv,
     })
     if (nErr) console.error('notify_enrollment_move failed:', nErr.message)
   }
+
+  return result
 }
 
 // Corectează data unei înrolări greșite la înregistrare (ex. ședință trecută pe
