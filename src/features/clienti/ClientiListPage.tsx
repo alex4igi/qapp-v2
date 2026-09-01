@@ -22,7 +22,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import { ClientForm } from './ClientForm'
 import { LogReactivareModal } from './LogReactivareModal'
-import { listClienti, PAGE_SIZE } from './api'
+import { listClienti, PAGE_SIZE, type ClientCuDocumente } from './api'
 
 const STATUS_OPTIONS = [
   { label: 'Activ', value: 'Activ' },
@@ -42,7 +42,7 @@ function statusTone(status: string | null | undefined): BadgeTone {
   }
 }
 
-const columns: Column<Client>[] = [
+const columns: Column<ClientCuDocumente>[] = [
   {
     header: 'Nume',
     cell: (c) => (
@@ -63,9 +63,9 @@ const columns: Column<Client>[] = [
   },
 ]
 
-// Rândurile listei sunt rânduri `clienti` complete (`select('*')`), deci
-// checklistul se evaluează direct pe ele — fără query companion.
-const coloanaFisa: Column<Client> = {
+// Rândurile listei sunt rânduri `clienti` complete plus embed-ul de documente,
+// deci checklistul se evaluează direct pe ele — fără query companion.
+const coloanaFisa: Column<ClientCuDocumente> = {
   header: 'Fișă',
   cell: (c) => (
     <ChecklistBadge rezultat={evalueazaChecklist(CLIENT_CHECKLIST, c)} compact />
@@ -105,7 +105,7 @@ export function ClientiListPage() {
   })
 
   // Pentru clienții inactivi/exclienți: buton de log reactivare (Faza 3 scorecard).
-  const tableColumns: Column<Client>[] = [
+  const tableColumns: Column<ClientCuDocumente>[] = [
     ...columns,
     ...(vedeFisa ? [coloanaFisa] : []),
     {

@@ -102,22 +102,6 @@ export function DocumenteTab({ client }: Props) {
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <h2 className="mb-3 font-display text-sm font-bold text-quasar-black">Documente</h2>
 
-        {/* Contract legacy din câmpul clientului — făcut clicabil. */}
-        {client.link_contract && (
-          <div className="mb-3 flex items-center gap-2 rounded-md bg-quasar-gray-light/30 px-3 py-2 text-sm">
-            <span>📄</span>
-            <span className="text-quasar-gray">Contract (câmp vechi):</span>
-            <a
-              href={client.link_contract}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-blue-600 underline-offset-2 hover:underline"
-            >
-              Deschide ↗
-            </a>
-          </div>
-        )}
-
         {docsQ.isLoading ? (
           <Spinner />
         ) : docsQ.data && docsQ.data.length > 0 ? (

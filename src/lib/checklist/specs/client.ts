@@ -1,11 +1,12 @@
 import type { ChecklistSpec } from '../types'
 
 /** Secțiunea din ClientForm unde se completează câmpul (deep-link din card). */
-export type SectiuneClient = 'identitate' | 'contact' | 'personale' | 'familie' | 'altele'
+export type SectiuneClient = 'identitate' | 'contact' | 'personale' | 'familie'
 
 /**
- * Funcție pură de rândul `clienti`, ca la cursuri și teacheri. Înrolările,
- * prezențele, plățile și documentele stau în alte tabele — nu intră aici.
+ * Funcție pură de rândul `clienti` PLUS lista lui de documente (embed ieftin:
+ * câteva sute de rânduri în tot tabelul). Înrolările, prezențele și plățile
+ * stau în alte tabele și nu intră aici.
  *
  * Câmpuri LĂSATE AFARĂ deliberat, după ce am măsurat completarea pe cei 477 de
  * clienți activi (29 aug 2026): `sexul` (13%) și `unitate_invatamant` (1%) nu
@@ -20,7 +21,12 @@ export type ClientCheckInput = {
   email: string | null
   data_nasterii: string | null
   familia: string | null
-  link_contract: string | null
+  /**
+   * Embed PostgREST `documente:documente_client(tip)`. Singurul item care nu se
+   * citește din rândul `clienti` — contractul a devenit un rând în tabul
+   * Documente, nu un câmp pe fișă (vezi migrația 20260901200000).
+   */
+  documente: { tip: string }[] | null
 }
 
 const completat = (v: string | null | undefined) => Boolean(v && v.trim())
@@ -28,7 +34,7 @@ const completat = (v: string | null | undefined) => Boolean(v && v.trim())
 /** Coloanele cerute de checklist — un singur adevăr pentru toți apelanții. */
 export const CLIENT_CHECKLIST_COLS = [
   'id', 'nume', 'prenume', 'telefon', 'email', 'data_nasterii', 'familia',
-  'link_contract',
+  'documente:documente_client(tip)',
 ].join(',')
 
 // Minor la ziua de azi. Fără dată de naștere nu putem ști — atunci regulile care
@@ -96,11 +102,14 @@ export const CLIENT_CHECKLIST: ChecklistSpec<ClientCheckInput> = {
       completat: (c) => completat(c.email),
     },
     {
-      id: 'link_contract',
-      eticheta: 'Link contract',
+      id: 'contract',
+      eticheta: 'Contract',
       severitate: 'recomandat',
-      sectiune: 'altele',
-      completat: (c) => completat(c.link_contract),
+      // Fără `sectiune`: nu se completează din ClientForm, ci din tabul
+      // Documente. Profilul rutează itemul acolo după `id`.
+      motiv: 'Contractul se adaugă în tabul Documente al fișei.',
+      completat: (c) =>
+        (c.documente ?? []).some((d) => d.tip === 'Contract' || d.tip === 'Anexa'),
     },
   ],
 }

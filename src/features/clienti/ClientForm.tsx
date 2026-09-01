@@ -30,7 +30,7 @@ import { createFamilie } from '@/features/familii/api'
 // Câmpurile de client al căror schimb merită urmă în audit (date personale).
 const AUDITED_FIELDS = [
   'nume', 'prenume', 'email', 'telefon', 'telefonul_2', 'data_nasterii',
-  'sexul', 'status', 'marime_tricou', 'link_contract', 'familia',
+  'sexul', 'status', 'marime_tricou', 'familia',
   'unitate_invatamant',
 ] as const
 
@@ -51,7 +51,9 @@ function clientChanges(prev: Client, next: Record<string, unknown>) {
 
 type Props = {
   open: boolean
-  client?: Client | null
+  /** Documentele vin din embed-ul listei/profilului — le folosește doar
+   *  previzualizarea de checklist (itemul „Contract" nu se editează aici). */
+  client?: (Client & { documente?: { tip: string }[] }) | null
   onClose: () => void
   /** Deschide formularul derulat la secțiunea unui câmp lipsă (din checklist). */
   focusSection?: SectiuneClient
@@ -67,7 +69,6 @@ type FormState = {
   sexul: string
   status: string
   marime_tricou: string
-  link_contract: string
   familia: string
   unitate_invatamant: string
 }
@@ -83,7 +84,6 @@ function initialState(client?: Client | null): FormState {
     sexul: client?.sexul ?? '',
     status: client?.status ?? '',
     marime_tricou: client?.marime_tricou ?? '',
-    link_contract: client?.link_contract ?? '',
     familia: client?.familia ?? '',
     unitate_invatamant: client?.unitate_invatamant ?? '',
   }
@@ -102,8 +102,8 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
   const [error, setError] = useState<string | null>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
 
-  // Toate câmpurile verificate sunt în formular, deci draftul e suficient —
-  // spre deosebire de teacher, unde contul vine din rândul salvat.
+  // Draftul acoperă toate câmpurile editabile aici; itemul „Contract" vine din
+  // documentele deja salvate (se adaugă din tabul Documente, nu din formular).
   const checklist = useMemo(
     () =>
       evalueazaChecklist(CLIENT_CHECKLIST, {
@@ -113,9 +113,10 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
         email: form.email.trim() || null,
         data_nasterii: form.data_nasterii || null,
         familia: form.familia || null,
-        link_contract: form.link_contract.trim() || null,
+        // Contractul nu se editează aici — se citește din documentele salvate.
+        documente: client?.documente ?? [],
       }),
-    [form],
+    [form, client],
   )
 
   // Deschidere din checklistul fișei: derulează la secțiunea câmpului lipsă.
@@ -166,7 +167,6 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
         sexul: (form.sexul || null) as Client['sexul'],
         status: (form.status || null) as Client['status'],
         marime_tricou: (form.marime_tricou || null) as Client['marime_tricou'],
-        link_contract: form.link_contract.trim() || null,
         familia: form.familia || null,
         unitate_invatamant: form.unitate_invatamant.trim() || null,
       }
@@ -409,16 +409,6 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
             onChange={(e) => set('unitate_invatamant')(e.target.value)}
           />
         </Field>
-
-        <div data-sectiune="altele">
-          <Field label="Link contract" htmlFor="link_contract">
-            <TextInput
-              id="link_contract"
-              value={form.link_contract}
-              onChange={(e) => set('link_contract')(e.target.value)}
-            />
-          </Field>
-        </div>
 
         {/* Avertisment NON-BLOCANT: lipsa esențialelor nu oprește salvarea. */}
         {checklist.lipsaEsentiale.length > 0 && (

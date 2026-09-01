@@ -38,6 +38,16 @@ const SEARCH_FIELDS = [
   'telefonul_2',
 ] as const
 
+// Checklistul „Completare fișă" are un item care se citește din documente, nu
+// din rândul clientului (contractul stă în `documente_client` din 1 sept 2026).
+// Îl aducem cu embed ca lista și profilul să evalueze checklistul fără query
+// companion — câteva sute de rânduri în total, costul e neglijabil.
+const DOCS_EMBED = 'documente:documente_client(tip)'
+
+export type ClientCuDocumente = Client & {
+  documente: { tip: Enums<'tip_document'> }[]
+}
+
 export type ClientiListParams = {
   search: string
   page: number
@@ -45,7 +55,7 @@ export type ClientiListParams = {
 }
 
 export type ClientiListResult = {
-  rows: Client[]
+  rows: ClientCuDocumente[]
   total: number
 }
 
@@ -59,7 +69,7 @@ export async function listClienti({
 
   let query = supabase
     .from('clienti')
-    .select('*', { count: 'exact' })
+    .select(`*, ${DOCS_EMBED}`, { count: 'exact' })
     .order('nume', { ascending: true })
     .range(from, to)
 
@@ -68,17 +78,20 @@ export async function listClienti({
 
   const { data, error, count } = await query
   if (error) throw error
-  return { rows: data ?? [], total: count ?? 0 }
+  return {
+    rows: (data ?? []) as unknown as ClientCuDocumente[],
+    total: count ?? 0,
+  }
 }
 
-export async function getClient(id: string): Promise<Client> {
+export async function getClient(id: string): Promise<ClientCuDocumente> {
   const { data, error } = await supabase
     .from('clienti')
-    .select('*')
+    .select(`*, ${DOCS_EMBED}`)
     .eq('id', id)
     .single()
   if (error) throw error
-  return data
+  return data as unknown as ClientCuDocumente
 }
 
 export type ClientEnrollment = {

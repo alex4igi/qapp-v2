@@ -50,9 +50,6 @@ export function DatePersonaleTab({ client, familia, teacherMode = false }: Props
         <DetailRow label="Telefon" value={client.telefon ?? ''} />
         <DetailRow label="Telefon 2" value={client.telefonul_2 ?? ''} />
       </Section>
-      <Section title="Altele">
-        <DetailRow label="Link contract" value={client.link_contract ?? ''} />
-      </Section>
       {FACTURARE_LA_CERERE_ENABLED && <FacturareClientSection client={client} />}
       <OptOutSection
         entity="client"

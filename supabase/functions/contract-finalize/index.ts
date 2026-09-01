@@ -399,21 +399,6 @@ Deno.serve(async (req) => {
         .select('id')
         .single()
       if (dc && !docClientId) docClientId = dc.id
-
-      // Checklistul „Completare fișă" citește `clienti.link_contract` (funcție
-      // pură de rândul clientului, prin design — nu interoghează
-      // documente_client), deci fără asta itemul „Link contract" rămânea
-      // nebifat chiar după o semnare electronică validă.
-      //
-      // Nu suprascriem un link existent cu o anexă: contractul de bază rămâne
-      // ținta din fișă, iar actele adiționale se citesc din documente_client.
-      const esteContractDeBaza = tpl.tip !== 'act_aditional'
-      const { data: clientRow } = await admin
-        .from('clienti').select('link_contract').eq('id', c.id).maybeSingle()
-      const areLink = Boolean(clientRow?.link_contract?.trim())
-      if (!areLink || esteContractDeBaza) {
-        await admin.from('clienti').update({ link_contract: link }).eq('id', c.id)
-      }
     }
 
     // 8) poarta de reînscriere: actul semnat intră în verificarea admin existentă

@@ -283,9 +283,8 @@ export type CursClientFaraDoc = {
   prenume: string | null
 }
 
-// Membrii activi ai cursului care NU au niciun rând în `documente_client`
-// (câmpul legacy `link_contract` nu contează). Refolosește lista de clienți
-// activi + o singură interogare pe `documente_client`.
+// Membrii activi ai cursului care NU au niciun rând în `documente_client`.
+// Refolosește lista de clienți activi + o singură interogare pe documente.
 export async function getCursClientiFaraDocumente(
   cursId: string,
 ): Promise<CursClientFaraDoc[]> {

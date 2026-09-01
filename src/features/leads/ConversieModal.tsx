@@ -12,7 +12,12 @@ import {
 } from '@/components/ui'
 import { sexOptions } from '@/lib/enums'
 import type { Lead, InsertDto } from '@/types/db'
-import { createClient, updateClient, getClientFamilia } from '@/features/clienti/api'
+import {
+  createClient,
+  updateClient,
+  getClientFamilia,
+  createDocumentClient,
+} from '@/features/clienti/api'
 import { createFamilie } from '@/features/familii/api'
 import { TrimiteContractModal } from '@/features/contracte/TrimiteContractModal'
 import {
@@ -104,10 +109,21 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
           data_nasterii: dataNasterii || null,
           sexul: (sexul || null) as InsertDto<'clienti'>['sexul'],
           status: 'Activ',
-          link_contract: linkContract.trim() || null,
         }
         const client = await createClient(dto)
         clientId = client.id
+      }
+      // Contractul e un rând în Documente, nu un câmp pe fișă. Bonus față de
+      // varianta veche: acum se salvează și când leadul se leagă de un client
+      // existent (înainte linkul se pierdea pe ramura de merge).
+      const link = linkContract.trim()
+      if (link) {
+        await createDocumentClient({
+          client: clientId,
+          tip: 'Contract',
+          link,
+          observatii: 'Adăugat la conversia leadului.',
+        })
       }
       await attachClientToLead(lead!.id, clientId)
       return { clientId, cursId, leadId: lead!.id }
@@ -115,8 +131,15 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
       void queryClient.invalidateQueries({ queryKey: ['lookup', 'clienti'] })
+      void queryClient.invalidateQueries({ queryKey: ['clienti'] })
+      void queryClient.invalidateQueries({
+        queryKey: ['documente-client', result.clientId],
+      })
       setConversionResult(result)
-      setManualLink(linkContract)
+      // Linkul din pasul 1 e deja salvat ca document. Precompletarea pasului 2
+      // ar produce un al doilea rând identic în Documente (înainte era un
+      // update peste aceeași valoare, deci trecea neobservat).
+      setManualLink('')
     },
     onError: (e: unknown) =>
       setError(humanizeError(e, 'Eroare la conversie.')),
@@ -126,7 +149,14 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     mutationFn: async () => {
       if (!conversionResult) return
       const trimmed = manualLink.trim()
-      if (trimmed) await updateClient(conversionResult.clientId, { link_contract: trimmed })
+      if (trimmed) {
+        await createDocumentClient({
+          client: conversionResult.clientId,
+          tip: 'Contract',
+          link: trimmed,
+          observatii: 'Adăugat la conversia leadului.',
+        })
+      }
     },
     onSuccess: finish,
     onError: (e: unknown) => setError(humanizeError(e, 'Nu am putut salva linkul.')),
@@ -134,6 +164,10 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
 
   function finish() {
     if (!conversionResult) return
+    void queryClient.invalidateQueries({ queryKey: ['client', conversionResult.clientId] })
+    void queryClient.invalidateQueries({
+      queryKey: ['documente-client', conversionResult.clientId],
+    })
     onConverted(conversionResult)
     onClose()
   }

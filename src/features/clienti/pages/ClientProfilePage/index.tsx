@@ -346,6 +346,11 @@ export function ClientProfilePage() {
             teacherMode
               ? undefined
               : (item: StareItem) => {
+                  // Contractul nu e un câmp de fișă, ci un rând în Documente.
+                  if (item.id === 'contract') {
+                    setTab('documente')
+                    return
+                  }
                   setFocusSection(item.sectiune as SectiuneClient | undefined)
                   setEditOpen(true)
                 }
