@@ -1,14 +1,29 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Select, Spinner } from '@/components/ui'
+import { Button, DateInput, Select, Spinner } from '@/components/ui'
 import { campaniiOptions, sezonActiv } from '@/lib/lookups'
 import { listUsers } from '@/features/setari/utilizatoriApi'
 import type { Lead } from '@/types/db'
 import { listLeads, getLeadFunnelGlobal } from './api'
 import { GRUPA_LABELS, GRUPE, LOCATII } from './constants'
 
-// Perioada cohortei de funnel (data intrării lead-ului).
-type Perioada = 'sezon' | 'luna' | 'tot'
+// Perioada cohortei de funnel (data intrării lead-ului). Presetul „personalizat"
+// deschide două date libere — cohortele cerute de owner (o campanie, o lună de
+// acum doi ani) nu se lasă exprimate în presetări fixe.
+type Perioada =
+  | 'sezon' | 'luna' | 'luna_trecuta' | '30z' | 'tot' | 'personalizat'
+
+const PERIOADA_OPTIONS: { label: string; value: Perioada }[] = [
+  { label: 'Sezonul curent', value: 'sezon' },
+  { label: 'Luna curentă', value: 'luna' },
+  { label: 'Luna trecută', value: 'luna_trecuta' },
+  { label: 'Ultimele 30 de zile', value: '30z' },
+  { label: 'Tot istoricul', value: 'tot' },
+  { label: 'Interval personalizat', value: 'personalizat' },
+]
+
+// Începutul istoricului importat din v1 — limita inferioară pentru „tot".
+const ISTORIC_START = '2019-01-01'
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
@@ -107,6 +122,8 @@ export function LeadReports() {
   const [locatie, setLocatie] = useState('')
   const [grupa, setGrupa] = useState('')
   const [perioada, setPerioada] = useState<Perioada>('sezon')
+  const [de, setDe] = useState('')
+  const [pana, setPana] = useState('')
   const leadsQ = useQuery({ queryKey: ['leads'], queryFn: listLeads })
   const sezonQ = useQuery({
     queryKey: ['lookup', 'sezon-activ-detalii'],
@@ -137,9 +154,25 @@ export function LeadReports() {
   // Intervalul cohortei [from, to] pe data intrării lead-ului (leads.created).
   const range = useMemo(() => {
     const today = ymd(new Date())
+    const d = new Date()
     if (perioada === 'luna') {
-      const d = new Date()
       return { from: ymd(new Date(d.getFullYear(), d.getMonth(), 1)), to: today }
+    }
+    if (perioada === 'luna_trecuta') {
+      return {
+        from: ymd(new Date(d.getFullYear(), d.getMonth() - 1, 1)),
+        // Ziua 0 a lunii curente = ultima zi a lunii trecute.
+        to: ymd(new Date(d.getFullYear(), d.getMonth(), 0)),
+      }
+    }
+    if (perioada === '30z') {
+      const start = new Date(d)
+      start.setDate(start.getDate() - 29)
+      return { from: ymd(start), to: today }
+    }
+    if (perioada === 'personalizat') {
+      // Capătul necompletat rămâne deschis, nu blochează raportul.
+      return { from: de || ISTORIC_START, to: pana || today }
     }
     if (perioada === 'sezon' && sezonQ.data) {
       return {
@@ -148,8 +181,8 @@ export function LeadReports() {
       }
     }
     // „Tot istoricul" (și fallback dacă sezonul încă se încarcă).
-    return { from: '2019-01-01', to: today }
-  }, [perioada, sezonQ.data])
+    return { from: ISTORIC_START, to: today }
+  }, [perioada, de, pana, sezonQ.data])
 
   // Aceeași semantică de filtrare ca în Kanban (match exact pe câmpul lead-ului),
   // plus cohorta pe perioadă — coerentă cu funnel-ul.
@@ -237,15 +270,18 @@ export function LeadReports() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="w-44">
           <Select
-            options={[
-              { label: 'Sezonul curent', value: 'sezon' },
-              { label: 'Luna curentă', value: 'luna' },
-              { label: 'Tot istoricul', value: 'tot' },
-            ]}
+            options={PERIOADA_OPTIONS}
             value={perioada}
             onChange={(e) => setPerioada(e.target.value as Perioada)}
           />
         </div>
+        {perioada === 'personalizat' && (
+          <div className="flex items-center gap-2">
+            <DateInput value={de} onChange={(e) => setDe(e.target.value)} />
+            <span className="text-sm text-quasar-gray">→</span>
+            <DateInput value={pana} onChange={(e) => setPana(e.target.value)} />
+          </div>
+        )}
         <div className="w-40">
           <Select
             placeholder="Toate locațiile"
@@ -262,12 +298,15 @@ export function LeadReports() {
             onChange={(e) => setGrupa(e.target.value)}
           />
         </div>
-        {(locatie || grupa) && (
+        {(locatie || grupa || perioada !== 'sezon') && (
           <Button
             variant="secondary"
             onClick={() => {
               setLocatie('')
               setGrupa('')
+              setPerioada('sezon')
+              setDe('')
+              setPana('')
             }}
           >
             Resetează

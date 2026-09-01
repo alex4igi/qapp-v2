@@ -68,7 +68,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   // către ?vedere=lista&status=nurture — un singur cod, două uși de intrare.
   const presetParam = searchParams.get('status')
   const [filters, setFilters] = useState<LeadFiltersValue>(() =>
-    // Lista pornește pe cine chiar așteaptă un telefon, nu pe tot istoricul.
+    // Lista pornește pe tot pipeline-ul — omul restrânge manual la „De sunat".
     mode === 'lista'
       ? { ...EMPTY_LEAD_FILTERS, statusuri: statusSetForPreset(presetParam) }
       : EMPTY_LEAD_FILTERS,
@@ -87,7 +87,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   function setPreset(p: StatusPreset) {
     const params = new URLSearchParams(searchParams)
     if (p === 'custom') return setFilters((f) => ({ ...f }))
-    if (p === 'de_sunat') params.delete('status')
+    if (p === 'pipeline') params.delete('status')
     else params.set('status', p)
     setSearchParams(params, { replace: true })
   }

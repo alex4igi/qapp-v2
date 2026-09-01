@@ -65,8 +65,10 @@ const STATUS_PRESETS: { value: StatusPreset; label: string; set: string[] }[] = 
 ]
 
 export function statusSetForPreset(p: string | null): string[] {
+  // Fără parametru în URL = presetul implicit al vederii Listă: tot pipeline-ul,
+  // ca lead-urile să nu dispară tăcut până nu alege omul manual „De sunat".
   return (
-    STATUS_PRESETS.find((x) => x.value === p)?.set ?? STATUSURI_DE_SUNAT
+    STATUS_PRESETS.find((x) => x.value === p)?.set ?? TOT_PIPELINE
   ).slice()
 }
 
