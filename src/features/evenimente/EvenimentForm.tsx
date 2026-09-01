@@ -85,6 +85,11 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
   const cursuri = useCursuriOptions({ locatieId: null })
   const isGrupa = Boolean(form.curs)
   const isDemo = form.tip === 'DEMO Class'
+  // Prețul îl decide TIPUL, nu legătura cu cursul: un workshop sau o audiție
+  // se plătesc și când sunt scopate pe o grupă (`curs` = doar vizibilitate în
+  // portal). Evenimentele interne de grupă rămân fără preț, demo-ul e gratuit.
+  const tipCuPlata = form.tip === 'Workshop' || form.tip === 'Auditie'
+  const arePret = !isDemo && (tipCuPlata || !isGrupa)
   // Numele locației oglindit în `locatia` (text liber) — coloana e încă citită de
   // portalul membri (get_evenimente_client) și de căutarea din listă.
   const locatii = useQuery({
@@ -118,7 +123,7 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
         capacitate: toNum(form.capacitate),
         // Un demo e gratuit, nu se vinde pe portal si nu e eveniment de grupa
         // (constrangerea `evenimente_demo_coerenta` o impune si in DB).
-        pret_bilet: form.curs || isDemo ? null : toNum(form.pret_bilet),
+        pret_bilet: arePret ? toNum(form.pret_bilet) : null,
         status: (form.status || null) as Eveniment['status'],
         notite: form.notite.trim() || null,
         public: form.curs || isDemo ? false : form.public,
@@ -329,7 +334,7 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
               onChange={(e) => set('capacitate')(e.target.value)}
             />
           </Field>
-          {!isGrupa && !isDemo && (
+          {arePret && (
             <Field label="Preț bilet" htmlFor="pret_bilet">
               <TextInput
                 id="pret_bilet"
