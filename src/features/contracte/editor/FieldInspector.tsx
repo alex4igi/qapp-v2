@@ -1,5 +1,10 @@
 import { Button, Checkbox, Field, Select, TextInput } from '@/components/ui'
-import { FIELD_SOURCE_OPTIONS, FIELD_TYPE_OPTIONS, type TemplateField } from '../types'
+import {
+  FIELD_DEFAULT_FONT_SIZE,
+  FIELD_SOURCE_OPTIONS,
+  FIELD_TYPE_OPTIONS,
+  type TemplateField,
+} from '../types'
 import type { EditableField } from './useTemplateEditorState'
 
 type Props = {
@@ -92,7 +97,7 @@ export function FieldInspector({ field, pageCount, readOnly, onChange, onDelete 
             type="number"
             min={6}
             max={24}
-            value={field.fontSize ?? 10}
+            value={field.fontSize ?? FIELD_DEFAULT_FONT_SIZE}
             disabled={readOnly}
             onChange={(e) => onChange({ fontSize: Number(e.target.value) })}
           />

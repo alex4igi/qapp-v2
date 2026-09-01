@@ -133,8 +133,12 @@ async function driveUpload(
 // Generare PDF
 // ============================================================
 
+// Sub atât nu coborâm: un contract semnat trebuie să rămână citibil pe hârtie.
+const MIN_FONT_SIZE = 6
+
 /**
- * Așază textul CENTRAT în caseta câmpului, pe ambele axe.
+ * Așază textul CENTRAT în caseta câmpului, pe ambele axe, micșorându-l dacă
+ * nu încape pe lățime.
  *
  * Înainte se desena la `x` + `y: yTop - size` — un offset fix care ignora
  * înălțimea casetei, așa că valoarea urca peste linia punctată a formularului
@@ -144,18 +148,23 @@ async function driveUpload(
  * înălțimea capitalelor: majusculele românești cu diacritice (Ă, Â, Î, Ș, Ț)
  * chiar folosesc spațiul de deasupra.
  *
- * Textul mai lat decât caseta rămâne aliniat la stânga — altfel centrarea l-ar
- * împinge în afara casetei pe ambele capete.
+ * Micșorarea automată e ce face sigură o mărime de font generoasă în șablon:
+ * casetele sunt cât blank-ul tipărit din formular (`ci` are 54pt), iar o adresă
+ * sau un email lung ar curge altfel peste textul de alături. Scade doar câmpul
+ * care chiar nu încape, restul rămân la mărimea cerută.
  */
-function centerInBox(
+function fitInBox(
   font: PDFFont, text: string, size: number,
   x: number, yTop: number, boxW: number, boxH: number,
-): { x: number; y: number } {
-  const textW = font.widthOfTextAtSize(text, size)
-  const textH = font.heightAtSize(size, { descender: false })
+): { x: number; y: number; size: number } {
+  let s = size
+  while (s > MIN_FONT_SIZE && font.widthOfTextAtSize(text, s) > boxW) s -= 0.5
+  const textW = font.widthOfTextAtSize(text, s)
+  const textH = font.heightAtSize(s, { descender: false })
   return {
     x: textW < boxW ? x + (boxW - textW) / 2 : x,
     y: yTop - boxH / 2 - textH / 2,
+    size: s,
   }
 }
 
@@ -269,13 +278,13 @@ Deno.serve(async (req) => {
           // Rândul rămâne aliniat la stânga: e un tabel cu coloane, iar
           // centrarea orizontală l-ar rupe de celula „Prenume cursant".
           const text = `${nume}   ${nastere}`
-          const pos = centerInBox(font, text, size, x, yTop - i * rowH, boxW, rowH)
-          page.drawText(text, { x, y: pos.y, size, font })
+          const pos = fitInBox(font, text, size, x, yTop - i * rowH, boxW, rowH)
+          page.drawText(text, { x, y: pos.y, size: pos.size, font })
         })
       } else if (f.type === 'checkbox') {
         if (valori[f.key]) {
-          const pos = centerInBox(font, 'X', size, x, yTop, boxW, boxH)
-          page.drawText('X', { x: pos.x, y: pos.y, size, font })
+          const pos = fitInBox(font, 'X', size, x, yTop, boxW, boxH)
+          page.drawText('X', { x: pos.x, y: pos.y, size: pos.size, font })
         }
       } else {
         const val = valori[f.key]
@@ -284,9 +293,9 @@ Deno.serve(async (req) => {
           if (f.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(text)) {
             text = new Date(text).toLocaleDateString('ro-RO')
           }
-          const pos = centerInBox(font, text, size, x, yTop, boxW, boxH)
+          const pos = fitInBox(font, text, size, x, yTop, boxW, boxH)
           page.drawText(text, {
-            x: pos.x, y: pos.y, size, font,
+            x: pos.x, y: pos.y, size: pos.size, font,
             maxWidth: boxW, color: rgb(0.1, 0.1, 0.3),
           })
         }

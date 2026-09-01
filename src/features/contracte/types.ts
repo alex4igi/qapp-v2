@@ -55,4 +55,4 @@ export const FIELD_DEFAULT_SIZE: Record<TemplateField['type'], { w: number; h: n
   copii_table: { w: 0.5, h: 0.15 },
 }
 
-export const FIELD_DEFAULT_FONT_SIZE = 9
+export const FIELD_DEFAULT_FONT_SIZE = 12
