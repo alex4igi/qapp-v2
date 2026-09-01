@@ -32,6 +32,21 @@ export function GrupaBadge({ grupa }: { grupa: GrupaLead | null }) {
   )
 }
 
+// Rândurile de nurture generate pentru ex-clienți poartă `id_client` și au
+// `created` = data rulării cronului. Fără eticheta asta sunt vizual identice cu
+// un lead intrat azi din campanie — exact confuzia care a trimis pe cineva să
+// caute „lead-uri proaspete căzute în nurture".
+export function ExClientBadge() {
+  return (
+    <span
+      className={`${base} border-teal-200 bg-teal-50 text-teal-700`}
+      title="Ex-client — rând generat pentru pool-ul de reactivare, nu un lead nou"
+    >
+      ex-client
+    </span>
+  )
+}
+
 export function SursaBadge({ sursa }: { sursa: string | null }) {
   if (!sursa) return null
   return (

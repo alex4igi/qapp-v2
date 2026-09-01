@@ -18,6 +18,7 @@ import {
   ALL_STATUS_COLUMNS,
   DAY_MS,
   PERIOADA_LABELS,
+  esteExClient,
   perioadaToRange,
   type Perioada,
   type PerioadaPreset,
@@ -25,6 +26,13 @@ import {
 import { ultimContactMeta } from './leadColumns'
 
 export type ContactFilter = '' | 'niciodata' | 'peste7' | 'peste30' | 'azi'
+
+// Nurture amestecă două populații care nu se lucrează la fel: lead-uri care n-au
+// fost niciodată clienți și umbre de ex-client (rând generat de cronul de 02:00
+// pentru pool-ul de reactivare). Umbra are `created` = data rulării cronului,
+// deci în lista sortată pe „Adăugat" stă în vârf și arată exact ca un lead
+// proaspăt. `id_client` e linia care le desparte.
+export type TipLead = '' | 'lead' | 'exclient'
 
 export type LeadFiltersValue = {
   search: string
@@ -34,6 +42,7 @@ export type LeadFiltersValue = {
   statusuri: string[] // [] = toate
   contact: ContactFilter
   perioada: Perioada
+  tip: TipLead
 }
 
 export const EMPTY_LEAD_FILTERS: LeadFiltersValue = {
@@ -44,6 +53,7 @@ export const EMPTY_LEAD_FILTERS: LeadFiltersValue = {
   statusuri: [],
   contact: '',
   perioada: { preset: 'tot' },
+  tip: '',
 }
 
 // Statusurile care chiar așteaptă un telefon — presetul implicit al vederii Listă.
@@ -124,6 +134,8 @@ export function applyLeadFilters(
       } else if (lead.locatia !== f.locatie) return false
     }
     if (f.statusuri.length && !f.statusuri.includes(lead.status)) return false
+    if (f.tip === 'lead' && esteExClient(lead)) return false
+    if (f.tip === 'exclient' && !esteExClient(lead)) return false
 
     if (f.contact) {
       const m = ultimContactMeta(lead, now)
@@ -162,6 +174,33 @@ function countHiddenFilters(v: LeadFiltersValue, locatiePills: boolean): number 
   if (v.contact) n++
   if (v.perioada.preset !== 'tot') n++
   return n
+}
+
+// Nurture e în joc? Doar atunci separarea lead / ex-client spune ceva: în restul
+// pipeline-ului aproape nimeni n-are `id_client`.
+export function nurtureInScope(statusuri: string[]): boolean {
+  return statusuri.length === 0 || statusuri.includes('nurture')
+}
+
+type TipPill = { value: TipLead; label: string; count: number }
+
+// Contoarele se calculează pe setul cu toate CELELALTE filtre aplicate, ca
+// numărul de pe pill să fie exact ce rămâne după click.
+function useTipPills(
+  leads: Lead[] | undefined,
+  value: LeadFiltersValue,
+  enabled: boolean,
+): TipPill[] {
+  return useMemo(() => {
+    if (!enabled) return []
+    const base = applyLeadFilters(leads ?? [], { ...value, tip: '' })
+    const exclienti = base.filter(esteExClient).length
+    return [
+      { value: '', label: 'Toate', count: base.length },
+      { value: 'lead', label: 'Lead-uri', count: base.length - exclienti },
+      { value: 'exclient', label: 'Ex-clienți', count: exclienti },
+    ]
+  }, [leads, value, enabled])
 }
 
 type LocatiePill = { value: string; label: string; count: number }
@@ -265,6 +304,7 @@ export function LeadFilters({
   const preset = presetOf(value.statusuri)
   // În Listă bara are deja preset + contoare; locația rămâne acolo în ⚙ Filtre.
   const locatiePills = useLocatiePills(leads, value, !isLista)
+  const tipPills = useTipPills(leads, value, isLista && nurtureInScope(value.statusuri))
   const hidden = countHiddenFilters(value, locatiePills.length > 0)
 
   return (
@@ -293,6 +333,41 @@ export function LeadFilters({
               else set('statusuri', statusSetForPreset(p))
             }}
           />
+        </div>
+      )}
+
+      {tipPills.length > 0 && (
+        <div
+          role="group"
+          aria-label="Filtru tip"
+          className="flex items-center gap-1.5"
+        >
+          {tipPills.map((t) => {
+            const activ = value.tip === t.value
+            return (
+              <button
+                key={t.value || 'toate'}
+                type="button"
+                aria-pressed={activ}
+                onClick={() => set('tip', activ && t.value ? '' : t.value)}
+                className={[
+                  'rounded-full border px-3 py-1.5 text-sm transition-colors',
+                  activ
+                    ? 'border-quasar-yellow bg-quasar-yellow font-medium text-quasar-black'
+                    : 'border-line text-quasar-gray hover:border-quasar-yellow',
+                ].join(' ')}
+              >
+                {t.label}
+                <span
+                  className={`ml-1.5 text-xs ${
+                    activ ? 'text-quasar-black/60' : 'text-quasar-gray/60'
+                  }`}
+                >
+                  {t.count}
+                </span>
+              </button>
+            )
+          })}
         </div>
       )}
 

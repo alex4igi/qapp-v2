@@ -12,8 +12,12 @@
 //    NB: a_venit NU se flaghează aici — are cadență săptămânală (lunea), în
 //    cron-morning (lista de sunat de luni pentru demo-uri neconvertite).
 // 3. auto-Nurture plasă de siguranță: nr_contactari >= 4
+// GARDĂ transversală: niciun pas nu trimite în Nurture un lead al cărui client e
+// încă Activ/Inactiv (`leaduriProtejate`) — nurture e pool de reactivare, iar
+// acolo ajungeau conversii neînregistrate. Flagurile rămân.
 // NU trimite SMS.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { leaduriProtejate } from '../_shared/leadNurture.ts'
 
 const DAY = 86_400_000
 
@@ -64,13 +68,19 @@ Deno.serve(async (req) => {
     // Apoi împărțim: a 2-a neprezentare (>=2) merge direct în nurture, restul în nu_a_venit.
     const { data: dupaAbsent } = await supabase
       .from('leads')
-      .select('id, nr_neprezentari')
+      .select('id, nr_neprezentari, id_client')
       .in('id', expirateIds)
-    const nurtureIds = (dupaAbsent ?? [])
-      .filter((l) => (l.nr_neprezentari ?? 0) >= 2)
+    const candidatiNoShow = (dupaAbsent ?? []).filter(
+      (l) => (l.nr_neprezentari ?? 0) >= 2,
+    )
+    const protejatiNoShow = await leaduriProtejate(supabase, candidatiNoShow)
+    const nurtureIds = candidatiNoShow
+      .filter((l) => !protejatiNoShow.has(l.id))
       .map((l) => l.id)
+    // Protejații cu 2+ neprezentări nu merg în nurture, dar nici nu pot rămâne
+    // 'programat' cu programarea consumată — ar sta blocați acolo la nesfârșit.
     const naVenitIds = (dupaAbsent ?? [])
-      .filter((l) => (l.nr_neprezentari ?? 0) < 2)
+      .filter((l) => (l.nr_neprezentari ?? 0) < 2 || protejatiNoShow.has(l.id))
       .map((l) => l.id)
     if (nurtureIds.length) {
       await supabase
@@ -97,6 +107,7 @@ Deno.serve(async (req) => {
   // Helper — aplică flag / escaladare streak / auto-Nurture pe o listă.
   type FlagLead = {
     id: string
+    id_client: string | null
     flag_reminder: boolean
     flag_streak: number | null
     flag_reminder_at: string | null
@@ -115,6 +126,10 @@ Deno.serve(async (req) => {
   ) {
     let flagged = 0
     let nurtured = 0
+    // Lead-urile cu client activ se flaghează, dar nu escaladează niciodată.
+    const protejate = opts.autoNurture
+      ? await leaduriProtejate(supabase, leads)
+      : new Set<string>()
     for (const l of leads) {
       if (!l.flag_reminder) {
         // Primul flag.
@@ -130,7 +145,7 @@ Deno.serve(async (req) => {
       } else if ((l.flag_reminder_at ?? '') < twoDaysAgo) {
         // Flag ignorat un ciclu întreg → escaladează.
         const streak = (l.flag_streak ?? 1) + 1
-        if (streak >= 2 && opts.autoNurture) {
+        if (streak >= 2 && opts.autoNurture && !protejate.has(l.id)) {
           await supabase
             .from('leads')
             .update({
@@ -154,7 +169,7 @@ Deno.serve(async (req) => {
     return { flagged, nurtured }
   }
 
-  const SEL = 'id, flag_reminder, flag_streak, flag_reminder_at'
+  const SEL = 'id, id_client, flag_reminder, flag_streak, flag_reminder_at'
   const cutoff24 = new Date(now.getTime() - DAY).toISOString()
   const cutoff10d = new Date(now.getTime() - 10 * DAY).toISOString()
 
@@ -185,11 +200,14 @@ Deno.serve(async (req) => {
   // (decizie 2026-07-01). Nu mai folosim flag/escaladare pentru această coloană.
   const { data: navVechi } = await supabase
     .from('leads')
-    .select('id')
+    .select('id, id_client')
     .eq('status', 'nu_a_venit')
     .lt('updated', cutoff10d)
 
-  const navVechiIds = (navVechi ?? []).map((l) => l.id)
+  const protejatiNav = await leaduriProtejate(supabase, navVechi ?? [])
+  const navVechiIds = (navVechi ?? [])
+    .filter((l) => !protejatiNav.has(l.id))
+    .map((l) => l.id)
   let nuAVenitNurtured = 0
   if (navVechiIds.length) {
     await supabase
@@ -212,12 +230,15 @@ Deno.serve(async (req) => {
   // 3. auto-Nurture plasă de siguranță — nr_contactari >= 4
   const { data: deNurture } = await supabase
     .from('leads')
-    .select('id')
+    .select('id, id_client')
     .in('status', ['nou', 'contactat'])
     .eq('deja_client', false)
     .gte('nr_contactari', 4)
 
-  const nurtureIds = (deNurture ?? []).map((l) => l.id)
+  const protejatiPlasa = await leaduriProtejate(supabase, deNurture ?? [])
+  const nurtureIds = (deNurture ?? [])
+    .filter((l) => !protejatiPlasa.has(l.id))
+    .map((l) => l.id)
   let autoNurture = 0
   if (nurtureIds.length) {
     const { error } = await supabase

@@ -36,6 +36,7 @@ import {
   presetOf,
   statusSetForPreset,
   EMPTY_LEAD_FILTERS,
+  nurtureInScope,
   type LeadFiltersValue,
   type StatusPreset,
 } from './LeadFilters'
@@ -80,7 +81,11 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
     if (mode !== 'lista') return
     const dorit = statusSetForPreset(presetParam)
     setFilters((f) =>
-      presetOf(f.statusuri) === presetOf(dorit) ? f : { ...f, statusuri: dorit },
+      presetOf(f.statusuri) === presetOf(dorit)
+        ? f
+        : // Pill-urile lead/ex-client se ascund când Nurture iese din preset;
+          // un filtru fără control vizibil ar tăia rânduri tăcut.
+          { ...f, statusuri: dorit, tip: nurtureInScope(dorit) ? f.tip : '' },
     )
   }, [presetParam, mode])
 
@@ -243,7 +248,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
     () =>
       applyLeadFilters(
         baseLeads,
-        mode === 'kanban' ? { ...filters, statusuri: [] } : filters,
+        mode === 'kanban' ? { ...filters, statusuri: [], tip: '' } : filters,
       ),
     [baseLeads, filters, mode],
   )

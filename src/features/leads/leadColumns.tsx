@@ -2,9 +2,10 @@ import type { Lead } from '@/types/db'
 import type { Column } from '@/components/ui'
 import { formatDate } from '@/lib/format'
 import { waLink } from '@/lib/phone'
-import { StatusBadge, SubStatusBadge, SursaBadge } from './Badges'
+import { StatusBadge, SubStatusBadge, SursaBadge, ExClientBadge } from './Badges'
 import {
   DAY_MS,
+  esteExClient,
   FOLLOWUP_DAYS,
   INACTIVE_DAYS,
   isToday,
@@ -129,6 +130,7 @@ export function buildLeadColumns(opts: {
             {numeLead(l)}
           </span>
           {l.deja_client && <span title="Deja client">🔁</span>}
+          {esteExClient(l) && <ExClientBadge />}
         </span>
       ),
       sortValue: (l) => numeLead(l),

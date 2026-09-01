@@ -12,6 +12,7 @@ import {
   sendSms,
 } from '../_shared/sms.ts'
 import { getProgramareSms } from '../_shared/leadLocatie.ts'
+import { leaduriProtejate } from '../_shared/leadNurture.ts'
 import { sendEmail } from '../_shared/messaging.ts'
 
 function startOfDay(date: Date) {
@@ -427,9 +428,13 @@ Deno.serve(async (req) => {
     const twoDaysAgo = new Date(now.getTime() - 2 * 86_400_000).toISOString()
     const { data: aVenit } = await supabase
       .from('leads')
-      .select('id, flag_reminder, flag_streak, flag_reminder_at')
+      .select('id, id_client, flag_reminder, flag_streak, flag_reminder_at')
       .eq('status', 'a_venit')
       .eq('deja_client', false)
+
+    // Cine a venit la demo ȘI e deja client activ rămâne flagat, dar nu iese
+    // din pipeline: e o conversie neînregistrată, nu un lead de abandonat.
+    const protejate = await leaduriProtejate(supabase, aVenit ?? [])
 
     for (const l of aVenit ?? []) {
       if (!l.flag_reminder) {
@@ -447,7 +452,7 @@ Deno.serve(async (req) => {
       } else if ((l.flag_reminder_at ?? '') < twoDaysAgo) {
         // Flag ignorat un ciclu întreg → escaladează.
         const streak = (l.flag_streak ?? 1) + 1
-        if (streak >= 2) {
+        if (streak >= 2 && !protejate.has(l.id)) {
           const { error } = await supabase
             .from('leads')
             .update({

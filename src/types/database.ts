@@ -10403,6 +10403,7 @@ export type Database = {
           marcati_exclient: number
           marcati_inactiv: number
           reactivati: number
+          umbre_curatate: number
         }[]
       }
       build_fifo_plan_membru: {
@@ -12047,6 +12048,10 @@ export type Database = {
         Returns: Json
       }
       my_teacher_id: { Args: never; Returns: string }
+      notifica_demo_class_completa: {
+        Args: { p_eveniment: string }
+        Returns: number
+      }
       notifications_mark_all_read: { Args: never; Returns: number }
       notifications_resolve: {
         Args: { p_id: string; p_raspuns?: string }

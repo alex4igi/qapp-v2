@@ -1,4 +1,4 @@
-import type { StatusLead, GrupaLead } from '@/types/db'
+import type { Lead, StatusLead, GrupaLead } from '@/types/db'
 
 export type PipelineColumn = {
   status: StatusLead
@@ -122,6 +122,17 @@ const LUNI_SCURT = [
 ]
 
 // True dacă timestamp-ul ISO cade în ziua curentă (ora locală).
+// „Umbră de ex-client" = rândul pe care cronul de 02:00 îl creează pentru
+// pool-ul de reactivare când un client trece 45 de zile fără prezență. Are
+// `created` = data rulării, deci în listă arată ca un lead intrat azi.
+// NU e același lucru cu „are id_client": un lead convertit are și el client, dar
+// e o conversie, nu o țintă de reactivare — de aceea condiția include statusul.
+// Definiție unică: filtrul din bară și eticheta din tabel trebuie să numere
+// exact aceleași rânduri.
+export function esteExClient(l: Lead): boolean {
+  return l.status === 'nurture' && !!l.id_client
+}
+
 export function isToday(iso: string | null): boolean {
   if (!iso) return false
   const d = new Date(iso)
