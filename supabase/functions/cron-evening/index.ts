@@ -4,10 +4,11 @@
 //    A 1-a neprezentare → nu_a_venit; a 2-a (nr_neprezentari>=2) → direct nurture.
 // 1b. nu_a_venit rămâne în listă 10 zile, apoi → nurture.
 // 2. flaguri de prioritate recurente, cu flag_streak:
-//    - nou > 24h
-//    - contactat/nu_raspunde fără contactare de > 2 zile
-//    - contactat/de_revenit cu data_callback_dorit trecută
-//    La al 2-lea flag ignorat (flag_streak >= 2) → auto-Nurture.
+//    - nou > 24h                                        (flag DOAR, fără nurture)
+//    - contactat/nu_raspunde fără contactare de > 2 zile → auto-Nurture la streak 2
+//    - contactat/de_revenit cu data_callback_dorit trecută → idem
+//    Un contact logat în `lead_contacte` stinge steagul (trigger
+//    bump_lead_ultima_contactare), deci escaladarea cere tăcere reală.
 //    NB: a_venit NU se flaghează aici — are cadență săptămânală (lunea), în
 //    cron-morning (lista de sunat de luni pentru demo-uri neconvertite).
 // 3. auto-Nurture plasă de siguranță: nr_contactari >= 4
@@ -102,7 +103,16 @@ Deno.serve(async (req) => {
   }
   const twoDaysAgo = new Date(now.getTime() - 2 * DAY).toISOString()
 
-  async function processStale(leads: FlagLead[]) {
+  // `autoNurture: false` = leadul se flaghează la nesfârșit, dar nu părăsește
+  // niciodată coloana singur. Folosit pentru 'nou': un lead pe care nimeni nu
+  // l-a sunat NU trebuie să dispară din pipeline după 4 zile doar pentru că a
+  // trecut timpul — rămâne roșu în „De lucrat azi", cu streak-ul crescând, până
+  // îl atinge cineva. Ieșirea automată rămâne pe efort dovedit
+  // (`nr_contactari >= 4`, pasul 3), nu pe vechime.
+  async function processStale(
+    leads: FlagLead[],
+    opts: { autoNurture: boolean } = { autoNurture: true },
+  ) {
     let flagged = 0
     let nurtured = 0
     for (const l of leads) {
@@ -120,7 +130,7 @@ Deno.serve(async (req) => {
       } else if ((l.flag_reminder_at ?? '') < twoDaysAgo) {
         // Flag ignorat un ciclu întreg → escaladează.
         const streak = (l.flag_streak ?? 1) + 1
-        if (streak >= 2) {
+        if (streak >= 2 && opts.autoNurture) {
           await supabase
             .from('leads')
             .update({
@@ -195,7 +205,7 @@ Deno.serve(async (req) => {
     nuAVenitNurtured = navVechiIds.length
   }
 
-  const rNou = await processStale(nouVechi ?? [])
+  const rNou = await processStale(nouVechi ?? [], { autoNurture: false })
   const rNuRasp = await processStale(cNuRasp ?? [])
   const rDeRev = await processStale(cDeRev ?? [])
 
