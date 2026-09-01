@@ -133,6 +133,32 @@ async function driveUpload(
 // Generare PDF
 // ============================================================
 
+/**
+ * Așază textul CENTRAT în caseta câmpului, pe ambele axe.
+ *
+ * Înainte se desena la `x` + `y: yTop - size` — un offset fix care ignora
+ * înălțimea casetei, așa că valoarea urca peste linia punctată a formularului
+ * și stătea lipită de marginea stângă, peste eticheta tipărită.
+ *
+ * Centrarea verticală se face pe cutia ascendentului (fără descendent), nu pe
+ * înălțimea capitalelor: majusculele românești cu diacritice (Ă, Â, Î, Ș, Ț)
+ * chiar folosesc spațiul de deasupra.
+ *
+ * Textul mai lat decât caseta rămâne aliniat la stânga — altfel centrarea l-ar
+ * împinge în afara casetei pe ambele capete.
+ */
+function centerInBox(
+  font: PDFFont, text: string, size: number,
+  x: number, yTop: number, boxW: number, boxH: number,
+): { x: number; y: number } {
+  const textW = font.widthOfTextAtSize(text, size)
+  const textH = font.heightAtSize(size, { descender: false })
+  return {
+    x: textW < boxW ? x + (boxW - textW) / 2 : x,
+    y: yTop - boxH / 2 - textH / 2,
+  }
+}
+
 function drawWrapped(
   page: PDFPage, text: string, font: PDFFont,
   x: number, yTop: number, size: number, maxWidth: number, lineHeight: number,
@@ -218,31 +244,39 @@ Deno.serve(async (req) => {
       const x = f.x * width
       const yTop = height - f.y * height
       const size = f.fontSize ?? 10
+      const boxW = f.w * width
+      const boxH = f.h * height
 
       if (f.type === 'signature') {
         if (semnaturaImg) {
-          const w = f.w * width
-          const h = f.h * height
-          page.drawImage(semnaturaImg, { x, y: yTop - h, width: w, height: h })
+          page.drawImage(semnaturaImg, { x, y: yTop - boxH, width: boxW, height: boxH })
         }
       } else if (f.type === 'copii_table') {
-        // rânduri copil sub coordonata de start; folosit pe tabelul cursanți
-        let y = yTop
+        // `h` e pasul UNUI rând de cursant din tabel, nu înălțimea blocului de
+        // trei — verificat pe randare: cu pasul împărțit la 3 copiii se
+        // înghesuiau toți în prima celulă.
         const lista = (copii ?? []).filter((c) =>
           !contract.client_id || c.id === contract.client_id ||
           (valori.copii_selectati as string[] | undefined)?.includes(c.id)
         )
         const randuri = lista.length > 0 ? lista : (copii ?? [])
-        for (const c of randuri.slice(0, 3)) {
+        const rowH = boxH
+        randuri.slice(0, 3).forEach((c, i) => {
           const nume = `${c.nume} ${c.prenume ?? ''}`.trim()
           const nastere = c.data_nasterii
             ? new Date(c.data_nasterii).toLocaleDateString('ro-RO')
             : ''
-          page.drawText(`${nume}   ${nastere}`, { x, y, size, font })
-          y -= f.h * height
-        }
+          // Rândul rămâne aliniat la stânga: e un tabel cu coloane, iar
+          // centrarea orizontală l-ar rupe de celula „Prenume cursant".
+          const text = `${nume}   ${nastere}`
+          const pos = centerInBox(font, text, size, x, yTop - i * rowH, boxW, rowH)
+          page.drawText(text, { x, y: pos.y, size, font })
+        })
       } else if (f.type === 'checkbox') {
-        if (valori[f.key]) page.drawText('X', { x, y: yTop - size, size, font })
+        if (valori[f.key]) {
+          const pos = centerInBox(font, 'X', size, x, yTop, boxW, boxH)
+          page.drawText('X', { x: pos.x, y: pos.y, size, font })
+        }
       } else {
         const val = valori[f.key]
         if (val !== undefined && val !== null && String(val).trim() !== '') {
@@ -250,9 +284,10 @@ Deno.serve(async (req) => {
           if (f.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(text)) {
             text = new Date(text).toLocaleDateString('ro-RO')
           }
+          const pos = centerInBox(font, text, size, x, yTop, boxW, boxH)
           page.drawText(text, {
-            x, y: yTop - size, size, font,
-            maxWidth: f.w * width, color: rgb(0.1, 0.1, 0.3),
+            x: pos.x, y: pos.y, size, font,
+            maxWidth: boxW, color: rgb(0.1, 0.1, 0.3),
           })
         }
       }
@@ -364,6 +399,21 @@ Deno.serve(async (req) => {
         .select('id')
         .single()
       if (dc && !docClientId) docClientId = dc.id
+
+      // Checklistul „Completare fișă" citește `clienti.link_contract` (funcție
+      // pură de rândul clientului, prin design — nu interoghează
+      // documente_client), deci fără asta itemul „Link contract" rămânea
+      // nebifat chiar după o semnare electronică validă.
+      //
+      // Nu suprascriem un link existent cu o anexă: contractul de bază rămâne
+      // ținta din fișă, iar actele adiționale se citesc din documente_client.
+      const esteContractDeBaza = tpl.tip !== 'act_aditional'
+      const { data: clientRow } = await admin
+        .from('clienti').select('link_contract').eq('id', c.id).maybeSingle()
+      const areLink = Boolean(clientRow?.link_contract?.trim())
+      if (!areLink || esteContractDeBaza) {
+        await admin.from('clienti').update({ link_contract: link }).eq('id', c.id)
+      }
     }
 
     // 8) poarta de reînscriere: actul semnat intră în verificarea admin existentă
