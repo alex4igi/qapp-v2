@@ -9,6 +9,7 @@ export const ARTICOLE_FGO = [
   'Abonament dans gimnastica promo',
   'Abonament anual dans gimnastica promo',
   'Taxa workshop',
+  'Taxa auditie',
   'Taxa concurs',
   'Taxa Reinscriere',
   'Taxa confirmare loc',

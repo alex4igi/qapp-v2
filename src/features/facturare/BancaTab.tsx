@@ -5,6 +5,7 @@ import { Button, DataTable, Spinner, type Column } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
+import type { TipPlata } from '@/features/plati/modals/PlataNouaModal/helpers'
 import { ClientiAlocati } from './ClientiAlocati'
 import { FacturaDialog } from './FacturaDialog'
 import { MarcheazaDialog } from './MarcheazaDialog'
@@ -70,6 +71,7 @@ export function BancaTab() {
     ref: string
     clientId: string
     suma?: number
+    tip?: TipPlata
   } | null>(null)
   const [facturaFor, setFacturaFor] = useState<FacturaRow | null>(null)
   const [marcheazaFor, setMarcheazaFor] = useState<FacturaRow | null>(null)
@@ -171,9 +173,14 @@ export function BancaTab() {
 
   // defaultSuma = restul nealocat, ca al doilea frate să nu pornească de la suma întreagă.
   // `undefined` (nu 0) când nu mai e rest: DatoriiUnificateTab tratează 0 ca „plătește tot".
+  // Audiția/workshopul nu sunt datorii, ci bilet pe eveniment — tabul „Datorii" n-are ce
+  // arăta, deci deschidem direct tabul unde se poate încasa (evenimentul îl alege omul).
   const openPlata = (r: FacturaRow, clientId: string) => {
     const rest = restNealocat(r)
-    setPlataFor({ ref: r.ref, clientId, suma: rest > 0.004 ? rest : undefined })
+    const tip: TipPlata | undefined = /audi[tțţ]i|workshop/i.test(r.descriere ?? '')
+      ? 'Bilet'
+      : undefined
+    setPlataFor({ ref: r.ref, clientId, suma: rest > 0.004 ? rest : undefined, tip })
   }
 
   const ignoraOne = useMutation({
@@ -418,6 +425,7 @@ export function BancaTab() {
         open={!!plataFor}
         onClose={() => setPlataFor(null)}
         defaultClientId={plataFor?.clientId}
+        defaultTip={plataFor?.tip}
         defaultSuma={plataFor?.suma}
         defaultMetoda="Transfer"
         onRecorded={(linii, clientId) => {

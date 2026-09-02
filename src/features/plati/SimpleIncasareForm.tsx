@@ -29,6 +29,8 @@ import {
   resolveTenders,
   type MetodaSel,
 } from './modals/PlataNouaModal/MetodaPlataField'
+import { articolDatorie } from '@/features/facturare/articolResolver'
+import type { FacturaLinie } from '@/features/facturare/types'
 
 export type SimpleTip = 'Bilet' | 'Merch' | 'Taxa'
 
@@ -40,8 +42,11 @@ type Props = {
   defaultBiletId?: string
   defaultSuma?: string
   defaultObservatii?: string
+  defaultMetoda?: MetodaSel
   /** Apelat cu încasarea creată (înainte de onClose) — folosit ca să legăm taxa de campania de reînscrieri. */
   onCreated?: (incasare: Incasare) => void
+  /** Liniile de factură ale plății + clientul — fluxul bancă marchează transferul „înregistrat". */
+  onRecorded?: (linii: FacturaLinie[], clientId: string) => void
 }
 
 function todayIso(): string {
@@ -70,7 +75,9 @@ export function SimpleIncasareForm({
   defaultBiletId,
   defaultSuma,
   defaultObservatii,
+  defaultMetoda,
   onCreated,
+  onRecorded,
 }: Props) {
   const queryClient = useQueryClient()
   const { locatieId, locatieNume } = useWorkingLocatie()
@@ -82,7 +89,7 @@ export function SimpleIncasareForm({
   const [bucati, setBucati] = useState('1')
   const [suma, setSuma] = useState(defaultSuma ?? '')
   const [data, setData] = useState(todayIso())
-  const [metoda, setMetoda] = useState<MetodaSel>('Cash')
+  const [metoda, setMetoda] = useState<MetodaSel>(defaultMetoda ?? 'Cash')
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
   const [observatii, setObservatii] = useState(defaultObservatii ?? '')
@@ -164,7 +171,11 @@ export function SimpleIncasareForm({
   }, [tip, selectedBilet, selectedInventar, bucati, sumaTouched])
 
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<{
+      incasare: Incasare | null
+      linii: FacturaLinie[]
+      clientId: string | null
+    }> => {
       const sumaInput = Number(suma)
       if (!suma.trim() || !isFinite(sumaInput) || sumaInput <= 0) {
         throw new Error('Suma este obligatorie și pozitivă.')
@@ -233,6 +244,21 @@ export function SimpleIncasareForm({
         return p
       }
 
+      // Linia de factură a plății: articolul FGO derivat din ce s-a vândut. Suma e cât
+      // s-a încasat acum, nu prețul — restul rămâne datorie și se facturează la plată.
+      const linieFactura = (incasat: number): FacturaLinie[] =>
+        incasat > 0.004
+          ? [
+              {
+                articol: articolDatorie({
+                  categorie: base.categorie ?? tip,
+                  descriere: observatii.trim() || null,
+                }),
+                suma: incasat,
+              },
+            ]
+          : []
+
       // Plată integrală → comportament clasic (incasari cu bilet/articol, fără datorie).
       if (collected >= charge - 0.001) {
         const tenders = resolveTenders({ metoda, total: charge, cash, card })
@@ -240,7 +266,11 @@ export function SimpleIncasareForm({
           withSource({ ...base, suma: t.suma, metoda: t.metoda }, idx === 0),
         )
         const created = await createIncasari(payloads)
-        return created[0] ?? null
+        return {
+          incasare: created[0] ?? null,
+          linii: linieFactura(charge),
+          clientId: clientField,
+        }
       }
 
       // Parțial / 0 → creează datoria (charge) + (dacă s-a încasat) incasari legate de ea.
@@ -260,7 +290,7 @@ export function SimpleIncasareForm({
         voucher: voucherId || null,
         locatie: locatieId,
       })
-      if (collected <= 0) return null
+      if (collected <= 0) return { incasare: null, linii: [], clientId: clientField }
       const tenders = resolveTenders({ metoda, total: collected, cash, card })
       const payloads = tenders.map((t, idx) =>
         withSource(
@@ -269,15 +299,21 @@ export function SimpleIncasareForm({
         ),
       )
       const created = await createIncasari(payloads)
-      return created[0] ?? null
+      return {
+        incasare: created[0] ?? null,
+        linii: linieFactura(collected),
+        clientId: clientField,
+      }
     },
-    onSuccess: (incasare) => {
+    onSuccess: (res) => {
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['datorii'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['stat'] })
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
-      if (incasare) onCreated?.(incasare)
+      if (res.incasare) onCreated?.(res.incasare)
+      // Guest fără client în CRM: n-avem pe cine atribui linia, transferul rămâne de marcat.
+      if (res.linii.length && res.clientId) onRecorded?.(res.linii, res.clientId)
       onClose()
     },
     onError: (e: unknown) =>

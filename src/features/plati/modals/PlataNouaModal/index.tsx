@@ -65,6 +65,9 @@ export function PlataNouaModal({
           onClose={onClose}
           defaultClientId={defaultClientId}
           defaultBiletId={tip === 'Bilet' ? defaultBiletId : undefined}
+          defaultSuma={defaultSuma != null ? String(defaultSuma) : undefined}
+          defaultMetoda={defaultMetoda}
+          onRecorded={onRecorded}
         />
       )}
     </Modal>

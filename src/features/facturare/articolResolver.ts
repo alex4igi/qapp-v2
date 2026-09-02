@@ -28,7 +28,7 @@ export function articolInrolare(r: InrolareFields): ArticolFgo {
 }
 
 // Datoriile one-off: doar cazurile clare se auto-completează; restul (Taxa
-// generic, confirmare loc, concurs, închiriere, audiție) rămân null → se încearcă
+// generic, confirmare loc, concurs, închiriere) rămân null → se încearcă
 // ghicirea din textul bancar, altfel recepția alege manual din dropdown.
 export function articolDatorie(
   r: Pick<VDatoriiRest, 'categorie' | 'descriere'>,
@@ -36,6 +36,8 @@ export function articolDatorie(
   switch (r.categorie) {
     case 'Workshop':
       return 'Taxa workshop'
+    case 'Auditie':
+      return 'Taxa auditie'
     case 'Merch':
       return 'Articole vestimentar'
     case 'Bilet':
@@ -63,6 +65,7 @@ export function articolDinTextBanca(text: string | null | undefined): ArticolFgo
   // Specific → general; primul care se potrivește câștigă.
   if (/re[i]?nscrier/.test(t)) return 'Taxa Reinscriere'
   if (/concurs/.test(t)) return 'Taxa concurs'
+  if (/auditi/.test(t)) return 'Taxa auditie'
   if (/workshop|atelier/.test(t)) return 'Taxa workshop'
   if (/confirmare|rezervare loc|rezerva loc/.test(t)) return 'Taxa confirmare loc'
   if (/privat/.test(t)) return 'Sedinta privata'
