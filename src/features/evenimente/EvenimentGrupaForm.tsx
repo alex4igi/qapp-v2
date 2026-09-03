@@ -1,6 +1,6 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useState, type FormEvent } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Modal,
   Field,
@@ -11,6 +11,7 @@ import {
   Button,
 } from '@/components/ui'
 import { tipEvenimentOptions } from '@/lib/enums'
+import { locatiiOptions } from '@/lib/lookups'
 import { supabase } from '@/lib/supabase'
 import type { Eveniment } from '@/types/db'
 import { createEveniment, updateEveniment, deleteEveniment } from './api'
@@ -31,10 +32,13 @@ type FormState = {
   descriere: string
   data: string
   ora: string
+  locatie_id: string
   locatia: string
   notite: string
   status: string
 }
+
+const ALTA_LOCATIE = '__alta__'
 
 function initialState(e?: Eveniment | null): FormState {
   return {
@@ -43,6 +47,7 @@ function initialState(e?: Eveniment | null): FormState {
     descriere: e?.descriere ?? '',
     data: e?.data ?? '',
     ora: e?.ora ?? '',
+    locatie_id: e?.locatie_id ?? '',
     locatia: e?.locatia ?? '',
     notite: e?.notite ?? '',
     status: e?.status ?? 'Urmator',
@@ -60,6 +65,14 @@ export function EvenimentGrupaForm({ open, cursId, eveniment, onClose }: Props) 
   const [form, setForm] = useState<FormState>(() => initialState(eveniment))
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // Locația se alege din `locatii`; textul liber rămâne doar pentru ce se ține
+  // în afara studiourilor (parc, teatru, sală de spectacol).
+  const locatii = useQuery({ queryKey: ['lookup', 'locatii'], queryFn: locatiiOptions })
+  const [locatieAlta, setLocatieAlta] = useState(
+    () => !eveniment?.locatie_id && Boolean(eveniment?.locatia?.trim()),
+  )
+  const locatieNume =
+    (locatii.data ?? []).find((o) => o.value === form.locatie_id)?.label ?? ''
 
   const set = (key: keyof FormState) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -75,7 +88,8 @@ export function EvenimentGrupaForm({ open, cursId, eveniment, onClose }: Props) 
         descriere: form.descriere.trim() || null,
         data: form.data,
         ora: form.ora.trim() || null,
-        locatia: form.locatia.trim() || null,
+        locatia: (locatieAlta ? form.locatia.trim() : locatieNume) || null,
+        locatie_id: (locatieAlta ? '' : form.locatie_id) || null,
         notite: form.notite.trim() || null,
         status: form.status as Eveniment['status'],
         curs: cursId,
@@ -203,14 +217,34 @@ export function EvenimentGrupaForm({ open, cursId, eveniment, onClose }: Props) 
               onChange={(e) => set('ora')(e.target.value)}
             />
           </Field>
-          <Field label="Locație" htmlFor="eg-locatia">
+          <Field label="Locație" htmlFor="eg-locatie">
+            <Select
+              id="eg-locatie"
+              placeholder="—"
+              options={[
+                ...(locatii.data ?? []),
+                { value: ALTA_LOCATIE, label: 'Altă locație…' },
+              ]}
+              value={locatieAlta ? ALTA_LOCATIE : form.locatie_id}
+              onChange={(e) => {
+                const v = e.target.value
+                setLocatieAlta(v === ALTA_LOCATIE)
+                if (v !== ALTA_LOCATIE) set('locatie_id')(v)
+              }}
+            />
+          </Field>
+        </div>
+
+        {locatieAlta && (
+          <Field label="Numele locației" htmlFor="eg-locatia">
             <TextInput
               id="eg-locatia"
+              placeholder="Ex: Parcul Copou, Teatrul Național…"
               value={form.locatia}
               onChange={(e) => set('locatia')(e.target.value)}
             />
           </Field>
-        </div>
+        )}
 
         {isEdit && (
           <Field label="Status" htmlFor="eg-status">

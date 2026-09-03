@@ -70,6 +70,8 @@ function initialState(e?: Eveniment | null): FormState {
 
 const toNum = (s: string) => (s.trim() ? Number(s) : null)
 
+const ALTA_LOCATIE = '__alta__'
+
 export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
   const queryClient = useQueryClient()
   const isEdit = Boolean(eveniment)
@@ -90,13 +92,17 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
   // portal). Evenimentele interne de grupă rămân fără preț, demo-ul e gratuit.
   const tipCuPlata = form.tip === 'Workshop' || form.tip === 'Auditie'
   const arePret = !isDemo && (tipCuPlata || !isGrupa)
-  // Numele locației oglindit în `locatia` (text liber) — coloana e încă citită de
-  // portalul membri (get_evenimente_client) și de căutarea din listă.
+  // Locația se alege din `locatii` la ORICE tip de eveniment, nu doar la demo —
+  // textul liber producea variante („Stefan Cel Mare", „Nicolina Q4K"). Rămâne
+  // o portiță „Altă locație" pentru ce se ține în afara studiourilor (parc,
+  // teatru), interzisă la demo: acolo sala/locația trebuie să fie ale noastre.
   const locatii = useQuery({
     queryKey: ['lookup', 'locatii'],
     queryFn: locatiiOptions,
-    enabled: isDemo,
   })
+  const [locatieAlta, setLocatieAlta] = useState(
+    () => !eveniment?.locatie_id && Boolean(eveniment?.locatia?.trim()),
+  )
 
   const set = (key: keyof FormState) => (value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -107,6 +113,7 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['evenimente'] })
 
+  const esteAlta = locatieAlta && !isDemo
   const locatieNume =
     (locatii.data ?? []).find((o) => o.value === form.locatie_id)?.label ?? ''
 
@@ -118,7 +125,7 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
         descriere: form.descriere.trim() || null,
         data: form.data || null,
         ora: form.ora.trim() || null,
-        locatia: (isDemo ? locatieNume : form.locatia.trim()) || null,
+        locatia: (esteAlta ? form.locatia.trim() : locatieNume) || null,
         organizator: form.organizator || null,
         capacitate: toNum(form.capacitate),
         // Un demo e gratuit, nu se vinde pe portal si nu e eveniment de grupa
@@ -128,7 +135,7 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
         notite: form.notite.trim() || null,
         public: form.curs || isDemo ? false : form.public,
         curs: isDemo ? null : form.curs || null,
-        locatie_id: form.locatie_id || null,
+        locatie_id: (esteAlta ? '' : form.locatie_id) || null,
         sala: form.sala || null,
         durata_min: toNum(form.durata_min),
         varsta: (form.varsta || null) as Eveniment['varsta'],
@@ -272,16 +279,35 @@ export function EvenimentForm({ open, eveniment, onClose, onDeleted }: Props) {
               onChange={(e) => set('ora')(e.target.value)}
             />
           </Field>
-          {!isDemo && (
-            <Field label="Locație" htmlFor="locatia">
-              <TextInput
-                id="locatia"
-                value={form.locatia}
-                onChange={(e) => set('locatia')(e.target.value)}
-              />
-            </Field>
-          )}
+          <Field label="Locație" htmlFor="locatie_id">
+            <Select
+              id="locatie_id"
+              placeholder="—"
+              options={[
+                ...(locatii.data ?? []),
+                ...(isDemo ? [] : [{ value: ALTA_LOCATIE, label: 'Altă locație…' }]),
+              ]}
+              value={esteAlta ? ALTA_LOCATIE : form.locatie_id}
+              onChange={(e) => {
+                const v = e.target.value
+                setLocatieAlta(v === ALTA_LOCATIE)
+                // Schimbarea locației invalidează sala aleasă (sălile sunt per locație).
+                if (v !== ALTA_LOCATIE) setForm((p) => ({ ...p, locatie_id: v, sala: '' }))
+              }}
+            />
+          </Field>
         </div>
+
+        {esteAlta && (
+          <Field label="Numele locației" htmlFor="locatia">
+            <TextInput
+              id="locatia"
+              placeholder="Ex: Parcul Copou, Teatrul Național…"
+              value={form.locatia}
+              onChange={(e) => set('locatia')(e.target.value)}
+            />
+          </Field>
+        )}
 
         {isDemo && <DemoSection value={form} onChange={patchDemo} />}
 

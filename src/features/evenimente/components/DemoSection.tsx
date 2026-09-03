@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Field, Select, TextInput } from '@/components/ui'
 import { varstaCursOptions } from '@/lib/enums'
-import { campaniiOptions, locatiiOptions, saliOptions } from '@/lib/lookups'
+import { campaniiOptions, saliOptions } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 
 export type DemoFields = {
@@ -21,8 +21,9 @@ type Props = {
 
 // Profilul unei clase demo: ce o face „ca un curs" — unde se ține, cine e grupa
 // de vârstă vizată, în ce grupă reală converg participanții, din ce campanie vin.
+// Locația NU se alege aici: e câmpul comun al formularului (`locatie_id`), sălile
+// doar se filtrează după ea.
 export function DemoSection({ value, onChange }: Props) {
-  const locatii = useQuery({ queryKey: ['lookup', 'locatii'], queryFn: locatiiOptions })
   const sali = useQuery({
     queryKey: ['lookup', 'sali', value.locatie_id || null],
     queryFn: () => saliOptions(value.locatie_id || null),
@@ -38,17 +39,7 @@ export function DemoSection({ value, onChange }: Props) {
         Clasă demo
       </p>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Locație" htmlFor="demo-locatie">
-          <Select
-            id="demo-locatie"
-            placeholder="—"
-            options={locatii.data ?? []}
-            value={value.locatie_id}
-            // Schimbarea locației invalidează sala aleasă (sălile sunt per locație).
-            onChange={(e) => onChange({ locatie_id: e.target.value, sala: '' })}
-          />
-        </Field>
+      <div className="grid grid-cols-2 gap-3">
         <Field label="Sală" htmlFor="demo-sala">
           <Select
             id="demo-sala"
