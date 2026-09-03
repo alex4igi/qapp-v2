@@ -91,9 +91,9 @@ export function LeadModal({
   // Selecția cursului/evenimentului pentru programare: `curs:<id>` / `ev:<id>`.
   const [selectie, setSelectie] = useState('')
   const [ignoreVarsta, setIgnoreVarsta] = useState(false)
-  // Suprarezervarea unei clase demo pline — decizie explicită, manager+ (v. RPC
-  // `inscrie_la_demo`, care refuză altfel înscrierea).
-  const [overbook, setOverbook] = useState(false)
+  // Cursa pe ultimul loc: clasa se poate umple între randarea dropdown-ului și
+  // salvare. Steagul vine atunci din eroarea serverului, nu din listă.
+  const [plinDinServer, setPlinDinServer] = useState(false)
   // Valorile programării la deschidere — ca să nu re-creăm o programare la edituri
   // care nu schimbă data/cursul.
   const [initial, setInitial] = useState<{ data: string; selectie: string }>({
@@ -145,7 +145,7 @@ export function LeadModal({
     setTab('detalii')
     setSelectie('')
     setIgnoreVarsta(false)
-    setOverbook(false)
+    setPlinDinServer(false)
     setInitial({ data: lead?.data_programare?.slice(0, 10) ?? '', selectie: '' })
   }, [open, lead, defaultStatus, startScheduling])
 
@@ -275,10 +275,9 @@ export function LeadModal({
     evSelectat && evSelectat.capacitate != null
       ? { ocupat: evSelectat.ocupat, capacitate: evSelectat.capacitate }
       : null
-  const selectiePlina = Boolean(
-    locuriSelectie && locuriSelectie.ocupat >= locuriSelectie.capacitate,
-  )
-  const poateSuprarezerva = isManagerOrHigher(role)
+  const selectiePlina =
+    Boolean(locuriSelectie && locuriSelectie.ocupat >= locuriSelectie.capacitate) ||
+    plinDinServer
 
   // Rezolvă curs/eveniment + oră din selecția curentă.
   const resolveSelectie = () => {
@@ -379,7 +378,7 @@ export function LeadModal({
             leadId,
             sursa: 'receptie',
             dataProgramarii: form.data_programare.slice(0, 10),
-            permiteOverbook: overbook && poateSuprarezerva,
+            permiteOverbook: selectiePlina,
           })
         } else {
           await createProgramareLead({
@@ -400,8 +399,13 @@ export function LeadModal({
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       onClose()
     },
-    onError: (e: unknown) =>
-      setError(humanizeError(e, 'Eroare la salvare.')),
+    onError: (e: unknown) => {
+      // Cursa pe ultimul loc: clasa s-a umplut intre randarea listei si salvare.
+      // Marcam plin ca a doua apasare sa treaca prin confirmarea de suprarezervare.
+      const msg = humanizeError(e, 'Eroare la salvare.')
+      if (/complet/i.test(msg)) setPlinDinServer(true)
+      setError(msg)
+    },
   })
 
   const remove = useMutation({
@@ -611,7 +615,7 @@ export function LeadModal({
                       selectie={selectie}
                       onSelectieChange={(v) => {
                         setSelectie(v)
-                        setOverbook(false)
+                        setPlinDinServer(false)
                       }}
                       optiuni={optiuni}
                       cursuri={cursuriQ.data ?? []}
@@ -622,9 +626,6 @@ export function LeadModal({
                       intreSezoane={intreSezoane}
                       locuri={locuriSelectie}
                       plin={selectiePlina}
-                      poateSuprarezerva={poateSuprarezerva}
-                      overbook={overbook}
-                      onOverbookChange={setOverbook}
                     />
                   )}
 
@@ -704,7 +705,13 @@ export function LeadModal({
             <button type="button" onClick={onClose} style={{ height: '40px', padding: '0 16px', border: '1px solid #E4E0D7', background: '#fff', borderRadius: '9px', fontSize: '13.5px', fontWeight: 600, color: 'var(--color-ink)', cursor: 'pointer' }}>Anulează</button>
             {tab === 'detalii' && canEditLeads(role) && (
               <button type="submit" form="lead-form" disabled={save.isPending} className="qbtnp" style={{ height: '40px', padding: '0 20px', border: 'none', background: 'var(--color-quasar-yellow)', borderRadius: '9px', fontSize: '13.5px', fontWeight: 700, color: 'var(--color-ink)', cursor: 'pointer' }}>
-                {save.isPending ? 'Se salvează…' : isEdit ? 'Salvează' : 'Adaugă lead'}
+                {save.isPending
+                  ? 'Se salvează…'
+                  : form.status === 'programat' && selectiePlina
+                    ? 'Înscrie peste capacitate'
+                    : isEdit
+                      ? 'Salvează'
+                      : 'Adaugă lead'}
               </button>
             )}
           </div>

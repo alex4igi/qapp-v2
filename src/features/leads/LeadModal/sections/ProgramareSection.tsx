@@ -19,9 +19,6 @@ type Props = {
   /** Ocuparea evenimentului selectat; null la cursuri sau fără capacitate setată. */
   locuri: { ocupat: number; capacitate: number } | null
   plin: boolean
-  poateSuprarezerva: boolean
-  overbook: boolean
-  onOverbookChange: (on: boolean) => void
 }
 
 // Pasul „Programat": dată + curs/eveniment + excepția de grupă de vârstă.
@@ -39,9 +36,6 @@ export function ProgramareSection({
   intreSezoane,
   locuri,
   plin,
-  poateSuprarezerva,
-  overbook,
-  onOverbookChange,
 }: Props) {
   return (
     <div style={{ marginTop: '18px', border: '1px solid #BBD8F0', background: '#F0F7FE', borderRadius: '13px', padding: '15px 16px' }}>
@@ -73,21 +67,10 @@ export function ProgramareSection({
         </div>
       )}
       {plin && (
-        poateSuprarezerva ? (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '9px', fontSize: '12px', color: '#B42318', cursor: 'pointer', userSelect: 'none' }}>
-            <input
-              type="checkbox"
-              checked={overbook}
-              onChange={(e) => onOverbookChange(e.target.checked)}
-              style={{ width: '15px', height: '15px', accentColor: '#B42318', cursor: 'pointer' }}
-            />
-            Înscrie peste capacitate (decizie de manager)
-          </label>
-        ) : (
-          <div style={{ marginTop: '9px', fontSize: '11.5px', color: '#B42318' }}>
-            Cere unui manager să înscrie peste capacitate — sau alege alt slot.
-          </div>
-        )
+        <div style={{ marginTop: '9px', padding: '9px 11px', border: '1px solid #F0C9C9', background: '#FEF3F2', borderRadius: '9px', fontSize: '11.5px', lineHeight: 1.5, color: '#B42318' }}>
+          <strong>Clasa e completă.</strong> Leadul se înscrie oricum, peste capacitate — spune-i teacherului
+          că vine încă un om. Managerii primesc automat sarcina de a programa o clasă demo nouă.
+        </div>
       )}
       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '11px', fontSize: '12px', color: '#1F6FB2', cursor: 'pointer', userSelect: 'none' }}>
         <input

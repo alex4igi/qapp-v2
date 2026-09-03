@@ -11,8 +11,6 @@ import {
 } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
 import { clientiOptions } from '@/lib/lookups'
-import { isPrivileged } from '@/lib/rolesMatrix'
-import { useAuth } from '@/hooks/useAuth'
 import { enqueueConfirmareProgramare } from '@/features/leads/api'
 // Valorile trebuie să rămână sincron cu enumul `interes_lead` din DB — le luăm
 // din sursa lor, nu le duplicăm aici.
@@ -42,10 +40,13 @@ export function InscriereDemoModal({
   onClose,
 }: Props) {
   const queryClient = useQueryClient()
-  const { role } = useAuth()
   const [mode, setMode] = useState<Mode>('lead')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
+  // Cursa pe ultimul loc: doi oameni vad 11/12, unul apuca locul. Al doilea afla
+  // din eroarea serverului, nu din props — altfel ar ramane blocat pe un buton
+  // care zice „Înscrie" si esueaza la fiecare click.
+  const [plinDinServer, setPlinDinServer] = useState(false)
 
   const [term, setTerm] = useState('')
   const [leadId, setLeadId] = useState('')
@@ -59,8 +60,9 @@ export function InscriereDemoModal({
     interes: '',
   })
 
-  const plin = capacitate != null && ocupat >= capacitate
-  const poateSuprarezerva = isPrivileged(role)
+  // Nimeni nu e refuzat la o clasă demo: dacă e plină, se suprarezervă — dar
+  // butonul o spune explicit, ca să nu se întâmple din reflex.
+  const plin = (capacitate != null && ocupat >= capacitate) || plinDinServer
 
   const clienti = useQuery({ queryKey: ['lookup', 'clienti'], queryFn: clientiOptions })
   const leaduri = useQuery({
@@ -81,7 +83,7 @@ export function InscriereDemoModal({
 
   const save = useMutation({
     mutationFn: async () => {
-      const permiteOverbook = plin && poateSuprarezerva
+      const permiteOverbook = plin
       if (mode === 'client') {
         if (!clientId) throw new Error('Alege un cursant.')
         await inscrieLaDemo({
@@ -126,7 +128,11 @@ export function InscriereDemoModal({
       }
     },
     onSuccess: () => finish(),
-    onError: (e: unknown) => setError(humanizeError(e, 'Eroare la înscriere.')),
+    onError: (e: unknown) => {
+      const msg = humanizeError(e, 'Eroare la înscriere.')
+      if (/complet/i.test(msg)) setPlinDinServer(true)
+      setError(msg)
+    },
   })
 
   return (
@@ -140,7 +146,7 @@ export function InscriereDemoModal({
             Anulează
           </Button>
           <Button
-            disabled={save.isPending || (plin && !poateSuprarezerva)}
+            disabled={save.isPending}
             onClick={() => {
               setError(null)
               setInfo(null)
@@ -290,11 +296,9 @@ export function InscriereDemoModal({
       </div>
 
       {plin && (
-        <p className="mt-3 text-sm text-red-600">
-          Clasa e completă.{' '}
-          {poateSuprarezerva
-            ? 'Poți înscrie peste capacitate.'
-            : 'Cere unui manager să înscrie peste capacitate.'}
+        <p className="mt-3 rounded-md border border-red-200 bg-red-50 p-2.5 text-sm leading-relaxed text-red-700">
+          <strong>Clasa e completă.</strong> Participantul se înscrie oricum, peste capacitate —
+          anunță teacherul. Managerii au deja sarcina de a programa o clasă demo nouă.
         </p>
       )}
       {info && <p className="mt-3 text-sm text-quasar-gray">{info}</p>}
