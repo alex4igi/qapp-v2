@@ -1,9 +1,13 @@
 // Edge Function: creează contracte din template și trimite linkurile de semnare.
-// Apelată din staff app (JWT owner/admin/manager). SMS pleacă prin coada
+// Apelată din staff app (JWT staff). SMS pleacă prin coada
 // situatie_sms_uri (drenată de process-sms-queue, cu quiet hours); email doar
 // dacă familia are adresă (stub până la validarea SPF/DKIM pe domeniu).
 import { sendEmail } from '../_shared/messaging.ts'
 import { logEvent, portalUrl, randomToken, serviceClient, sha256Hex } from '../_shared/contracte.ts'
+
+// Aceleași roluri ca ROUTE_ACCESS['/contracte'] (ALL_STAFF, recepția inclusă) și
+// ca contract-template-storage: recepția trimite contractele la ghișeu.
+const STAFF_ROLES = ['owner', 'admin', 'manager', 'front_desk']
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,14 +40,14 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    // autorizare: owner / admin / manager
+    // autorizare: staff
     const authHeader = req.headers.get('authorization') ?? ''
     const jwt = authHeader.replace(/^Bearer\s+/i, '')
     const admin = serviceClient()
     const { data: userRes, error: userErr } = await admin.auth.getUser(jwt)
     if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
     const role = (userRes.user.app_metadata as { role?: string })?.role ?? 'front_desk'
-    if (!['owner', 'admin', 'manager'].includes(role)) return json({ error: 'forbidden' }, 403)
+    if (!STAFF_ROLES.includes(role)) return json({ error: 'rol fără drept de trimitere contracte' }, 403)
 
     const { templateId, targets } = (await req.json()) as {
       templateId: string

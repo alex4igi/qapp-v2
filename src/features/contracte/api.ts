@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { invokeEdge } from '@/lib/invokeEdge'
 import type { Tables } from '@/types/db'
 import type { Json } from '@/types/database'
 import type { TemplateField } from './types'
@@ -56,9 +57,9 @@ export async function sendContracte(params: {
   templateId: string
   targets: SendTarget[]
 }): Promise<Array<{ familieId: string; ok: boolean; error?: string; contractId?: string }>> {
-  const { data, error } = await supabase.functions.invoke('contract-send', { body: params })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
+  const data = await invokeEdge<{
+    results: Array<{ familieId: string; ok: boolean; error?: string; contractId?: string }>
+  }>('contract-send', params)
   return data.results
 }
 
@@ -264,10 +265,7 @@ function slugifyClientSide(s: string): string {
 }
 
 async function invokeTemplateStorage<T = unknown>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('contract-template-storage', { body })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
-  return data as T
+  return invokeEdge<T>('contract-template-storage', body)
 }
 
 function fileToBase64(file: File): Promise<string> {
