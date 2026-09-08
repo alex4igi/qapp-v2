@@ -5,6 +5,8 @@
 //      AZI + MAINE, Sâmbătă trimite doar MAINE pentru Duminică)
 // NB: review-ul NU se mai trimite aici (decizie 2026-06-08) — se cere doar după
 // conversie (lead → client). Vezi scripts/sms/templates.md → De implementat #1.
+// Pasul 5: reminder la 2 zile după demo pentru cine a venit și nu s-a înscris
+// (a_venit). Sâmbăta se trimite, duminica nu — cade luni.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   buildConfirmareInrolareSms,
@@ -12,6 +14,7 @@ import {
   sendSms,
 } from '../_shared/sms.ts'
 import { getProgramareSms } from '../_shared/leadLocatie.ts'
+import { localDateBucharest } from '../_shared/quietHours.ts'
 import { leaduriProtejate } from '../_shared/leadNurture.ts'
 import { sendEmail } from '../_shared/messaging.ts'
 
@@ -477,6 +480,96 @@ Deno.serve(async (req) => {
     }
   }
 
+  // --- 5. Reminder la 2 zile după demo (a_venit, încă neînscris) ---
+  // Cine a venit la ședința de probă și nu s-a înscris primea până acum ZERO
+  // automatisme — prima atingere era abia flagul de luni (până la 6 zile de
+  // tăcere, exact intervalul în care omul e cel mai cald).
+  //
+  // Ora vine din cronul ăsta (10:00 local), nu dintr-un delay de 48h care ar
+  // cădea oricând — inclusiv seara, în fereastra quiet hours. Practic 40-64h.
+  //
+  // Fereastra de 2-4 zile (nu fix D-2) e auto-vindecătoare: o rulare ratată e
+  // recuperată a doua zi, iar dedup-ul pe sms_logs (tip='post_demo', pe viață)
+  // oprește dublurile. Duminica se sare cu totul: mesajele cad luni, în aceeași
+  // zi cu lista de sunat — SMS la 10:00, telefonul recepției după.
+  //
+  // NU scriem în `lead_contacte`: acolo ORICE rând stinge flag_reminder
+  // (trigger bump_lead_ultima_contactare, migrația 20260901210000), deci un SMS
+  // automat ar șterge leadul de pe lista de sunat de luni. Automatul e prima
+  // atingere; apelul omului rămâne a doua.
+  let postDemoSent = 0
+  if (localWeekdayBucharest(now) !== 'Sun') {
+    const ziLocala = (zileInUrma: number) =>
+      localDateBucharest(new Date(now.getTime() - zileInUrma * 86_400_000))
+
+    const { data: prezenteDemo } = await supabase
+      .from('programari_leads')
+      .select('lead')
+      .eq('prezenta', 'prezent')
+      .gte('data_programarii', ziLocala(4))
+      .lte('data_programarii', ziLocala(2))
+      .not('lead', 'is', null)
+
+    const leadIds = [...new Set((prezenteDemo ?? []).map((p) => p.lead as string))]
+    const { data: candidati } = leadIds.length
+      ? await supabase
+          .from('leads')
+          .select('id, prenume, nume, telefon, locatia, id_client')
+          .in('id', leadIds)
+          .eq('status', 'a_venit')
+          .eq('deja_client', false)
+      : { data: [] }
+
+    if ((candidati ?? []).length) {
+      const ids = (candidati ?? []).map((l) => l.id)
+      // Lead legat de un client încă Activ/Inactiv = conversie neînregistrată.
+      // I-am cere să se înscrie a doua oară.
+      const protejate = await leaduriProtejate(supabase, candidati ?? [])
+      // Cine și-a luat deja altă ședință nu primește „păstrează-ți locul".
+      const { data: cuViitor } = await supabase
+        .from('programari_leads')
+        .select('lead')
+        .in('lead', ids)
+        .gte('data_programarii', localDateBucharest(now))
+      const auViitor = new Set((cuViitor ?? []).map((p) => p.lead as string))
+      // Dedup într-un singur query, nu unul per lead: `sms_logs` n-are unique pe
+      // (lead_id, tip), deci un `.maybeSingle()` ar crăpa pe orice dublură veche.
+      // Numără doar 'sent': un eșec de provider nu are voie să consume unica
+      // șansă a leadului — se reîncearcă mâine, cât timp e în fereastră.
+      const { data: deja } = await supabase
+        .from('sms_logs')
+        .select('lead_id')
+        .eq('tip', 'post_demo')
+        .eq('status', 'sent')
+        .in('lead_id', ids)
+      const auPrimit = new Set((deja ?? []).map((r) => r.lead_id as string))
+
+      for (const lead of candidati ?? []) {
+        if (!lead.telefon) continue
+        if (protejate.has(lead.id) || auViitor.has(lead.id)) continue
+        if (auPrimit.has(lead.id)) continue
+
+        const { locatie } = await getProgramareSms(supabase, lead.id, lead.locatia)
+        const mesaj = buildSms('post_demo', {
+          prenume: lead.prenume || lead.nume,
+          locatie,
+        })
+
+        const result = await sendSms(lead.telefon, mesaj)
+        await supabase.from('sms_logs').insert({
+          lead_id: lead.id,
+          tip: 'post_demo',
+          telefon: lead.telefon,
+          mesaj,
+          status: result.ok ? 'sent' : 'failed',
+          error: result.ok ? null : result.error,
+        })
+        if (result.ok) postDemoSent++
+        else errors.push(`${lead.nume} (post_demo): ${result.error}`)
+      }
+    }
+  }
+
   // --- Regula 50 de zile: suspendare automată + email către manageri ---
   let suspendati = 0
   let emailuriTrimise = 0
@@ -509,11 +602,12 @@ Deno.serve(async (req) => {
   }
 
   console.log(
-    `[cron/morning] remindere: ${sent.length}, followup: ${followupSent}, confirmari: ${confirmariSent}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, followup: ${followupSent}, postDemo: ${postDemoSent}, confirmari: ${confirmariSent}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, erori: ${errors.length}`,
   )
   return Response.json({
     sent,
     followup: followupSent,
+    postDemo: postDemoSent,
     confirmari: confirmariSent,
     aVenitFlagged,
     aVenitNurtured,

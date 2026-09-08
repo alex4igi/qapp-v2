@@ -52,6 +52,30 @@ Buna {prenume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. 
 Buna {prenume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!
 ```
 
+### 6. `post_demo` — la 2 zile după ședința de probă, dacă NU s-a înscris — ✅ LIVRAT 2026-09-08
+> Trimis de **`cron-morning`** (10:00 local), nu la un delay de 48h: ora fixă ține
+> mesajul departe de seară. Practic 40–64h de la demo. **Duminica se sare** —
+> mesajele cad luni, în aceeași zi cu lista de sunat (SMS la 10:00, telefonul după).
+> Fereastră de 2–4 zile pe interogare (rezistă la o rulare ratată), dedup pe
+> `sms_logs` (`tip='post_demo'`, pe viață): cine vine la două demo-uri ia un singur SMS.
+> **139 car. șablon + prenume → 1 SMS.** Buget de nume: 21 car. (peste, devine 2 segmente —
+> 51 din 6.622 de leads, mai ales gunoi din formularul web: „Sunt interesata de cursuri...").
+>
+> **Text impersonal cap-coadă** (2026-09-08): același mesaj ajunge și la părintele
+> care citește despre copil, și la studentul care citește despre el. Nici „locul tău",
+> nici „unde ai fost la probă" — se vorbește despre grupa de vârstă, nu despre cititor.
+```
+Buna {prenume}! Locurile pentru grupa de varsta de dans, se ocupa in ordinea inscrierilor. Pentru rezervarea locului, da-ne un mesaj la {telefon locatie}.
+```
+**Nu primesc:** cine a ieșit între timp din `a_venit` (înscris / mutat — fereastră de
+undo gratuită), `deja_client`, leadurile legate de un client încă Activ/Inactiv
+(conversie neînregistrată — vezi `leaduriProtejate`), cine și-a luat deja altă
+ședință, și cine n-are telefon.
+
+> ⚠️ SMS-ul **nu** scrie în `lead_contacte`. Acolo orice rând stinge `flag_reminder`
+> (trigger `bump_lead_ultima_contactare`), deci leadul ar dispărea de pe lista de
+> sunat de luni. Automatul e prima atingere; apelul recepției rămâne a doua.
+
 ---
 
 ## A2. Confirmare înrolare recurentă — trimisă AUTOMAT, la cronul de a doua zi

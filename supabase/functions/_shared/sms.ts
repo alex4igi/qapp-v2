@@ -89,6 +89,7 @@ export type SmsTip =
   | 'review'
   | 'followup'
   | 'waiting_list'
+  | 'post_demo'
 
 export type SmsParams = {
   prenume?: string | null
@@ -124,6 +125,13 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
       return `Buna ${nume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la ${telefon}!`
     case 'waiting_list':
       return `Buna ${nume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!`
+    // La 2 zile dupa demo, pentru cine a venit si nu s-a inscris. Miza e locul in
+    // grupa (capacitatea e reala), nu politetea — un „ne-a parut bine" nu misca
+    // pe nimeni. Finalul e IMPERSONAL („rezervarea locului", nu „locul tau"):
+    // acelasi mesaj ajunge si la parintele care citeste despre copil, si la
+    // studentul care citeste despre el. Trimis de cron-morning la 10:00 (blocul 5).
+    case 'post_demo':
+      return `Buna ${nume}! Locurile pentru grupa de varsta de dans, se ocupa in ordinea inscrierilor. Pentru rezervarea locului, da-ne un mesaj la ${telefon}.`
     default:
       return ''
   }
