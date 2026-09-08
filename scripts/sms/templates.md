@@ -8,6 +8,14 @@
 
 ## Reguli de conținut
 - **FĂRĂ diacritice** (ă→a, î/â→i/a, ș→s, ț→t) și **fără emoji** — GSM-7 le strică pe telefon.
+  O singură diacritică comută TOT mesajul pe UCS-2, unde un segment are **70** de
+  caractere, nu 160 — un SMS normal ajunge la 3 segmente. Regula se aplică și
+  valorilor dinamice, nu doar textului scris de noi.
+- **`{prenume}` e curățat automat** (`numeSalut` din `_shared/sms.ts`, 2026-09-08):
+  primul cuvânt, fără diacritice, maximum 21 de caractere. Câmpul vine din
+  formularul public, unde oamenii scriu propoziții („Sunt interesata de cursuri de
+  dans mixt") sau nume compuse care umflau mesajul peste 160. Ce nu arată a nume
+  (gol, cifre, emoji corupte) cade pe salutul neutru „bun venit".
 - **160 caractere = 1 SMS.** Peste → se taxează 2+ mesaje. Țintă: 1 SMS unde se poate.
 - Provider beta: **smslink.ro**. Placeholderele `{...}` se completează automat.
 
@@ -33,6 +41,13 @@ Buna {prenume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}. Va aste
 
 ### 2. `reminder` — dimineața (10:00 local), ziua ședinței
 > Weekend: programări sâmbătă → reminder vineri; duminică → sâmbătă (varianta „MAINE").
+> **Sursa = programarea zilei** (`programari_leads`, `prezenta='programat'`), nu
+> `leads.status` + `leads.data_programare` — deci o clasă DEMO se comportă exact ca
+> un curs: cine e pe rosterul evenimentului primește reminder indiferent unde e
+> leadul în kanban (înscrierea din rosterul demo nu-l readuce în „Programat" dacă
+> e deja `a_venit` / `programat` pe altceva). **Ora și locația vin din evenimentul
+> (sau cursul) programării, citite live la trimitere** — nu din copia stocată la
+> înscriere, care rămâne veche dacă se mută ora. Evenimentul `Anulat` nu trimite.
 ```
 Buna {prenume}! Va reamintim de sedinta gratuita la Quasar Dance {AZI/MAINE}, {data}, la {adresa}. Te asteptam!
 ```
@@ -58,8 +73,8 @@ Buna {prenume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adauga
 > mesajele cad luni, în aceeași zi cu lista de sunat (SMS la 10:00, telefonul după).
 > Fereastră de 2–4 zile pe interogare (rezistă la o rulare ratată), dedup pe
 > `sms_logs` (`tip='post_demo'`, pe viață): cine vine la două demo-uri ia un singur SMS.
-> **139 car. șablon + prenume → 1 SMS.** Buget de nume: 21 car. (peste, devine 2 segmente —
-> 51 din 6.622 de leads, mai ales gunoi din formularul web: „Sunt interesata de cursuri...").
+> **139 car. șablon + prenume → 1 SMS.** Numele e limitat la 21 car. de `numeSalut`
+> (vezi Reguli de conținut), deci mesajul nu poate depăși 160.
 >
 > **Text impersonal cap-coadă** (2026-09-08): același mesaj ajunge și la părintele
 > care citește despre copil, și la studentul care citește despre el. Nici „locul tău",

@@ -77,6 +77,27 @@ function faraDiacritice(s: string): string {
   return s.normalize("NFD").replace(/\p{Diacritic}/gu, "")
 }
 
+// Salutul din SMS: primul cuvant din prenume, fara diacritice.
+//
+// Campul `prenume` vine din formularul public, unde omul scrie ce vrea, iar
+// pretul se plateste pe segment de mesaj:
+//   * nume compuse („Alexandra Maria") umflau mesajul peste 160 => 2 segmente;
+//   * o singura diacritica („Razvan" scris „Răzvan") comuta TOT SMS-ul pe UCS-2,
+//     unde un segment are 70 de caractere, nu 160 => un mesaj normal ajunge la 3
+//     segmente (50 de leads in baza, 08.09.2026);
+//   * gunoiul din formular („Sunt interesata de cursuri de dans mixt" trecut ca
+//     prenume) producea „Buna Sunt interesata de cursuri de dans mixt!".
+//
+// Ce nu arata a nume — gol, cifre, emoji corupte, primul cuvant tot prea lung —
+// cade pe salutul neutru, ca sa nu iasa nici mesaj scump, nici mesaj ridicol.
+const MAX_NUME_SMS = 21
+
+export function numeSalut(prenume?: string | null): string {
+  const primul = faraDiacritice((prenume ?? '').trim()).split(/\s+/)[0] ?? ''
+  const areFormaDeNume = /^[A-Za-z][A-Za-z'-]*$/.test(primul)
+  return areFormaDeNume && primul.length <= MAX_NUME_SMS ? primul : 'bun venit'
+}
+
 // Doar data — ora vine separat (din curs/eveniment), via param `ora`.
 function formatDataProgramare(iso: string): string {
   const d = new Date(iso)
@@ -102,7 +123,7 @@ export type SmsParams = {
 }
 
 export function buildSms(tip: SmsTip, params: SmsParams): string {
-  const nume = params.prenume || 'bun venit'
+  const nume = numeSalut(params.prenume)
   const adresa = getAdresa(params.locatie ?? null)
   const reviewLink = getReviewLink(params.locatie ?? null)
   const telefon = getTelefon(params.locatie ?? null)
@@ -156,7 +177,10 @@ export type ConfirmareInrolareParams = {
 }
 
 export function buildConfirmareInrolareSms(p: ConfirmareInrolareParams): string {
-  const nume = p.prenume?.trim() || 'bun venit'
+  // Acelasi tratament ca la salutul din buildSms: numele vine din `clienti`, unde
+  // diacriticele sunt REGULA, nu exceptia (le tasteaza recepatia). Mesajul asta e
+  // deja ~2 segmente; o diacritica in nume l-ar duce pe UCS-2, deci la 4+.
+  const nume = numeSalut(p.prenume)
   const detalii: string[] = []
   const zile = (p.zile ?? []).filter(Boolean)
   const orePeZi =
