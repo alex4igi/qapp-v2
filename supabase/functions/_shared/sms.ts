@@ -90,12 +90,31 @@ function faraDiacritice(s: string): string {
 //
 // Ce nu arata a nume — gol, cifre, emoji corupte, primul cuvant tot prea lung —
 // cade pe salutul neutru, ca sa nu iasa nici mesaj scump, nici mesaj ridicol.
-const MAX_NUME_SMS = 21
+// 20, nu 21: sablonul cel mai lung (post_demo) are 134 de caractere fara salut,
+// iar „Buna " + nume + „!" mai adauga 6 + n. La n=20 iese exact 160 (un segment);
+// la 21 iese 161 si mesajul se taxeaza dublu.
+const MAX_NUME_SMS = 20
 
-export function numeSalut(prenume?: string | null): string {
-  const primul = faraDiacritice((prenume ?? '').trim()).split(/\s+/)[0] ?? ''
+// Peste 3 cuvinte nu mai e nume, e propozitie: masurat pe baza (08.09.2026), la 3
+// cuvinte sunt aproape numai nume reale (94 randuri: „Andronic Petronela Andreea"),
+// la 4+ aproape numai raspunsuri scrise in campul gresit (21: „Sunt interesata de
+// cursuri de dans mixt", „Abia astept sa vin").
+const MAX_CUVINTE_NUME = 3
+
+// Numele curatat pentru salut, sau null daca din campul asta nu iese un nume.
+export function numeSalut(prenume?: string | null): string | null {
+  const brut = (prenume ?? '').trim()
+  if (!brut || brut.split(/\s+/).length > MAX_CUVINTE_NUME) return null
+  const primul = faraDiacritice(brut).split(/\s+/)[0] ?? ''
   const areFormaDeNume = /^[A-Za-z][A-Za-z'-]*$/.test(primul)
-  return areFormaDeNume && primul.length <= MAX_NUME_SMS ? primul : 'bun venit'
+  return areFormaDeNume && primul.length <= MAX_NUME_SMS ? primul : null
+}
+
+// Salutul complet. Fara nume folosibil ramane doar „Buna!" — niciodata „Buna bun
+// venit!", care suna a formular, nu a om (decizie Alex, 08.09.2026).
+export function salutSms(prenume?: string | null): string {
+  const n = numeSalut(prenume)
+  return n ? `Buna ${n}!` : 'Buna!'
 }
 
 // Doar data — ora vine separat (din curs/eveniment), via param `ora`.
@@ -123,7 +142,7 @@ export type SmsParams = {
 }
 
 export function buildSms(tip: SmsTip, params: SmsParams): string {
-  const nume = numeSalut(params.prenume)
+  const salut = salutSms(params.prenume)
   const adresa = getAdresa(params.locatie ?? null)
   const reviewLink = getReviewLink(params.locatie ?? null)
   const telefon = getTelefon(params.locatie ?? null)
@@ -135,24 +154,24 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
   // Texte fără diacritice și fără emoji — vezi REGULA din capul fișierului.
   switch (tip) {
     case 'confirmare':
-      return `Buna ${nume}! Sedinta gratuita la Quasar Dance e confirmata pe ${data}${oraTxt}. Va asteptam cu drag la ${adresa}!`
+      return `${salut} Sedinta gratuita la Quasar Dance e confirmata pe ${data}${oraTxt}. Va asteptam cu drag la ${adresa}!`
     case 'reminder': {
       const cand = params.cand === 'azi' ? 'AZI' : 'MAINE'
-      return `Buna ${nume}! Va reamintim de sedinta gratuita la Quasar Dance ${cand}, ${data}${oraTxt}, la ${adresa}. Te asteptam!`
+      return `${salut} Va reamintim de sedinta gratuita la Quasar Dance ${cand}, ${data}${oraTxt}, la ${adresa}. Te asteptam!`
     }
     case 'review':
-      return `Buna ${nume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: ${reviewLink} Multumim!`
+      return `${salut} Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: ${reviewLink} Multumim!`
     case 'followup':
-      return `Buna ${nume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la ${telefon}!`
+      return `${salut} Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la ${telefon}!`
     case 'waiting_list':
-      return `Buna ${nume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!`
+      return `${salut} Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!`
     // La 2 zile dupa demo, pentru cine a venit si nu s-a inscris. Miza e locul in
     // grupa (capacitatea e reala), nu politetea — un „ne-a parut bine" nu misca
     // pe nimeni. Finalul e IMPERSONAL („rezervarea locului", nu „locul tau"):
     // acelasi mesaj ajunge si la parintele care citeste despre copil, si la
     // studentul care citeste despre el. Trimis de cron-morning la 10:00 (blocul 5).
     case 'post_demo':
-      return `Buna ${nume}! Locurile pentru grupa de varsta de dans, se ocupa in ordinea inscrierilor. Pentru rezervarea locului, da-ne un mesaj la ${telefon}.`
+      return `${salut} Locurile pentru grupa de varsta de dans, se ocupa in ordinea inscrierilor. Pentru rezervarea locului, da-ne un mesaj la ${telefon}.`
     default:
       return ''
   }
@@ -180,7 +199,7 @@ export function buildConfirmareInrolareSms(p: ConfirmareInrolareParams): string 
   // Acelasi tratament ca la salutul din buildSms: numele vine din `clienti`, unde
   // diacriticele sunt REGULA, nu exceptia (le tasteaza recepatia). Mesajul asta e
   // deja ~2 segmente; o diacritica in nume l-ar duce pe UCS-2, deci la 4+.
-  const nume = numeSalut(p.prenume)
+  const salut = salutSms(p.prenume)
   const detalii: string[] = []
   const zile = (p.zile ?? []).filter(Boolean)
   const orePeZi =
@@ -212,7 +231,7 @@ export function buildConfirmareInrolareSms(p: ConfirmareInrolareParams): string 
   const wa = p.linkWhatsapp?.trim()
     ? ` Grup WhatsApp: ${p.linkWhatsapp.trim()}`
     : ''
-  const text = `Buna ${nume}! Iti confirmam locul in grupa ${p.curs}${detaliiStr}.${pret}${wa}`
+  const text = `${salut} Iti confirmam locul in grupa ${p.curs}${detaliiStr}.${pret}${wa}`
   return faraDiacritice(text)
 }
 

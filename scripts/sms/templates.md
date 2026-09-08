@@ -11,11 +11,16 @@
   O singură diacritică comută TOT mesajul pe UCS-2, unde un segment are **70** de
   caractere, nu 160 — un SMS normal ajunge la 3 segmente. Regula se aplică și
   valorilor dinamice, nu doar textului scris de noi.
-- **`{prenume}` e curățat automat** (`numeSalut` din `_shared/sms.ts`, 2026-09-08):
-  primul cuvânt, fără diacritice, maximum 21 de caractere. Câmpul vine din
-  formularul public, unde oamenii scriu propoziții („Sunt interesata de cursuri de
-  dans mixt") sau nume compuse care umflau mesajul peste 160. Ce nu arată a nume
-  (gol, cifre, emoji corupte) cade pe salutul neutru „bun venit".
+- **Salutul e construit automat** (`salutSms` / `numeSalut` din `_shared/sms.ts`,
+  2026-09-08): primul cuvânt din `{prenume}`, fără diacritice, maximum **20** de
+  caractere (peste, mesajul cel mai lung ar trece de 160), maximum **3 cuvinte** în
+  câmpul brut. Câmpul vine din formularul public, unde oamenii scriu propoziții
+  („Sunt interesata de cursuri de dans mixt", „Abia astept sa vin").
+- **Fără nume folosibil, salutul e doar „Buna!"** — niciodată „Buna bun venit!".
+  Afectează 6,2% din leads (409 din 6.622: fără nume, propoziții, cifre, emoji).
+  Pragul de 3 cuvinte e măsurat, nu ghicit: la 3 cuvinte baza are aproape numai
+  nume reale (94, „Andronic Petronela Andreea"), la 4+ aproape numai răspunsuri
+  scrise în câmpul greșit (21).
 - **160 caractere = 1 SMS.** Peste → se taxează 2+ mesaje. Țintă: 1 SMS unde se poate.
 - Provider beta: **smslink.ro**. Placeholderele `{...}` se completează automat.
 
