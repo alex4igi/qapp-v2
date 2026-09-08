@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseUrl } from '@/lib/supabase'
 
 export type AppRole =
   | 'owner'
@@ -30,6 +30,8 @@ type AuthContextValue = {
   teacherId: string | null
   /** Profilul se rezolvă cu un query după login — vezi gardul din ProtectedRoute. */
   teacherLoading: boolean
+  /** Bootul de auth s-a agățat — arată ecranul de deblocare în loc de spinner. */
+  authStalled: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
@@ -57,6 +59,33 @@ function locatieFromUser(user: User | null): string | null {
   return typeof l === 'string' && l.length > 0 ? l : null
 }
 
+// `@supabase/auth-js` nu pune NICIUN timeout pe fetch-urile lui. Dacă cererea de
+// refresh a tokenului rămâne agățată (token expirat peste o conexiune moartă),
+// `getSession()` nu se mai întoarce niciodată: fără gardul de mai jos aplicația
+// rămânea pe „Se încarcă…" la infinit, fără eroare și fără ieșire, iar singura
+// scăpare era ștergerea datelor de site din browser.
+const AUTH_BOOT_TIMEOUT_MS = 8000
+
+/**
+ * Aruncă tokenul local și repornește aplicația. Reload-ul e obligatoriu, nu
+ * cosmetic: clientul agățat ține lockul pe cheia de storage, deci până și un
+ * login nou ar aștepta după el. Pagina nouă pornește cu un client curat.
+ */
+export function resetAuthSession() {
+  try {
+    // Aceeași cheie pe care și-o calculează supabase-js din URL. O ștergem
+    // țintit: pe `localhost` stau în același origin și tokenurile altor app-uri
+    // Supabase, iar un `sb-*` la grămadă le-ar deconecta și pe alea.
+    const prefix = `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`
+    for (const key of Object.keys(localStorage)) {
+      if (key === prefix || key.startsWith(`${prefix}-`)) localStorage.removeItem(key)
+    }
+  } catch {
+    // localStorage inaccesibil (fereastră privată) — rămâne doar reload-ul
+  }
+  window.location.replace('/login')
+}
+
 // Pontajul NU mai atârnă de auth (redesign 2026-07-22): login ≠ sosire la muncă,
 // logout ≠ plecare. Tura se deschide/închide explicit din butonul de pontaj
 // (`features/pontaj/usePontaj`), pentru că orele sugerează salariul.
@@ -64,20 +93,39 @@ function locatieFromUser(user: User | null): string | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authStalled, setAuthStalled] = useState(false)
   const [teacherId, setTeacherId] = useState<string | null>(null)
   const [teacherLoading, setTeacherLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
+    let settled = false
+    const finish = (next: Session | null, stalled: boolean) => {
+      if (settled) return
+      settled = true
+      setSession(next)
+      setAuthStalled(stalled)
+      setLoading(false)
+    }
+
+    const timer = setTimeout(() => finish(null, true), AUTH_BOOT_TIMEOUT_MS)
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => finish(data.session, false))
+      .catch(() => finish(null, true))
+      .finally(() => clearTimeout(timer))
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      // Dacă răspunsul vine totuși după ce am dat timeout, ieșim din blocaj.
+      setSession(next)
+      setAuthStalled(false)
       setLoading(false)
     })
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next)
-    })
-
-    return () => sub.subscription.unsubscribe()
+    return () => {
+      clearTimeout(timer)
+      sub.subscription.unsubscribe()
+    }
   }, [])
 
   // Rezolvă profilul de instructor al contului curent. Un singur query per login,
@@ -123,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     teacherId,
     teacherLoading,
+    authStalled,
     signIn,
     signOut,
   }

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui'
 import { AuthProvider } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AuthBootGate } from '@/components/AuthBootGate'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AdministrareIndex, AdministrareLayout } from '@/components/layout/AdministrareLayout'
 import { Placeholder } from '@/components/Placeholder'
@@ -80,6 +81,7 @@ import { ROUTE_ACCESS } from '@/lib/rolesMatrix'
 function App() {
   return (
     <AuthProvider>
+      <AuthBootGate>
       <BrowserRouter>
         <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center"><Spinner /></div>}>
         <Routes>
@@ -329,6 +331,7 @@ function App() {
         </Routes>
         </Suspense>
       </BrowserRouter>
+      </AuthBootGate>
     </AuthProvider>
   )
 }
