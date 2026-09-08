@@ -41,14 +41,19 @@ export async function getLatestProgramare(
   }
 }
 
-// Programează (cu delay de 5 min) SMS-ul de confirmare a programării prin RPC —
-// upsert în coada `confirmari_programare_sms` cu send_after = now()+2min (resetat
-// la re-editare în fereastră). Drenarea o face edge fn `process-programare-sms`.
+// Programează SMS-ul de confirmare prin RPC — upsert în coada
+// `confirmari_programare_sms` cu send_after = now()+2min (resetat la re-editare în
+// fereastră). Confirmarea se leagă de PROGRAMARE: dă-i id-ul rândului tocmai creat,
+// ca undo-ul (scoaterea de pe listă) să oprească SMS-ul și ca o reprogramare să-și
+// primească propria confirmare. Fără el, RPC-ul cade pe ultima programare a
+// leadului. Drenarea o face edge fn `process-programare-sms`.
 export async function enqueueConfirmareProgramare(
   leadId: string,
+  programareId?: string | null,
 ): Promise<void> {
   const { error } = await supabase.rpc('enqueue_confirmare_programare', {
     p_lead: leadId,
+    p_programare: programareId ?? undefined,
   })
   if (error) throw error
 }
@@ -128,15 +133,20 @@ export async function createProgramareLead(input: {
   locatie: string | null
   data_programarii: string
   ora?: string | null
-}): Promise<void> {
-  const { error } = await supabase.from('programari_leads').insert({
-    lead: input.lead,
-    cursul_programat: input.cursul_programat ?? null,
-    eveniment_programat: input.eveniment_programat ?? null,
-    locatie: input.locatie,
-    data_programarii: input.data_programarii,
-    ora: input.ora ?? null,
-    prezenta: 'programat',
-  })
+}): Promise<string> {
+  const { data, error } = await supabase
+    .from('programari_leads')
+    .insert({
+      lead: input.lead,
+      cursul_programat: input.cursul_programat ?? null,
+      eveniment_programat: input.eveniment_programat ?? null,
+      locatie: input.locatie,
+      data_programarii: input.data_programarii,
+      ora: input.ora ?? null,
+      prezenta: 'programat',
+    })
+    .select('id')
+    .single()
   if (error) throw error
+  return data.id
 }

@@ -1,13 +1,18 @@
 // Edge Function cron — drenează coada `confirmari_programare_sms`.
 // Pentru fiecare rând scadent (send_after <= now, status 'programat'):
-//   - reciteste leadul + ultima programare (ora e mereu la zi),
-//   - daca leadul nu mai e 'programat' → marcheaza 'anulat' (fara SMS),
-//   - altfel compune confirmarea (data + ora + adresa) si o trimite,
-//   - dedup prin sms_logs (lead_id + tip='confirmare').
-// Apelata de pg_cron la ~1 min. Delay-ul de 5 min vine din send_after.
+//   - reciteste PROGRAMAREA (nu statusul leadului),
+//   - daca programarea a disparut sau nu mai e 'programat' → 'anulat' (fara SMS),
+//   - altfel compune confirmarea (data + ora + adresa evenimentului/cursului),
+//   - dedup prin sms_logs pe (lead_id, tip='confirmare', programare).
+// Apelata de pg_cron la ~1 min. Delay-ul de 2 min vine din send_after.
+//
+// De ce programarea si nu `leads.status`: inscrierea la o clasa demo din rosterul
+// evenimentului nu readuce leadul in „Programat" daca e deja mai departe in
+// pipeline (a_venit) — omul ramanea fara confirmare desi era pe lista. Fereastra
+// de undo ramane: rândul din coada are ON DELETE CASCADE pe programare, deci
+// scoaterea de pe lista in cele 2 minute opreste SMS-ul.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms } from '../_shared/sms.ts'
-import { getProgramareSms } from '../_shared/leadLocatie.ts'
 import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
 
 Deno.serve(async (req) => {
@@ -41,7 +46,7 @@ Deno.serve(async (req) => {
   }
   const { data: due, error } = await supabase
     .from('confirmari_programare_sms')
-    .select('id, lead_id')
+    .select('id, lead_id, programare')
     .eq('status', 'programat')
     .lte('send_after', nowIso)
 
@@ -51,22 +56,53 @@ Deno.serve(async (req) => {
   let canceled = 0
   let failed = 0
 
+  const anuleaza = async (id: string, motiv?: string) => {
+    await supabase
+      .from('confirmari_programare_sms')
+      .update({ status: 'anulat', error: motiv ?? null })
+      .eq('id', id)
+    canceled++
+  }
+
   for (const row of due ?? []) {
+    // Rânduri legacy (înainte de coloana `programare`): rezolvă programarea vie.
+    let programareId = row.programare as string | null
+    if (!programareId) {
+      const { data: p } = await supabase
+        .from('programari_leads')
+        .select('id')
+        .eq('lead', row.lead_id)
+        .eq('prezenta', 'programat')
+        .gte('data_programarii', new Date().toISOString().slice(0, 10))
+        .order('created', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      programareId = p?.id ?? null
+    }
+    if (!programareId) {
+      await anuleaza(row.id, 'fără programare activă')
+      continue
+    }
+
+    const { data: programare } = await supabase
+      .from('programari_leads')
+      .select('id, lead, data_programarii, ora, locatie, eveniment_programat, prezenta')
+      .eq('id', programareId)
+      .maybeSingle()
+
+    // Programare ștearsă sau deja consumată (prezent/absent) → fără SMS.
+    if (!programare || programare.prezenta !== 'programat' || !programare.data_programarii) {
+      await anuleaza(row.id, 'programare anulată sau consumată')
+      continue
+    }
+
     const { data: lead } = await supabase
       .from('leads')
-      .select(
-        'id, prenume, nume, telefon, locatia, grupa_varsta, data_programare, status',
-      )
+      .select('id, prenume, nume, telefon, locatia')
       .eq('id', row.lead_id)
-      .single()
-
-    // Lead șters / ieșit din 'programat' (undo în fereastră) → anulează rândul.
-    if (!lead || lead.status !== 'programat' || !lead.data_programare) {
-      await supabase
-        .from('confirmari_programare_sms')
-        .update({ status: 'anulat' })
-        .eq('id', row.id)
-      canceled++
+      .maybeSingle()
+    if (!lead) {
+      await anuleaza(row.id, 'lead inexistent')
       continue
     }
     if (!lead.telefon) {
@@ -78,14 +114,18 @@ Deno.serve(async (req) => {
       continue
     }
 
-    // Dedup: dacă deja s-a trimis o confirmare pentru acest lead, marchează trimis.
+    // Dedup pe (lead, tip, programare): o re-editare în fereastră nu retrimite
+    // pentru aceeași programare, dar o programare NOUĂ primește confirmarea ei.
+    // Fără `.maybeSingle()` — `sms_logs` n-are unique, iar două rânduri vechi ar
+    // face apelul să crape și SMS-ul să plece a doua oară.
     const { data: existing } = await supabase
       .from('sms_logs')
       .select('id')
       .eq('lead_id', lead.id)
       .eq('tip', 'confirmare')
-      .maybeSingle()
-    if (existing) {
+      .eq('programare', programare.id)
+      .limit(1)
+    if ((existing ?? []).length) {
       await supabase
         .from('confirmari_programare_sms')
         .update({ status: 'trimis', trimis_la: new Date().toISOString() })
@@ -93,19 +133,38 @@ Deno.serve(async (req) => {
       continue
     }
 
-    // Ora + locația din ultima programare (rezolvate din curs/eveniment la
-    // programare). Locația programării e sursa de adevăr pentru adresă —
-    // lead.locatia (câmp liber al recepției) e doar fallback când lipsește.
-    const { ora, locatie } = await getProgramareSms(
-      supabase,
-      lead.id,
-      lead.locatia,
-    )
+    // Ora și locația vin din evenimentul/cursul programării, citite LIVE — copia
+    // din `programari_leads` rămâne veche dacă se mută ora clasei demo.
+    let ora = programare.ora as string | null
+    let locatieId = programare.locatie as string | null
+    if (programare.eveniment_programat) {
+      const { data: ev } = await supabase
+        .from('evenimente')
+        .select('ora, locatie_id, status')
+        .eq('id', programare.eveniment_programat)
+        .maybeSingle()
+      if (ev?.status === 'Anulat') {
+        await anuleaza(row.id, 'eveniment anulat')
+        continue
+      }
+      ora = ev?.ora ?? ora
+      locatieId = ev?.locatie_id ?? locatieId
+    }
+
+    let locatie = lead.locatia as string | null
+    if (locatieId) {
+      const { data: loc } = await supabase
+        .from('locatii')
+        .select('nume')
+        .eq('id', locatieId)
+        .maybeSingle()
+      locatie = loc?.nume ?? locatie
+    }
 
     const mesaj = buildSms('confirmare', {
       prenume: lead.prenume || lead.nume,
       locatie,
-      dataProgramare: lead.data_programare,
+      dataProgramare: programare.data_programarii,
       ora,
     })
 
@@ -116,6 +175,7 @@ Deno.serve(async (req) => {
         tip: 'confirmare',
         telefon: lead.telefon,
         mesaj,
+        programare: programare.id,
       })
       await supabase
         .from('confirmari_programare_sms')

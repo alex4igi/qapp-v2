@@ -180,6 +180,18 @@ Deno.serve(async (req) => {
   const errors: string[] = []
 
   // --- 1. Remindere adaptive ---
+  // Sursa de adevăr e PROGRAMAREA zilei (`programari_leads`), nu câmpurile de pe
+  // lead. Motivul: o clasă demo se poate umple din rosterul evenimentului, iar
+  // `inscrie_la_demo` nu mai întoarce leadul în „Programat" dacă e deja mai
+  // departe în pipeline (a_venit) — corect pentru kanban, dar citirea veche
+  // (`leads.status='programat'` + `leads.data_programare`) sărea peste el și
+  // omul venea la demo fără reminder. La fel, un lead cu două programări avea
+  // `data_programare` de pe cea mai nouă, nu de pe cea de azi.
+  //
+  // Ora și locația se iau din EVENIMENTUL/cursul programării, live la trimitere
+  // (nu din copia stocată la înscriere, care rămâne veche dacă se mută ora), și
+  // nu prin `getProgramareSms` — acela alege ultima programare a leadului, deci
+  // pe cea greșită când sunt două.
   const dow = now.getUTCDay() // 0=Dum … 6=Sâm
   const targets: { day: Date; cand: 'azi' | 'maine' }[] = []
   if (dow >= 1 && dow <= 5) targets.push({ day: new Date(now), cand: 'azi' })
@@ -188,42 +200,124 @@ Deno.serve(async (req) => {
   if (tdow === 6 || tdow === 0) targets.push({ day: tomorrow, cand: 'maine' })
 
   for (const t of targets) {
-    const { data: leads } = await supabase
+    const ziIso = localDateBucharest(t.day)
+
+    // a) Programările zilei — curs SAU eveniment, indiferent de statusul leadului.
+    const { data: programari } = await supabase
+      .from('programari_leads')
+      .select('lead, ora, locatie, eveniment_programat')
+      .eq('prezenta', 'programat')
+      .eq('data_programarii', ziIso)
+      .not('lead', 'is', null)
+
+    type Slot = {
+      ora: string | null
+      locatieId: string | null
+      evenimentId: string | null
+    }
+    const sloturi = new Map<string, Slot>()
+    for (const p of programari ?? []) {
+      // Două programări în aceeași zi: prima e suficientă — mesajul e „azi ai
+      // ședință", nu un orar.
+      if (sloturi.has(p.lead as string)) continue
+      sloturi.set(p.lead as string, {
+        ora: p.ora ?? null,
+        locatieId: p.locatie ?? null,
+        evenimentId: p.eveniment_programat ?? null,
+      })
+    }
+
+    // b) Compat: leaduri marcate „Programat" cu dată, dar fără rând de programare
+    // (date vechi, dinainte ca programarea să fie obligatorie în LeadModal).
+    const { data: fromLeads } = await supabase
       .from('leads')
-      .select(
-        'id, prenume, nume, telefon, locatia, grupa_varsta, data_programare',
-      )
+      .select('id')
       .eq('status', 'programat')
       .gte('data_programare', startOfDay(t.day))
       .lte('data_programare', endOfDay(t.day))
+    for (const l of fromLeads ?? []) {
+      if (!sloturi.has(l.id)) {
+        sloturi.set(l.id, { ora: null, locatieId: null, evenimentId: null })
+      }
+    }
+
+    const leadIds = [...sloturi.keys()]
+    if (!leadIds.length) continue
+
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('id, prenume, nume, telefon, locatia')
+      .in('id', leadIds)
+
+    // Ora + locația reale ale evenimentelor din lot (o singură interogare).
+    const evIds = [
+      ...new Set(
+        [...sloturi.values()]
+          .map((s) => s.evenimentId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ]
+    const { data: evenimente } = evIds.length
+      ? await supabase
+          .from('evenimente')
+          .select('id, ora, locatie_id, status')
+          .in('id', evIds)
+      : { data: [] }
+    const evById = new Map(
+      (evenimente ?? []).map((e) => [e.id as string, e]),
+    )
+
+    // Numele locațiilor (SMS-ul mapează adresa pe nume, nu pe id).
+    const locIds = [
+      ...new Set(
+        [
+          ...[...sloturi.values()].map((s) => s.locatieId),
+          ...(evenimente ?? []).map((e) => e.locatie_id as string | null),
+        ].filter((id): id is string => Boolean(id)),
+      ),
+    ]
+    const { data: locatii } = locIds.length
+      ? await supabase.from('locatii').select('id, nume').in('id', locIds)
+      : { data: [] }
+    const numeLocatie = new Map(
+      (locatii ?? []).map((l) => [l.id as string, l.nume as string]),
+    )
+
+    // Dedup pe zi într-un singur query: `sms_logs` n-are unique pe (lead_id, tip),
+    // deci `.maybeSingle()` per lead crăpa pe orice dublură veche și trimitea din nou.
+    const { data: dejaTrimise } = await supabase
+      .from('sms_logs')
+      .select('lead_id')
+      .in('lead_id', leadIds)
+      .eq('tip', 'reminder')
+      .eq('status', 'sent')
+      .gte('trimis_la', startOfDay(now))
+    const auPrimit = new Set(
+      (dejaTrimise ?? []).map((r) => r.lead_id as string),
+    )
 
     for (const lead of leads ?? []) {
       if (!lead.telefon) continue
+      if (auPrimit.has(lead.id)) continue
+      // NB: `deja_client` NU exclude aici. Flagul scoate leadul din fluxul RECE
+      // (prospectare), dar reminderul e operațional — omul chiar are un loc
+      // rezervat azi. La fel se comporta și înainte de trecerea pe programări.
 
-      // Reminder se trimite o singură dată pe zi (idempotent), dar se reia
-      // la o reprogramare ulterioară — vezi decizia 6.4.
-      const { data: existing } = await supabase
-        .from('sms_logs')
-        .select('id')
-        .eq('lead_id', lead.id)
-        .eq('tip', 'reminder')
-        .eq('status', 'sent')
-        .gte('trimis_la', startOfDay(now))
-        .maybeSingle()
-      if (existing) continue
+      const slot = sloturi.get(lead.id)!
+      const ev = slot.evenimentId ? evById.get(slot.evenimentId) : null
+      // Evenimentul anulat nu mai are reminder — omul n-are unde veni.
+      if (ev?.status === 'Anulat') continue
 
-      // Ora + locația din ultima programare (rezolvate din curs/eveniment);
-      // lead.locatia e doar fallback.
-      const { ora, locatie } = await getProgramareSms(
-        supabase,
-        lead.id,
-        lead.locatia,
-      )
+      const ora = ev?.ora ?? slot.ora ?? null
+      const locatieId = ev?.locatie_id ?? slot.locatieId ?? null
+      const locatie = locatieId
+        ? (numeLocatie.get(locatieId) ?? lead.locatia)
+        : lead.locatia
 
       const mesaj = buildSms('reminder', {
         prenume: lead.prenume || lead.nume,
         locatie,
-        dataProgramare: lead.data_programare,
+        dataProgramare: ziIso,
         ora,
         cand: t.cand,
       })
@@ -237,6 +331,7 @@ Deno.serve(async (req) => {
         status: result.ok ? 'sent' : 'failed',
         error: result.ok ? null : result.error,
       })
+      auPrimit.add(lead.id)
       if (result.ok) sent.push(`${lead.prenume ?? ''} ${lead.nume}`.trim())
       else errors.push(`${lead.nume}: ${result.error}`)
     }

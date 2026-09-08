@@ -39,7 +39,17 @@
 
 ## A. Mesaje kanban (leads) — trimise AUTOMAT
 
-### 1. `confirmare` — la mutarea lead → **Programat**
+### 1. `confirmare` — la programarea leadului (curs SAU clasă demo)
+> Pleacă la ~2 min după înscriere, prin coada `confirmari_programare_sms`.
+> **Se leagă de PROGRAMARE, nu de statusul leadului** (2026-09-08): înscrierea din
+> rosterul clasei demo nu readuce leadul în „Programat" dacă e deja `a_venit` sau
+> programat pe altceva, iar vechea gardă (`leads.status='programat'`) îl lăsa fără
+> confirmare deși era pe listă. Undo-ul e acum explicit: scoaterea omului de pe
+> listă în cele 2 minute șterge rândul din coadă (ON DELETE CASCADE) și SMS-ul nu
+> mai pleacă. Data/ora/adresa vin din evenimentul (sau cursul) programării, citite
+> live la trimitere. Dedup pe `sms_logs (lead_id, tip, programare)` — deci o
+> **reprogramare** (marți → joi) își primește confirmarea ei, ce înainte nu se
+> întâmpla niciodată (dedupul era pe viață per lead).
 ```
 Buna {prenume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}. Va asteptam cu drag la {adresa}!
 ```

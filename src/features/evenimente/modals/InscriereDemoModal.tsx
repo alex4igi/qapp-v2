@@ -97,14 +97,14 @@ export function InscriereDemoModal({
       }
       if (mode === 'lead') {
         if (!leadId) throw new Error('Alege un lead.')
-        await inscrieLaDemo({
+        const programareId = await inscrieLaDemo({
           evenimentId,
           leadId,
           sursa: sursa(),
           adusDe: adusDe || null,
           permiteOverbook,
         })
-        await enqueueConfirmareProgramare(leadId)
+        await enqueueConfirmareProgramare(leadId, programareId)
         return
       }
       const res = await creeazaLeadSiInscrie({
@@ -118,7 +118,7 @@ export function InscriereDemoModal({
         sursa: sursa(),
         permiteOverbook,
       })
-      await enqueueConfirmareProgramare(res.lead_id)
+      await enqueueConfirmareProgramare(res.lead_id, res.programare_id)
       if (!res.created) {
         setInfo(
           res.deja_inscris

@@ -31,6 +31,7 @@ export async function searchLeads(term: string): Promise<LeadSearchRow[]> {
 
 export type WalkInResult = {
   lead_id: string
+  programare_id: string | null
   created: boolean
   deja_inscris: boolean
 }

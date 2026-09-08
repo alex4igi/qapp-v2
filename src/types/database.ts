@@ -1141,6 +1141,7 @@ export type Database = {
           error: string | null
           id: string
           lead_id: string
+          programare: string | null
           send_after: string
           status: string
           trimis_la: string | null
@@ -1150,6 +1151,7 @@ export type Database = {
           error?: string | null
           id?: string
           lead_id: string
+          programare?: string | null
           send_after?: string
           status?: string
           trimis_la?: string | null
@@ -1159,6 +1161,7 @@ export type Database = {
           error?: string | null
           id?: string
           lead_id?: string
+          programare?: string | null
           send_after?: string
           status?: string
           trimis_la?: string | null
@@ -1169,6 +1172,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmari_programare_sms_programare_fkey"
+            columns: ["programare"]
+            isOneToOne: false
+            referencedRelation: "programari_leads"
             referencedColumns: ["id"]
           },
         ]
@@ -1494,6 +1504,56 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversii_ads_trimise: {
+        Row: {
+          created: string
+          eroare: string | null
+          event_id: string
+          event_name: string
+          id: string
+          lead: string
+          moneda: string
+          platforma: string
+          raspuns: Json | null
+          rezultat: string
+          valoare: number | null
+        }
+        Insert: {
+          created?: string
+          eroare?: string | null
+          event_id: string
+          event_name: string
+          id?: string
+          lead: string
+          moneda?: string
+          platforma?: string
+          raspuns?: Json | null
+          rezultat: string
+          valoare?: number | null
+        }
+        Update: {
+          created?: string
+          eroare?: string | null
+          event_id?: string
+          event_name?: string
+          id?: string
+          lead?: string
+          moneda?: string
+          platforma?: string
+          raspuns?: Json | null
+          rezultat?: string
+          valoare?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversii_ads_trimise_lead_fkey"
+            columns: ["lead"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -8118,6 +8178,7 @@ export type Database = {
           id: string
           lead_id: string | null
           mesaj: string | null
+          programare: string | null
           status: string
           telefon: string | null
           tip: string
@@ -8128,6 +8189,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           mesaj?: string | null
+          programare?: string | null
           status?: string
           telefon?: string | null
           tip: string
@@ -8138,6 +8200,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           mesaj?: string | null
+          programare?: string | null
           status?: string
           telefon?: string | null
           tip?: string
@@ -8149,6 +8212,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_logs_programare_fkey"
+            columns: ["programare"]
+            isOneToOne: false
+            referencedRelation: "programari_leads"
             referencedColumns: ["id"]
           },
         ]
@@ -10496,6 +10566,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      conversii_ads_de_trimis: {
+        Args: { p_from?: string; p_limit?: number }
+        Returns: {
+          campanie: string
+          data_conversie: string
+          email: string
+          lead_id: string
+          platforma: string
+          telefon: string
+          valoare: number
+        }[]
+      }
       converteste_abonament_in_sedinte: {
         Args: { p_abonament: string; p_motiv?: string }
         Returns: Json
@@ -10596,7 +10678,7 @@ export type Database = {
         Returns: number
       }
       enqueue_confirmare_programare: {
-        Args: { p_lead: string }
+        Args: { p_lead: string; p_programare?: string }
         Returns: undefined
       }
       enqueue_confirmare_review: {

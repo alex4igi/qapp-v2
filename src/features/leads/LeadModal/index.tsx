@@ -368,12 +368,13 @@ export function LeadModal({
       }
       if (scheduleChanged && leadId) {
         const sel = resolveSelectie()!
+        let programareId: string | null = null
         if (sel.evenimentId) {
           // Programarea pe un eveniment (clasa demo) trece prin RPC, nu prin insert
           // direct: verifică locurile rămase și e idempotentă. Un insert brut ar fi
           // picat cu 23505 la reprogramarea pe un slot pe care leadul a mai fost
           // (index unic parțial pe (lead, eveniment_programat)).
-          await inscrieLaDemo({
+          programareId = await inscrieLaDemo({
             evenimentId: sel.evenimentId,
             leadId,
             sursa: 'receptie',
@@ -381,7 +382,7 @@ export function LeadModal({
             permiteOverbook: selectiePlina,
           })
         } else {
-          await createProgramareLead({
+          programareId = await createProgramareLead({
             lead: leadId,
             cursul_programat: sel.cursId,
             eveniment_programat: null,
@@ -390,8 +391,9 @@ export function LeadModal({
             ora: sel.ora,
           })
         }
-        // Confirmarea SMS pleacă după 5 min (fereastră de undo).
-        await enqueueConfirmareProgramare(leadId)
+        // Confirmarea SMS pleacă după 2 min, legată de programarea asta: scoaterea
+        // omului de pe listă în interval o anulează (fereastră de undo).
+        await enqueueConfirmareProgramare(leadId, programareId)
       }
     },
     onSuccess: () => {
