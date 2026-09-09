@@ -38,6 +38,8 @@ export type GrupaRosterRow = {
   status: RosterStatus
   restanta: number
   esteZiua: boolean
+  // Refuz GDPR de apariție în poze/filmări — al copilului sau al familiei lui.
+  faraPoze: boolean
 }
 
 // Cursant care a fost pe această grupă recent, dar NU mai are nicio înrolare
@@ -120,7 +122,7 @@ export async function getGrupaDashboard(params: {
   const { data: enrData, error: enrErr } = await supabase
     .from('enrollments')
     .select(
-      'id, suma, tip_plata, data_incepere, client:clienti(id, nume, prenume, foto, data_nasterii, telefon)',
+      'id, suma, tip_plata, data_incepere, client:clienti(id, nume, prenume, foto, data_nasterii, telefon, fara_poze, familia)',
     )
     .eq('cursul', params.cursId)
     .eq('reziliat', false)
@@ -139,6 +141,8 @@ export async function getGrupaDashboard(params: {
       foto: string | null
       data_nasterii: string | null
       telefon: string | null
+      fara_poze: boolean
+      familia: string | null
     } | null
   }>
   const enrollmentIds = enrollments.map((e) => e.id)
@@ -157,6 +161,8 @@ export async function getGrupaDashboard(params: {
       foto: string | null
       data_nasterii: string | null
       telefon: string | null
+      fara_poze: boolean
+      familia: string | null
     }
   }
   const openEntries: OpenEntry[] = []
@@ -172,7 +178,7 @@ export async function getGrupaDashboard(params: {
       const { data: rez, error: rezErr } = await supabase
         .from('open_rezervari')
         .select(
-          'enrollment, client:clienti(id, nume, prenume, foto, data_nasterii, telefon)',
+          'enrollment, client:clienti(id, nume, prenume, foto, data_nasterii, telefon, fara_poze, familia)',
         )
         .eq('sesiune', sesiune.id)
         .neq('status', 'anulat')
@@ -316,6 +322,36 @@ export async function getGrupaDashboard(params: {
     restantaByEnr.set(e.id, Math.max(0, due - paid))
   }
 
+  // Refuzul GDPR de apariție în poze/filmări e ori pe copil, ori pe familia lui.
+  // Se citește în roster ca să fie vizibil la strigarea catalogului, nu doar în fișă.
+  const familieIds = [
+    ...new Set(
+      [...enrollments.map((e) => e.client), ...openEntries.map((o) => o.client)]
+        .map((c) => c?.familia)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ]
+  const familiiFaraPoze = new Set<string>()
+  if (familieIds.length) {
+    const famRows = (
+      await Promise.all(
+        chunk(familieIds, IN_CHUNK).map((ids) =>
+          fetchAllRows<{ id: string }>(() =>
+            supabase
+              .from('familii')
+              .select('id')
+              .in('id', ids)
+              .eq('fara_poze', true)
+              .order('id'),
+          ),
+        ),
+      )
+    ).flat()
+    for (const r of famRows) familiiFaraPoze.add(r.id)
+  }
+  const faraPozeFor = (c: { fara_poze: boolean; familia: string | null }) =>
+    c.fara_poze || Boolean(c.familia && familiiFaraPoze.has(c.familia))
+
   // Deduplicăm per client: un cursant cu 4 înrolări lunare la același curs e
   // un singur card. Agreg statusul peste toate înrolările lui.
   const STATUS_RANK: Record<RosterStatus, number> = {
@@ -380,6 +416,7 @@ export async function getGrupaDashboard(params: {
           e.client.data_nasterii &&
             e.client.data_nasterii.slice(5) === todayMmDd,
         ),
+        faraPoze: faraPozeFor(e.client),
       })
     }
   }
@@ -419,6 +456,7 @@ export async function getGrupaDashboard(params: {
       esteZiua: Boolean(
         o.client.data_nasterii && o.client.data_nasterii.slice(5) === todayMmDd,
       ),
+      faraPoze: faraPozeFor(o.client),
     })
   }
 
@@ -484,6 +522,8 @@ export async function getGrupaDashboard(params: {
         p.lead.data_nasterii &&
           p.lead.data_nasterii.slice(5) === todayMmDd,
       ),
+      // Leadurile n-au încă familie/contract — nu avem ce refuz să afișăm.
+      faraPoze: false,
     })
   }
 

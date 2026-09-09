@@ -8,6 +8,7 @@ import {
   DateInput,
   Select,
   Combobox,
+  Checkbox,
   Button,
 } from '@/components/ui'
 import {
@@ -31,7 +32,7 @@ import { createFamilie } from '@/features/familii/api'
 const AUDITED_FIELDS = [
   'nume', 'prenume', 'email', 'telefon', 'telefonul_2', 'data_nasterii',
   'sexul', 'status', 'marime_tricou', 'familia',
-  'unitate_invatamant',
+  'unitate_invatamant', 'fara_poze',
 ] as const
 
 // Diferența între clientul existent și payload-ul nou, doar pe câmpurile auditate.
@@ -71,6 +72,7 @@ type FormState = {
   marime_tricou: string
   familia: string
   unitate_invatamant: string
+  fara_poze: boolean
 }
 
 function initialState(client?: Client | null): FormState {
@@ -86,6 +88,7 @@ function initialState(client?: Client | null): FormState {
     marime_tricou: client?.marime_tricou ?? '',
     familia: client?.familia ?? '',
     unitate_invatamant: client?.unitate_invatamant ?? '',
+    fara_poze: client?.fara_poze ?? false,
   }
 }
 
@@ -169,6 +172,7 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
         marime_tricou: (form.marime_tricou || null) as Client['marime_tricou'],
         familia: form.familia || null,
         unitate_invatamant: form.unitate_invatamant.trim() || null,
+        fara_poze: form.fara_poze,
       }
       if (!isEdit) return createClient(payload)
 
@@ -409,6 +413,17 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
             onChange={(e) => set('unitate_invatamant')(e.target.value)}
           />
         </Field>
+
+        {/* Refuzul se moștenește de la familie dacă e bifat acolo — aici e
+            doar overrideul pe copil. Se vede ca iconiță în rosterul grupei. */}
+        <Checkbox
+          id="fara_poze"
+          label="Nu dorește să apară în poze (refuz GDPR)"
+          checked={form.fara_poze}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, fara_poze: e.target.checked }))
+          }
+        />
 
         {/* Avertisment NON-BLOCANT: lipsa esențialelor nu oprește salvarea. */}
         {checklist.lipsaEsentiale.length > 0 && (

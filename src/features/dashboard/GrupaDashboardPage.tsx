@@ -70,6 +70,39 @@ const MCARD: Record<RosterStatus, McardStyle> = {
   inactiv: { bg: '#F7F6F2', bd: '#EAE6DD', ab: '#EFEBE3', ac: '#8A857C', dot: '#B5B0A6', lc: '#8A857C', dim: true },
 }
 
+// Refuz GDPR de imagine (copilul sau familia). Teacherul trebuie să-l vadă
+// ÎNAINTE să scoată telefonul, deci stă pe card, nu doar în fișa clientului.
+function FaraPozeBadge({ compact = false }: { compact?: boolean }) {
+  return (
+    <span
+      className={
+        // Negru, pătrat: cardul folosește deja verde/roșu/galben pentru status și
+        // cercuri pentru butoane — badge-ul nu are voie să semene cu niciunul.
+        'inline-flex shrink-0 items-center justify-center bg-ink text-white ' +
+        (compact ? 'h-[18px] w-[18px] rounded' : 'h-6 w-6 rounded-md')
+      }
+      title="Fără poze — nu are acord de imagine (GDPR)"
+      aria-label="Fără poze — nu are acord de imagine"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className={compact ? 'h-3 w-3' : 'h-[15px] w-[15px]'}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M2 2l20 20" />
+        <path d="M7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16" />
+        <path d="M9.5 4h5L17 7h3a2 2 0 0 1 2 2v7.5" />
+        <path d="M14.12 15.12A3 3 0 1 1 9.88 10.88" />
+      </svg>
+    </span>
+  )
+}
+
 function ClientCard({
   row,
   canPay,
@@ -151,6 +184,7 @@ function ClientCard({
           )}
         </div>
       </div>
+      {row.faraPoze && <FaraPozeBadge />}
       {row.esteZiua && (
         <span
           className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-quasar-yellow px-1.5 py-0.5 text-[10px] font-bold text-ink"
@@ -245,6 +279,7 @@ function RosterList({
               <span className="truncate text-sm font-medium text-ink">{name}</span>
               {isLead && <Badge tone="warn">LEAD</Badge>}
             </span>
+            {r.faraPoze && <FaraPozeBadge />}
             {r.esteZiua && (
               <span
                 className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-quasar-yellow px-1.5 py-0.5 text-[10px] font-bold text-ink"
@@ -335,6 +370,7 @@ function RosterColumns({
                     <span className="flex-1 truncate text-[12.5px] font-medium text-ink">
                       {[m.nume, m.prenume].filter(Boolean).join(' ')}
                     </span>
+                    {m.faraPoze && <FaraPozeBadge compact />}
                     {m.esteZiua && (
                       <span
                         className="inline-flex shrink-0 items-center rounded-full bg-quasar-yellow px-1 py-0.5 text-[10px] font-bold text-ink"

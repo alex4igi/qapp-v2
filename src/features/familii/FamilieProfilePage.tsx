@@ -506,8 +506,8 @@ function DatePersonaleTab({ familie }: { familie: Familie }) {
           value={familie.metoda_comunicare ?? ''}
         />
         <DetailRow
-          label="Apare în poze"
-          value={familie.doreste_sa_apara_in_poze ? 'Da' : 'Nu'}
+          label="Fără poze (refuz GDPR)"
+          value={familie.fara_poze ? 'Da — nu apare în poze' : 'Nu'}
         />
       </Section>
       {familie.observatii && (

@@ -912,6 +912,7 @@ export type Database = {
           facturare_pf_cnp: string | null
           facturare_pf_nume: string | null
           familia: string | null
+          fara_poze: boolean
           foto: string | null
           id: string
           link_contract: string | null
@@ -944,6 +945,7 @@ export type Database = {
           facturare_pf_cnp?: string | null
           facturare_pf_nume?: string | null
           familia?: string | null
+          fara_poze?: boolean
           foto?: string | null
           id?: string
           link_contract?: string | null
@@ -976,6 +978,7 @@ export type Database = {
           facturare_pf_cnp?: string | null
           facturare_pf_nume?: string | null
           familia?: string | null
+          fara_poze?: boolean
           foto?: string | null
           id?: string
           link_contract?: string | null
@@ -3916,6 +3919,7 @@ export type Database = {
           doreste_sa_apara_in_poze: boolean
           email: string | null
           factura_pe_firma: boolean
+          fara_poze: boolean
           firma_adresa: string | null
           firma_banca: string | null
           firma_cif: string | null
@@ -3942,6 +3946,7 @@ export type Database = {
           doreste_sa_apara_in_poze?: boolean
           email?: string | null
           factura_pe_firma?: boolean
+          fara_poze?: boolean
           firma_adresa?: string | null
           firma_banca?: string | null
           firma_cif?: string | null
@@ -3968,6 +3973,7 @@ export type Database = {
           doreste_sa_apara_in_poze?: boolean
           email?: string | null
           factura_pe_firma?: boolean
+          fara_poze?: boolean
           firma_adresa?: string | null
           firma_banca?: string | null
           firma_cif?: string | null
@@ -11382,6 +11388,7 @@ export type Database = {
           email: string
           factura_pe_firma: boolean
           familie_id: string
+          fara_poze: boolean
           firma_adresa: string
           firma_banca: string
           firma_cif: string

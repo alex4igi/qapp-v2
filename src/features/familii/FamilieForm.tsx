@@ -37,7 +37,7 @@ type FormState = {
   metoda_plata: string
   metoda_comunicare: string
   observatii: string
-  doreste_sa_apara_in_poze: boolean
+  fara_poze: boolean
 }
 
 function initialState(familie?: Familie | null): FormState {
@@ -51,7 +51,7 @@ function initialState(familie?: Familie | null): FormState {
     metoda_plata: familie?.metoda_plata ?? '',
     metoda_comunicare: familie?.metoda_comunicare ?? '',
     observatii: familie?.observatii ?? '',
-    doreste_sa_apara_in_poze: familie?.doreste_sa_apara_in_poze ?? false,
+    fara_poze: familie?.fara_poze ?? false,
   }
 }
 
@@ -110,7 +110,7 @@ export function FamilieForm({ open, familie, onClose, focusSection }: Props) {
         metoda_plata: form.metoda_plata.trim() || null,
         metoda_comunicare: form.metoda_comunicare.trim() || null,
         observatii: form.observatii.trim() || null,
-        doreste_sa_apara_in_poze: form.doreste_sa_apara_in_poze,
+        fara_poze: form.fara_poze,
       }
       if (isEdit) {
         await updateFamilie(familie!.id, payload)
@@ -269,11 +269,9 @@ export function FamilieForm({ open, familie, onClose, focusSection }: Props) {
 
         <Checkbox
           id="poze"
-          label="Dorește să apară în poze"
-          checked={form.doreste_sa_apara_in_poze}
-          onChange={(e) =>
-            set('doreste_sa_apara_in_poze', e.target.checked)
-          }
+          label="Nu dorește să apară în poze (refuz GDPR)"
+          checked={form.fara_poze}
+          onChange={(e) => set('fara_poze', e.target.checked)}
         />
 
         {!isEdit && (
