@@ -12386,7 +12386,7 @@ export type Database = {
       }
       proceseaza_cozi_sms: { Args: never; Returns: undefined }
       proceseaza_sesiuni_evaluare: { Args: never; Returns: Json }
-      prune_expired_leads: { Args: never; Returns: number }
+      prune_expired_leads: { Args: never; Returns: Json }
       recalculate_pool_discount: {
         Args: { p_client: string }
         Returns: undefined

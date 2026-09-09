@@ -1,7 +1,8 @@
 // Edge Function cron — seară (programată ~23:30 ora României / 21:30 UTC).
 // 0. tranziții sezoane: arhivează sezoane active expirate + activează sezoane planificate eligibile
 // 1. programat → neprezentare pentru programări expirate (+ marcaj absent în roster).
-//    A 1-a neprezentare → nu_a_venit; a 2-a (nr_neprezentari>=2) → direct nurture.
+//    Delegat lui `prune_expired_leads` (sursa unică, se uită la PROGRAMĂRI, nu la
+//    cartonaș): a 1-a neprezentare → nu_a_venit; a 2-a → direct nurture.
 // 1b. nu_a_venit rămâne în listă 10 zile, apoi → nurture.
 // 2. flaguri de prioritate recurente, cu flag_streak:
 //    - nou > 24h                                        (flag DOAR, fără nurture)
@@ -48,61 +49,27 @@ Deno.serve(async (req) => {
     activate: typeof activated === 'number' ? activated : 0,
   }
 
-  // 1. programat → nu_a_venit (programări trecute de momentul curent)
-  const { data: expirate } = await supabase
-    .from('leads')
-    .select('id')
-    .eq('status', 'programat')
-    .lt('data_programare', nowIso)
-
-  const expirateIds = (expirate ?? []).map((l) => l.id)
-  let autoNeprezenti = 0
-  let autoNurtureNoShow = 0
-  if (expirateIds.length) {
-    // Întâi marcăm programările absente — triggerul recalculează nr_neprezentari.
-    await supabase
-      .from('programari_leads')
-      .update({ prezenta: 'absent' })
-      .in('lead', expirateIds)
-      .eq('prezenta', 'programat')
-    // Apoi împărțim: a 2-a neprezentare (>=2) merge direct în nurture, restul în nu_a_venit.
-    const { data: dupaAbsent } = await supabase
-      .from('leads')
-      .select('id, nr_neprezentari, id_client')
-      .in('id', expirateIds)
-    const candidatiNoShow = (dupaAbsent ?? []).filter(
-      (l) => (l.nr_neprezentari ?? 0) >= 2,
-    )
-    const protejatiNoShow = await leaduriProtejate(supabase, candidatiNoShow)
-    const nurtureIds = candidatiNoShow
-      .filter((l) => !protejatiNoShow.has(l.id))
-      .map((l) => l.id)
-    // Protejații cu 2+ neprezentări nu merg în nurture, dar nici nu pot rămâne
-    // 'programat' cu programarea consumată — ar sta blocați acolo la nesfârșit.
-    const naVenitIds = (dupaAbsent ?? [])
-      .filter((l) => (l.nr_neprezentari ?? 0) < 2 || protejatiNoShow.has(l.id))
-      .map((l) => l.id)
-    if (nurtureIds.length) {
-      await supabase
-        .from('leads')
-        .update({
-          status: 'nurture',
-          sub_status: null,
-          flag_reminder: false,
-          flag_streak: 0,
-          flag_reminder_at: null,
-        })
-        .in('id', nurtureIds)
-      autoNurtureNoShow = nurtureIds.length
-    }
-    if (naVenitIds.length) {
-      await supabase
-        .from('leads')
-        .update({ status: 'nu_a_venit' })
-        .in('id', naVenitIds)
-    }
-    autoNeprezenti = naVenitIds.length
+  // 1. Programări expirate → absent + statusul leadului, prin `prune_expired_leads`.
+  //
+  // Logica NU mai trăiește aici. Pasul ăsta se uita la `leads.status='programat'`
+  // + `leads.data_programare`, adică la cartonașul din kanban — aceeași citire
+  // greșită reparată pe 09-08 la remindere: cine e înscris la o clasă demo din
+  // rosterul evenimentului nu primește mereu data pe cartonaș, deci programarea
+  // lui expira fără să fie închisă. RPC-ul se uită la PROGRAMĂRI, are gardul de
+  // programare viitoare (nu scoate din pipeline pe cine mai are o ședință) și
+  // marchează absente DOAR rândurile expirate — varianta de aici le stingea pe
+  // toate ale leadului, inclusiv cele viitoare.
+  //
+  // Rulează și la deschiderea /leads; aici e plasa pentru zilele în care nu intră
+  // nimeni în aplicație. Fiind idempotent, a doua rulare nu are ce strica.
+  const { data: prune } = await supabase.rpc('prune_expired_leads')
+  const pruneRes = (prune ?? {}) as {
+    absente?: number
+    nurture?: number
+    nu_a_venit?: number
   }
+  const autoNeprezenti = pruneRes.nu_a_venit ?? 0
+  const autoNurtureNoShow = pruneRes.nurture ?? 0
 
   // Helper — aplică flag / escaladare streak / auto-Nurture pe o listă.
   type FlagLead = {
