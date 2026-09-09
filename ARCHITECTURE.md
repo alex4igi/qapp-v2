@@ -9,7 +9,7 @@ Pentru context business (școala Quasar Dance, roluri, abonamente, fluxuri) vezi
 
 - **Vite** + **React 19** SPA + **TypeScript**
 - **Supabase** (Postgres + Auth + RLS + Edge Functions + pg_cron)
-- **TanStack React Query** (cache, staleTime 30s, refetchOnWindowFocus false) — `src/main.tsx`
+- **TanStack React Query** (cache, staleTime 30s, `refetchOnWindowFocus: true`, invalidare globală după orice mutație) — `src/main.tsx`
 - **React Router v7** — declarat în `src/App.tsx`
 - **Tailwind CSS** — fără `tailwind.config.ts`, folosește `@theme inline` în `index.css`
 - **dnd-kit** pentru drag-and-drop (kanban leads)
@@ -56,13 +56,18 @@ features/<domain>/
 | Punct | Cale | Rol |
 |---|---|---|
 | Router | `src/App.tsx` | declară toate rutele, grupate pe matricea de acces |
-| Layout shell | `src/components/layout/AppLayout.tsx` | wrap-uiește `<Outlet/>` cu Header + TopNav + WorkingDayBanner |
-| Header | `src/components/layout/Header.tsx` | nav + user menu + locație globală |
-| TopNav / QuickActions | `src/components/layout/{TopNav,QuickActions}.tsx` | navigare laterală + acțiuni rapide |
-| Nav config | `src/components/layout/navConfig.ts` | 4 secțiuni (Clienți / Statistici / Studio / Personal); `visibleSections(role)` filtrează prin `ROUTE_ACCESS` |
+| Layout shell | `src/components/layout/AppLayout.tsx` | alege shell-ul (desktop/mobil) și montează contextele de zi + locație |
+| Shell desktop | `src/components/layout/DesktopShell.tsx` | Rail + TopBar + WorkingDayBanner + `<Outlet/>` |
+| Rail (nav lateral) | `src/components/layout/Rail.tsx` | acordeon pe secțiuni, acțiuni rapide (+Client/+Lead), meniul contului |
+| TopBar | `src/components/layout/TopBar.tsx` | căutare clienți, locație, ziua de lucru, clopoțel |
+| Shell mobil | `src/components/layout/mobile/` | bară sus + bară de tab-uri jos + „Meniu"; sub 768px |
+| Detecție mobil | `src/hooks/useIsMobile.ts` | `matchMedia(max-width:767px)` + flag `qapp.force_desktop` |
+| Matrice mobil | `src/lib/mobileMatrix.ts` | `MOBILE_ROUTES` (lista albă), `mobileTabsFor(role)`, `mobileDefaultRoute(role)` |
+| Landing | `src/hooks/useLandingRoute.ts` | unde aterizează rolul: desktop → `defaultRouteForRole`, mobil → `mobileDefaultRoute` |
+| Nav config | `src/components/layout/navConfig.ts` | 8 secțiuni (Clienți / Încasări / Cursuri / Evenimente / Marketing / Rapoarte / Personal / Administrare); `visibleSections(role, teacherId)` filtrează prin `ROUTE_ACCESS` |
 | RBAC matrix | `src/lib/rolesMatrix.ts` | **SINGLE SOURCE OF TRUTH** pentru rol × rută; helpers `isOwner`, `isPrivileged`, `canChangeLocatie`, `canManageRole` |
 | Route guard | `src/components/ProtectedRoute.tsx` | gating per rol; folosit în App.tsx împreună cu `ROUTE_ACCESS['/path']` |
-| Auth | `src/hooks/useAuth.tsx` | context global sesiune + rol + locatieId + `signIn`/`signOut`/`endShift` |
+| Auth | `src/hooks/useAuth.tsx` | context global sesiune + rol + locatieId + teacherId + `signIn`/`signOut` |
 | Working date | `src/hooks/useWorkingDate.tsx` | data de lucru curentă (YYYY-MM-DD), `isToday`, `resetToToday` |
 | Working locatie | `src/hooks/useWorkingLocatie.tsx` | locația selectată (localStorage), `locatieId`/`options`/`locked`/`canChange` |
 | Supabase | `src/lib/supabase.ts` | client singleton; toate modulele importă de aici |
@@ -74,7 +79,7 @@ features/<domain>/
 | Fetch all | `src/lib/fetchAll.ts` | `fetchAllRows` — paginare peste plafonul PostgREST `max_rows=1000`; OBLIGATORIU pentru exporturi CSV și agregări client-side |
 | Class names | `src/lib/cn.ts` | concat Tailwind classes |
 | CSV | `src/lib/csv.ts` | export CSV |
-| UI primitives | `src/components/ui/` | 14 componente: Button, Modal, DataTable, Combobox, Tabs, Select, etc. |
+| UI primitives | `src/components/ui/` | 20 componente: Button, Modal, DataTable, Combobox, Tabs, Select, etc. Modalul devine foaie de jos pe telefon, iar `DataTable` randează carduri în loc de tabel. |
 
 ### Contractul modulului cu liantul
 
@@ -83,6 +88,8 @@ features/<domain>/
 - Modulul **NU expune** componente/modale/api către alte module. Dacă apare nevoia → urcă în liant.
 - Liantul **nu importă** din `features/*` (cu excepția App.tsx care e dispatcher de rute).
 - Orice rută nouă = update în **3 locuri**: `App.tsx` (Route), `rolesMatrix.ts` (ROUTE_ACCESS), `navConfig.ts` (NavItem).
+  Al **4-lea** loc dacă pagina merge și pe telefon: `mobileMatrix.ts` (`MOBILE_ROUTES`). Fără el
+  ruta se deschide pe desktop și arată „Disponibil doar pe desktop" pe mobil.
 
 ---
 
@@ -102,6 +109,35 @@ Grupuri pre-definite în `rolesMatrix.ts`:
 - `TEACHER_ONLY` = teacher
 
 Pentru lista completă rută → roluri permise, vezi `ROUTE_ACCESS` în `src/lib/rolesMatrix.ts`. Aceasta este referința unică — atât `ProtectedRoute`, cât și `navConfig.visibleSections()` derivă din ea.
+
+---
+
+## Varianta de mobil
+
+Aceeași aplicație, aceleași URL-uri. Sub 768px `AppLayout` randează `MobileShell`
+în loc de `DesktopShell`; deasupra, nimic nu se schimbă.
+
+**Regula de bază:** pe telefon se deschid **doar** rutele din `MOBILE_ROUTES`
+(`src/lib/mobileMatrix.ts`). Restul primesc ecranul „Disponibil doar pe desktop",
+cu un buton care forțează layout-ul desktop (`localStorage['qapp.force_desktop']`,
+reversibil din meniul contului din rail).
+
+Ce e pe telefon, pe persona:
+- **Instructor** — `/` (grupele zilei), `/grupa/:id` (prezența pe poză), `/clienti/:id`,
+  `/grupele-mele`, `/salariul-meu`, `/evaluari`, `/anunturi`, `/notificari`.
+- **Recepție** — în plus `/clienti`, `/leads` (doar lista de sunat), `/datorii`
+  (cifre + worklist), `/absente-21z`, `/eveniment/:id`, `/situatie-zilnica`.
+- **Management** — `/analytics` și `/overview` în varianta „doar cifre": graficele
+  și tabelele comparative se randează exclusiv pe desktop.
+
+Ce NU intră pe telefon, deliberat: `PlataNouaModal` și `EnrollmentForm` (butoanele
+care le deschid sunt ascunse), kanban-ul de leads, editorul de contracte, tot
+grupul Administrare, rapoartele cu tabele late.
+
+**Când adaugi o pagină pe mobil:** pune ruta în `MOBILE_ROUTES`, verifică la 390px
+că nu apare scroll orizontal și ascunde cu `!isMobile` acțiunile care deschid
+modale de desktop. `DataTable` se transformă singur în carduri; `Modal`, `Tabs`,
+`PageHeader`, `Button` și `KebabMenu` au deja varianta de telefon.
 
 ---
 

@@ -21,7 +21,9 @@ type Props = {
 export function Stele({ value, onChange, disabled, compact }: Omit<Props, 'label'>) {
   const [hover, setHover] = useState<number | null>(null)
   const activ = hover ?? value ?? 0
-  const dim = compact ? 'h-5 w-5' : 'h-7 w-7'
+  // Jumătatea de stea e o zonă de atins cât jumătate din lățime: la 20px degetul
+  // n-o nimerește, așa că pe telefon stelele cresc.
+  const dim = compact ? 'h-5 w-5 max-md:h-8 max-md:w-8' : 'h-7 w-7 max-md:h-9 max-md:w-9'
 
   return (
     <div
@@ -123,10 +125,17 @@ export function SkillRating({ label, value, onChange, disabled }: Props) {
   return (
     <div className="rounded-md border border-line bg-card px-4 py-3">
       {label && <p className="mb-2 text-sm font-medium text-ink">{label}</p>}
-      <div className="flex items-center gap-3 text-xs text-muted">
-        <span className="w-28 shrink-0 text-right">{SCALE_LEFT}</span>
-        <Stele value={value} onChange={onChange} disabled={disabled} />
-        <span className="w-28 shrink-0">{SCALE_RIGHT}</span>
+      {/* Pe telefon stelele trec pe rândul lor, iar capetele scalei rămân dedesubt. */}
+      <div className="flex items-center gap-3 text-xs text-muted max-md:flex-wrap max-md:gap-y-1.5">
+        <span className="w-28 shrink-0 text-right max-md:order-2 max-md:w-auto max-md:text-left">
+          {SCALE_LEFT}
+        </span>
+        <div className="max-md:order-1 max-md:w-full">
+          <Stele value={value} onChange={onChange} disabled={disabled} />
+        </div>
+        <span className="w-28 shrink-0 max-md:order-3 max-md:flex-1 max-md:text-right">
+          {SCALE_RIGHT}
+        </span>
       </div>
     </div>
   )

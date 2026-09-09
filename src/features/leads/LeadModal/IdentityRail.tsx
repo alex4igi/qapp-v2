@@ -14,6 +14,8 @@ type Props = {
   onLogContact: () => void
   onMoveToNurture: () => void
   movePending: boolean
+  /** Pe telefon banda stă deasupra formularului, nu lângă el. */
+  stacked?: boolean
 }
 
 // Rail-ul de identitate (stânga): avatar + contact rapid + contor contactări +
@@ -28,6 +30,7 @@ export function IdentityRail({
   onLogContact,
   onMoveToNurture,
   movePending,
+  stacked = false,
 }: Props) {
   const fullName = [form.prenume, form.nume].filter(Boolean).join(' ').trim()
   const age = ageFromDob(form.data_nasterii)
@@ -36,7 +39,18 @@ export function IdentityRail({
     : ''
 
   return (
-    <div className="qbody" style={{ width: '288px', flexShrink: 0, background: '#FBFAF6', borderRight: '1px solid var(--color-line)', padding: '22px 20px', overflowY: 'auto' }}>
+    <div
+      className="qbody"
+      style={{
+        width: stacked ? '100%' : '288px',
+        flexShrink: 0,
+        background: '#FBFAF6',
+        borderRight: stacked ? 'none' : '1px solid var(--color-line)',
+        borderBottom: stacked ? '1px solid var(--color-line)' : 'none',
+        padding: stacked ? '16px 16px 14px' : '22px 20px',
+        overflowY: stacked ? 'visible' : 'auto',
+      }}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--color-rail)', color: 'var(--color-quasar-yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '22px' }}>
           {initialsOf(form.prenume, form.nume)}

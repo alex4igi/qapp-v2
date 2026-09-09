@@ -155,8 +155,8 @@ export function SituatieZilnicaPage() {
       <PageHeader
         title="Situație zilnică"
         actions={
-          <div className="flex items-end gap-3">
-            <div className="w-44">
+          <div className="flex flex-wrap items-end gap-3 max-md:w-full">
+            <div className="w-44 max-md:w-full">
               <Field label="Ziua" htmlFor="sz-data">
                 <DateInput
                   id="sz-data"
@@ -165,7 +165,7 @@ export function SituatieZilnicaPage() {
                 />
               </Field>
             </div>
-            <div className="w-60">
+            <div className="w-60 max-md:w-full">
               <Field label="Locația" htmlFor="sz-loc">
                 <Select
                   id="sz-loc"

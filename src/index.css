@@ -82,21 +82,25 @@ h3 {
   border-radius: 6px;
   border: 2px solid var(--color-surface);
 }
-.qrow:hover {
-  background: var(--color-rowhover) !important;
-}
 .gcard {
   transition: box-shadow 0.15s ease, transform 0.15s ease;
-}
-.gcard:hover {
-  box-shadow: 0 8px 22px rgba(70, 55, 10, 0.12);
-  transform: translateY(-2px);
 }
 .mcard {
   transition: filter 0.12s ease, box-shadow 0.12s ease;
 }
-.mcard:hover {
-  box-shadow: 0 3px 10px rgba(70, 55, 10, 0.1);
+/* Efectele de hover doar unde există un cursor: pe touch starea rămâne agățată
+   după tap, iar cardul din roster rămânea „ridicat" după marcarea prezenței. */
+@media (hover: hover) {
+  .qrow:hover {
+    background: var(--color-rowhover) !important;
+  }
+  .gcard:hover {
+    box-shadow: 0 8px 22px rgba(70, 55, 10, 0.12);
+    transform: translateY(-2px);
+  }
+  .mcard:hover {
+    box-shadow: 0 3px 10px rgba(70, 55, 10, 0.1);
+  }
 }
 
 /* === Quasar OS — modal lead (design „Lead Modal") === */
@@ -151,4 +155,40 @@ h3 {
 }
 .kanban-scroll::-webkit-scrollbar-thumb:hover {
   background: #b7af9d;
+}
+
+/* Bara de derulare ascunsă (tab-uri care se derulează pe telefon). */
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button,
+  a,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+  /* Safari pe iOS face zoom la focus pe orice câmp sub 16px, iar `text-sm` are
+     14px: fiecare atingere a unui input arunca layout-ul în lateral. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Tastatura deschisă taie ecranul; bara de jos ar mânca jumătate din ce rămâne. */
+@media (max-height: 500px) {
+  .qapp-bottomnav {
+    display: none;
+  }
 }

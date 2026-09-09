@@ -6,6 +6,7 @@ import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { canMesajGrupa, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { ComposeMesajGrupaModal } from '@/features/announcements/ComposeMesajGrupaModal'
 import { LectieBanner } from '@/features/metodologic/components/LectieBanner'
@@ -147,7 +148,7 @@ function ClientCard({
       aria-label={nextLabel}
       title={nextLabel}
       className={
-        'mcard flex items-center gap-2.5 rounded-[11px] border px-[13px] py-[11px]' +
+        'mcard flex items-center gap-2.5 rounded-[11px] border px-[13px] py-[11px] max-md:gap-3 max-md:py-3' +
         (row.esteZiua ? ' ring-2 ring-quasar-yellow ring-offset-1' : '')
       }
       style={{
@@ -174,7 +175,9 @@ function ClientCard({
         />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-semibold text-ink">{name}</div>
+        <div className="truncate text-[13px] font-semibold text-ink max-md:whitespace-normal">
+          {name}
+        </div>
         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: st.lc }}>
           <span>{STATUS_LABEL[row.status]}</span>
           {isLead && (
@@ -201,7 +204,7 @@ function ClientCard({
             e.stopPropagation()
             onPay(row.refId)
           }}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow font-display text-[13px] font-extrabold text-ink disabled:cursor-not-allowed disabled:opacity-45"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-quasar-yellow font-display text-[13px] font-extrabold text-ink disabled:cursor-not-allowed disabled:opacity-45 max-md:h-9 max-md:w-9"
           title={
             canPay
               ? `Plată restanță: ${formatRON(row.restanta)}`
@@ -218,7 +221,7 @@ function ClientCard({
           e.stopPropagation()
           navigate(navTarget)
         }}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-white/75 text-[#6B6760]"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-white/75 text-[#6B6760] max-md:h-9 max-md:w-9"
         style={{ borderColor: st.bd }}
         aria-label={isLead ? 'Vezi în pipeline leads' : 'Profil cursant'}
         title={isLead ? 'Vezi în pipeline leads' : 'Profil cursant'}
@@ -234,7 +237,7 @@ function ClientCard({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-success/30 bg-white/75 text-success"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-success/30 bg-white/75 text-success max-md:h-9 max-md:w-9"
           aria-label="Scrie părintelui pe WhatsApp"
           title="Scrie părintelui pe WhatsApp"
         >
@@ -516,10 +519,14 @@ export function GrupaDashboardPage() {
   const navigate = useNavigate()
   const { date } = useWorkingDate()
   const { role } = useAuth()
+  const isMobile = useIsMobile()
   // Înrolarea și încasarea sunt responsabilitatea front_desk/manager — teacherul
   // nu vede acțiunile de înrolare și are plata dezactivată (RLS pe
   // enrollments/incasari oricum îl blochează).
   const canDeskActions = isFrontDeskOrHigher(role)
+  // Pe telefon rămân doar acțiunile care se fac din sală. Încasarea și înrolarea
+  // trec prin modale de 700+ linii, gândite pentru ecranul de la recepție.
+  const canDeskActionsHere = canDeskActions && !isMobile
   const canSendMesajGrupa = canMesajGrupa(role)
   const queryClient = useQueryClient()
   const [payClientId, setPayClientId] = useState<string | null>(null)
@@ -543,6 +550,9 @@ export function GrupaDashboardPage() {
       /* localStorage indisponibil */
     }
   }
+  // Pe telefon doar cardurile cu poză au sens (degetul are nevoie de suprafață),
+  // iar preferința salvată de pe desktop nu se scurge aici.
+  const view: RosterView = isMobile ? 'cards' : rosterView
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['grupa-dashboard', cursId, date],
@@ -715,7 +725,7 @@ export function GrupaDashboardPage() {
   return (
     <div>
       {/* header dark */}
-      <div className="mb-5 flex items-center gap-2">
+      <div className="mb-5 flex flex-wrap items-center gap-2">
         <Button variant="secondary" onClick={() => navigate(-1)}>
           ‹ Program
         </Button>
@@ -737,13 +747,15 @@ export function GrupaDashboardPage() {
             Grup WhatsApp
           </a>
         )}
-        <Button variant="secondary" onClick={() => navigate(`/cursuri/${cursId}`)}>
-          Editează grupa
-        </Button>
+        {!isMobile && (
+          <Button variant="secondary" onClick={() => navigate(`/cursuri/${cursId}`)}>
+            Editează grupa
+          </Button>
+        )}
       </div>
 
-      <div className="flex items-center gap-5 rounded-2xl bg-rail p-6 text-white">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-quasar-yellow font-display text-2xl font-bold text-ink">
+      <div className="flex items-center gap-5 rounded-2xl bg-rail p-6 text-white max-md:flex-wrap max-md:gap-4 max-md:p-4">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-quasar-yellow font-display text-2xl font-bold text-ink max-md:h-12 max-md:w-12 max-md:text-xl">
           {initials}
         </div>
         <div className="min-w-0 flex-1">
@@ -756,14 +768,14 @@ export function GrupaDashboardPage() {
           </button>
           <div className="mt-1 truncate text-[13px] text-rail-soft">{meta || '—'}</div>
         </div>
-        <div className="text-right">
+        <div className="text-right max-md:w-full max-md:text-left">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-quasar-yellow">
             Prezenți azi
           </div>
           <div className="fnum mt-1 font-display text-2xl font-bold">
             {present} <span className="text-base text-rail-soft">/ {enrolled}</span>
           </div>
-          <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-rail-2">
+          <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-rail-2 max-md:w-full">
             <div
               className="h-full rounded-full bg-quasar-yellow"
               style={{ width: `${occPct}%` }}
@@ -799,17 +811,19 @@ export function GrupaDashboardPage() {
               <Badge tone="warn">{data.counters.programati} programați</Badge>
               <Badge tone="neutral">{data.counters.inactivi} inactivi</Badge>
             </div>
-            <div className="flex items-center gap-1 rounded-[10px] border border-line bg-card p-1">
-              <button type="button" onClick={() => setView('cards')} className={seg(rosterView === 'cards')}>
-                Carduri
-              </button>
-              <button type="button" onClick={() => setView('list')} className={seg(rosterView === 'list')}>
-                Listă
-              </button>
-              <button type="button" onClick={() => setView('cols')} className={seg(rosterView === 'cols')}>
-                Coloane
-              </button>
-            </div>
+            {!isMobile && (
+              <div className="flex items-center gap-1 rounded-[10px] border border-line bg-card p-1">
+                <button type="button" onClick={() => setView('cards')} className={seg(rosterView === 'cards')}>
+                  Carduri
+                </button>
+                <button type="button" onClick={() => setView('list')} className={seg(rosterView === 'list')}>
+                  Listă
+                </button>
+                <button type="button" onClick={() => setView('cols')} className={seg(rosterView === 'cols')}>
+                  Coloane
+                </button>
+              </div>
+            )}
           </div>
           <div className="mb-3 text-xs text-muted">
             💡 Apasă pe un cursant pentru a marca prezent / absent
@@ -819,15 +833,15 @@ export function GrupaDashboardPage() {
             <p className="rounded-2xl border border-line bg-card p-6 text-center text-sm text-muted">
               Niciun cursant sau lead în roster.
             </p>
-          ) : rosterView === 'list' ? (
+          ) : view === 'list' ? (
             <RosterList
               rows={orderedRoster}
-              canPay={canDeskActions}
+              canPay={canDeskActionsHere}
               onMemberClick={handleMemberClick}
               onPay={(id) => setPayClientId(id)}
               navigate={(to) => navigate(to)}
             />
-          ) : rosterView === 'cols' ? (
+          ) : view === 'cols' ? (
             <RosterColumns rows={orderedRoster} onMemberClick={handleMemberClick} />
           ) : (
             <div className="grid grid-cols-1 gap-[11px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -835,7 +849,7 @@ export function GrupaDashboardPage() {
                 <ClientCard
                   key={r.rowId}
                   row={r}
-                  canPay={canDeskActions}
+                  canPay={canDeskActionsHere}
                   onPay={(id) => setPayClientId(id)}
                   onTogglePrezenta={(row) => toggleMut.mutate(row)}
                   onReactivate={(row) => {
@@ -851,7 +865,7 @@ export function GrupaDashboardPage() {
                   }
                 />
               ))}
-              {canDeskActions && (
+              {canDeskActionsHere && (
                 <button
                   type="button"
                   onClick={() => setAddOpen(true)}
@@ -866,7 +880,7 @@ export function GrupaDashboardPage() {
           <FostiSection
             rows={data.fosti}
             cursNume={data.cursNume}
-            canEnroll={canDeskActions}
+            canEnroll={canDeskActionsHere}
             onReinrol={(clientId) => {
               setAddClientId(clientId)
               setAddOpen(true)
@@ -881,7 +895,7 @@ export function GrupaDashboardPage() {
           <RestantieriTab
             loading={restantieriQ.isLoading}
             rows={restantieriQ.data ?? []}
-            canPay={canDeskActions}
+            canPay={canDeskActionsHere}
             onRowClick={(cid) => navigate(`/clienti/${cid}`)}
             onPayClick={(cid) => setPayClientId(cid)}
           />

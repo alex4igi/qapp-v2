@@ -154,8 +154,10 @@ export function DailyAgenda({ courses, loading, isError, salaId, emptyMessage }:
   return (
     <div className="mb-6">
       {/* strip zile + navigare */}
-      <div className="mb-4 flex items-center gap-2">
-        <div className="flex flex-1 gap-2">
+      {/* Pe telefon cele 7 zile + navigatorul nu încap pe un rând: zilele rămân
+          sus, controalele coboară dedesubt. */}
+      <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
+        <div className="flex flex-1 gap-1 md:gap-2">
           {days.map((d) => {
             const iso = toIso(d)
             const active = iso === date
@@ -166,7 +168,7 @@ export function DailyAgenda({ courses, loading, isError, salaId, emptyMessage }:
                 type="button"
                 onClick={() => setDate(iso)}
                 className={[
-                  'flex-1 rounded-[11px] py-2.5 text-center transition-colors',
+                  'min-w-0 flex-1 rounded-[11px] py-2.5 text-center transition-colors',
                   active ? 'bg-rail text-white' : 'bg-card hover:bg-rowhover',
                   !active && weekend ? 'opacity-60' : '',
                 ].join(' ')}
@@ -191,7 +193,7 @@ export function DailyAgenda({ courses, loading, isError, salaId, emptyMessage }:
             )
           })}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 max-md:justify-between">
           <div className="flex items-center overflow-hidden rounded-[10px] border border-line bg-card">
             <button
               type="button"

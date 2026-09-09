@@ -49,6 +49,7 @@ import { LogContactModal } from '../LogContactModal'
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
 import { STATUS_TONE } from './styles'
 import { EMPTY, fromLead } from './helpers'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { IdentityRail } from './IdentityRail'
 import { PipelineStepper } from './PipelineStepper'
 import { ConvertitSection } from './sections/ConvertitSection'
@@ -78,6 +79,7 @@ export function LeadModal({
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { role } = useAuth()
+  const isMobile = useIsMobile()
   const isEdit = Boolean(lead)
   const [form, setForm] = useState<LeadForm>(EMPTY)
   const [error, setError] = useState<string | null>(null)
@@ -490,7 +492,7 @@ export function LeadModal({
   return (
     <>
       <div
-        onMouseDown={onClose}
+        onPointerDown={onClose}
         style={{
           position: 'fixed',
           inset: 0,
@@ -499,23 +501,26 @@ export function LeadModal({
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'center',
-          padding: '40px 24px',
+          // Pe telefon fișa ocupă tot ecranul: 24px de margine ar lăsa un panou
+          // de 342px pentru un formular cu 6 secțiuni.
+          padding: isMobile ? 0 : '40px 24px',
           overflowY: 'auto',
         }}
       >
         <div
-          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           style={{
             position: 'relative',
             width: '1000px',
             maxWidth: '100%',
             background: '#fff',
-            borderRadius: '18px',
+            borderRadius: isMobile ? 0 : '18px',
             boxShadow: '0 30px 80px rgba(8,6,2,.5)',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            maxHeight: 'calc(100vh - 80px)',
+            maxHeight: isMobile ? '100dvh' : 'calc(100vh - 80px)',
+            minHeight: isMobile ? '100dvh' : undefined,
           }}
         >
           {/* header */}
@@ -570,9 +575,18 @@ export function LeadModal({
             </button>
           </div>
 
-          {/* body: două panouri */}
-          <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          {/* body: două panouri (pe telefon, unul sub altul) */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              flex: 1,
+              minHeight: 0,
+              overflowY: isMobile ? 'auto' : undefined,
+            }}
+          >
             <IdentityRail
+              stacked={isMobile}
               form={form}
               lead={lead}
               isEdit={isEdit}

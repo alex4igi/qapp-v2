@@ -1,26 +1,21 @@
-import { Outlet } from 'react-router-dom'
 import { WorkingDateProvider } from '@/hooks/useWorkingDate'
 import { WorkingLocatieProvider } from '@/hooks/useWorkingLocatie'
 import { useIdleLogout } from '@/hooks/useIdleLogout'
-import { Rail } from './Rail'
-import { TopBar } from './TopBar'
-import { WorkingDayBanner } from './WorkingDayBanner'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { DesktopShell } from './DesktopShell'
+import { MobileShell } from './mobile/MobileShell'
 
 export function AppLayout() {
-  useIdleLogout()
+  const isMobile = useIsMobile()
+  // Delogarea pe inactivitate păzește un ecran lăsat deschis la recepție. Pe
+  // telefon paza o face ecranul de blocare, iar instructorul ține telefonul în
+  // buzunar între grupe — 30 de minute l-ar da afară în mijlocul turei.
+  useIdleLogout(!isMobile)
+
   return (
     <WorkingDateProvider>
       <WorkingLocatieProvider>
-        <div className="flex h-screen w-screen overflow-hidden bg-surface">
-          <Rail />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <TopBar />
-            <WorkingDayBanner />
-            <main className="qcontent flex-1 overflow-y-auto p-6">
-              <Outlet />
-            </main>
-          </div>
-        </div>
+        {isMobile ? <MobileShell /> : <DesktopShell />}
       </WorkingLocatieProvider>
     </WorkingDateProvider>
   )

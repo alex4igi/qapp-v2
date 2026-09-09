@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth, type AppRole } from '@/hooks/useAuth'
-import { defaultRouteForRole, hasTeacherLens } from '@/lib/rolesMatrix'
+import { useLandingRoute } from '@/hooks/useLandingRoute'
+import { hasTeacherLens } from '@/lib/rolesMatrix'
 
 type Props = {
   requireRole?: AppRole
@@ -15,6 +16,7 @@ export function ProtectedRoute({
   requiresTeacherProfile,
 }: Props) {
   const { session, role, loading, teacherId, teacherLoading } = useAuth()
+  const landing = useLandingRoute()
 
   // Profilul de instructor se rezolvă asincron după login — fără gardul ăsta un
   // manager care predă ar fi aruncat afară de pe /grupele-mele la refresh.
@@ -31,15 +33,15 @@ export function ProtectedRoute({
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to={defaultRouteForRole(role)} replace />
+    return <Navigate to={landing} replace />
   }
 
   if (requiresTeacherProfile && !hasTeacherLens(role, teacherId)) {
-    return <Navigate to={defaultRouteForRole(role)} replace />
+    return <Navigate to={landing} replace />
   }
 
   if (requireRole && role !== requireRole) {
-    return <Navigate to={defaultRouteForRole(role)} replace />
+    return <Navigate to={landing} replace />
   }
 
   return <Outlet />

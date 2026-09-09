@@ -1,19 +1,20 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { defaultRouteForRole } from '@/lib/rolesMatrix'
+import { useLandingRoute } from '@/hooks/useLandingRoute'
 import { Logo } from '@/components/layout/Logo'
 
 export function LoginPage() {
-  const { session, signIn, loading, role } = useAuth()
+  const { session, signIn, loading } = useAuth()
   const navigate = useNavigate()
+  const landing = useLandingRoute()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   if (!loading && session) {
-    return <Navigate to={defaultRouteForRole(role)} replace />
+    return <Navigate to={landing} replace />
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -27,12 +28,13 @@ export function LoginPage() {
       return
     }
     // Redirectul efectiv se face declarativ mai sus (când sesiunea + rolul sunt
-    // încărcate) prin defaultRouteForRole — owner/admin aterizează pe /analytics.
+    // încărcate) prin useLandingRoute — pe desktop owner/admin aterizează pe
+    // /analytics, pe telefon toată lumea pe operaționalul zilei.
     navigate('/', { replace: true })
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-quasar-gray-light p-4">
+    <div className="flex min-h-dvh items-center justify-center bg-quasar-gray-light p-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm rounded-xl border border-quasar-gray-light bg-white p-8 shadow-sm"

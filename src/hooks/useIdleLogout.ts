@@ -17,7 +17,7 @@ const ACTIVITY_EVENTS = [
   'wheel',
 ] as const
 
-export function useIdleLogout() {
+export function useIdleLogout(enabled = true) {
   const { session, signOut } = useAuth()
   const hasSession = Boolean(session)
   // signOut nu e memoizat în provider → ref ca să nu reluăm efectul (și să nu
@@ -26,7 +26,7 @@ export function useIdleLogout() {
   idleLogoutRef.current = signOut
 
   useEffect(() => {
-    if (!hasSession) return
+    if (!hasSession || !enabled) return
 
     let timer: ReturnType<typeof setTimeout> | null = null
     let fired = false
@@ -61,5 +61,5 @@ export function useIdleLogout() {
       ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, onActivity))
       if (timer) clearTimeout(timer)
     }
-  }, [hasSession])
+  }, [hasSession, enabled])
 }

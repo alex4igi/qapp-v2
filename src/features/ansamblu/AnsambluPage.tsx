@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { KpiCard } from '@/features/statistici/KpiCard'
@@ -18,8 +19,10 @@ import { ClientiActiviPieChart } from './ClientiActiviPieChart'
 
 export function AnsambluPage() {
   const { role } = useAuth()
+  const isMobile = useIsMobile()
   const { locatieId, locatieNume } = useWorkingLocatie()
-  const privileged = isManagerOrHigher(role)
+  // Pe telefon: doar cifrele. Donut-urile și plăcinta rămân pe laptop.
+  const privileged = isManagerOrHigher(role) && !isMobile
 
   const activiQ = useQuery({
     queryKey: ['ansamblu', 'clienti-activi'],
@@ -105,6 +108,37 @@ export function AnsambluPage() {
           )}
 
           {/* Donuturi luna curentă: prezență, ocupare, retenție */}
+          {isMobile ? (
+            <div className="grid grid-cols-2 gap-3">
+              <KpiCard
+                label="Rată prezență"
+                value={`${rataPrezentaQ.data?.global.rata ?? 0}%`}
+                hint={
+                  rataPrezentaQ.data
+                    ? `${rataPrezentaQ.data.global.prezenti} din ${rataPrezentaQ.data.global.posibile}`
+                    : undefined
+                }
+              />
+              <KpiCard
+                label="Grad de ocupare grupe"
+                value={`${ocupareTotalaQ.data?.procent ?? 0}%`}
+                hint={
+                  ocupareTotalaQ.data
+                    ? `${ocupareTotalaQ.data.activi} din ${ocupareTotalaQ.data.capacitate}`
+                    : undefined
+                }
+              />
+              <KpiCard
+                label="Retenție (luna trecută)"
+                value={`${retentieQ.data?.rata ?? 0}%`}
+                hint={
+                  retentieQ.data
+                    ? `${retentieQ.data.retinuti} din ${retentieQ.data.bazaPrev}`
+                    : undefined
+                }
+              />
+            </div>
+          ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div>
               {rataPrezentaQ.isLoading ? (
@@ -205,6 +239,7 @@ export function AnsambluPage() {
               )}
             </div>
           </div>
+          )}
         </div>
     </div>
   )

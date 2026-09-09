@@ -55,16 +55,16 @@ function SalariuCard({ item }: { item: LunaItem }) {
     <article className="rounded-lg border border-quasar-gray-light bg-white">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-4 px-4 py-3 text-left hover:bg-quasar-gray-light/30"
+        className="flex w-full items-center gap-4 px-4 py-3 text-left hover:bg-quasar-gray-light/30 max-md:flex-wrap max-md:gap-x-3 max-md:gap-y-1"
       >
         <span className="text-quasar-gray">{open ? '▾' : '▸'}</span>
-        <span className="w-40 font-medium text-quasar-black">
+        <span className="w-40 font-medium text-quasar-black max-md:w-auto">
           {RO_LUNI[item.luna - 1]} {item.anul}
         </span>
-        <strong className="w-32 text-right text-quasar-black">
+        <strong className="w-32 text-right text-quasar-black max-md:ml-auto max-md:w-auto">
           {formatRON(total)}
         </strong>
-        <span className="w-40">
+        <span className="w-40 max-md:w-full">
           {item.kind === 'snapshot' ? (
             <span className="text-emerald-700">✓ Plătit</span>
           ) : (

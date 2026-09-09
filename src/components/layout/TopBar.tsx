@@ -1,34 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
-import { canAccessRoute } from '@/lib/rolesMatrix'
-import { getUnreadCount } from '@/features/notificari/api'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
-import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { listClienti } from '@/features/clienti/api'
 import { DateInput } from '@/components/ui'
+import { LocationPicker } from './LocationPicker'
+import { useClientSearch } from './useClientSearch'
+import { useUnreadCount } from './useUnreadCount'
 
 // Căutare rapidă de clienți — fluxul principal al recepției: caută client →
 // intră pe fișă → înrolare / încasare. Debounce + dropdown cu rezultate.
 function ClientSearch() {
   const navigate = useNavigate()
-  const [input, setInput] = useState('')
-  const [term, setTerm] = useState('')
+  const { input, setInput, term, results, isFetching, reset } = useClientSearch()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const t = setTimeout(() => setTerm(input.trim()), 250)
-    return () => clearTimeout(t)
-  }, [input])
-
-  const { data, isFetching } = useQuery({
-    queryKey: ['client-search', term],
-    queryFn: () => listClienti({ search: term, page: 0 }),
-    enabled: term.length >= 2,
-  })
-  const results = (data?.rows ?? []).slice(0, 8)
 
   useEffect(() => {
     if (!open) return
@@ -48,8 +32,7 @@ function ClientSearch() {
 
   const go = (id: string) => {
     setOpen(false)
-    setInput('')
-    setTerm('')
+    reset()
     navigate(`/clienti/${id}`)
   }
 
@@ -114,64 +97,11 @@ function ClientSearch() {
   )
 }
 
-// Selector locație de lucru — mutat din rail lângă calendar.
-function LocationPicker() {
-  const { locatieId, setLocatieId, options, locatieNume, locked } =
-    useWorkingLocatie()
-
-  const dot = (
-    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-quasar-yellow shadow-[0_0_0_3px_rgba(255,214,0,0.25)]" />
-  )
-
-  if (locked) {
-    return (
-      <div
-        className="flex h-10 items-center gap-2 rounded-[10px] border border-line bg-card px-3 text-sm font-medium text-ink"
-        title="Locația ta este setată de admin"
-      >
-        {dot}
-        {locatieNume ?? '—'}
-      </div>
-    )
-  }
-  return (
-    <label
-      className="flex h-10 items-center gap-2 rounded-[10px] border border-line bg-card px-3 text-sm font-medium text-ink focus-within:border-quasar-yellow"
-      title="Locația de lucru — filtrează cursuri/prezențe/încasări"
-    >
-      {dot}
-      <select
-        value={locatieId ?? '__all__'}
-        onChange={(e) =>
-          setLocatieId(e.target.value === '__all__' ? null : e.target.value)
-        }
-        className="bg-transparent text-sm text-ink outline-none"
-      >
-        <option value="__all__">Toate locațiile</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
-}
-
 // Bara globală de utilitare (sus): căutare clienți (stânga) + locație, ziua de
 // lucru, notificări (dreapta). Navigația și contul trăiesc în rail.
 export function TopBar() {
-  const { role } = useAuth()
   const { date, setDate } = useWorkingDate()
-
-  const showNotificari = canAccessRoute(role, '/notificari')
-  const notifQ = useQuery({
-    queryKey: ['notificari-unread'],
-    queryFn: getUnreadCount,
-    enabled: showNotificari,
-    refetchInterval: 60_000,
-  })
-  const unreadCount = notifQ.data ?? 0
+  const { enabled: showNotificari, count: unreadCount } = useUnreadCount()
 
   return (
     <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-card px-6">

@@ -30,24 +30,26 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', min
   if (!open) return null
 
   return (
+    // `pointerdown`, nu `mousedown`: pe touch al doilea nu se emite decât ca
+    // eveniment de compatibilitate, deci tapul pe fundal nu închidea modalul.
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onMouseDown={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 max-md:items-end max-md:p-0"
+      onPointerDown={onClose}
     >
       <div
-        className={`max-h-[90vh] w-full ${SIZE_CLASS[size]} overflow-y-auto rounded-2xl bg-card shadow-2xl`}
+        className={`max-h-[90vh] w-full ${SIZE_CLASS[size]} overflow-y-auto rounded-2xl bg-card shadow-2xl max-md:max-h-[92dvh] max-md:max-w-none max-md:overscroll-contain max-md:rounded-b-none`}
         style={minHeight ? { minHeight } : undefined}
-        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-card px-5 py-3.5 max-md:px-4">
           <h2 className="text-xl font-bold text-ink">{title}</h2>
           <Button variant="ghost" onClick={onClose} aria-label="Închide">
             ✕
           </Button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-5 max-md:p-4">{children}</div>
         {footer && (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3.5">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3.5 max-md:pb-[calc(0.875rem+env(safe-area-inset-bottom))]">
             {footer}
           </div>
         )}

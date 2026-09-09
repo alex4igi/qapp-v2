@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { canAccessRoute, defaultRouteForRole, type AppRoute } from '@/lib/rolesMatrix'
+import { useLandingRoute } from '@/hooks/useLandingRoute'
+import { canAccessRoute, type AppRoute } from '@/lib/rolesMatrix'
 
 // Hub „Administrare": paginile de config, scoase din rail și adunate sub un
 // tab-bar comun. Fiecare tab e un link către ruta existentă (paths neschimbate,
@@ -23,8 +24,9 @@ const TABS: { label: string; path: AppRoute }[] = [
  */
 export function AdministrareIndex() {
   const { role } = useAuth()
+  const landing = useLandingRoute()
   const first = TABS.find((t) => canAccessRoute(role, t.path))
-  return <Navigate to={first?.path ?? defaultRouteForRole(role)} replace />
+  return <Navigate to={first?.path ?? landing} replace />
 }
 
 export function AdministrareLayout() {

@@ -19,27 +19,32 @@ function KpiCard({
   value,
   active,
   onClick,
+  className,
 }: {
   icon: string
   label: string
   value: string
   active: boolean
   onClick: () => void
+  className?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
-        'flex flex-col rounded-2xl border bg-card p-5 text-left transition-shadow hover:shadow-md',
+        'flex flex-col rounded-2xl border bg-card p-5 text-left transition-shadow hover:shadow-md max-md:p-3.5',
         active ? 'border-quasar-yellow ring-1 ring-quasar-yellow' : 'border-line',
+        className ?? '',
       ].join(' ')}
     >
-      <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-xl">
+      <div className="flex items-center gap-3 max-md:gap-2">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-quasar-yellow text-xl max-md:h-8 max-md:w-8 max-md:text-sm">
           {icon}
         </span>
-        <span className="flex-1 text-sm font-medium text-muted">{label}</span>
+        <span className="min-w-0 flex-1 text-sm font-medium text-muted max-md:text-[12px] max-md:leading-tight">
+          {label}
+        </span>
         <span
           className={[
             'text-[11px] text-muted transition-transform',
@@ -50,7 +55,9 @@ function KpiCard({
           ▾
         </span>
       </div>
-      <div className="fnum mt-3 font-display text-3xl font-bold text-ink">{value}</div>
+      <div className="fnum mt-3 font-display text-3xl font-bold text-ink max-md:mt-2 max-md:text-xl">
+        {value}
+      </div>
     </button>
   )
 }
@@ -151,7 +158,7 @@ export function DashboardKpis({
 
   return (
     <div className="mb-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 max-md:gap-2.5 md:grid-cols-3">
         <KpiCard
           icon="💰"
           label="Încasări azi"
@@ -167,6 +174,7 @@ export function DashboardKpis({
           onClick={() => toggle('programari')}
         />
         <KpiCard
+          className="max-md:col-span-2"
           icon="⚠️"
           label="Restanțieri azi"
           value={restanteQ.isLoading ? '…' : formatRON(restanteTotal)}

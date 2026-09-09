@@ -54,8 +54,10 @@ export function ProfileScaffold({
         )}
       </div>
 
-      <div className="grid items-start gap-6 md:grid-cols-[300px_minmax(0,1fr)]">
-        {sidebar}
+      {/* Pe telefon cardul de identitate trece sub conținut: 300px de sidebar
+          înaintea tab-urilor ar împinge tot ce e util sub linia de plutire. */}
+      <div className="grid items-start gap-6 max-md:gap-4 md:grid-cols-[300px_minmax(0,1fr)]">
+        <div className="max-md:order-2">{sidebar}</div>
         <div className="min-w-0">{children}</div>
       </div>
     </div>

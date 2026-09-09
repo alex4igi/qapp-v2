@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Select, Spinner } from '@/components/ui'
@@ -15,14 +15,23 @@ import {
 import { DailyAgenda } from '@/features/dashboard/DailyAgenda'
 import { DashboardKpis } from '@/features/dashboard/DashboardKpis'
 import { EventDashboardCard } from '@/features/dashboard/EventDashboardCard'
-import { DashboardChart } from '@/features/dashboard/DashboardChart'
 import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
 import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
 import { InchirieriAziCard } from '@/features/dashboard/InchirieriAziCard'
 import { EvaluariCountdown } from '@/features/evaluari/components/EvaluariCountdown'
+import { useIsMobile } from '@/hooks/useIsMobile'
+
+// Graficul trage recharts (~315 KB). Code-split ca să nu stea pe calea critică a
+// dashboard-ului — pe telefon nici nu se randează.
+const DashboardChart = lazy(() =>
+  import('@/features/dashboard/DashboardChart').then((m) => ({
+    default: m.DashboardChart,
+  })),
+)
 
 export function DashboardPage() {
   const { role, teacherId } = useAuth()
+  const isMobile = useIsMobile()
   const teacherMode = isTeacher(role)
   // Cine predă fără să fie teacher pur (manager/recepție) primește dashboard-ul
   // complet PLUS o secțiune cu grupele lui de azi — aditiv, nu în locul lui.
@@ -101,6 +110,7 @@ export function DashboardPage() {
 
   // Chart doar pentru staff — pe luna curentă (YYYY-MM)
   const lunaCurenta = date.slice(0, 7)
+  const showChart = !teacherMode && !isMobile
   const chartQ = useQuery({
     queryKey: [
       'dashboard',
@@ -109,7 +119,7 @@ export function DashboardPage() {
       courseRefs.map((c) => c.id).join(','),
     ],
     queryFn: () => getDashboardChart(courseRefs, lunaCurenta),
-    enabled: !teacherMode && courseRefs.length > 0,
+    enabled: showChart && courseRefs.length > 0,
   })
 
   return (
@@ -189,7 +199,7 @@ export function DashboardPage() {
         <InchirieriAziCard locatieId={locatieId ?? null} salaId={salaId} />
       )}
 
-      {!teacherMode && (
+      {showChart && (
         <>
           <h2 className="mb-2 text-sm font-semibold text-ink">
             Încasări vs Restanțe (cursurile zilei)
@@ -197,7 +207,9 @@ export function DashboardPage() {
           {chartQ.isLoading ? (
             <Spinner />
           ) : (
-            <DashboardChart rows={chartQ.data ?? []} />
+            <Suspense fallback={<Spinner />}>
+              <DashboardChart rows={chartQ.data ?? []} />
+            </Suspense>
           )}
         </>
       )}

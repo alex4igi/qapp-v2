@@ -8,6 +8,8 @@ type Props = {
   leads: Lead[]
   onLeadClick: (lead: Lead) => void
   onLogContact?: (lead: Lead) => void
+  /** Pe telefon panoul E pagina, deci pornește deschis. */
+  defaultExpanded?: boolean
 }
 
 type TodayGroups = {
@@ -135,10 +137,10 @@ function Row({
     [lead.prenume, lead.nume].filter(Boolean).join(' ') || lead.nume
   return (
     <div
-      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-quasar-gray-light/50"
+      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-quasar-gray-light/50 max-md:min-h-11 max-md:flex-wrap max-md:gap-x-2 max-md:gap-y-0.5 max-md:py-2"
       onClick={() => onLeadClick(lead)}
     >
-      <span className="min-w-0 flex-1 truncate font-medium text-quasar-black">
+      <span className="min-w-0 flex-1 truncate font-medium text-quasar-black max-md:basis-full">
         {fullName}
       </span>
       {lead.telefon && (
@@ -155,7 +157,7 @@ function Row({
           e.stopPropagation()
           onLogContact(lead)
         }}
-        className="shrink-0 rounded p-1 text-quasar-gray transition-colors hover:bg-quasar-gray-light hover:text-quasar-black"
+        className="shrink-0 rounded p-1 text-quasar-gray transition-colors hover:bg-quasar-gray-light hover:text-quasar-black max-md:ml-auto max-md:p-2.5 max-md:text-base"
         title="Loghează contact"
       >
         📞
@@ -218,8 +220,13 @@ function Group({
 // cron-evening, callback-uri scadente și lead-uri noi necontactate >24h.
 // Iese singur din listă: flag-ul se șterge la drag, callback-ul la logare
 // contact, „nou" la prima contactare.
-export function TodayPanel({ leads, onLeadClick, onLogContact }: Props) {
-  const [expanded, setExpanded] = useState(false)
+export function TodayPanel({
+  leads,
+  onLeadClick,
+  onLogContact,
+  defaultExpanded = false,
+}: Props) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const groups = useMemo(() => groupTodayLeads(leads), [leads])
   const total =
     groups.reminders.length +
@@ -236,12 +243,12 @@ export function TodayPanel({ leads, onLeadClick, onLogContact }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left max-md:flex-wrap max-md:gap-y-1.5"
       >
-        <span className="text-sm font-semibold text-quasar-black">
+        <span className="text-sm font-semibold text-quasar-black max-md:basis-full">
           ⚡ De lucrat azi — {total} {total === 1 ? 'lead' : 'lead-uri'}
         </span>
-        <span className="flex items-center gap-1.5 text-xs text-quasar-gray">
+        <span className="flex flex-wrap items-center gap-1.5 text-xs text-quasar-gray">
           {groups.reminders.length > 0 && (
             <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">
               ⚑ {groups.reminders.length}

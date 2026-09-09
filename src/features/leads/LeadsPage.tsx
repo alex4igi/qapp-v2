@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader, Button } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { canEditLeads } from '@/lib/rolesMatrix'
+import { LeadsMobileView } from './LeadsMobileView'
 import { LeadModal } from './LeadModal'
 import { LeadImportModal } from './LeadImportModal'
 import { KanbanBoard } from './KanbanBoard'
@@ -29,6 +31,7 @@ export function LeadsPage() {
   // Agenția de ads citește pipeline-ul ca să verifice atribuirea, dar nu-l
   // atinge. RLS refuză oricum scrierea — aici doar nu arătăm butoane moarte.
   const poateEdita = canEditLeads(role)
+  const isMobile = useIsMobile()
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -54,6 +57,8 @@ export function LeadsPage() {
     }
     setSearchParams(p, { replace: true })
   }
+
+  if (isMobile) return <LeadsMobileView poateEdita={poateEdita} />
 
   return (
     <div>

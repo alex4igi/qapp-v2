@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/cn'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 export type MenuItem = {
   label: string
@@ -17,6 +18,7 @@ type Props = {
 }
 
 export function KebabMenu({ items, align = 'right', ariaLabel = 'Acțiuni' }: Props) {
+  const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -30,28 +32,80 @@ export function KebabMenu({ items, align = 'right', ariaLabel = 'Acțiuni' }: Pr
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
+    // Pe telefon meniul e o foaie peste tot ecranul, cu fundal propriu — un
+    // listener global l-ar închide chiar la tapul care îl deschide.
+    if (!isMobile) document.addEventListener('mousedown', handler)
     document.addEventListener('keydown', key)
     return () => {
       document.removeEventListener('mousedown', handler)
       document.removeEventListener('keydown', key)
     }
-  }, [open])
+  }, [open, isMobile])
 
   if (items.length === 0) return null
 
+  const trigger = (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      aria-haspopup="menu"
+      aria-expanded={open}
+      onClick={() => setOpen((o) => !o)}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-lg leading-none text-muted-2 transition-colors hover:bg-surface hover:text-ink max-md:h-10 max-md:w-10"
+    >
+      ⋮
+    </button>
+  )
+
+  // Varianta de telefon: foaie ancorată jos. Meniul ancorat `absolute` s-ar tăia
+  // în containerul cu scroll al shell-ului mobil.
+  if (isMobile) {
+    return (
+      <div ref={rootRef} className="relative">
+        {trigger}
+        {open && (
+          <div
+            className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40"
+            onPointerDown={() => setOpen(false)}
+          >
+            <div
+              role="menu"
+              className="max-h-[80dvh] overflow-y-auto overscroll-contain rounded-t-2xl bg-card pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <div className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                {ariaLabel}
+              </div>
+              {items.map((item, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  role="menuitem"
+                  title={item.title}
+                  onClick={() => {
+                    setOpen(false)
+                    item.onClick()
+                  }}
+                  className={cn(
+                    'flex min-h-12 w-full items-center gap-3 px-4 text-left text-sm transition-colors active:bg-surface',
+                    item.separatorBefore && 'border-t border-line',
+                    item.danger ? 'text-red-600' : 'text-ink',
+                  )}
+                >
+                  {item.icon && <span aria-hidden>{item.icon}</span>}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        aria-label={ariaLabel}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-lg leading-none text-muted-2 transition-colors hover:bg-surface hover:text-ink"
-      >
-        ⋮
-      </button>
+      {trigger}
 
       {open && (
         <div

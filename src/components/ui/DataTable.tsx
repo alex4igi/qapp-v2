@@ -1,5 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/cn'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 type SortDir = 'asc' | 'desc'
 
@@ -31,6 +32,8 @@ type Props<T> = {
   // rândurilor de către apelant: acolo tabelul nu știe după ce e ordonat, deci
   // niciun antet nu se aprinde și criteriul devine invizibil pentru utilizator.
   defaultSort?: { idx: number; dir?: SortDir }
+  // Cardul de pe telefon, când stivuirea implicită a coloanelor nu e destul.
+  mobileCard?: (row: T) => ReactNode
 }
 
 function compareValues(
@@ -47,6 +50,58 @@ function compareValues(
   return String(a).localeCompare(String(b), 'ro', { numeric: true })
 }
 
+/** Sortarea pe telefon: un select nativ în locul antetelor de tabel. */
+function MobileSortBar<T>({
+  columns,
+  sortIdx,
+  sortDir,
+  onPick,
+  onFlip,
+}: {
+  columns: Column<T>[]
+  sortIdx: number | null
+  sortDir: SortDir
+  onPick: (idx: number | null) => void
+  onFlip: () => void
+}) {
+  const sortable = columns
+    .map((col, idx) => ({ col, idx }))
+    .filter((c) => !!c.col.sortValue)
+  if (sortable.length === 0) return null
+
+  return (
+    <div className="flex items-center gap-2">
+      <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-card px-3 text-sm text-ink">
+        <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted">
+          Sortare
+        </span>
+        <select
+          value={sortIdx ?? ''}
+          onChange={(e) => onPick(e.target.value === '' ? null : Number(e.target.value))}
+          className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none"
+        >
+          <option value="">Implicită</option>
+          {sortable.map(({ col, idx }) => (
+            <option key={col.header || idx} value={idx}>
+              {col.header}
+            </option>
+          ))}
+        </select>
+      </label>
+      {sortIdx != null && (
+        <button
+          type="button"
+          onClick={onFlip}
+          aria-label={sortDir === 'asc' ? 'Crescător' : 'Descrescător'}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-card text-sm text-muted-2"
+        >
+          {sortDir === 'asc' ? '▲' : '▼'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function DataTable<T>({
   columns,
   rows,
@@ -56,7 +111,9 @@ export function DataTable<T>({
   maxRows,
   rowClassName,
   defaultSort,
+  mobileCard,
 }: Props<T>) {
+  const isMobile = useIsMobile()
   const [sortIdx, setSortIdx] = useState<number | null>(defaultSort?.idx ?? null)
   const [sortDir, setSortDir] = useState<SortDir>(defaultSort?.dir ?? 'asc')
 
@@ -84,6 +141,86 @@ export function DataTable<T>({
       ? sortedRows.slice(0, maxRows)
       : sortedRows
   const taiate = sortedRows.length - visibleRows.length
+
+  // Pe telefon un tabel de 8-10 coloane s-ar citi doar trăgându-l lateral, așa că
+  // fiecare rând devine card. Coloanele fără antet (acțiuni, bulinele de status)
+  // se adună jos, ca să nu apară etichete goale.
+  if (isMobile) {
+    const titleCol = columns.find((c) => c.header)
+    const bodyCols = columns.filter((c) => c.header && c !== titleCol)
+    const trailingCols = columns.filter((c) => !c.header)
+
+    return (
+      <div className="flex flex-col gap-2">
+        <MobileSortBar
+          columns={columns}
+          sortIdx={sortIdx}
+          sortDir={sortDir}
+          onPick={(idx) => {
+            setSortIdx(idx)
+            if (idx != null) setSortDir(columns[idx]?.defaultDir ?? 'asc')
+          }}
+          onFlip={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+        />
+
+        {visibleRows.length === 0 ? (
+          <p className="rounded-2xl border border-line bg-card p-6 text-center text-sm text-muted">
+            {emptyMessage}
+          </p>
+        ) : (
+          visibleRows.map((row) => (
+            <div
+              key={rowKey(row)}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              className={cn(
+                'rounded-2xl border border-line bg-card p-3.5 shadow-sm',
+                onRowClick && 'active:bg-rowhover',
+                rowClassName?.(row),
+              )}
+            >
+              {mobileCard ? (
+                mobileCard(row)
+              ) : (
+                <>
+                  {titleCol && (
+                    <div className="text-sm font-semibold text-ink">
+                      {titleCol.cell(row)}
+                    </div>
+                  )}
+                  {bodyCols.length > 0 && (
+                    <dl className="mt-2 grid grid-cols-[minmax(0,38%)_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+                      {bodyCols.map((col, idx) => (
+                        <Fragment key={col.header || idx}>
+                          <dt className="text-[11px] uppercase tracking-wide text-muted">
+                            {col.header}
+                          </dt>
+                          <dd className="min-w-0 text-ink">{col.cell(row)}</dd>
+                        </Fragment>
+                      ))}
+                    </dl>
+                  )}
+                  {trailingCols.length > 0 && (
+                    <div className="mt-2.5 flex flex-wrap items-center justify-end gap-2">
+                      {trailingCols.map((col, idx) => (
+                        <Fragment key={idx}>{col.cell(row)}</Fragment>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))
+        )}
+
+        {taiate > 0 && (
+          <p className="px-1 py-1 text-center text-xs text-muted">
+            Afișate primele {visibleRows.length} din {sortedRows.length} — restrânge
+            filtrele sau exportă lista completă.
+          </p>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-sm">

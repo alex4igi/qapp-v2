@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Button, Spinner, Combobox, Field } from '@/components/ui'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { isPrivileged, isTeacher } from '@/lib/rolesMatrix'
 import { clientiOptions } from '@/lib/lookups'
 import { formatRON } from '@/lib/format'
@@ -58,6 +59,7 @@ function ParticipantCard({
   presencePending: boolean
 }) {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const name = [row.nume, row.prenume].filter(Boolean).join(', ')
   const isLead = row.kind === 'lead'
   // Lead programat la ora demonstrativă → card cu prezență, nu cu plată.
@@ -65,7 +67,8 @@ function ParticipantCard({
   // cursanții înscriși au prezență proprie.
   const isScheduled = row.prezenta != null
   // O clasă demo e gratuită — nimic de încasat, deci nici buton de plată.
-  const showPay = !isDemo && !isLead && (row.neplatit || row.rest > 0)
+  // Pe telefon nu arătăm încasarea: modalul de plată e gândit pentru recepție.
+  const showPay = !isDemo && !isLead && !isMobile && (row.neplatit || row.rest > 0)
   const payLabel = row.neplatit
     ? 'Nu a plătit biletul'
     : `Rest de plată: ${formatRON(row.rest)}`
@@ -139,7 +142,7 @@ function ParticipantCard({
               type="button"
               onClick={() => onPresence(row.refId, true)}
               disabled={presencePending}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-green-600 shadow-sm transition-colors hover:bg-green-50 disabled:opacity-50"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-green-600 shadow-sm transition-colors hover:bg-green-50 disabled:opacity-50 max-md:h-9 max-md:w-9"
               aria-label="Marchează prezent"
               title="Marchează prezent"
             >
@@ -149,7 +152,7 @@ function ParticipantCard({
               type="button"
               onClick={() => onPresence(row.refId, false)}
               disabled={presencePending}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50 max-md:h-9 max-md:w-9"
               aria-label="Marchează absent"
               title="Marchează absent"
             >
@@ -178,7 +181,7 @@ function ParticipantCard({
         <button
           type="button"
           onClick={() => navigate(navTarget)}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm shadow-sm transition-colors hover:bg-quasar-gray-light"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm shadow-sm transition-colors hover:bg-quasar-gray-light max-md:h-9 max-md:w-9"
           aria-label={isLead ? 'Vezi în pipeline leads' : 'Profil cursant'}
           title={isLead ? 'Vezi în pipeline leads' : 'Profil cursant'}
         >
@@ -189,7 +192,7 @@ function ParticipantCard({
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600 shadow-sm transition-colors hover:bg-green-50"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600 shadow-sm transition-colors hover:bg-green-50 max-md:h-9 max-md:w-9"
             aria-label="Scrie pe WhatsApp"
             title="Scrie pe WhatsApp"
           >
@@ -203,7 +206,7 @@ function ParticipantCard({
             type="button"
             onClick={() => (isDemo ? onRemoveDemo() : onRemove(row))}
             disabled={removePending}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50 max-md:h-9 max-md:w-9"
             aria-label="Scoate din listă"
             title="Scoate din listă"
           >
@@ -427,7 +430,7 @@ export function EvenimentRosterPage() {
             : 'Niciun participant. Adaugă cursanți manual de mai sus sau înregistrează o plată de bilet legată de acest eveniment.'}
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {data.roster.map((r) => (
             <ParticipantCard
               key={`${r.kind}:${r.refId}`}

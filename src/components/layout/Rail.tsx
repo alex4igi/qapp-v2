@@ -4,86 +4,10 @@ import { useAuth } from '@/hooks/useAuth'
 import { canAccessRoute, canEditLeads, roleLabel } from '@/lib/rolesMatrix'
 import { ClientForm } from '@/features/clienti/ClientForm'
 import { LeadModal } from '@/features/leads/LeadModal'
+import { isForcedDesktop, isNarrowViewport, setForceDesktop } from '@/hooks/useIsMobile'
+import { initialsFromEmail } from './accountInitials'
+import { SectionIcon } from './SectionIcon'
 import { sectionMatches, visibleSections } from './navConfig'
-
-/* ---------- iconuri secțiuni ---------- */
-function SectionIcon({ label }: { label: string }) {
-  const common = {
-    width: 17,
-    height: 17,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-  }
-  switch (label) {
-    case 'Clienți':
-      return (
-        <svg {...common}>
-          <circle cx="9" cy="8" r="3.2" />
-          <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />
-          <circle cx="17" cy="8.5" r="2.6" />
-        </svg>
-      )
-    case 'Încasări':
-      return (
-        <svg {...common}>
-          <rect x="2.5" y="6" width="19" height="12" rx="2" />
-          <circle cx="12" cy="12" r="2.6" />
-        </svg>
-      )
-    case 'Cursuri':
-      return (
-        <svg {...common}>
-          <rect x="3.5" y="4" width="17" height="16" rx="2" />
-          <path d="M3.5 9h17M9 9v11" />
-        </svg>
-      )
-    case 'Evenimente':
-      return (
-        <svg {...common}>
-          <path d="M12 3.5l2.5 5.3 5.8.8-4.2 4 1 5.7-5.1-2.8-5.1 2.8 1-5.7-4.2-4 5.8-.8z" />
-        </svg>
-      )
-    case 'Marketing':
-      return (
-        <svg {...common}>
-          <path d="M4 10v4l10 4V6z" />
-          <path d="M14 8.5a4 4 0 010 7" />
-        </svg>
-      )
-    case 'Rapoarte':
-      return (
-        <svg {...common}>
-          <rect x="3" y="12" width="4" height="8" rx="1" />
-          <rect x="10" y="7" width="4" height="13" rx="1" />
-          <rect x="17" y="3" width="4" height="17" rx="1" />
-        </svg>
-      )
-    case 'Personal':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="7.5" r="3" />
-          <path d="M5.5 20c0-3.3 2.7-5.5 6.5-5.5s6.5 2.2 6.5 5.5" />
-        </svg>
-      )
-    case 'Administrare':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1" />
-        </svg>
-      )
-    default:
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8" />
-        </svg>
-      )
-  }
-}
 
 /* ---------- stare colapsat ---------- */
 const COLLAPSED_KEY = 'qapp.rail.collapsed'
@@ -353,11 +277,6 @@ function RailActions({ collapsed }: { collapsed: boolean }) {
 }
 
 /* ---------- cont (dropdown în sus) ---------- */
-function initials(email: string | undefined): string {
-  const local = (email ?? '').split('@')[0] ?? ''
-  const letters = local.replace(/[^a-zA-Z]/g, '')
-  return (letters.slice(0, 2) || '?').toUpperCase()
-}
 
 function RailAccount({
   collapsed,
@@ -373,6 +292,9 @@ function RailAccount({
 
   const showFeedback = canAccessRoute(role, '/feedback-app')
   const showAnunturi = canAccessRoute(role, '/anunturi')
+  // Ecran îngust + desktop forțat = omul a ieșit manual din shell-ul mobil.
+  // Îi lăsăm drumul înapoi; pe un monitor adevărat opțiunea n-are ce căuta.
+  const showMobileSwitch = isForcedDesktop() && isNarrowViewport()
 
   const go = (path: string) => {
     setOpen(false)
@@ -410,7 +332,7 @@ function RailAccount({
           aria-label="Cont"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-quasar-yellow text-[11px] font-bold text-ink"
         >
-          {initials(user?.email)}
+          {initialsFromEmail(user?.email)}
         </button>
       </div>
     )
@@ -427,7 +349,7 @@ function RailAccount({
         aria-expanded={open}
       >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-quasar-yellow text-[11px] font-bold text-ink">
-          {initials(user?.email)}
+          {initialsFromEmail(user?.email)}
         </span>
         <span className="min-w-0 leading-tight">
           <span className="block truncate text-[12.5px] font-semibold text-white">
@@ -474,6 +396,20 @@ function RailAccount({
               <button type="button" role="menuitem" className={item} onClick={() => go('/anunturi')}>
                 <span aria-hidden>📢</span>
                 <span>Anunțuri</span>
+              </button>
+            )}
+            {showMobileSwitch && (
+              <button
+                type="button"
+                role="menuitem"
+                className={item}
+                onClick={() => {
+                  setOpen(false)
+                  setForceDesktop(false)
+                }}
+              >
+                <span aria-hidden>📱</span>
+                <span>Versiunea mobilă</span>
               </button>
             )}
           </div>

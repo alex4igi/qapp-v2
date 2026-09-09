@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Field, Select, MonthPicker, Spinner, TextInput } from '@/components/ui'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { formatRON } from '@/lib/format'
 import { humanizeError } from '@/lib/errorMessage'
 import { downloadCsv } from '@/lib/csv'
@@ -37,9 +38,14 @@ export function SectionWorklist({
   onClearLocatie?: () => void
   canSuspend: boolean
   onLog: (row: WorklistRow) => void
-  onPlata: (row: WorklistRow) => void
+  /** Lipsește pe telefon: încasarea trece prin modalul de la recepție. */
+  onPlata?: (row: WorklistRow) => void
 }) {
   const queryClient = useQueryClient()
+  const isMobile = useIsMobile()
+  // Pe telefon cele patru filtre ocupă un ecran întreg înaintea listei — le
+  // ținem pliate până le cere cineva.
+  const [filtreDeschise, setFiltreDeschise] = useState(false)
   const [sezonId, setSezonId] = useState('')
   const [luna, setLuna] = useState('')
   const [search, setSearch] = useState('')
@@ -140,13 +146,22 @@ export function SectionWorklist({
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="m-0 text-sm font-semibold text-quasar-black">Datornici de sunat</h3>
-        <Button variant="secondary" onClick={exportCsv} disabled={rows.length === 0}>
-          ⬇ Export CSV
-        </Button>
+        {isMobile ? (
+          <Button variant="secondary" onClick={() => setFiltreDeschise((v) => !v)}>
+            {filtreDeschise ? 'Ascunde filtrele' : '⚙ Filtre'}
+          </Button>
+        ) : (
+          <Button variant="secondary" onClick={exportCsv} disabled={rows.length === 0}>
+            ⬇ Export CSV
+          </Button>
+        )}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div className="w-52">
+      <div
+        className="mb-4 flex flex-wrap items-end gap-3"
+        hidden={isMobile && !filtreDeschise}
+      >
+        <div className="w-52 max-md:w-full">
           <Field label="Caută" htmlFor="dat-cauta">
             <TextInput
               id="dat-cauta"
@@ -156,7 +171,7 @@ export function SectionWorklist({
             />
           </Field>
         </div>
-        <div className="w-48">
+        <div className="w-48 max-md:w-full">
           <Field label="Sezon" htmlFor="dat-sez">
             <Select
               id="dat-sez"
@@ -167,7 +182,7 @@ export function SectionWorklist({
             />
           </Field>
         </div>
-        <div className="w-44">
+        <div className="w-44 max-md:w-full">
           <Field label="Status" htmlFor="dat-status">
             <Select
               id="dat-status"
@@ -178,7 +193,7 @@ export function SectionWorklist({
             />
           </Field>
         </div>
-        <div className="w-44">
+        <div className="w-44 max-md:w-full">
           <Field label="Are rată din luna" htmlFor="dat-luna">
             <div className="flex items-center gap-1">
               <MonthPicker id="dat-luna" value={luna} onChange={setLuna} />

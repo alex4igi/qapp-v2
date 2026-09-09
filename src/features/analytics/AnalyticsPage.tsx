@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Field, MonthPicker, Select, Button, LazySection } from '@/components/ui'
 import { formatRON } from '@/lib/format'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { locatiiOptions } from '@/lib/lookups'
 import {
   getKpis,
@@ -24,6 +25,7 @@ import { Section6Oameni } from './sections/Section6Oameni'
 import { Section7Scoala } from './sections/Section7Scoala'
 
 export function AnalyticsPage() {
+  const isMobile = useIsMobile()
   const [fromLuna, setFromLuna] = useState(lunaCuOffset(-11))
   const [toLuna, setToLuna] = useState(lunaCurenta())
   const [locatieId, setLocatieId] = useState('')
@@ -55,8 +57,10 @@ export function AnalyticsPage() {
   return (
     <div>
       <PageHeader
-        title="Panou — numere & direcție"
+        title={isMobile ? 'Cifre' : 'Panou — numere & direcție'}
+        subtitle={isMobile ? 'Ultimele 12 luni · graficele sunt pe desktop' : undefined}
         actions={
+          isMobile ? null : (
           <div className="flex flex-wrap items-end gap-3">
             <Link
               to="/"
@@ -99,6 +103,7 @@ export function AnalyticsPage() {
               </Field>
             </div>
           </div>
+          )
         }
       />
 
@@ -117,35 +122,41 @@ export function AnalyticsPage() {
           />
         </div>
 
-        <Section1Retentie scope={scope} />
+        {/* Secțiunile 1–7 sunt grafice și tabele comparative: pe telefon rămâne
+            doar pachetul de cifre de mai sus. */}
+        {!isMobile && (
+          <>
+            <Section1Retentie scope={scope} />
 
-        {/* Secțiunile 2–7 — pornesc query-urile abia la scroll */}
-        <LazySection>
-          <Section2Achizitie
-            interval={interval}
-            scope={scope}
-            locatieId={locatieId}
-            locatieLabel={locatieLabel}
-            conversie={conversieQ.data}
-          />
-        </LazySection>
-        <LazySection>
-          <div id="sec-risc">
-            <Section3Risc scope={scope} />
-          </div>
-        </LazySection>
-        <LazySection>
-          <Section4Economie scope={scope} />
-        </LazySection>
-        <LazySection>
-          <Section5Venituri interval={interval} scope={scope} />
-        </LazySection>
-        <LazySection>
-          <Section6Oameni scoped={!!scope} />
-        </LazySection>
-        <LazySection>
-          <Section7Scoala scope={scope} yoyMetrica={yoyMetrica} setYoyMetrica={setYoyMetrica} anCurent={anCurent} />
-        </LazySection>
+            {/* Secțiunile 2–7 — pornesc query-urile abia la scroll */}
+            <LazySection>
+              <Section2Achizitie
+                interval={interval}
+                scope={scope}
+                locatieId={locatieId}
+                locatieLabel={locatieLabel}
+                conversie={conversieQ.data}
+              />
+            </LazySection>
+            <LazySection>
+              <div id="sec-risc">
+                <Section3Risc scope={scope} />
+              </div>
+            </LazySection>
+            <LazySection>
+              <Section4Economie scope={scope} />
+            </LazySection>
+            <LazySection>
+              <Section5Venituri interval={interval} scope={scope} />
+            </LazySection>
+            <LazySection>
+              <Section6Oameni scoped={!!scope} />
+            </LazySection>
+            <LazySection>
+              <Section7Scoala scope={scope} yoyMetrica={yoyMetrica} setYoyMetrica={setYoyMetrica} anCurent={anCurent} />
+            </LazySection>
+          </>
+        )}
       </div>
     </div>
   )

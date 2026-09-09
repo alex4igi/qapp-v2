@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, LazySection, PageHeader } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { isAdminOrHigher, isPrivileged } from '@/lib/rolesMatrix'
 import { PraguriModal } from '@/features/scorecard/PraguriModal'
@@ -23,6 +24,7 @@ import { SectionWorklist } from './sections/SectionWorklist'
 // în LazySection (pattern /statistici).
 export function DatoriiPage() {
   const { role } = useAuth()
+  const isMobile = useIsMobile()
   const { locatieId, locatieNume } = useWorkingLocatie()
   const [praguriOpen, setPraguriOpen] = useState(false)
   const [target, setTarget] = useState<RecuperareTarget | null>(null)
@@ -50,7 +52,7 @@ export function DatoriiPage() {
         title="Datorii"
         subtitle={`Recuperare și evoluție restanțe — ${locatieNume ?? 'toate locațiile'}`}
         actions={
-          isAdminOrHigher(role) ? (
+          isAdminOrHigher(role) && !isMobile ? (
             <Button variant="secondary" onClick={() => setPraguriOpen(true)}>
               ⚙ Praguri
             </Button>
@@ -61,26 +63,32 @@ export function DatoriiPage() {
       <div className="space-y-6">
         <SectionKpi locatieId={locatieId} />
 
-        <LazySection minHeight={320}>
-          <div className="grid gap-6 lg:grid-cols-2">
-            <SectionColectareDonut locatieId={locatieId} />
-            <SectionRecuperareActiva locatieId={locatieId} />
-          </div>
-        </LazySection>
+        {/* Graficele și tabelele comparative rămân pe laptop (decizie de produs:
+            pe telefon — cifrele și lista de sunat, atât). */}
+        {!isMobile && (
+          <>
+            <LazySection minHeight={320}>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <SectionColectareDonut locatieId={locatieId} />
+                <SectionRecuperareActiva locatieId={locatieId} />
+              </div>
+            </LazySection>
 
-        <LazySection minHeight={420}>
-          <SectionBalantaGrupe locatieId={locatieId} />
-        </LazySection>
+            <LazySection minHeight={420}>
+              <SectionBalantaGrupe locatieId={locatieId} />
+            </LazySection>
 
-        {locatieId === null && (
-          <LazySection minHeight={260}>
-            <SectionComparativLocatii onPick={onPickLocatie} activeId={filterLoc?.id} />
-          </LazySection>
+            {locatieId === null && (
+              <LazySection minHeight={260}>
+                <SectionComparativLocatii onPick={onPickLocatie} activeId={filterLoc?.id} />
+              </LazySection>
+            )}
+
+            <LazySection minHeight={180}>
+              <SectionPromisiuni locatieId={locatieId} onLog={onLog} />
+            </LazySection>
+          </>
         )}
-
-        <LazySection minHeight={180}>
-          <SectionPromisiuni locatieId={locatieId} onLog={onLog} />
-        </LazySection>
 
         <SectionWorklist
           locatieId={filterLoc?.id ?? locatieId}
@@ -88,7 +96,7 @@ export function DatoriiPage() {
           onClearLocatie={() => setFilterLoc(null)}
           canSuspend={isPrivileged(role)}
           onLog={onLog}
-          onPlata={onPlata}
+          onPlata={isMobile ? undefined : onPlata}
         />
       </div>
 
