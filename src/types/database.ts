@@ -10643,6 +10643,7 @@ export type Database = {
         Args: { p_force?: boolean; p_id: string }
         Returns: undefined
       }
+      delete_sms_queue_entry: { Args: { p_id: string }; Returns: boolean }
       delete_teacher_safe: {
         Args: { p_force?: boolean; p_id: string }
         Returns: undefined

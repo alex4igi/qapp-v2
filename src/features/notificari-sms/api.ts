@@ -118,12 +118,13 @@ export async function createSmsQueueEntry(
   return data
 }
 
+// Prin RPC, nu delete direct: pentru un rând 'Amanat' mesajul real stă în
+// `sms_amanate` și ștergerea doar din listă i-ar ascunde trimiterea, nu ar opri-o.
+// RPC-ul returnează false dacă rândul nu mai exista (altcineva l-a șters între timp).
 export async function deleteSmsQueueEntry(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('situatie_sms_uri')
-    .delete()
-    .eq('id', id)
+  const { data, error } = await supabase.rpc('delete_sms_queue_entry', { p_id: id })
   if (error) throw error
+  if (data === false) throw new Error('Rândul nu mai există — lista era veche.')
 }
 
 export type ProcessResult = {

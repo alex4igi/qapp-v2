@@ -45,6 +45,7 @@ export function NotificariSmsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [composerOpen, setComposerOpen] = useState(false)
   const [processMsg, setProcessMsg] = useState<string | null>(null)
+  const [deleteMsg, setDeleteMsg] = useState<string | null>(null)
 
   useEffect(() => setPage(0), [status])
 
@@ -68,8 +69,12 @@ export function NotificariSmsPage() {
 
   const remove = useMutation({
     mutationFn: deleteSmsQueueEntry,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['sms-queue'] }),
+    onSuccess: () => {
+      setDeleteMsg(null)
+      void queryClient.invalidateQueries({ queryKey: ['sms-queue'] })
+    },
+    onError: (e: unknown) =>
+      setDeleteMsg(humanizeError(e, 'Ștergerea nu a reușit.')),
   })
 
   const process = useMutation({
@@ -180,6 +185,12 @@ export function NotificariSmsPage() {
           </>
         }
       />
+
+      {deleteMsg && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          {deleteMsg}
+        </div>
+      )}
 
       {!!amanate?.count && (
         <div className="mb-4 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2 text-sm text-purple-800">
