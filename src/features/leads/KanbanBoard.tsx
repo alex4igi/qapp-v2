@@ -229,9 +229,9 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
 
   async function handleEnroll(lead: Lead) {
     if (!lead.id_client) return
-    const cursId = await getLatestProgramareCurs(lead.id)
+    const sugestie = await getLatestProgramareCurs(lead.id)
     setEnrollLead(lead)
-    setEnrollData({ clientId: lead.id_client, cursId, leadId: lead.id })
+    setEnrollData({ clientId: lead.id_client, sugestie, leadId: lead.id })
   }
 
   // Setul de bază al vederii curente. Kanbanul rămâne strict pe pipeline;
@@ -500,7 +500,8 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
         <EnrollmentForm
           open
           defaultClientId={enrollData.clientId}
-          defaultCursId={enrollData.cursId ?? undefined}
+          sugestieCursId={enrollData.sugestie?.cursId}
+          sugestieCursDemo={enrollData.sugestie?.demo}
           sugestieVarsta={
             enrollLead?.grupa_varsta
               ? GRUPA_TO_VARSTA_CURS[enrollLead.grupa_varsta]

@@ -752,7 +752,8 @@ export function LeadModal({
         <EnrollmentForm
           open
           defaultClientId={enrollData.clientId}
-          defaultCursId={enrollData.cursId ?? undefined}
+          sugestieCursId={enrollData.sugestie?.cursId}
+          sugestieCursDemo={enrollData.sugestie?.demo}
           sugestieVarsta={
             form.grupa_varsta
               ? GRUPA_TO_VARSTA_CURS[form.grupa_varsta as GrupaLead]

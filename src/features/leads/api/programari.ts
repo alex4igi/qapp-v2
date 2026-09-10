@@ -1,24 +1,38 @@
 import { supabase } from '@/lib/supabase'
 
-// Cursul ultimei programări a lead-ului (pentru precompletarea înrolării).
+// Grupa SUGERATĂ de ultima programare a lead-ului, cu proveniența ei.
 //
 // Programarea pe o clasă demo n-are `cursul_programat` — cade pe `curs_tinta`
-// (grupa reală spre care duce demoul). Altfel formularul de înrolare venea gol
-// exact pentru leadurile care tocmai fuseseră la demo.
+// (grupa spre care duce demoul). Atenție: un demo generic („DEMO Junior Street
+// Dance") alimentează mai multe grupe paralele, deci `curs_tinta` e o ipoteză,
+// nu alegerea familiei — de aici și `sursa`, ca formularul de înrolare s-o
+// arate ca sugestie de confirmat, nu ca selecție făcută.
+export type CursSugerat = {
+  cursId: string
+  // Numele demoului când sugestia vine din `curs_tinta`; null când programarea
+  // era direct pe curs (caz în care grupa e cea aleasă explicit).
+  demo: string | null
+}
+
 export async function getLatestProgramareCurs(
   leadId: string,
-): Promise<string | null> {
+): Promise<CursSugerat | null> {
   const { data } = await supabase
     .from('programari_leads')
-    .select('cursul_programat, eveniment_rel:evenimente(curs_tinta)')
+    .select('cursul_programat, eveniment_rel:evenimente(curs_tinta, nume_eveniment)')
     .eq('lead', leadId)
     .order('data_programarii', { ascending: false })
     .order('created', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (!data) return null
-  const ev = data.eveniment_rel as { curs_tinta: string | null } | null
-  return data.cursul_programat ?? ev?.curs_tinta ?? null
+  if (data.cursul_programat) return { cursId: data.cursul_programat, demo: null }
+  const ev = data.eveniment_rel as {
+    curs_tinta: string | null
+    nume_eveniment: string | null
+  } | null
+  if (!ev?.curs_tinta) return null
+  return { cursId: ev.curs_tinta, demo: ev.nume_eveniment }
 }
 
 // Ultima programare (curs SAU eveniment) — pentru pre-completarea selecției în

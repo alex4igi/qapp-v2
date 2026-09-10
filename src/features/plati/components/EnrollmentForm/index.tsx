@@ -16,7 +16,13 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { clientiOptions, locatiiOptions, matchLocatieId } from '@/lib/lookups'
+import {
+  clientiOptions,
+  locatiiOptions,
+  matchLocatieId,
+  teacheriOptions,
+} from '@/lib/lookups'
+import { formatOrar } from '@/features/cursuri/program'
 import { listSezoane } from '@/features/setari/api'
 import { formatRON } from '@/lib/format'
 import type { Curs, Enrollment, Enums } from '@/types/db'
@@ -60,7 +66,15 @@ type Props = {
   open: boolean
   onClose: () => void
   defaultClientId?: string
+  // Grupa e ALEASĂ (s-a pornit înrolarea din fișa grupei) — se preselectează.
   defaultCursId?: string
+  // Grupa e doar PROPUSĂ (din programarea lead-ului). NU se preselectează:
+  // `curs_tinta` al unui demo generic e o ipoteză, iar acceptarea ei tăcută a
+  // trimis deja un cursant în grupa greșită (SMS de confirmare, 09.09.2026).
+  // Se arată ca sugestie, cu orar, și intră în formular doar la un click.
+  sugestieCursId?: string | null
+  // Numele demoului din care vine sugestia (null = programare direct pe curs).
+  sugestieCursDemo?: string | null
   // Sezonul pe care se deschide formularul (ex: selectorul din fișa clientului).
   // Ignorat dacă e un sezon deja încheiat — nu se poate înrola în trecut.
   defaultSezonId?: string
@@ -80,6 +94,8 @@ export function EnrollmentForm({
   onClose,
   defaultClientId,
   defaultCursId,
+  sugestieCursId,
+  sugestieCursDemo,
   defaultSezonId,
   sugestieVarsta,
   sugestieLocatie,
@@ -146,22 +162,30 @@ export function EnrollmentForm({
     enabled: sezoaneQ.isSuccess,
   })
 
-  // Dacă deschidem modalul cu un curs prestabilit care nu e la locația
-  // curentă, îl aducem separat ca să apară totuși ca opțiune.
-  const defaultCursQ = useQuery<Curs>({
-    queryKey: ['curs-pentru-inrolare-default', defaultCursId],
-    queryFn: () => getCursForInrolare(defaultCursId!),
-    enabled: Boolean(defaultCursId),
+  // Dacă deschidem modalul cu un curs prestabilit sau sugerat care nu e la
+  // locația curentă, îl aducem separat ca să apară totuși ca opțiune.
+  const cursExternId = defaultCursId ?? sugestieCursId ?? null
+  const cursExternQ = useQuery<Curs>({
+    queryKey: ['curs-pentru-inrolare-default', cursExternId],
+    queryFn: () => getCursForInrolare(cursExternId!),
+    enabled: Boolean(cursExternId),
   })
 
   const cursuri = useMemo(() => {
     const list = cursuriQ.data ?? []
-    const fallback = defaultCursQ.data
+    const fallback = cursExternQ.data
     if (fallback && !list.some((c) => c.id === fallback.id)) {
       return [fallback, ...list]
     }
     return list
-  }, [cursuriQ.data, defaultCursQ.data])
+  }, [cursuriQ.data, cursExternQ.data])
+
+  // Grupa propusă de programare, cu orarul ei — arătată până când recepția o
+  // acceptă explicit sau alege alta.
+  const cursSugerat = useMemo(
+    () => cursuri.find((c) => c.id === sugestieCursId) ?? null,
+    [cursuri, sugestieCursId],
+  )
 
   const cursSelectat = useMemo(
     () => cursuri.find((c) => c.id === cursId) ?? null,
@@ -253,15 +277,34 @@ export function EnrollmentForm({
   }, [sezonSelectat])
 
   // `leads.locatia` e text scurt („Ștefan cel Mare"), `cursuri.locatie` e FK.
+  // Lista se cere mereu: numele locației intră și în rândul de confirmare al
+  // grupei alese, nu doar în filtrul de sugestii.
   const locatiiQ = useQuery({
     queryKey: ['lookup', 'locatii'],
     queryFn: locatiiOptions,
-    enabled: open && Boolean(sugestieLocatie),
+    enabled: open,
   })
   const sugestieLocatieId = useMemo(
     () => matchLocatieId(sugestieLocatie, locatiiQ.data),
     [sugestieLocatie, locatiiQ.data],
   )
+
+  // Instructorul grupei, ca recepția să confirme cu părintele exact ce scrie și
+  // în SMS-ul de a doua zi. `cursuri.teacher` e titularul (M:N ține aceeași
+  // persoană pe rol 'titular'); arhivații rămân în hartă ca să nu apară gol.
+  const teacheriQ = useQuery({
+    queryKey: ['lookup', 'teacheri', 'cu-arhivati'],
+    queryFn: () => teacheriOptions(undefined, { includeArhivati: true }),
+    enabled: open,
+  })
+  const numeTeacher = (cursul: Curs | null) =>
+    cursul?.teacher
+      ? (teacheriQ.data?.find((t) => t.value === cursul.teacher)?.label ?? null)
+      : null
+  const numeLocatie = (cursul: Curs | null) =>
+    cursul?.locatie
+      ? (locatiiQ.data?.find((l) => l.value === cursul.locatie)?.label ?? null)
+      : null
 
   // Sugestiile pentru un lead venit la demo: cursurile sezonului care i se
   // potrivesc ca vârstă și locație. Cursurile „Mixt" și cele fără locație intră
@@ -289,6 +332,9 @@ export function EnrollmentForm({
   const cursuriAfisate = sugestiiActive ? cursuriSugerate : cursuri
 
   // Opțiuni curs grupate vizual: Grupe → Trupe → Facultative, alfabetic în grup.
+  // Sub-textul poartă ORARUL, nu doar tipul: numele grupei codifică zilele
+  // („S SD" = Sâmbătă-Duminică), dar se citește greșit ca stil (Street Dance).
+  // Bonus: Combobox caută și în sub-text, deci „sambata" filtrează grupele.
   const cursuriOpts: SelectOption[] = useMemo(() => {
     const decorated = cursuriAfisate.map((c) => {
       const tip = deriveTip(c)!
@@ -298,7 +344,7 @@ export function EnrollmentForm({
         opt: {
           value: c.id,
           label: c.numele,
-          secondary: TIP_LABEL[tip],
+          secondary: [formatOrar(c), TIP_LABEL[tip]].filter(Boolean).join(' · '),
         } satisfies SelectOption,
       }
     })
@@ -736,6 +782,53 @@ export function EnrollmentForm({
               value={cursId}
               onChange={setCursId}
             />
+
+            {cursSugerat && cursId !== cursSugerat.id && (
+              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <p>
+                  {sugestieCursDemo ? (
+                    <>
+                      Din demoul <strong>{sugestieCursDemo}</strong> ar urma
+                      grupa{' '}
+                    </>
+                  ) : (
+                    <>Din programare ar urma grupa </>
+                  )}
+                  <strong>{cursSugerat.numele}</strong>
+                  {formatOrar(cursSugerat) && (
+                    <> — {formatOrar(cursSugerat)}</>
+                  )}
+                  {numeTeacher(cursSugerat) && <> · {numeTeacher(cursSugerat)}</>}
+                  .
+                </p>
+                <p className="mt-1 text-xs">
+                  {sugestieCursDemo
+                    ? 'Un demo poate duce spre mai multe grupe — confirmă cu familia ziua și ora înainte.'
+                    : 'Confirmă cu familia ziua și ora înainte.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCursId(cursSugerat.id)}
+                  className="mt-2 rounded-md border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100"
+                >
+                  Folosește grupa asta
+                </button>
+              </div>
+            )}
+
+            {cursSelectat && (
+              <p className="mt-2 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink">
+                <strong>{cursSelectat.numele}</strong> —{' '}
+                {formatOrar(cursSelectat) ? (
+                  <strong>{formatOrar(cursSelectat)}</strong>
+                ) : (
+                  <span className="text-amber-700">orar necompletat în fișa cursului</span>
+                )}
+                {numeTeacher(cursSelectat) && <> · {numeTeacher(cursSelectat)}</>}
+                {numeLocatie(cursSelectat) && <> · {numeLocatie(cursSelectat)}</>}
+              </p>
+            )}
+
             <p className="mt-1 text-xs text-quasar-gray">
               {sugestiiActive ? (
                 <>

@@ -24,11 +24,14 @@ import {
   findMatchingClient,
   attachClientToLead,
   getLatestProgramareCurs,
+  type CursSugerat,
 } from './api'
 
 export type ConversieResult = {
   clientId: string
-  cursId: string | null
+  // Grupa doar SUGERATĂ de programare, nu aleasă: formularul de înrolare o
+  // arată ca propunere de confirmat (vezi `CursSugerat`).
+  sugestie: CursSugerat | null
   leadId: string
 }
 
@@ -57,7 +60,7 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
   const [linkContract, setLinkContract] = useState('')
   const [matched, setMatched] = useState<MatchedClient | null>(null)
   const [useMerge, setUseMerge] = useState(false)
-  const [cursId, setCursId] = useState<string | null>(null)
+  const [sugestie, setSugestie] = useState<CursSugerat | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Pasul 2 (după ce clientul a fost creat/legat): ce facem cu contractul.
@@ -80,19 +83,19 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     setLinkContract('')
     setMatched(null)
     setUseMerge(false)
-    setCursId(null)
+    setSugestie(null)
     setError(null)
     setConversionResult(null)
     setShowManualLink(false)
     setManualLink('')
     setPreparingContract(false)
     setContractFamilie(null)
-    // detecție duplicat + cursul programat
+    // detecție duplicat + grupa sugerată de programare
     void findMatchingClient(lead.telefon, lead.email).then((m) => {
       setMatched(m)
       setUseMerge(Boolean(m))
     })
-    void getLatestProgramareCurs(lead.id).then(setCursId)
+    void getLatestProgramareCurs(lead.id).then(setSugestie)
   }, [open, lead])
 
   const mutation = useMutation({
@@ -126,7 +129,7 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
         })
       }
       await attachClientToLead(lead!.id, clientId)
-      return { clientId, cursId, leadId: lead!.id }
+      return { clientId, sugestie, leadId: lead!.id }
     },
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
@@ -369,7 +372,7 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
 
             <p className="text-xs text-quasar-gray">
               După salvare se deschide automat formularul de înrolare
-              {cursId ? ', precompletat cu cursul programat' : ''}.
+              {sugestie ? ', cu grupa din programare propusă spre confirmare' : ''}.
             </p>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
