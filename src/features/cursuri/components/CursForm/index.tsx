@@ -9,7 +9,6 @@ import {
   saliWithLocatie,
   locatiiOptions,
   sezoaneOptions,
-  sezonActivId,
 } from '@/lib/lookups'
 import type { Curs } from '@/types/db'
 import { CURS_CHECKLIST, type SectiuneCurs } from '@/lib/checklist/specs/curs'
@@ -66,17 +65,14 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
   }, [mutaSezon])
   const bodyRef = useRef<HTMLDivElement>(null)
 
-  const sezonActivQ = useQuery({
-    queryKey: ['lookup', 'sezon-activ'],
-    queryFn: sezonActivId,
-  })
-
-  // Teacherii se filtrează pe sezonul cursului (la curs nou: sezonul activ).
-  const sezonFiltru = form.sezon || sezonActivQ.data || null
+  // Rosterul COMPLET de instructori, nefiltrat pe sezon. Filtrarea pe sezonul
+  // cursului făcea un cerc vicios: instructorul moștenește sezonul doar prin
+  // cursurile pe care le predă, deci cine n-avea încă un curs în sezonul nou nu
+  // apărea în listă și nu i se putea face unul (ex. Roșca Laura, cu cursuri doar
+  // în 2025-2026). Filtrul pe sezon rămâne valid la raportare, nu la atribuire.
   const teacheri = useQuery({
-    queryKey: ['lookup', 'teacheri', sezonFiltru, curs?.teacher ?? null],
-    queryFn: () => teacheriOptions(sezonFiltru, { includeId: curs?.teacher }),
-    enabled: Boolean(form.sezon) || sezonActivQ.isSuccess,
+    queryKey: ['lookup', 'teacheri', 'roster', curs?.teacher ?? null],
+    queryFn: () => teacheriOptions(null, { includeId: curs?.teacher }),
   })
   const sali = useQuery({
     queryKey: ['lookup', 'sali-with-locatie'],
@@ -233,7 +229,6 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
   }
 
   const lookupsLoading =
-    (!form.sezon && sezonActivQ.isLoading) ||
     teacheri.isLoading ||
     sali.isLoading ||
     locatii.isLoading ||

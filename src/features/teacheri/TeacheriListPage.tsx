@@ -1,5 +1,5 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
@@ -18,7 +18,7 @@ import type { Teacher } from '@/types/db'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist } from '@/lib/checklist'
 import { TEACHER_CHECKLIST } from '@/lib/checklist/specs/teacher'
-import { locatiiOptions, sezoaneOptions, sezonActivId } from '@/lib/lookups'
+import { locatiiOptions, sezoaneOptions } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
@@ -72,8 +72,10 @@ export function TeacheriListPage() {
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [locatieId, setLocatieId] = useState<string>(globalLocatieId ?? '')
+  // Implicit „Toate sezoanele". Default-ul pe sezonul activ ascundea instructori
+  // reali: sezonul se moștenește doar prin cursuri, deci cine n-are încă un curs
+  // în sezonul nou dispărea din listă. Cu ~15 instructori n-avem ce decongestiona.
   const [sezonId, setSezonId] = useState('')
-  const [sezonInit, setSezonInit] = useState(false)
   const [includeArhivati, setIncludeArhivati] = useState(false)
 
   useEffect(() => {
@@ -84,11 +86,17 @@ export function TeacheriListPage() {
     return () => clearTimeout(t)
   }, [searchInput])
 
+  // Filtrul urmează locația de lucru din header, dar DOAR când aceasta se schimbă
+  // (inclusiv la prima ei sosire, care e async). Vechea condiție `!locatieId` îl
+  // reaplica ori de câte ori câmpul era gol, deci „Toate locațiile" era imposibil
+  // de ținut selectat — se întorcea instant pe locația de lucru.
+  const ultimaLocatieGlobala = useRef<string | null>(null)
   useEffect(() => {
-    if (globalLocatieId && !locatieId) {
-      setLocatieId(globalLocatieId)
-    }
-  }, [globalLocatieId, locatieId])
+    const g = globalLocatieId ?? null
+    if (g === ultimaLocatieGlobala.current) return
+    ultimaLocatieGlobala.current = g
+    if (g) setLocatieId(g)
+  }, [globalLocatieId])
 
   const locatiiQ = useQuery({
     queryKey: ['lookup', 'locatii'],
@@ -99,18 +107,6 @@ export function TeacheriListPage() {
     queryKey: ['lookup', 'sezoane'],
     queryFn: sezoaneOptions,
   })
-  const sezonActivQ = useQuery({
-    queryKey: ['lookup', 'sezon-activ'],
-    queryFn: sezonActivId,
-  })
-
-  // Default = sezonul activ (decongestionează); userul poate alege „Toate sezoanele".
-  useEffect(() => {
-    if (!sezonInit && sezonActivQ.isSuccess) {
-      setSezonId(sezonActivQ.data ?? '')
-      setSezonInit(true)
-    }
-  }, [sezonInit, sezonActivQ.isSuccess, sezonActivQ.data])
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['teacheri', { search, page, locatieId, sezonId, includeArhivati }],
@@ -123,7 +119,6 @@ export function TeacheriListPage() {
         includeArhivati,
       }),
     placeholderData: keepPreviousData,
-    enabled: sezonInit,
   })
 
   const totalPages = useMemo(
