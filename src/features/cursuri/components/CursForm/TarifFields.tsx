@@ -7,7 +7,8 @@ type Props = {
 }
 
 // Tarife (capacitate maximă, preț lunar/PROMO/anual/ședință) și flag-uri
-// (one-time, suspendat). Câmpul PROMO e ascuns pentru cursurile facultative.
+// (one-time, suspendat). Facultativul se plătește pe lună sau pe ședință, deci
+// PROMO, prețul anual și prețul de reziliere sunt ascunse acolo.
 export function TarifFields({ form, set }: Props) {
   return (
     <>
@@ -48,15 +49,17 @@ export function TarifFields({ form, set }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Preț anual" htmlFor="pret_anual">
-          <TextInput
-            id="pret_anual"
-            type="number"
-            min={0}
-            value={form.pret_anual}
-            onChange={(e) => set('pret_anual', e.target.value)}
-          />
-        </Field>
+        {form.tip !== 'facultativ' && (
+          <Field label="Preț anual" htmlFor="pret_anual">
+            <TextInput
+              id="pret_anual"
+              type="number"
+              min={0}
+              value={form.pret_anual}
+              onChange={(e) => set('pret_anual', e.target.value)}
+            />
+          </Field>
+        )}
         <Field label="Preț ședință" htmlFor="pret_sedinta">
           <TextInput
             id="pret_sedinta"

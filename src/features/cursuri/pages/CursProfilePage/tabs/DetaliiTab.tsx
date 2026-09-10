@@ -90,8 +90,12 @@ export function DetaliiTab({
       </Section>
       <Section title="Prețuri">
         <DetailRow label="Preț lunar" value={pret(curs.pret_lunar)} />
-        <DetailRow label="Preț lunar PROMO" value={pret(curs.pret_lunar_promo)} />
-        <DetailRow label="Preț anual" value={pret(curs.pret_anual)} />
+        {!curs.facultativ && (
+          <>
+            <DetailRow label="Preț lunar PROMO" value={pret(curs.pret_lunar_promo)} />
+            <DetailRow label="Preț anual" value={pret(curs.pret_anual)} />
+          </>
+        )}
         <DetailRow label="Preț ședință" value={pret(curs.pret_sedinta)} />
       </Section>
       {flags.length > 0 && (

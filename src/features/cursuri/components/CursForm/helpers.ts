@@ -180,7 +180,7 @@ export function buildCursPayload(form: FormState): CursPayload {
     link_whatsapp: form.link_whatsapp.trim() || null,
     durata_cursului: toNum(form.durata_cursului),
     capacitate_maxima: toNum(form.capacitate_maxima),
-    pret_anual: toNum(form.pret_anual),
+    pret_anual: facultativ ? null : toNum(form.pret_anual),
     pret_lunar: toNum(form.pret_lunar),
     pret_sedinta: toNum(form.pret_sedinta),
     pret_sedinta_reziliere: facultativ ? null : toNum(form.pret_sedinta_reziliere),
