@@ -56,6 +56,13 @@ export function TabIcon({ name }: { name: MobileTabIcon | 'meniu' }) {
           <path d="M12 9.5v4M12 16.4v.1" />
         </svg>
       )
+    case 'situatie':
+      return (
+        <svg {...common}>
+          <path d="M6 2.8h12v18.4l-2.4-1.6-2.4 1.6-2.4-1.6-2.4 1.6z" />
+          <path d="M9.5 8h5M9.5 12h5" />
+        </svg>
+      )
     case 'cifre':
       return (
         <svg {...common}>

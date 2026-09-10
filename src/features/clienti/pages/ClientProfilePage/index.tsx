@@ -22,6 +22,7 @@ import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
 import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentSedinteModal'
 import { ConvertSedinteAbonamentModal } from '@/features/plati/ConvertSedinteAbonamentModal'
 import { useAuth } from '@/hooks/useAuth'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist, type StareItem } from '@/lib/checklist'
@@ -48,7 +49,8 @@ import { PrezenteSezonTab } from './tabs/PrezenteSezonTab'
 import { DatePersonaleTab } from './tabs/DatePersonaleTab'
 import { DocumenteTab } from './tabs/DocumenteTab'
 
-type TabId = 'inrolari' | 'prezente' | 'date' | 'documente'
+// Tabul „fisa" există doar pe telefon: acolo cardul de identitate e tab, nu coloană.
+type TabId = 'fisa' | 'inrolari' | 'prezente' | 'date' | 'documente'
 
 export function ClientProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -65,7 +67,13 @@ export function ClientProfilePage() {
   const { role } = useAuth()
   const canManagerActions = isManagerOrHigher(role)
   const teacherMode = isTeacher(role)
-  const [tab, setTab] = useState<TabId>(teacherMode ? 'prezente' : 'inrolari')
+  const isMobile = useIsMobile()
+  const [tab, setTab] = useState<TabId>(
+    isMobile ? 'fisa' : teacherMode ? 'prezente' : 'inrolari',
+  )
+  // La trecerea pe desktop, „fisa" nu mai are conținut (cardul redevine coloană).
+  const tabCurent: TabId =
+    tab === 'fisa' && !isMobile ? (teacherMode ? 'prezente' : 'inrolari') : tab
   const [sezonId, setSezonId] = useState<string>('')
   const [adjustEnrollmentId, setAdjustEnrollmentId] = useState<string | null>(null)
   const [useCreditOpen, setUseCreditOpen] = useState(false)
@@ -276,6 +284,43 @@ export function ClientProfilePage() {
   const checklist = evalueazaChecklist(CLIENT_CHECKLIST, client)
   const familiaLabel = familiaQuery.data?.nume_familie ?? ''
 
+  // Definit o dată: pe desktop e coloana din stânga, pe telefon conținutul
+  // tabului „Fișă".
+  const sidebarEl = (
+  <ClientSidebar
+  initials={initials}
+  nume={client.nume}
+  prenume={client.prenume}
+  status={client.status}
+  varsta={varsta}
+  familia={familiaLabel}
+  familiaId={familiaQuery.data?.id ?? null}
+  sezoaneOptions={(sezoaneQuery.data ?? []).map((s) => ({
+    value: s.id,
+    label: s.numele_sezonului,
+  }))}
+  sezonValue={effectiveSezonId}
+  onSezonChange={setSezonId}
+  cursuri={cursuriSezon}
+  canEnroll={isFrontDeskOrHigher(role)}
+  onEnroll={() => setEnrollOpen(true)}
+  checklist={teacherMode || isMobile ? undefined : checklist}
+  onFixChecklist={
+    teacherMode
+      ? undefined
+      : (item: StareItem) => {
+          // Contractul nu e un câmp de fișă, ci un rând în Documente.
+          if (item.id === 'contract') {
+            setTab('documente')
+            return
+          }
+          setFocusSection(item.sectiune as SectiuneClient | undefined)
+          setEditOpen(true)
+        }
+  }
+  />
+  )
+
   return (
     <>
       <ProfileScaffold
@@ -284,7 +329,9 @@ export function ClientProfilePage() {
         title={`${client.nume} ${client.prenume ?? ''}`.trim()}
         actions={
           <>
-            {!teacherMode && <ChecklistBadge rezultat={checklist} />}
+            {/* Recomandările de completare a fișei ocupă un ecran pe telefon și
+                nu se acționează din mers — rămân pe desktop. */}
+            {!teacherMode && !isMobile && <ChecklistBadge rezultat={checklist} />}
             {!teacherMode && (
               <Button variant="secondary" onClick={() => setPlataOpen(true)}>
                 ＄ Plată
@@ -323,61 +370,34 @@ export function ClientProfilePage() {
             </Button>
           </>
         }
-        sidebar={
-          <ClientSidebar
-          initials={initials}
-          nume={client.nume}
-          prenume={client.prenume}
-          status={client.status}
-          varsta={varsta}
-          familia={familiaLabel}
-          familiaId={familiaQuery.data?.id ?? null}
-          sezoaneOptions={(sezoaneQuery.data ?? []).map((s) => ({
-            value: s.id,
-            label: s.numele_sezonului,
-          }))}
-          sezonValue={effectiveSezonId}
-          onSezonChange={setSezonId}
-          cursuri={cursuriSezon}
-          canEnroll={isFrontDeskOrHigher(role)}
-          onEnroll={() => setEnrollOpen(true)}
-          checklist={teacherMode ? undefined : checklist}
-          onFixChecklist={
-            teacherMode
-              ? undefined
-              : (item: StareItem) => {
-                  // Contractul nu e un câmp de fișă, ci un rând în Documente.
-                  if (item.id === 'contract') {
-                    setTab('documente')
-                    return
-                  }
-                  setFocusSection(item.sectiune as SectiuneClient | undefined)
-                  setEditOpen(true)
-                }
-          }
-          />
-        }
+        sidebar={sidebarEl}
+        mobileSidebarInTab
       >
         <div>
           <Tabs
-            tabs={
-              teacherMode
+            tabs={[
+              // Pe telefon cardul de identitate e un tab, nu o coloană repetată
+              // sub fiecare secțiune.
+              ...(isMobile ? [{ id: 'fisa', label: 'Fișă' }] : []),
+              ...(teacherMode
                 ? [
-                    { id: 'prezente', label: 'Detalii prezențe' },
-                    { id: 'date',     label: 'Detalii personale' },
+                    { id: 'prezente', label: 'Prezențe' },
+                    { id: 'date',     label: 'Date personale' },
                   ]
                 : [
-                    { id: 'inrolari',  label: 'Detalii înrolări' },
-                    { id: 'prezente',  label: 'Detalii prezențe' },
-                    { id: 'date',      label: 'Detalii personale' },
+                    { id: 'inrolari',  label: 'Înrolări' },
+                    { id: 'prezente',  label: 'Prezențe' },
+                    { id: 'date',      label: 'Date personale' },
                     { id: 'documente', label: 'Documente' },
-                  ]
-            }
-            active={tab}
+                  ]),
+            ]}
+            active={tabCurent}
             onChange={(t) => setTab(t as TabId)}
           />
 
-          {!teacherMode && tab === 'inrolari' && (
+          {isMobile && tabCurent === 'fisa' && sidebarEl}
+
+          {!teacherMode && tabCurent === 'inrolari' && (
             <InrolariSezonTab
               loading={inrolariSezonQuery.isLoading}
               rows={inrolariSezonQuery.data ?? []}
@@ -433,14 +453,14 @@ export function ClientProfilePage() {
             />
           )}
 
-          {tab === 'prezente' && (
+          {tabCurent === 'prezente' && (
             <PrezenteSezonTab
               loading={prezenteQuery.isLoading}
               rows={prezenteQuery.data ?? []}
             />
           )}
 
-          {tab === 'date' && (
+          {tabCurent === 'date' && (
             <DatePersonaleTab
               client={client}
               familia={familiaLabel}
@@ -448,7 +468,7 @@ export function ClientProfilePage() {
             />
           )}
 
-          {!teacherMode && tab === 'documente' && (
+          {!teacherMode && tabCurent === 'documente' && (
             <DocumenteTab client={client} />
           )}
         </div>

@@ -30,9 +30,13 @@ export const MOBILE_ROUTES = [
   '/absente-21z',
   '/eveniment',
   '/situatie-zilnica',
-  // Management: doar cifrele (paginile își ascund singure graficele pe telefon)
+  // Management: doar cifrele (pagina își ascunde singură graficele pe telefon)
   '/overview',
-  '/analytics',
+  // ⚠️ `/analytics` a fost SCOS intenționat: RPC-ul `get_pachet_luni` depășește
+  // timeout-ul de 8s al PostgREST pentru un cont autentificat și întoarce 500,
+  // iar React Query îl reîncearcă de 3 ori — 30+ secunde de așteptare pentru un
+  // ecran care oricum nu se umple. Problema e veche și lovește și desktopul;
+  // se rezolvă în DB, nu aici. Până atunci „cifrele" pe telefon = /overview.
 ] as const satisfies readonly AppRoute[]
 
 /**
@@ -53,6 +57,7 @@ export type MobileTabIcon =
   | 'leads'
   | 'datorii'
   | 'cifre'
+  | 'situatie'
 
 export type MobileTab = {
   label: string
@@ -70,22 +75,18 @@ const TEACHER_TABS: MobileTab[] = [
   { label: 'Notificări', path: '/notificari', icon: 'notif' },
 ]
 
+// Scurtăturile cerute de recepție. Clienții au ieșit din bară: lupa din bara de
+// sus îi găsește mai repede decât un tab, iar lista rămâne în Meniu.
 const DESK_TABS: MobileTab[] = [
   { label: 'Azi', path: '/', icon: 'azi' },
-  { label: 'Clienți', path: '/clienti', icon: 'clienti' },
-  { label: 'De sunat', path: '/leads', icon: 'leads' },
+  { label: 'Situație', path: '/situatie-zilnica', icon: 'situatie' },
+  { label: 'Overview', path: '/overview', icon: 'cifre' },
   { label: 'Datorii', path: '/datorii', icon: 'datorii' },
 ]
 
-// Managerul are „Cifre" pe /overview, owner/admin pe /analytics — de-asta apare
-// de două ori: se păstrează prima variantă pe care rolul chiar o poate deschide.
-const MANAGEMENT_TABS: MobileTab[] = [
-  { label: 'Azi', path: '/', icon: 'azi' },
-  { label: 'Cifre', path: '/analytics', icon: 'cifre' },
-  { label: 'Cifre', path: '/overview', icon: 'cifre' },
-  { label: 'Clienți', path: '/clienti', icon: 'clienti' },
-  { label: 'Datorii', path: '/datorii', icon: 'datorii' },
-]
+// Managementul lucrează aceleași scurtături; „cifrele" lui sunt /overview, care
+// se încarcă imediat (spre deosebire de /analytics — vezi MOBILE_ROUTES).
+const MANAGEMENT_TABS: MobileTab[] = DESK_TABS
 
 export function mobileTabsFor(
   role: AppRole,
