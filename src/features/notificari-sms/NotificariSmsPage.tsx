@@ -15,7 +15,6 @@ import {
   type Column,
 } from '@/components/ui'
 import { statusSmsOptions } from '@/lib/enums'
-import type { SituatieSms } from '@/types/db'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { SmsQueueForm } from './SmsQueueForm'
@@ -26,6 +25,7 @@ import {
   processSmsQueue,
   getSmsAmanateInfo,
   PAGE_SIZE,
+  type SmsQueueRow,
 } from './api'
 
 const STATUS_STYLE: Record<string, string> = {
@@ -85,12 +85,18 @@ export function NotificariSmsPage() {
       setProcessMsg(`Eroare: ${humanizeError(e, 'Eroare la procesare.')}`),
   })
 
-  const columns: Column<SituatieSms>[] = [
+  const columns: Column<SmsQueueRow>[] = [
     {
       header: 'Telefon',
       cell: (s) => s.telefon ?? '—',
       className: 'w-32',
       sortValue: (s) => s.telefon,
+    },
+    {
+      header: 'Nume',
+      cell: (s) => s.nume ?? '—',
+      className: 'w-44',
+      sortValue: (s) => s.nume?.toLowerCase(),
     },
     {
       header: 'Mesaj',

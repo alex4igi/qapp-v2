@@ -10,8 +10,10 @@ export type SmsQueueParams = {
   page: number
 }
 
+export type SmsQueueRow = SituatieSms & { nume: string | null }
+
 export type SmsQueueResult = {
-  rows: SituatieSms[]
+  rows: SmsQueueRow[]
   total: number
 }
 
@@ -34,7 +36,74 @@ export async function listSmsQueue({
 
   const { data, error, count } = await query
   if (error) throw error
-  return { rows: data ?? [], total: count ?? 0 }
+  const rows = data ?? []
+  return { rows: await cuNume(rows), total: count ?? 0 }
+}
+
+// Ultimele 9 cifre — singurul numitor comun al formatelor din DB (07…, 40…, +40…).
+function nucleuTelefon(t: string | null): string | null {
+  const d = (t ?? '').replace(/\D/g, '')
+  return d.length >= 9 ? d.slice(-9) : null
+}
+
+// Numele de lângă telefon: din `clienti_vizati` când există (rândurile compuse din
+// worklist le au), altfel din telefon — rândurile de contract pe familie n-au copil.
+async function cuNume(rows: SituatieSms[]): Promise<SmsQueueRow[]> {
+  const clientIds = [...new Set(rows.flatMap((r) => r.clienti_vizati ?? []))]
+
+  const numePeClient = new Map<string, string>()
+  if (clientIds.length > 0) {
+    const { data } = await supabase
+      .from('clienti')
+      .select('id, nume, prenume')
+      .in('id', clientIds)
+    for (const c of data ?? []) {
+      numePeClient.set(c.id, `${c.nume ?? ''} ${c.prenume ?? ''}`.trim())
+    }
+  }
+
+  const numeDinVizati = (r: SituatieSms): string | null => {
+    const nume = (r.clienti_vizati ?? [])
+      .map((id) => numePeClient.get(id))
+      .filter((n): n is string => !!n)
+    if (nume.length === 0) return null
+    return nume.length <= 2 ? nume.join(', ') : `${nume.slice(0, 2).join(', ')} +${nume.length - 2}`
+  }
+
+  // Fallback pe telefon, doar pentru rândurile rămase fără nume.
+  const nuclee = [
+    ...new Set(
+      rows
+        .filter((r) => !numeDinVizati(r))
+        .map((r) => nucleuTelefon(r.telefon))
+        .filter((n): n is string => !!n),
+    ),
+  ]
+  const numePeTelefon = new Map<string, string>()
+  if (nuclee.length > 0) {
+    const filtru = nuclee.map((n) => `telefon.ilike.%${n}`).join(',')
+    const [fam, cli] = await Promise.all([
+      supabase.from('familii').select('telefon, nume_familie').or(filtru),
+      supabase.from('clienti').select('telefon, nume, prenume').or(filtru),
+    ])
+    // Clientul are prioritate: e mai specific decât numele de familie.
+    for (const f of fam.data ?? []) {
+      const k = nucleuTelefon(f.telefon)
+      if (k && f.nume_familie) numePeTelefon.set(k, `Familia ${f.nume_familie}`)
+    }
+    for (const c of cli.data ?? []) {
+      const k = nucleuTelefon(c.telefon)
+      if (k) numePeTelefon.set(k, `${c.nume ?? ''} ${c.prenume ?? ''}`.trim())
+    }
+  }
+
+  return rows.map((r) => {
+    const nucleu = nucleuTelefon(r.telefon)
+    return {
+      ...r,
+      nume: numeDinVizati(r) ?? (nucleu ? numePeTelefon.get(nucleu) ?? null : null),
+    }
+  })
 }
 
 export async function createSmsQueueEntry(
