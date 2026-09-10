@@ -6,12 +6,28 @@ export type ClientiActiviRow = {
   activi: number
 }
 
-// Headcount clienți activi (status='Activ', pe prezență).
+// Headcount „vin efectiv": contract care acoperă ziua de azi SAU prezență în
+// ultimele 21 de zile (definiția canonică de activ).
 // Rândul cu locatie_id=null = total unic pe club; celelalte = per locație.
 export async function getClientiActivi(): Promise<ClientiActiviRow[]> {
   const { data, error } = await supabase.rpc('get_clienti_activi')
   if (error) throw error
   return (data ?? []) as ClientiActiviRow[]
+}
+
+export type ClientiInscrisiRow = {
+  locatie_id: string | null
+  locatie_nume: string
+  inscrisi: number
+}
+
+// Headcount „câți am pe listă": înrolare nereziliată în sezonul activ.
+// Cifra asta nu cade în groapa dintre sezoane (contractele noi încep abia la
+// startul sezonului), spre deosebire de getClientiActivi.
+export async function getClientiInscrisiSezon(): Promise<ClientiInscrisiRow[]> {
+  const { data, error } = await supabase.rpc('get_clienti_inscrisi_sezon')
+  if (error) throw error
+  return (data ?? []) as ClientiInscrisiRow[]
 }
 
 export type OcupareRow = {

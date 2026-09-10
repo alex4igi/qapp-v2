@@ -14,8 +14,8 @@ import {
   getRetentieLuna,
   getVenitLunaCurenta,
 } from '@/features/statistici/api'
-import { getClientiActivi } from './api'
-import { ClientiActiviPieChart } from './ClientiActiviPieChart'
+import { getClientiActivi, getClientiInscrisiSezon } from './api'
+import { CursantiPeLocatieChart } from './CursantiPeLocatieChart'
 
 export function AnsambluPage() {
   const { role } = useAuth()
@@ -27,6 +27,10 @@ export function AnsambluPage() {
   const activiQ = useQuery({
     queryKey: ['ansamblu', 'clienti-activi'],
     queryFn: getClientiActivi,
+  })
+  const inscrisiQ = useQuery({
+    queryKey: ['ansamblu', 'clienti-inscrisi-sezon'],
+    queryFn: getClientiInscrisiSezon,
   })
   const venitLunaQ = useQuery({
     queryKey: ['ansamblu', 'venit-luna'],
@@ -53,13 +57,23 @@ export function AnsambluPage() {
     }
   }, [activiQ.data])
 
-  const lucruRow = locatieId
-    ? perLocatie.find((r) => r.locatie_id === locatieId) ?? null
-    : null
-  const scopValue = locatieId ? lucruRow?.activi ?? 0 : total
+  const { inscrisiTotal, inscrisiPerLocatie } = useMemo(() => {
+    const rows = inscrisiQ.data ?? []
+    return {
+      inscrisiTotal: rows.find((r) => r.locatie_id === null)?.inscrisi ?? 0,
+      inscrisiPerLocatie: rows.filter((r) => r.locatie_id !== null),
+    }
+  }, [inscrisiQ.data])
+
   const scopLabel = locatieId
     ? `la ${locatieNume ?? 'locația selectată'}`
     : 'unic, pe tot clubul'
+  const scopActivi = locatieId
+    ? perLocatie.find((r) => r.locatie_id === locatieId)?.activi ?? 0
+    : total
+  const scopInscrisi = locatieId
+    ? inscrisiPerLocatie.find((r) => r.locatie_id === locatieId)?.inscrisi ?? 0
+    : inscrisiTotal
 
   const venitCard = (
     <KpiCard
@@ -74,21 +88,26 @@ export function AnsambluPage() {
     <div>
       <PageHeader
         title="Overview"
-        subtitle="Client activ = înrolare valabilă azi (ne-reziliată), sau prezent în ultimele 21 zile."
+        subtitle="Înscriși în sezon = are înrolare ne-reziliată în sezonul activ. Vin efectiv = prezent în ultimele 21 de zile."
       />
 
       <div className="flex flex-col gap-8">
           {/* Clienți activi + venit luna curentă */}
-          {activiQ.isLoading ? (
+          {activiQ.isLoading || inscrisiQ.isLoading ? (
             <Spinner />
           ) : privileged ? (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {perLocatie.length > 0 ? (
-                <ClientiActiviPieChart rows={perLocatie} total={total} />
+              {inscrisiPerLocatie.length > 0 || perLocatie.length > 0 ? (
+                <CursantiPeLocatieChart
+                  inscrisi={inscrisiPerLocatie}
+                  inscrisiTotal={inscrisiTotal}
+                  activi={perLocatie}
+                  activiTotal={total}
+                />
               ) : (
                 <KpiCard
-                  label="Clienți activi"
-                  value={scopValue}
+                  label="Înscriși în sezon"
+                  value={scopInscrisi}
                   tone="positive"
                   hint={scopLabel}
                 />
@@ -98,10 +117,15 @@ export function AnsambluPage() {
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard
-                label="Clienți activi"
-                value={scopValue}
+                label="Înscriși în sezon"
+                value={scopInscrisi}
                 tone="positive"
                 hint={scopLabel}
+              />
+              <KpiCard
+                label="Vin efectiv"
+                value={scopActivi}
+                hint="prezenți în ultimele 21 de zile"
               />
               {venitCard}
             </div>

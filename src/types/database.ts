@@ -10871,6 +10871,14 @@ export type Database = {
           locatie_nume: string
         }[]
       }
+      get_clienti_inscrisi_sezon: {
+        Args: never
+        Returns: {
+          inscrisi: number
+          locatie_id: string
+          locatie_nume: string
+        }[]
+      }
       get_clienti_pending_incasari: {
         Args: never
         Returns: {
