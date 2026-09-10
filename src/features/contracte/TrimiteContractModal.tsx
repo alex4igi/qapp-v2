@@ -60,11 +60,22 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume }: 
       }),
     onSuccess: (results) => {
       const r = results[0]
-      if (r?.ok) {
-        setResult('Linkul de semnare a fost trimis prin SMS.')
-        queryClient.invalidateQueries({ queryKey: ['contracte'] })
-      } else {
+      if (!r?.ok) {
         setResult(`Nu s-a putut trimite: ${r?.error ?? 'eroare necunoscută'}`)
+        return
+      }
+      queryClient.invalidateQueries({ queryKey: ['contracte'] })
+      const canal = r.canal === 'email' ? 'email' : 'SMS'
+      if (r.amanat) {
+        setResult('Contractul e creat. SMS-ul a prins zona interzisă — pleacă automat dimineață.')
+      } else if (r.notificat) {
+        setResult(`Linkul de semnare a fost trimis prin ${canal}.`)
+      } else {
+        setResult(
+          `Contractul e creat, dar linkul NU a plecat (${canal}): ${
+            r.notificareEroare ?? 'eroare necunoscută'
+          }. Trimite-l manual.`,
+        )
       }
     },
     onError: (e) => setResult(humanizeError(e)),

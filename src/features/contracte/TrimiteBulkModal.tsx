@@ -22,7 +22,9 @@ export function TrimiteBulkModal({ open, onClose }: Props) {
   const [campanieId, setCampanieId] = useState('')
   const [templateId, setTemplateId] = useState('')
   const [progress, setProgress] = useState<string | null>(null)
-  const [result, setResult] = useState<{ ok: number; skip: number; errors: string[] } | null>(null)
+  const [result, setResult] = useState<
+    { ok: number; skip: number; sms: number; email: number; netrimise: number; errors: string[] } | null
+  >(null)
 
   const { data: campanii } = useQuery({
     queryKey: ['campanii-deschise'],
@@ -40,24 +42,29 @@ export function TrimiteBulkModal({ open, onClose }: Props) {
     enabled: open && !!campanieId,
   })
 
-  // trimitem doar unde actul nu e semnat/în verificare și nu există deja contract activ
-  const { deTrimis, faraTelefon, dejaInLucru } = useMemo(() => {
+  // trimitem doar unde actul nu e semnat/în verificare și nu există deja contract activ.
+  // Canal unic: SMS dacă familia are telefon, altfel email — deci e destul un canal.
+  const { deTrimis, faraContact, dejaInLucru } = useMemo(() => {
     const rows = targets ?? []
     const eligibleStatus = (t: CampanieTarget) =>
       ['nesemnat', 'trimis', 'expirat', 'anulat'].includes(t.act_status)
+    const areCanal = (t: CampanieTarget) => !!t.telefon || !!t.email
     const deTrimis = rows.filter(
-      (t) => eligibleStatus(t) && !t.are_contract && t.familie_id && t.telefon,
+      (t) => eligibleStatus(t) && !t.are_contract && t.familie_id && areCanal(t),
     )
-    const faraTelefon = rows.filter(
-      (t) => eligibleStatus(t) && !t.are_contract && (!t.familie_id || !t.telefon),
+    const faraContact = rows.filter(
+      (t) => eligibleStatus(t) && !t.are_contract && (!t.familie_id || !areCanal(t)),
     )
-    const dejaInLucru = rows.length - deTrimis.length - faraTelefon.length
-    return { deTrimis, faraTelefon, dejaInLucru }
+    const dejaInLucru = rows.length - deTrimis.length - faraContact.length
+    return { deTrimis, faraContact, dejaInLucru }
   }, [targets])
 
   const send = useMutation({
     mutationFn: async () => {
       let ok = 0
+      let sms = 0
+      let email = 0
+      let netrimise = 0
       const errors: string[] = []
       for (let i = 0; i < deTrimis.length; i += BATCH_SIZE) {
         const batch = deTrimis.slice(i, i + BATCH_SIZE)
@@ -72,11 +79,19 @@ export function TrimiteBulkModal({ open, onClose }: Props) {
           })),
         })
         for (const r of results) {
-          if (r.ok) ok++
-          else if (r.error) errors.push(r.error)
+          if (!r.ok) {
+            if (r.error) errors.push(r.error)
+            continue
+          }
+          ok++
+          if (!r.notificat && !r.amanat) {
+            netrimise++
+            if (r.notificareEroare) errors.push(r.notificareEroare)
+          } else if (r.canal === 'email') email++
+          else sms++
         }
       }
-      return { ok, skip: faraTelefon.length, errors: errors.slice(0, 5) }
+      return { ok, skip: faraContact.length, sms, email, netrimise, errors: errors.slice(0, 5) }
     },
     onSuccess: (r) => {
       setProgress(null)
@@ -86,7 +101,7 @@ export function TrimiteBulkModal({ open, onClose }: Props) {
     },
     onError: (e) => {
       setProgress(null)
-      setResult({ ok: 0, skip: 0, errors: [humanizeError(e)] })
+      setResult({ ok: 0, skip: 0, sms: 0, email: 0, netrimise: 0, errors: [humanizeError(e)] })
     },
   })
 
@@ -128,17 +143,19 @@ export function TrimiteBulkModal({ open, onClose }: Props) {
         ) : (
           <div className="rounded-lg border border-line bg-surface p-3 text-sm space-y-1">
             <p>
-              <span className="font-semibold">{deTrimis.length}</span> SMS-uri de trimis
-              (un act per copil eligibil, nesemnat, fără contract activ)
+              <span className="font-semibold">{deTrimis.length}</span> contracte de trimis
+              (un act per copil eligibil, nesemnat, fără contract activ) —{' '}
+              {deTrimis.filter((t) => t.telefon).length} prin SMS,{' '}
+              {deTrimis.filter((t) => !t.telefon).length} prin email
             </p>
             {dejaInLucru > 0 && (
               <p className="text-muted-2">{dejaInLucru} deja semnate / în lucru — sărite</p>
             )}
-            {faraTelefon.length > 0 && (
+            {faraContact.length > 0 && (
               <p className="text-amber-700">
-                ⚠️ {faraTelefon.length} fără familie sau telefon — nu pot primi link:{' '}
-                {faraTelefon.slice(0, 5).map((t) => t.client_nume).join(', ')}
-                {faraTelefon.length > 5 ? '…' : ''}
+                ⚠️ {faraContact.length} fără familie, telefon și email — nu pot primi link:{' '}
+                {faraContact.slice(0, 5).map((t) => t.client_nume).join(', ')}
+                {faraContact.length > 5 ? '…' : ''}
               </p>
             )}
           </div>
@@ -147,8 +164,17 @@ export function TrimiteBulkModal({ open, onClose }: Props) {
         {progress && <p className="text-sm text-muted-2">{progress}</p>}
         {result && (
           <div className="text-sm space-y-1">
-            <p className="font-medium text-green-700">✓ {result.ok} contracte trimise</p>
-            {result.skip > 0 && <p className="text-amber-700">{result.skip} sărite (fără telefon)</p>}
+            <p className="font-medium text-green-700">
+              ✓ {result.ok} contracte create — {result.sms} pe SMS, {result.email} pe email
+            </p>
+            {result.netrimise > 0 && (
+              <p className="text-red-600">
+                ⚠️ {result.netrimise} create dar NEnotificate — trimite linkul manual
+              </p>
+            )}
+            {result.skip > 0 && (
+              <p className="text-amber-700">{result.skip} sărite (fără telefon și email)</p>
+            )}
             {result.errors.map((e, i) => (
               <p key={i} className="text-red-600">{e}</p>
             ))}

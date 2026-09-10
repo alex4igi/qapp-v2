@@ -1,8 +1,7 @@
 // Edge Function: creează contracte din template și trimite linkurile de semnare.
-// Apelată din staff app (JWT staff). SMS pleacă prin coada
-// situatie_sms_uri (drenată de process-sms-queue, cu quiet hours); email doar
-// dacă familia are adresă (stub până la validarea SPF/DKIM pe domeniu).
-import { sendEmail } from '../_shared/messaging.ts'
+// Apelată din staff app (JWT staff). Notificarea merge pe UN SINGUR canal —
+// SMS dacă familia are telefon, altfel email — vezi ../_shared/contractNotify.ts.
+import { notificaContract } from '../_shared/contractNotify.ts'
 import { logEvent, portalUrl, randomToken, serviceClient, sha256Hex } from '../_shared/contracte.ts'
 
 // Aceleași roluri ca ROUTE_ACCESS['/contracte'] (ALL_STAFF, recepția inclusă) și
@@ -189,35 +188,31 @@ Deno.serve(async (req) => {
 
       const link = `${portalUrl()}/s/${token}`
 
-      if (familie.telefon) {
-        const mesaj = buildSmsText(prenumeCopil, link, tpl.valabilitate_zile)
-        const { error: smsErr } = await admin.from('situatie_sms_uri').insert({
-          telefon: familie.telefon,
-          mesaj,
-          cod_mesaj: 'contract',
-          status: 'De trimis',
-          clienti_vizati: t.clientId ? [t.clientId] : [],
-          data_planificata: new Date().toISOString().slice(0, 10),
-        })
-        if (!smsErr) await logEvent(admin, contract.id, 'sms_pus_in_coada', {})
-        else await logEvent(admin, contract.id, 'eroare', { pas: 'sms', mesaj_eroare: smsErr.message })
-      }
+      const cine = prenumeCopil ? ` pentru ${prenumeCopil}` : ''
+      const notif = await notificaContract(admin, {
+        contractId: contract.id,
+        telefon: familie.telefon,
+        email: familie.email,
+        clientId: t.clientId ?? null,
+        codMesaj: 'contract',
+        smsText: buildSmsText(prenumeCopil, link, tpl.valabilitate_zile),
+        emailSubject: `Quasar Dance — contract de semnat${cine}`,
+        emailHtml:
+          `<p>Bună ziua,</p><p>Contractul${cine} este pregătit pentru semnare. ` +
+          `Deschideți linkul de mai jos, verificați datele și semnați:</p>` +
+          `<p><a href="${link}">${link}</a></p>` +
+          `<p>Linkul este valabil ${tpl.valabilitate_zile} zile.</p><p>Quasar Dance</p>`,
+      })
 
-      if (familie.email) {
-        const cine = prenumeCopil ? ` pentru ${prenumeCopil}` : ''
-        const res = await sendEmail({
-          to: familie.email,
-          subject: `Quasar Dance — contract de semnat${cine}`,
-          html:
-            `<p>Bună ziua,</p><p>Contractul${cine} este pregătit pentru semnare. ` +
-            `Deschideți linkul de mai jos, verificați datele și semnați:</p>` +
-            `<p><a href="${link}">${link}</a></p>` +
-            `<p>Linkul este valabil ${tpl.valabilitate_zile} zile.</p><p>Quasar Dance</p>`,
-        })
-        if (res.ok && !res.stub) await logEvent(admin, contract.id, 'email_trimis', {})
-      }
-
-      results.push({ familieId: t.familieId, ok: true, contractId: contract.id })
+      results.push({
+        familieId: t.familieId,
+        ok: true,
+        contractId: contract.id,
+        canal: notif.canal,
+        notificat: notif.ok,
+        amanat: notif.amanat ?? false,
+        notificareEroare: notif.error,
+      })
     }
 
     return json({ results })

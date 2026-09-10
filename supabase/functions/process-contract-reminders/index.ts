@@ -9,6 +9,7 @@
 //
 // Idempotent: praguri pe zile + reminder_count; apeluri repetate în aceeași zi
 // nu dublează SMS-uri.
+import { notificaContract } from '../_shared/contractNotify.ts'
 import { logEvent, portalUrl, randomToken, serviceClient, sha256Hex } from '../_shared/contracte.ts'
 
 function json(body: unknown, status = 200): Response {
@@ -55,10 +56,11 @@ Deno.serve(async (req) => {
 
       const { data: familie } = await admin
         .from('familii')
-        .select('telefon')
+        .select('telefon, email')
         .eq('id', c.familie_id)
         .single()
-      if (!familie?.telefon) continue
+      // Fără canal nu rotim tokenul degeaba (rotirea ar omorî linkul deja trimis).
+      if (!familie?.telefon && !familie?.email) continue
 
       let prenume: string | null = null
       if (c.client_id) {
@@ -85,18 +87,30 @@ Deno.serve(async (req) => {
       const zileRamase = c.token_expira_la
         ? Math.max(1, Math.ceil((new Date(c.token_expira_la).getTime() - now) / 86400_000))
         : 7
+      const link = `${portalUrl()}/s/${token}`
       const mesaj =
-        `Quasar Dance: reminder - contractul${cine} asteapta semnatura ta: ${portalUrl()}/s/${token} (mai e valabil ${zileRamase} zile)`
+        `Quasar Dance: reminder - contractul${cine} asteapta semnatura ta: ${link} (mai e valabil ${zileRamase} zile)`
 
-      await admin.from('situatie_sms_uri').insert({
+      // Un singur canal, ca la prima trimitere: SMS dacă are telefon, altfel email.
+      const notif = await notificaContract(admin, {
+        contractId: c.id,
         telefon: familie.telefon,
-        mesaj,
-        cod_mesaj: 'contract_reminder',
-        status: 'De trimis',
-        clienti_vizati: c.client_id ? [c.client_id] : [],
-        data_planificata: new Date().toISOString().slice(0, 10),
+        email: familie.email,
+        clientId: c.client_id,
+        codMesaj: 'contract_reminder',
+        smsText: mesaj,
+        emailSubject: `Quasar Dance — reminder contract de semnat${cine}`,
+        emailHtml:
+          `<p>Bună ziua,</p><p>Contractul${cine} așteaptă încă semnătura dumneavoastră. ` +
+          `Deschideți linkul de mai jos, verificați datele și semnați:</p>` +
+          `<p><a href="${link}">${link}</a></p>` +
+          `<p>Linkul este valabil ${zileRamase} zile.</p><p>Quasar Dance</p>`,
       })
-      await logEvent(admin, c.id, 'reminder', { nr: (c.reminder_count ?? 0) + 1 })
+      await logEvent(admin, c.id, 'reminder', {
+        nr: (c.reminder_count ?? 0) + 1,
+        canal: notif.canal,
+        trimis: notif.ok,
+      })
       reminded++
     }
 

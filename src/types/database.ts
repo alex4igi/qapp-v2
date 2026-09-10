@@ -12037,6 +12037,7 @@ export type Database = {
           client_nume: string
           curs_nume: string
           curs_tinta_id: string
+          email: string
           familie_id: string
           familie_nume: string
           telefon: string

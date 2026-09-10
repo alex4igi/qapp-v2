@@ -53,13 +53,25 @@ export type SendTarget = {
   cursTintaId?: string | null
 }
 
+// `ok` = contractul s-a creat; `notificat` = linkul a plecat efectiv pe `canal`.
+// Sunt lucruri diferite: un contract creat cu notificarea eșuată e o familie care
+// nu știe că are ceva de semnat.
+export type SendResult = {
+  familieId: string
+  ok: boolean
+  error?: string
+  contractId?: string
+  canal?: 'sms' | 'email' | 'niciunul'
+  notificat?: boolean
+  amanat?: boolean
+  notificareEroare?: string
+}
+
 export async function sendContracte(params: {
   templateId: string
   targets: SendTarget[]
-}): Promise<Array<{ familieId: string; ok: boolean; error?: string; contractId?: string }>> {
-  const data = await invokeEdge<{
-    results: Array<{ familieId: string; ok: boolean; error?: string; contractId?: string }>
-  }>('contract-send', params)
+}): Promise<SendResult[]> {
+  const data = await invokeEdge<{ results: SendResult[] }>('contract-send', params)
   return data.results
 }
 
@@ -89,6 +101,7 @@ export type CampanieTarget = {
   curs_nume: string
   act_status: string
   are_contract: boolean
+  email: string | null
 }
 
 export async function listTargetsCampanie(campanieId: string): Promise<CampanieTarget[]> {

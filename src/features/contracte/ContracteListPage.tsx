@@ -33,6 +33,8 @@ const EVENT_LABEL: Record<string, string> = {
   creat: 'Creat',
   trimis: 'Trimis',
   sms_pus_in_coada: 'SMS pus în coadă',
+  sms_trimis: 'SMS trimis',
+  sms_amanat: 'SMS amânat (zonă interzisă)',
   email_trimis: 'Email trimis',
   deschis: 'Deschis de client',
   consimtamant: 'Consimțământ e-sign',
