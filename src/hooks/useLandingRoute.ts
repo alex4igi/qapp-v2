@@ -5,8 +5,7 @@ import { useIsMobile } from './useIsMobile'
 
 /**
  * Unde aterizează contul curent: pe desktop matricea de roluri, pe telefon lista
- * albă de mobil. Fără el, owner/admin ar intra pe /analytics și ar vedea din
- * prima ecranul „doar desktop".
+ * albă de mobil (unde agenția de ads nu are `/marketing`).
  */
 export function useLandingRoute(): string {
   const { role } = useAuth()

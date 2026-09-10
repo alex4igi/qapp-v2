@@ -113,9 +113,11 @@ export function mobileTabsFor(
   return out
 }
 
+
 /**
- * Pe telefon aterizează toată lumea pe operaționalul zilei — inclusiv owner/admin,
- * pe care `defaultRouteForRole` îi trimite pe /analytics (pagină de laptop).
+ * Pe telefon toată lumea aterizează pe operaționalul zilei. Singura excepție e
+ * agenția de ads: `/marketing` nu e în lista albă, deci ar cădea direct pe ecranul
+ * „doar desktop".
  */
 export function mobileDefaultRoute(role: AppRole): string {
   return isMarketing(role) ? '/leads' : '/'

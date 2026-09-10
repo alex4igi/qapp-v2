@@ -53,8 +53,8 @@ export const ROUTE_ACCESS = {
   // (salarii) din /financiar e ascuns intern pentru non-privileged.
   '/financiar': ALL_STAFF,
   '/statistici': ALL_STAFF,
-  // Dashboard analitic (numere & direcție) — doar owner + admin. E și landing-ul
-  // lor (vezi defaultRouteForRole).
+  // Dashboard analitic (numere & direcție) — doar owner + admin. Se ajunge la el
+  // din meniu, nu prin aterizare (vezi defaultRouteForRole).
   '/analytics': ADMIN_OR_OWNER,
   // Zonă dedicată CFO (finanțe) — izolată de operațional. Doar owner + admin.
   '/cfo': ADMIN_OR_OWNER,
@@ -146,14 +146,12 @@ export function canAccessRoute(
 }
 
 export function defaultRouteForRole(role: AppRole): string {
-  // Owner + admin aterizează pe dashboard-ul analitic („numere & direcție") — pe
-  // ei nu-i interesează ce ore sunt azi, ci numerele. Operaționalul zilei rămâne
-  // la 1 click (buton „Operațional zi" + meniu).
-  if (isAdminOrHigher(role)) return '/analytics'
   // Agenția de ads nu are acces la Dashboard — ar intra în buclă de redirect.
   if (isMarketing(role)) return '/marketing'
-  // Restul aterizează pe Dashboard. Pentru teacher, Dashboard-ul afișează grupele
-  // zilei (filtrate via cursuri_teacheri M:N) și butoane de marcare prezență.
+  // Toată lumea, owner și admin inclusiv, aterizează pe Dashboard (operaționalul
+  // zilei); „Panou" rămâne la un click în meniu. Pentru teacher, Dashboard-ul
+  // afișează grupele zilei (filtrate via cursuri_teacheri M:N) și butoane de
+  // marcare prezență.
   return '/'
 }
 
