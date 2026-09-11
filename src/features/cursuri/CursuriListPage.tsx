@@ -1,5 +1,5 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui'
 import {
   cursuriOptionsForCurrentTeacher,
+  locatiiOptions,
   sezoaneOptions,
   sezonActivId,
 } from '@/lib/lookups'
@@ -121,7 +122,7 @@ export function CursuriListPage() {
   const { role } = useAuth()
   const teacherMode = isTeacher(role)
   const { locatieId: workingLocatieId } = useWorkingLocatie()
-  const locatieFilter = workingLocatieId ?? ''
+  const [locatieFilter, setLocatieFilter] = useState(workingLocatieId ?? '')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
@@ -142,6 +143,20 @@ export function CursuriListPage() {
     ? (teacherCursuriQ.data ?? []).map((o) => o.value)
     : null
 
+  // Filtrul pornește de la locația de lucru și o urmează doar când header-ul
+  // chiar se schimbă — nu la fiecare câmp gol, altfel „Toate locațiile" n-ar
+  // rămâne selectat (aceeași capcană reparată în /teacheri).
+  const ultimaLocatieGlobala = useRef(workingLocatieId)
+  useEffect(() => {
+    if (workingLocatieId === ultimaLocatieGlobala.current) return
+    ultimaLocatieGlobala.current = workingLocatieId
+    setLocatieFilter(workingLocatieId ?? '')
+  }, [workingLocatieId])
+
+  const locatiiQ = useQuery({
+    queryKey: ['lookup', 'locatii'],
+    queryFn: locatiiOptions,
+  })
   const sezoaneQ = useQuery({
     queryKey: ['lookup', 'sezoane'],
     queryFn: sezoaneOptions,
@@ -287,6 +302,17 @@ export function CursuriListPage() {
               placeholder="Nume curs…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </Field>
+        </div>
+        <div className="w-56">
+          <Field label="Locație" htmlFor="curs-locatie">
+            <Select
+              id="curs-locatie"
+              placeholder="Toate locațiile"
+              options={locatiiQ.data ?? []}
+              value={locatieFilter}
+              onChange={(e) => setLocatieFilter(e.target.value)}
             />
           </Field>
         </div>
