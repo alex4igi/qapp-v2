@@ -53,6 +53,15 @@ pe promo: **170 + 162 = 332**, nu 180 + 162 = 342. Dacă fratele fără promo e 
 un curs mai scump (ex. 290), el rămâne integral, iar copilul pe promo primește
 `least(promo, rată_normală − 10%)`.
 
+**Ordinea înscrierii nu contează.** O rată deja plătită nu se mai recalculează,
+dar dacă a fost plătită **la preț întreg**, ea ocupă locul „integral" al lunii:
+toți ceilalți frați primesc reducerea pe luna aia, chiar dacă fratele înscris
+după plată e pe un curs mai scump (decizie Alex 2026-09-11 — reducerea „trece" pe
+el, ca familia să nu piardă). Exemplu: Thea plătește septembrie 260 cât e singură,
+apoi e înscrisă Sofia la 290 → Sofia 261 pe septembrie, 290 din octombrie.
+Excepție: o rată plătită **după termen** poate avea reducerea 0 din penalizare —
+aia nu ocupă locul (`ocupa_locul_integral`).
+
 Când un rând stă pe preț promo ȘI ar primi −10%, se aplică **una singură**:
 
 ```
@@ -139,4 +148,5 @@ Migrațiile relevante: `20260518110000` (politica inițială), `20260701120000`
 (dublură same-course), `20260831120000` (reduceri neacumulabile),
 `20260831170000` + `20260831170100` (promo fix + penalizare), `20260831170200`
 (SMS `are_reducere`), `20260831190000` (regula 50 de zile + promo se termină cu locul),
-`20260911150000` („cel mai scump" = preț de listă; frate pe același curs vizibil în preview).
+`20260911150000` („cel mai scump" = preț de listă; frate pe același curs vizibil în preview),
+`20260911160000` (rata plătită întreg ocupă locul integral → frații primesc reducerea).

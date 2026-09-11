@@ -12180,6 +12180,7 @@ export type Database = {
         }
         Returns: number
       }
+      ocupa_locul_integral: { Args: { p_enrollment: string }; Returns: boolean }
       ore_lucratoare: {
         Args: { p_end: string; p_start: string }
         Returns: number
