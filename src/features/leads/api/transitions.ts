@@ -18,7 +18,8 @@ export type PrezentaScope =
   | { cursId: string; data: string }
 
 // Sincronizează prezența în programari_leads cu statusul lead-ului:
-// a_venit → prezent, nu_a_venit → absent.
+// a_venit → prezent, nu_a_venit → absent. `programat` doar cu scope (debifarea
+// din roster readuce exact ședința aceea, nu „ultima programare").
 async function syncProgramarePrezenta(
   leadId: string,
   status: StatusLead,
@@ -29,7 +30,9 @@ async function syncProgramarePrezenta(
       ? 'prezent'
       : status === 'nu_a_venit'
         ? 'absent'
-        : null
+        : status === 'programat' && scope
+          ? 'programat'
+          : null
   if (!prezenta) return
   // Tiebreaker pe `created`: două programări în ACEEAȘI zi (reprogramare pe alt
   // slot din aceeași zi) fac ordonarea doar pe dată nedeterministă, iar prezența

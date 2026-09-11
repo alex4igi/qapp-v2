@@ -4,6 +4,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   type FormEvent,
   type CSSProperties,
 } from 'react'
@@ -90,6 +91,7 @@ export function LeadModal({
   // Flux de conversie (Finalizare înscriere → înrolare), pornit din pasul „Convertit".
   const [convertFlow, setConvertFlow] = useState(false)
   const [enrollData, setEnrollData] = useState<ConversieResult | null>(null)
+  const enrolledRef = useRef(false)
   // Selecția cursului/evenimentului pentru programare: `curs:<id>` / `ev:<id>`.
   const [selectie, setSelectie] = useState('')
   const [ignoreVarsta, setIgnoreVarsta] = useState(false)
@@ -762,14 +764,20 @@ export function LeadModal({
           sugestieLocatie={form.locatia || null}
           onEnrolled={() => {
             // Înrolarea a reușit → abia acum lead-ul devine convertit.
+            enrolledRef.current = true
             void markLeadConvertit(enrollData.leadId).finally(() => {
               void invalidate()
               void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-              setEnrollData(null)
-              onClose()
             })
           }}
-          onClose={() => setEnrollData(null)}
+          onClose={() => {
+            setEnrollData(null)
+            // După o înrolare reușită fișa leadului NU mai reapare: formularul ei e
+            // cel de dinainte de conversie (ex. „Programat" + data demoului), iar un
+            // „Salvează" rescria leadul înapoi în Programat, cu programare nouă și
+            // SMS de confirmare.
+            if (enrolledRef.current) onClose()
+          }}
         />
       )}
     </>

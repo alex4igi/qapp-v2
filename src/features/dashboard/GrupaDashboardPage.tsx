@@ -605,14 +605,17 @@ export function GrupaDashboardPage() {
             row.refId,
             cursId!,
             date,
-            prezent ? 'prezent' : 'absent',
+            prezent ? 'prezent' : 'programat',
           )
         } else {
           // Scope pe (curs, zi): fără el, prezența ateriza pe ultima programare a
           // lead-ului — putea fi alt curs sau altă zi.
+          // Debifarea = click greșit, nu neprezentare: leadul revine în Programat
+          // (exact ce arată UI-ul). `nu_a_venit` aici trimitea pe loc SMS-ul „ne
+          // pare rău că nu ai ajuns". Neprezentarea reală o pune prune-ul, după zi.
           await updateLeadStatus(
             row.refId,
-            prezent ? 'a_venit' : 'nu_a_venit',
+            prezent ? 'a_venit' : 'programat',
             { cursId: cursId!, data: date },
           )
         }

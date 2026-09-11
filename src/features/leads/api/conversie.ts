@@ -1,28 +1,69 @@
 import { supabase } from '@/lib/supabase'
 import { normalizeTelefon } from '@/lib/phone'
 
-// Caută un client existent cu același telefon sau email (pentru merge la conversie).
-export async function findMatchingClient(
-  telefon: string | null,
-  email: string | null,
-): Promise<{
+export type MatchedClient = {
   id: string
   nume: string
   prenume: string | null
   familia: string | null
-} | null> {
+  // Același telefon îl au și frații (numărul părintelui): legarea se propune
+  // implicit doar când coincide și numele.
+  acelasiNume: boolean
+}
+
+const nameTokens = (prenume: string | null, nume: string | null) =>
+  new Set(
+    `${prenume ?? ''} ${nume ?? ''}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean),
+  )
+
+// „Ana Gneazdovschi" = „Ana Maria Gneazdovschi", dar ≠ „Ioana Gneazdovschi".
+function acelasiNume(a: Set<string>, b: Set<string>): boolean {
+  const [small, big] = a.size <= b.size ? [a, b] : [b, a]
+  return small.size >= 2 && [...small].every((t) => big.has(t))
+}
+
+// Caută un client existent cu același telefon sau email (pentru merge la conversie).
+// `clienti.telefon` nu e normalizat (0…, +40…) — se compară pe ultimele 9 cifre.
+// Egalitatea pe string brut (+40… vs 0…) rata clientul vechi și crea un dublu.
+export async function findMatchingClient(lead: {
+  telefon: string | null
+  email: string | null
+  nume: string
+  prenume: string | null
+}): Promise<MatchedClient | null> {
   const filters: string[] = []
-  if (telefon?.trim()) filters.push(`telefon.eq.${normalizeTelefon(telefon)}`)
-  if (email?.trim()) filters.push(`email.eq.${email.trim()}`)
+  const nat = (lead.telefon ?? '').replace(/\D/g, '').slice(-9)
+  if (nat.length === 9) {
+    filters.push(`telefon.ilike.*${nat}`, `telefonul_2.ilike.*${nat}`)
+  }
+  const email = lead.email?.trim()
+  if (email) filters.push(`email.ilike."${email}"`)
   if (!filters.length) return null
   const { data, error } = await supabase
     .from('clienti')
     .select('id, nume, prenume, familia')
     .or(filters.join(','))
-    .limit(1)
-    .maybeSingle()
+    .order('created', { ascending: true })
+    .limit(20)
   if (error) throw error
-  return data ?? null
+  if (!data?.length) return null
+  const leadNume = nameTokens(lead.prenume, lead.nume)
+  const same = data.find((c) =>
+    acelasiNume(leadNume, nameTokens(c.prenume, c.nume)),
+  )
+  const pick = same ?? data[0]
+  return {
+    id: pick.id,
+    nume: pick.nume,
+    prenume: pick.prenume,
+    familia: pick.familia,
+    acelasiNume: Boolean(same),
+  }
 }
 
 // Reintegrează un client (de obicei după reziliere) ca lead în coloana Nurture.

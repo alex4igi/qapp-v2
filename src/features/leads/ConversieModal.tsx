@@ -25,6 +25,7 @@ import {
   attachClientToLead,
   getLatestProgramareCurs,
   type CursSugerat,
+  type MatchedClient,
 } from './api'
 
 export type ConversieResult = {
@@ -40,13 +41,6 @@ type Props = {
   lead: Lead | null
   onClose: () => void
   onConverted: (result: ConversieResult) => void
-}
-
-type MatchedClient = {
-  id: string
-  nume: string
-  prenume: string | null
-  familia: string | null
 }
 
 export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
@@ -91,9 +85,9 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     setPreparingContract(false)
     setContractFamilie(null)
     // detecție duplicat + grupa sugerată de programare
-    void findMatchingClient(lead.telefon, lead.email).then((m) => {
+    void findMatchingClient(lead).then((m) => {
       setMatched(m)
-      setUseMerge(Boolean(m))
+      setUseMerge(Boolean(m?.acelasiNume))
     })
     void getLatestProgramareCurs(lead.id).then(setSugestie)
   }, [open, lead])
@@ -291,11 +285,15 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
             {matched && (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
                 <p>
-                  Există deja un client cu acest telefon/email:{' '}
+                  {matched.acelasiNume
+                    ? 'Există deja un client cu acest nume și telefon/email: '
+                    : 'Același telefon/email îl are clientul '}
                   <strong>
                     {[matched.prenume, matched.nume].filter(Boolean).join(' ')}
                   </strong>
-                  .
+                  {matched.acelasiNume
+                    ? '.'
+                    : ' — dacă e frate/soră, creează client nou.'}
                 </p>
                 <Checkbox
                   id="conv-merge"
