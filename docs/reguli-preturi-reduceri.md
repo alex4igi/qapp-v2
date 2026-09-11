@@ -41,8 +41,17 @@ Reducerile posibile pe o rată:
 | Voucher manual | după voucher | ales explicit; **dezactivează politica** pe toată luna, în tot pool-ul |
 
 Pool-ul = clientul + toți membrii familiei. Pe fiecare lună, **cel mai scump
-abonament din pool rămâne integral**, restul primesc −10%. O a doua înrolare pe
-același curs e dublură, nu cross-sell — nu primește reducere.
+abonament din pool rămâne integral**, restul primesc −10%. O a doua înrolare a
+**aceluiași client** pe același curs e dublură, nu cross-sell — nu primește
+reducere. Doi frați pe același curs sunt family legitim.
+
+„Cel mai scump" se judecă după **prețul de listă** (rata normală), nu după
+prețul promo — promo-ul e o reducere, nu prețul abonamentului. La egalitate de
+preț de listă rămâne integral **rândul pe promo** (își păstrează promo-ul), iar
+−10% merge la frate. Exemplu, frați pe același curs (listă 180, promo 170), unul
+pe promo: **170 + 162 = 332**, nu 180 + 162 = 342. Dacă fratele fără promo e pe
+un curs mai scump (ex. 290), el rămâne integral, iar copilul pe promo primește
+`least(promo, rată_normală − 10%)`.
 
 Când un rând stă pe preț promo ȘI ar primi −10%, se aplică **una singură**:
 
@@ -129,4 +138,5 @@ reducerea și ar anula penalizarea aplicată de cron.
 Migrațiile relevante: `20260518110000` (politica inițială), `20260701120000`
 (dublură same-course), `20260831120000` (reduceri neacumulabile),
 `20260831170000` + `20260831170100` (promo fix + penalizare), `20260831170200`
-(SMS `are_reducere`), `20260831190000` (regula 50 de zile + promo se termină cu locul).
+(SMS `are_reducere`), `20260831190000` (regula 50 de zile + promo se termină cu locul),
+`20260911150000` („cel mai scump" = preț de listă; frate pe același curs vizibil în preview).
