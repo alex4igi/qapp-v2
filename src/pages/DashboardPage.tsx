@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Select, Spinner } from '@/components/ui'
-import { saliOptions, cursuriOptionsForCurrentTeacher } from '@/lib/lookups'
+import { saliOptions, cursuriOptionsForCurrentTeacher, sezonActiv } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
@@ -93,6 +93,22 @@ export function DashboardPage() {
       }),
     enabled: !teacherMode || teacherCursuriQ.isSuccess,
   })
+
+  const sezonQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ-detalii'],
+    queryFn: sezonActiv,
+  })
+  const sezon = sezonQ.data
+  const ziRO = (iso: string) =>
+    new Date(iso).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long' })
+  const numeSezon = sezon?.numele_sezonului ?? 'Sezonul'
+  const inafaraSezonului = !sezon
+    ? null
+    : date < sezon.data_incepere
+      ? `${numeSezon} începe pe ${ziRO(sezon.data_incepere)} — până atunci nu sunt cursuri programate.`
+      : date > sezon.data_final
+        ? `${numeSezon} s-a încheiat pe ${ziRO(sezon.data_final)}.`
+        : null
 
   const courseRefs = useMemo(
     () =>
@@ -189,9 +205,10 @@ export function DashboardPage() {
         isError={coursesQ.isError}
         salaId={salaId}
         emptyMessage={
-          teacherMode
+          inafaraSezonului ??
+          (teacherMode
             ? 'Nicio grupă a ta programată azi.'
-            : `Niciun curs programat în ziua selectată${salaId ? ' pentru această sală' : ''}.`
+            : `Niciun curs programat în ziua selectată${salaId ? ' pentru această sală' : ''}.`)
         }
       />
 

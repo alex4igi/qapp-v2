@@ -135,17 +135,18 @@ export function matchLocatieId(
 
 // Sezonul activ cu datele de start/sfârșit (pt. prorata + prima lună la înrolare).
 export async function sezonActiv(): Promise<
-  { id: string; data_incepere: string; data_final: string } | null
+  { id: string; numele_sezonului: string | null; data_incepere: string; data_final: string } | null
 > {
   const { data, error } = await supabase
     .from('sezoane')
-    .select('id, data_incepere, data_final')
+    .select('id, numele_sezonului, data_incepere, data_final')
     .eq('stare', 'activ')
     .maybeSingle()
   if (error) throw error
   if (!data?.data_incepere || !data?.data_final) return null
   return {
     id: data.id,
+    numele_sezonului: data.numele_sezonului,
     data_incepere: data.data_incepere,
     data_final: data.data_final,
   }

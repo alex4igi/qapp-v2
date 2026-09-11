@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { endOfMonth } from '@/features/plati/api/calendar'
-import { sezonActivId } from '@/lib/lookups'
+import { sezonActiv } from '@/lib/lookups'
 import { dayOfWeekRO } from './helpers'
 import { fetchAllRows } from '@/lib/fetchAll'
 
@@ -35,7 +35,12 @@ export async function getDashboardCourses(params: {
 
   // Doar cursurile sezonului activ — altfel apar și grupele clonate din
   // sezoanele anterioare (reînscrieri) care au aceeași zi în `zile`.
-  const sezonId = await sezonActivId()
+  // Sezonul se activează înainte de start (reînscrieri), deci în zilele dintre
+  // activare și data_incepere grupele lui nu țin încă ore.
+  const sezon = await sezonActiv()
+  if (sezon && (params.date < sezon.data_incepere || params.date > sezon.data_final)) {
+    return []
+  }
 
   let cursQ = supabase
     .from('cursuri')
@@ -43,7 +48,7 @@ export async function getDashboardCourses(params: {
     .contains('zile', [dow])
     .eq('suspendat', false)
 
-  if (sezonId) cursQ = cursQ.eq('sezon', sezonId)
+  if (sezon) cursQ = cursQ.eq('sezon', sezon.id)
   if (params.salaId) cursQ = cursQ.eq('sala', params.salaId)
   if (params.locatieId) cursQ = cursQ.eq('sala.locatie', params.locatieId)
   if (params.cursIds) cursQ = cursQ.in('id', params.cursIds)
