@@ -286,14 +286,22 @@ function buildFacultativPerSedinta(
   ]
 }
 
-// facultativ + Per lună: prima → ultima zi a lunii din dataIncepere
+// facultativ + Per lună: prima → ultima zi a lunii din dataIncepere. În luna de
+// start a sezonului, data_incepere = startul sezonului (ca la recurent): ziua 1
+// cade înaintea sezonului, iar rândul dispare din fișa pe sezon și nu reactivează
+// clientul. Prețul rămâne luna întreagă — facultativul n-are prorata.
 function buildFacultativPerLuna(
   params: CreateInrolariParams,
   curs: Curs,
   voucher: Voucher | null,
+  sezon: SezonOption | null,
 ): InsertDto<'enrollments'>[] {
   const month = params.dataIncepere.slice(0, 7) + '-01'
   const end = endOfMonth(month)
+  const start =
+    sezon?.data_incepere && month < sezon.data_incepere && sezon.data_incepere <= end
+      ? sezon.data_incepere
+      : month
   const sumaBaza = params.sumaOverride ?? curs.pret_lunar ?? null
   return [
     {
@@ -302,7 +310,7 @@ function buildFacultativPerLuna(
       tip_plata: 'Per luna',
       suma_baza: sumaBaza,
       suma: sumaCuVoucher(sumaBaza, voucher),
-      data_incepere: month,
+      data_incepere: start,
       data_final: end,
       activ: true,
       voucher: voucher?.id ?? null,
@@ -512,18 +520,19 @@ export async function createInrolari(
 
   let inserts: InsertDto<'enrollments'>[]
 
+  // Sezonul vine din CURS, nu din dată: la reînscrierile semnate în august
+  // pentru sezonul de toamnă, data ar cădea în sezonul de vară. Data rămâne
+  // ce e — data semnării — dar ratele se generează pe sezonul cursului.
+  const sezon =
+    (curs.sezon ? await getSezonById(curs.sezon) : null) ??
+    (await getSezonForDate(params.dataIncepere))
+
   if (params.tipInrolare === 'facultativ') {
     inserts =
       params.tipPlata === 'Per sedinta'
         ? buildFacultativPerSedinta(params, curs, voucher)
-        : buildFacultativPerLuna(params, curs, voucher)
+        : buildFacultativPerLuna(params, curs, voucher, sezon)
   } else {
-    // Sezonul vine din CURS, nu din dată: la reînscrierile semnate în august
-    // pentru sezonul de toamnă, data ar cădea în sezonul de vară. Data rămâne
-    // ce e — data semnării — dar ratele se generează pe sezonul cursului.
-    const sezon =
-      (curs.sezon ? await getSezonById(curs.sezon) : null) ??
-      (await getSezonForDate(params.dataIncepere))
     if (!sezon || !sezon.data_final || !sezon.data_incepere) {
       throw new Error(
         'Nu am găsit un sezon care să conțină data începerii. Adaugă un sezon mai întâi.',
