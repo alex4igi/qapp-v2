@@ -16,7 +16,7 @@ import {
 } from '@/components/ui'
 import { statusSmsOptions } from '@/lib/enums'
 import { useAuth } from '@/hooks/useAuth'
-import { isManagerOrHigher } from '@/lib/rolesMatrix'
+import { isAdminOrHigher, isManagerOrHigher } from '@/lib/rolesMatrix'
 import { SmsQueueForm } from './SmsQueueForm'
 import { SmsComposer } from './SmsComposer'
 import {
@@ -40,6 +40,9 @@ export function NotificariSmsPage() {
   const queryClient = useQueryClient()
   const { role } = useAuth()
   const poateMesajLiber = isManagerOrHigher(role)
+  // Sub admin se șterg doar rândurile „De trimis" (RPC delete_sms_queue_entry refuză
+  // restul) — dezactivăm butonul acolo unde ar eșua oricum.
+  const poateStergeOrice = isAdminOrHigher(role)
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
@@ -138,15 +141,19 @@ export function NotificariSmsPage() {
     },
     {
       header: '',
-      cell: (s) => (
-        <Button
-          variant="ghost"
-          onClick={() => remove.mutate(s.id)}
-          disabled={remove.isPending}
-        >
-          Șterge
-        </Button>
-      ),
+      cell: (s) => {
+        const stergibil = poateStergeOrice || s.status === 'De trimis'
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => remove.mutate(s.id)}
+            disabled={remove.isPending || !stergibil}
+            title={stergibil ? undefined : 'Se pot șterge doar SMS-urile „De trimis"'}
+          >
+            Șterge
+          </Button>
+        )
+      },
       className: 'w-24',
     },
   ]
