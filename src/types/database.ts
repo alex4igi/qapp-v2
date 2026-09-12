@@ -12355,6 +12355,68 @@ export type Database = {
           restanta: number
         }[]
       }
+      get_start_sezon_nerevenit: {
+        Args: { p_sezon: string }
+        Returns: {
+          client_id: string
+          grupe: string
+          nume: string
+          prenume: string
+          status: string
+          suma_sezon: number
+          telefon: string
+          ultima_luna: string
+        }[]
+      }
+      get_start_sezon_noi: {
+        Args: { p_sezon: string }
+        Returns: {
+          client_id: string
+          cursuri: string
+          fisa_creata: string
+          nume: string
+          prenume: string
+          telefon: string
+        }[]
+      }
+      get_start_sezon_retentie: {
+        Args: { p_sezon: string }
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          locatie_nume: string
+          reveniti: number
+          total: number
+        }[]
+      }
+      get_start_sezon_roster: {
+        Args: { p_sezon: string }
+        Returns: {
+          capacitate: number
+          cat_n: number
+          cat_r: number
+          cat_s: number
+          cat_v: number
+          curs_id: string
+          curs_nume: string
+          facultativ: boolean
+          inscrisi: number
+          locatie_nume: string
+          teacher_nume: string
+        }[]
+      }
+      get_start_sezon_sumar: {
+        Args: { p_sezon: string }
+        Returns: {
+          clienti_noi: number
+          grupe_active: number
+          grupe_total: number
+          inrolari: number
+          pool_revenit: number
+          pool_total: number
+          reinscrieri: number
+        }[]
+      }
       get_statistica_prezente_achitare: {
         Args: {
           p_curs?: string

@@ -91,6 +91,11 @@ const StatisticiPage = lazy(() =>
 const AnsambluPage = lazy(() =>
   import('@/features/ansamblu/AnsambluPage').then((m) => ({ default: m.AnsambluPage })),
 )
+const StartSezonPage = lazy(() =>
+  import('@/features/start-sezon/StartSezonPage').then((m) => ({
+    default: m.StartSezonPage,
+  })),
+)
 // Editorul de template-uri trage pdfjs-dist — code-split, nu intră în bundle-ul inițial.
 const TemplateEditorPage = lazy(() =>
   import('@/features/contracte/TemplateEditorPage').then((m) => ({ default: m.TemplateEditorPage })),
@@ -345,6 +350,13 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="cfo" element={<CfoPage />} />
+            </Route>
+          </Route>
+
+          {/* Raportul de început de sezon — citit, nu lucrat: nu scrie nimic. */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/start-sezon']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="start-sezon" element={<StartSezonPage />} />
             </Route>
           </Route>
 

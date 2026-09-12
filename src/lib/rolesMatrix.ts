@@ -58,6 +58,10 @@ export const ROUTE_ACCESS = {
   '/analytics': ADMIN_OR_OWNER,
   // Zonă dedicată CFO (finanțe) — izolată de operațional. Doar owner + admin.
   '/cfo': ADMIN_OR_OWNER,
+  // Raport de început de sezon (cine s-a întors, cine nu, cine e nou). Pagină de
+  // citit, fără nicio acțiune — listele de lucru zilnice ale recepției stau în
+  // /datorii și /absente-21z, ca să nu se dubleze munca în două locuri.
+  '/start-sezon': PRIVILEGED,
   '/scorecard': PRIVILEGED,
   '/vouchere': PRIVILEGED,
   '/inventar': PRIVILEGED,

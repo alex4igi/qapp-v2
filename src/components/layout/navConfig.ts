@@ -87,6 +87,7 @@ export const navSections: NavSection[] = [
       { label: 'Overview',         path: '/overview' },
       { label: 'Financiar',        path: '/financiar' },
       { label: 'Statistici',       path: '/statistici' },
+      { label: 'Start de sezon',   path: '/start-sezon' },
       { label: 'Scorecard CC',     path: '/scorecard' },
     ],
   },
