@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getCursDatorii } from '@/features/cursuri/api'
+import { getCursuriDatorii } from '@/features/cursuri/api'
 
 // Preview-uri pentru KPI-urile zilei (afișate la deschiderea cardului).
 // Liste scurte, lazy — interogate doar când userul deschide cardul.
@@ -101,27 +101,27 @@ export type RestantierAziRow = {
   rest: number
 }
 
-// Restanțieri pe grupele de azi: cine · grupă · cât. Agregă getCursDatorii peste
-// cursurile zilei (puține → câteva query-uri), pe sezonul curent.
+// Restanțieri pe grupele de azi: cine · grupă · cât. O singură cerere pentru toate
+// cursurile zilei (getCursuriDatorii), pe sezonul curent — înainte erau N cereri
+// paralele pe view-ul greu, câte una per grupă.
 export async function getRestantieriAzi(
   courses: { id: string; numele: string }[],
   sezonStart: string,
   sezonEnd: string,
 ): Promise<RestantierAziRow[]> {
-  const perCurs = await Promise.all(
-    courses.map(async (c) => {
-      const datorii = await getCursDatorii({
-        cursId: c.id,
-        sezonStart,
-        sezonEnd,
-      })
-      return datorii.map((d) => ({
+  const byCurs = await getCursuriDatorii({
+    cursIds: courses.map((c) => c.id),
+    sezonStart,
+    sezonEnd,
+  })
+  return courses
+    .flatMap((c) =>
+      (byCurs.get(c.id) ?? []).map((d) => ({
         clientId: d.clientId,
         nume: `${d.nume} ${d.prenume ?? ''}`.trim() || '—',
         grupa: c.numele,
         rest: d.rest,
-      }))
-    }),
-  )
-  return perCurs.flat().sort((a, b) => b.rest - a.rest)
+      })),
+    )
+    .sort((a, b) => b.rest - a.rest)
 }

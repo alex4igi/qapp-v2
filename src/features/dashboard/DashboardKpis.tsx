@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Spinner, Badge } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { listSezoane } from '@/features/plati/api'
+import { sezonActiv } from '@/lib/lookups'
 import {
   getDashboardKpis,
   getIncasariAzi,
@@ -106,28 +106,21 @@ export function DashboardKpis({
   const [open, setOpen] = useState<Panel | null>(null)
   const toggle = (p: Panel) => setOpen((cur) => (cur === p ? null : p))
 
-  const { locatieId } = useWorkingLocatie()
+  const { locatieId, ready: locatieReady } = useWorkingLocatie()
 
   const kpisQ = useQuery({
     queryKey: ['dashboard', 'kpis', date, locatieId ?? 'all'],
     queryFn: () => getDashboardKpis(date, locatieId),
+    enabled: locatieReady,
   })
 
-  const sezoaneQ = useQuery({ queryKey: ['sezoane-list'], queryFn: listSezoane })
-  const sezon = useMemo(() => {
-    const list = sezoaneQ.data ?? []
-    if (!list.length) return null
-    const today = new Date().toISOString().slice(0, 10)
-    return (
-      list.find(
-        (s) =>
-          s.data_incepere &&
-          s.data_final &&
-          s.data_incepere <= today &&
-          today <= s.data_final,
-      ) ?? list[0]
-    )
-  }, [sezoaneQ.data])
+  // Sezonul activ — același query (și aceeași cheie) ca lista de cursuri a zilei și
+  // banner-ul din DashboardPage, deci restanțele sunt pe sezonul grupelor afișate.
+  const sezonQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ-detalii'],
+    queryFn: sezonActiv,
+  })
+  const sezon = sezonQ.data ?? null
 
   const courseIds = courses.map((c) => c.id).join(',')
 
@@ -135,8 +128,8 @@ export function DashboardKpis({
   const restanteQ = useQuery({
     queryKey: ['preview', 'restante', date, courseIds, sezon?.id],
     queryFn: () =>
-      getRestantieriAzi(courses, sezon!.data_incepere!, sezon!.data_final!),
-    enabled: Boolean(sezon?.data_incepere && sezon?.data_final) && courses.length > 0,
+      getRestantieriAzi(courses, sezon!.data_incepere, sezon!.data_final),
+    enabled: sezon !== null && courses.length > 0,
   })
   const restanteTotal = (restanteQ.data ?? []).reduce((a, r) => a + r.rest, 0)
 

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { formatRON } from '@/lib/format'
-import { sezonActivId } from '@/lib/lookups'
+import { sezonActiv } from '@/lib/lookups'
+import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { getRestanteWorklist, type WorklistRow } from '@/features/datorii/api'
 import {
   LogRecuperareModal,
@@ -23,15 +24,18 @@ export function DatorniciWorklistCard({
   const [target, setTarget] = useState<RecuperareTarget | null>(null)
   const [expanded, setExpanded] = useState(false)
 
+  const { ready: locatieReady } = useWorkingLocatie()
+  // Același query de sezon ca restul dashboard-ului (o singură cerere, cache comun).
   const sezonActivQ = useQuery({
-    queryKey: ['lookup', 'sezon-activ'],
-    queryFn: sezonActivId,
+    queryKey: ['lookup', 'sezon-activ-detalii'],
+    queryFn: sezonActiv,
   })
+  const sezonId = sezonActivQ.data?.id ?? null
 
   const worklistQ = useQuery({
-    queryKey: ['restante-worklist', locatieId ?? 'all', sezonActivQ.data ?? 'all'],
-    queryFn: () => getRestanteWorklist(locatieId, sezonActivQ.data ?? null),
-    enabled: sezonActivQ.isSuccess,
+    queryKey: ['restante-worklist', locatieId ?? 'all', sezonId ?? 'all'],
+    queryFn: () => getRestanteWorklist(locatieId, sezonId),
+    enabled: sezonActivQ.isSuccess && locatieReady,
   })
 
   const rows = worklistQ.data ?? []

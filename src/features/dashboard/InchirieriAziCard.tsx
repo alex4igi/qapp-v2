@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { formatRON } from '@/lib/format'
 import { saliWithLocatie } from '@/lib/lookups'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
+import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { listInchirieriWeek, renterLabel } from '@/features/inchirieri/api/occupancy'
 
 type Props = {
@@ -15,10 +16,12 @@ type Props = {
 // ca o rezervare creată azi să nu o ia prin surprindere.
 export function InchirieriAziCard({ locatieId, salaId }: Props) {
   const { date, isToday } = useWorkingDate()
+  const { ready: locatieReady } = useWorkingLocatie()
 
   const q = useQuery({
     queryKey: ['inchirieri', 'week', locatieId, date, 'dashboard'],
     queryFn: () => listInchirieriWeek({ fromIso: date, toIso: date, locatieId }),
+    enabled: locatieReady,
   })
   const saliQ = useQuery({ queryKey: ['lookup', 'sali-nume'], queryFn: saliWithLocatie })
 

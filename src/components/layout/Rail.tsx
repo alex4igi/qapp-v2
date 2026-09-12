@@ -1,13 +1,20 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { canAccessRoute, canEditLeads, roleLabel } from '@/lib/rolesMatrix'
-import { ClientForm } from '@/features/clienti/ClientForm'
-import { LeadModal } from '@/features/leads/LeadModal'
 import { isForcedDesktop, isNarrowViewport, setForceDesktop } from '@/hooks/useIsMobile'
 import { initialsFromEmail } from './accountInitials'
 import { SectionIcon } from './SectionIcon'
 import { sectionMatches, visibleSections } from './navConfig'
+
+// Cele două modale de „adaugă rapid" se deschid rar, dar importate static trăgeau în
+// bundle-ul inițial toată logica de leads + clienți. Se încarcă la primul click.
+const ClientForm = lazy(() =>
+  import('@/features/clienti/ClientForm').then((m) => ({ default: m.ClientForm })),
+)
+const LeadModal = lazy(() =>
+  import('@/features/leads/LeadModal').then((m) => ({ default: m.LeadModal })),
+)
 
 /* ---------- stare colapsat ---------- */
 const COLLAPSED_KEY = 'qapp.rail.collapsed'
@@ -245,8 +252,10 @@ function RailActions({ collapsed }: { collapsed: boolean }) {
           </button>
         </div>
 
-        {leadOpen && <LeadModal open onClose={() => setLeadOpen(false)} />}
-        {clientOpen && <ClientForm open onClose={() => setClientOpen(false)} />}
+        <Suspense fallback={null}>
+          {leadOpen && <LeadModal open onClose={() => setLeadOpen(false)} />}
+          {clientOpen && <ClientForm open onClose={() => setClientOpen(false)} />}
+        </Suspense>
       </>
     )
   }
@@ -270,8 +279,10 @@ function RailActions({ collapsed }: { collapsed: boolean }) {
         </button>
       </div>
 
-      {leadOpen && <LeadModal open onClose={() => setLeadOpen(false)} />}
-      {clientOpen && <ClientForm open onClose={() => setClientOpen(false)} />}
+      <Suspense fallback={null}>
+        {leadOpen && <LeadModal open onClose={() => setLeadOpen(false)} />}
+        {clientOpen && <ClientForm open onClose={() => setClientOpen(false)} />}
+      </Suspense>
     </>
   )
 }

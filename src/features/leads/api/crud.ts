@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 import type {
   Lead,
   StatusLead,
@@ -100,6 +101,37 @@ async function fetchLeadsPaged(
 // nu pe board. Kanban, rapoartele și „De lucrat azi" folosesc doar pipeline-ul activ.
 export async function listLeads(): Promise<Lead[]> {
   return fetchLeadsPaged(false)
+}
+
+// Strict coloanele de care are nevoie `groupTodayLeads` (cardul „De lucrat azi" de pe
+// dashboard). Boardul și rapoartele rămân pe `listLeads` (select *).
+export type LeadAgenda = Pick<
+  Lead,
+  | 'id'
+  | 'status'
+  | 'deja_client'
+  | 'flag_reminder'
+  | 'data_programare'
+  | 'data_callback_dorit'
+  | 'created'
+  | 'nr_contactari'
+  | 'ultima_contactare_la'
+>
+
+// Lead-urile care pot cere acțiune azi: fără nurture (pool separat, vezi listLeads) și
+// fără stările terminale, pe care groupTodayLeads le sare oricum. Dashboard-ul trăgea
+// tot pipeline-ul cu select * doar ca să afișeze șase contoare.
+export async function listLeadsAgendaAzi(): Promise<LeadAgenda[]> {
+  return fetchAllRows(() =>
+    supabase
+      .from('leads')
+      .select(
+        'id, status, deja_client, flag_reminder, data_programare, data_callback_dorit, created, nr_contactari, ultima_contactare_la',
+      )
+      .not('status', 'in', '(nurture,convertit,pierdut)')
+      .order('created', { ascending: false })
+      .order('id', { ascending: true }),
+  )
 }
 
 // Un singur lead, după id. Necesar pentru deep-link-uri din afara pipeline-ului

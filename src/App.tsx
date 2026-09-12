@@ -9,27 +9,72 @@ import { AdministrareIndex, AdministrareLayout } from '@/components/layout/Admin
 import { Placeholder } from '@/components/Placeholder'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
-import { ClientiListPage } from '@/features/clienti/ClientiListPage'
-import { ClientProfilePage } from '@/features/clienti/ClientProfilePage'
-import { FamiliiListPage } from '@/features/familii/FamiliiListPage'
-import { FamilieProfilePage } from '@/features/familii/FamilieProfilePage'
-import { TeacheriListPage } from '@/features/teacheri/TeacheriListPage'
-import { TeacherProfilePage } from '@/features/teacheri/TeacherProfilePage'
-import { CursuriListPage } from '@/features/cursuri/CursuriListPage'
-import { CursProfilePage } from '@/features/cursuri/CursProfilePage'
-import { PlatiListPage } from '@/features/plati/PlatiListPage'
-import { PrezentePage } from '@/features/prezente/PrezentePage'
-import { CalendarPage as InchirieriCalendarPage } from '@/features/inchirieri/pages/CalendarPage'
-import { LeadsPage } from '@/features/leads/LeadsPage'
-import { NotificariSmsPage } from '@/features/notificari-sms/NotificariSmsPage'
-import { FeedbackListPage } from '@/features/feedback/FeedbackListPage'
-import { AppFeedbackListPage } from '@/features/feedback-app/AppFeedbackListPage'
-import { AnunturiPage } from '@/features/announcements/AnunturiPage'
-import { FinanciarPage } from '@/features/financiar/FinanciarPage'
-import { CfoPage } from '@/features/cfo/CfoPage'
-import { ScorecardPage } from '@/features/scorecard/ScorecardPage'
-import { FacturarePage } from '@/features/facturare/FacturarePage'
-import { FiseIncompletePage } from '@/features/fise-incomplete/FiseIncompletePage'
+// Toate paginile în afară de Login și Dashboard se încarcă la cerere: bundle-ul
+// inițial ținea 47 de pagini (1,5 MB) și trăgea recharts sincron prin Financiar/CFO,
+// deși prima pagină nu le folosește. Chunk-urile se cache-uiesc după prima vizită.
+const ClientiListPage = lazy(() =>
+  import('@/features/clienti/ClientiListPage').then((m) => ({ default: m.ClientiListPage })),
+)
+const ClientProfilePage = lazy(() =>
+  import('@/features/clienti/ClientProfilePage').then((m) => ({ default: m.ClientProfilePage })),
+)
+const FamiliiListPage = lazy(() =>
+  import('@/features/familii/FamiliiListPage').then((m) => ({ default: m.FamiliiListPage })),
+)
+const FamilieProfilePage = lazy(() =>
+  import('@/features/familii/FamilieProfilePage').then((m) => ({ default: m.FamilieProfilePage })),
+)
+const TeacheriListPage = lazy(() =>
+  import('@/features/teacheri/TeacheriListPage').then((m) => ({ default: m.TeacheriListPage })),
+)
+const TeacherProfilePage = lazy(() =>
+  import('@/features/teacheri/TeacherProfilePage').then((m) => ({ default: m.TeacherProfilePage })),
+)
+const CursuriListPage = lazy(() =>
+  import('@/features/cursuri/CursuriListPage').then((m) => ({ default: m.CursuriListPage })),
+)
+const CursProfilePage = lazy(() =>
+  import('@/features/cursuri/CursProfilePage').then((m) => ({ default: m.CursProfilePage })),
+)
+const PlatiListPage = lazy(() =>
+  import('@/features/plati/PlatiListPage').then((m) => ({ default: m.PlatiListPage })),
+)
+const PrezentePage = lazy(() =>
+  import('@/features/prezente/PrezentePage').then((m) => ({ default: m.PrezentePage })),
+)
+const InchirieriCalendarPage = lazy(() =>
+  import('@/features/inchirieri/pages/CalendarPage').then((m) => ({ default: m.CalendarPage })),
+)
+const LeadsPage = lazy(() =>
+  import('@/features/leads/LeadsPage').then((m) => ({ default: m.LeadsPage })),
+)
+const NotificariSmsPage = lazy(() =>
+  import('@/features/notificari-sms/NotificariSmsPage').then((m) => ({ default: m.NotificariSmsPage })),
+)
+const FeedbackListPage = lazy(() =>
+  import('@/features/feedback/FeedbackListPage').then((m) => ({ default: m.FeedbackListPage })),
+)
+const AppFeedbackListPage = lazy(() =>
+  import('@/features/feedback-app/AppFeedbackListPage').then((m) => ({ default: m.AppFeedbackListPage })),
+)
+const AnunturiPage = lazy(() =>
+  import('@/features/announcements/AnunturiPage').then((m) => ({ default: m.AnunturiPage })),
+)
+const FinanciarPage = lazy(() =>
+  import('@/features/financiar/FinanciarPage').then((m) => ({ default: m.FinanciarPage })),
+)
+const CfoPage = lazy(() =>
+  import('@/features/cfo/CfoPage').then((m) => ({ default: m.CfoPage })),
+)
+const ScorecardPage = lazy(() =>
+  import('@/features/scorecard/ScorecardPage').then((m) => ({ default: m.ScorecardPage })),
+)
+const FacturarePage = lazy(() =>
+  import('@/features/facturare/FacturarePage').then((m) => ({ default: m.FacturarePage })),
+)
+const FiseIncompletePage = lazy(() =>
+  import('@/features/fise-incomplete/FiseIncompletePage').then((m) => ({ default: m.FiseIncompletePage })),
+)
 // Paginile de statistici trag recharts — code-split din bundle-ul inițial.
 const DatoriiPage = lazy(() =>
   import('@/features/datorii/DatoriiPage').then((m) => ({ default: m.DatoriiPage })),
@@ -50,32 +95,84 @@ const AnsambluPage = lazy(() =>
 const TemplateEditorPage = lazy(() =>
   import('@/features/contracte/TemplateEditorPage').then((m) => ({ default: m.TemplateEditorPage })),
 )
-import { VouchereListPage } from '@/features/vouchere/VouchereListPage'
-import { InventarListPage } from '@/features/inventar/InventarListPage'
-import { EvenimenteListPage } from '@/features/evenimente/EvenimenteListPage'
-import { EvenimentRosterPage } from '@/features/evenimente/EvenimentRosterPage'
-import { ConcursuriListPage } from '@/features/concursuri/ConcursuriListPage'
-import { SpectacoleListPage } from '@/features/spectacole/SpectacoleListPage'
-import { SpectacolProfilePage } from '@/features/spectacole/SpectacolProfilePage'
-import { CampaniiListPage } from '@/features/campanii/CampaniiListPage'
-import { MarketingPage } from '@/features/marketing/MarketingPage'
-import { ContracteListPage } from '@/features/contracte/ContracteListPage'
-import { ReinscrieriPage } from '@/features/reinscrieri/ReinscrieriPage'
-import { SetariPage } from '@/features/setari/SetariPage'
-import { OfertaPublicaPage } from '@/features/oferta-publica/OfertaPublicaPage'
-import { MetodologicPage } from '@/features/metodologic/pages/MetodologicPage'
-import { ProgramEditorPage } from '@/features/metodologic/pages/ProgramEditorPage'
-import { OrganizatiePage } from '@/features/setari/OrganizatiePage'
-import { EvaluariPage } from '@/features/evaluari/EvaluariPage'
-import { EvaluareGrupaPage } from '@/features/evaluari/grupa/EvaluareGrupaPage'
-import { SalariulMeuPage } from '@/features/salariu-teacher/SalariulMeuPage'
-import { GrupeleMelePage } from '@/features/teacher-stats/GrupeleMelePage'
-import { NotificariPage } from '@/features/notificari/NotificariPage'
-import { AuditPage } from '@/features/audit/AuditPage'
-import { PontajStaffPage } from '@/features/pontaj/PontajStaffPage'
-import { GrupaDashboardPage } from '@/features/dashboard/GrupaDashboardPage'
-import { SituatieZilnicaPage } from '@/features/situatie-zilnica/SituatieZilnicaPage'
-import { OptOutListPage } from '@/features/opt-out/OptOutListPage'
+const VouchereListPage = lazy(() =>
+  import('@/features/vouchere/VouchereListPage').then((m) => ({ default: m.VouchereListPage })),
+)
+const InventarListPage = lazy(() =>
+  import('@/features/inventar/InventarListPage').then((m) => ({ default: m.InventarListPage })),
+)
+const EvenimenteListPage = lazy(() =>
+  import('@/features/evenimente/EvenimenteListPage').then((m) => ({ default: m.EvenimenteListPage })),
+)
+const EvenimentRosterPage = lazy(() =>
+  import('@/features/evenimente/EvenimentRosterPage').then((m) => ({ default: m.EvenimentRosterPage })),
+)
+const ConcursuriListPage = lazy(() =>
+  import('@/features/concursuri/ConcursuriListPage').then((m) => ({ default: m.ConcursuriListPage })),
+)
+const SpectacoleListPage = lazy(() =>
+  import('@/features/spectacole/SpectacoleListPage').then((m) => ({ default: m.SpectacoleListPage })),
+)
+const SpectacolProfilePage = lazy(() =>
+  import('@/features/spectacole/SpectacolProfilePage').then((m) => ({ default: m.SpectacolProfilePage })),
+)
+const CampaniiListPage = lazy(() =>
+  import('@/features/campanii/CampaniiListPage').then((m) => ({ default: m.CampaniiListPage })),
+)
+const MarketingPage = lazy(() =>
+  import('@/features/marketing/MarketingPage').then((m) => ({ default: m.MarketingPage })),
+)
+const ContracteListPage = lazy(() =>
+  import('@/features/contracte/ContracteListPage').then((m) => ({ default: m.ContracteListPage })),
+)
+const ReinscrieriPage = lazy(() =>
+  import('@/features/reinscrieri/ReinscrieriPage').then((m) => ({ default: m.ReinscrieriPage })),
+)
+const SetariPage = lazy(() =>
+  import('@/features/setari/SetariPage').then((m) => ({ default: m.SetariPage })),
+)
+const OfertaPublicaPage = lazy(() =>
+  import('@/features/oferta-publica/OfertaPublicaPage').then((m) => ({ default: m.OfertaPublicaPage })),
+)
+const MetodologicPage = lazy(() =>
+  import('@/features/metodologic/pages/MetodologicPage').then((m) => ({ default: m.MetodologicPage })),
+)
+const ProgramEditorPage = lazy(() =>
+  import('@/features/metodologic/pages/ProgramEditorPage').then((m) => ({ default: m.ProgramEditorPage })),
+)
+const OrganizatiePage = lazy(() =>
+  import('@/features/setari/OrganizatiePage').then((m) => ({ default: m.OrganizatiePage })),
+)
+const EvaluariPage = lazy(() =>
+  import('@/features/evaluari/EvaluariPage').then((m) => ({ default: m.EvaluariPage })),
+)
+const EvaluareGrupaPage = lazy(() =>
+  import('@/features/evaluari/grupa/EvaluareGrupaPage').then((m) => ({ default: m.EvaluareGrupaPage })),
+)
+const SalariulMeuPage = lazy(() =>
+  import('@/features/salariu-teacher/SalariulMeuPage').then((m) => ({ default: m.SalariulMeuPage })),
+)
+const GrupeleMelePage = lazy(() =>
+  import('@/features/teacher-stats/GrupeleMelePage').then((m) => ({ default: m.GrupeleMelePage })),
+)
+const NotificariPage = lazy(() =>
+  import('@/features/notificari/NotificariPage').then((m) => ({ default: m.NotificariPage })),
+)
+const AuditPage = lazy(() =>
+  import('@/features/audit/AuditPage').then((m) => ({ default: m.AuditPage })),
+)
+const PontajStaffPage = lazy(() =>
+  import('@/features/pontaj/PontajStaffPage').then((m) => ({ default: m.PontajStaffPage })),
+)
+const GrupaDashboardPage = lazy(() =>
+  import('@/features/dashboard/GrupaDashboardPage').then((m) => ({ default: m.GrupaDashboardPage })),
+)
+const SituatieZilnicaPage = lazy(() =>
+  import('@/features/situatie-zilnica/SituatieZilnicaPage').then((m) => ({ default: m.SituatieZilnicaPage })),
+)
+const OptOutListPage = lazy(() =>
+  import('@/features/opt-out/OptOutListPage').then((m) => ({ default: m.OptOutListPage })),
+)
 import { ROUTE_ACCESS } from '@/lib/rolesMatrix'
 
 function App() {

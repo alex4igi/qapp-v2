@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase'
 import { endOfMonth } from '@/features/plati/api/calendar'
-import { sezonActiv } from '@/lib/lookups'
 import { dayOfWeekRO } from './helpers'
 import { fetchAllRows } from '@/lib/fetchAll'
 
@@ -19,12 +18,21 @@ export type DashboardCourse = {
   leadsPrezenti: number
 }
 
+export type DashboardSezon = {
+  id: string
+  data_incepere: string
+  data_final: string
+}
+
 // Cursurile zilei pentru sala/locația selectată. Pentru teacher se poate
 // restrânge la `cursIds` (set obținut din `cursuri_teacheri` M:N).
+// `sezon` vine de la pagină (același query cache-uit ca banner-ul de sezon), ca să nu
+// mai facem un fetch separat aici; null = nu există sezon activ.
 export async function getDashboardCourses(params: {
   date: string
   salaId: string | null
   locatieId: string | null
+  sezon: DashboardSezon | null
   cursIds?: string[] | null
 }): Promise<DashboardCourse[]> {
   const dow = dayOfWeekRO(new Date(params.date))
@@ -41,7 +49,7 @@ export async function getDashboardCourses(params: {
   // sezoanele anterioare (reînscrieri) care au aceeași zi în `zile`.
   // Sezonul se activează înainte de start (reînscrieri), deci în zilele dintre
   // activare și data_incepere grupele lui nu țin încă ore.
-  const sezon = await sezonActiv()
+  const sezon = params.sezon
   if (sezon && (params.date < sezon.data_incepere || params.date > sezon.data_final)) {
     return []
   }
@@ -70,106 +78,21 @@ export async function getDashboardCourses(params: {
   const cursIds = cursRows.map((c) => c.id)
   if (cursIds.length === 0) return []
 
-  // Înrolați per curs = înrolare NEreziliată care ACOPERĂ luna afișată. NU
-  // folosim `activ` (nesigur la datele v1). Aceeași definiție ca rosterul din
-  // grupa.ts → countul de pe card == lungimea rosterului grupei.
-  // Paginăm: la datele v1 un client are mai multe rânduri care acoperă luna
-  // (data_final=null pe lunile vechi), deci un `.in()` peste toate cursurile zilei
-  // poate depăși limita PostgREST de 1000 → trunchiere și count subevaluat.
-  const monthStart = params.date.slice(0, 7) + '-01'
-  const monthEnd = endOfMonth(monthStart)
-  const clientsByCurs = new Map<string, Set<string>>()
-  for (let offset = 0; ; offset += 1000) {
-    const { data: enr, error: enrErr } = await supabase
-      .from('enrollments')
-      .select('cursul, client')
-      .in('cursul', cursIds)
-      .eq('reziliat', false)
-      .lte('data_incepere', monthEnd)
-      .or(`data_final.is.null,data_final.gte.${monthStart}`)
-      .range(offset, offset + 999)
-    if (enrErr) throw enrErr
-    for (const e of enr ?? []) {
-      if (!e.cursul || !e.client) continue
-      let set = clientsByCurs.get(e.cursul)
-      if (!set) {
-        set = new Set<string>()
-        clientsByCurs.set(e.cursul, set)
-      }
-      set.add(e.client)
-    }
-    if (!enr || enr.length < 1000) break
-  }
-  // Cursuri facultative: clienții cu rezervare OPEN ne-anulată pe ziua afișată au
-  // acces (ex. ședințe bonus din promo: înrolarea lor e pe altă lună). Îi adăugăm
-  // ca să rămână invariantul „count card == lungime roster grupă" (vezi grupa.ts).
-  const { data: sesiuni, error: sesErr } = await supabase
-    .from('open_sesiuni')
-    .select('id, curs')
-    .in('curs', cursIds)
-    .eq('data', params.date)
-  if (sesErr) throw sesErr
-  const cursBySesiune = new Map<string, string>()
-  for (const s of sesiuni ?? []) {
-    if (s.id && s.curs) cursBySesiune.set(s.id, s.curs)
-  }
-  if (cursBySesiune.size > 0) {
-    const { data: rez, error: rezErr } = await supabase
-      .from('open_rezervari')
-      .select('sesiune, client')
-      .in('sesiune', Array.from(cursBySesiune.keys()))
-      .neq('status', 'anulat')
-    if (rezErr) throw rezErr
-    for (const r of rez ?? []) {
-      const curs = r.sesiune ? cursBySesiune.get(r.sesiune) : null
-      if (!curs || !r.client) continue
-      let set = clientsByCurs.get(curs)
-      if (!set) {
-        set = new Set<string>()
-        clientsByCurs.set(curs, set)
-      }
-      set.add(r.client)
-    }
-  }
+  // Cele trei surse de mai jos nu depind una de alta — rulează în paralel (înainte
+  // erau 5-6 cereri strict secvențiale, ~1,3 s doar din așteptare).
+  const [clientsByCurs, prezByCurs, programariRows] = await Promise.all([
+    loadClientsByCurs(cursIds, params.date),
+    loadPrezentiByCurs(params.date),
+    loadProgramari(cursIds, params.date),
+  ])
 
   const enrolledByCurs = new Map<string, number>()
   for (const [c, set] of clientsByCurs) enrolledByCurs.set(c, set.size)
-
-  // Prezenti azi per course (join through enrollments → cursul)
-  // Paginat: peste 1000 de prezențe într-o zi (toate cursurile) ar strica numărătoarea.
-  const prez = await fetchAllRows(() =>
-    supabase
-      .from('prezente')
-      .select('enrollment:enrollments(cursul), id')
-      .eq('data', params.date)
-      .eq('status', 'Prezent')
-      .order('id', { ascending: true }),
-  )
-  const prezRows = prez as unknown as Array<{
-    enrollment: { cursul: string } | null
-  }>
-  const prezByCurs = new Map<string, number>()
-  for (const p of prezRows) {
-    const c = p.enrollment?.cursul
-    if (!c) continue
-    prezByCurs.set(c, (prezByCurs.get(c) ?? 0) + 1)
-  }
 
   // Leads programați azi la aceste grupe. Prezența lor NU stă în `prezente`, ci în
   // `programari_leads.prezenta` — de aceea cardul îi rata complet și arăta „7/7"
   // când în sală erau 8. Filtrele oglindesc rosterul din grupa.ts, ca să iasă
   // aceleași persoane în ambele locuri.
-  const { data: programari, error: pgErr } = await supabase
-    .from('programari_leads')
-    .select('cursul_programat, prezenta, lead:leads(id, status, id_client)')
-    .in('cursul_programat', cursIds)
-    .eq('data_programarii', params.date)
-  if (pgErr) throw pgErr
-  const programariRows = (programari ?? []) as unknown as Array<{
-    cursul_programat: string | null
-    prezenta: string | null
-    lead: { id: string; status: string | null; id_client: string | null } | null
-  }>
   const leadsByCurs = new Map<string, { total: number; prezenti: number }>()
   const seenLead = new Set<string>()
   for (const p of programariRows) {
@@ -208,4 +131,120 @@ export async function getDashboardCourses(params: {
       leadsPrezenti: leadsByCurs.get(c.id)?.prezenti ?? 0,
     }))
     .sort((a, b) => (a.ora ?? '').localeCompare(b.ora ?? ''))
+}
+
+// Înrolați per curs = înrolare NEreziliată care ACOPERĂ luna afișată. NU
+// folosim `activ` (nesigur la datele v1). Aceeași definiție ca rosterul din
+// grupa.ts → countul de pe card == lungimea rosterului grupei.
+// Paginăm: la datele v1 un client are mai multe rânduri care acoperă luna
+// (data_final=null pe lunile vechi), deci un `.in()` peste toate cursurile zilei
+// poate depăși limita PostgREST de 1000 → trunchiere și count subevaluat.
+async function loadClientsByCurs(
+  cursIds: string[],
+  date: string,
+): Promise<Map<string, Set<string>>> {
+  const monthStart = date.slice(0, 7) + '-01'
+  const monthEnd = endOfMonth(monthStart)
+  const clientsByCurs = new Map<string, Set<string>>()
+  const add = (curs: string, client: string) => {
+    let set = clientsByCurs.get(curs)
+    if (!set) {
+      set = new Set<string>()
+      clientsByCurs.set(curs, set)
+    }
+    set.add(client)
+  }
+
+  // Înrolările și rezervările OPEN nu depind una de alta — în paralel.
+  const [enrRows, sesiuni] = await Promise.all([
+    (async () => {
+      const all: Array<{ cursul: string | null; client: string | null }> = []
+      for (let offset = 0; ; offset += 1000) {
+        const { data: enr, error: enrErr } = await supabase
+          .from('enrollments')
+          .select('cursul, client')
+          .in('cursul', cursIds)
+          .eq('reziliat', false)
+          .lte('data_incepere', monthEnd)
+          .or(`data_final.is.null,data_final.gte.${monthStart}`)
+          .range(offset, offset + 999)
+        if (enrErr) throw enrErr
+        all.push(...(enr ?? []))
+        if (!enr || enr.length < 1000) break
+      }
+      return all
+    })(),
+    (async () => {
+      const { data, error } = await supabase
+        .from('open_sesiuni')
+        .select('id, curs')
+        .in('curs', cursIds)
+        .eq('data', date)
+      if (error) throw error
+      return data ?? []
+    })(),
+  ])
+  for (const e of enrRows) {
+    if (e.cursul && e.client) add(e.cursul, e.client)
+  }
+
+  // Cursuri facultative: clienții cu rezervare OPEN ne-anulată pe ziua afișată au
+  // acces (ex. ședințe bonus din promo: înrolarea lor e pe altă lună). Îi adăugăm
+  // ca să rămână invariantul „count card == lungime roster grupă" (vezi grupa.ts).
+  const cursBySesiune = new Map<string, string>()
+  for (const s of sesiuni) {
+    if (s.id && s.curs) cursBySesiune.set(s.id, s.curs)
+  }
+  if (cursBySesiune.size > 0) {
+    const { data: rez, error: rezErr } = await supabase
+      .from('open_rezervari')
+      .select('sesiune, client')
+      .in('sesiune', Array.from(cursBySesiune.keys()))
+      .neq('status', 'anulat')
+    if (rezErr) throw rezErr
+    for (const r of rez ?? []) {
+      const curs = r.sesiune ? cursBySesiune.get(r.sesiune) : null
+      if (curs && r.client) add(curs, r.client)
+    }
+  }
+  return clientsByCurs
+}
+
+// Prezenti azi per course (join through enrollments → cursul)
+// Paginat: peste 1000 de prezențe într-o zi (toate cursurile) ar strica numărătoarea.
+async function loadPrezentiByCurs(date: string): Promise<Map<string, number>> {
+  const prez = await fetchAllRows(() =>
+    supabase
+      .from('prezente')
+      .select('enrollment:enrollments(cursul), id')
+      .eq('data', date)
+      .eq('status', 'Prezent')
+      .order('id', { ascending: true }),
+  )
+  const prezRows = prez as unknown as Array<{
+    enrollment: { cursul: string } | null
+  }>
+  const prezByCurs = new Map<string, number>()
+  for (const p of prezRows) {
+    const c = p.enrollment?.cursul
+    if (!c) continue
+    prezByCurs.set(c, (prezByCurs.get(c) ?? 0) + 1)
+  }
+  return prezByCurs
+}
+
+type ProgramareRow = {
+  cursul_programat: string | null
+  prezenta: string | null
+  lead: { id: string; status: string | null; id_client: string | null } | null
+}
+
+async function loadProgramari(cursIds: string[], date: string): Promise<ProgramareRow[]> {
+  const { data, error } = await supabase
+    .from('programari_leads')
+    .select('cursul_programat, prezenta, lead:leads(id, status, id_client)')
+    .in('cursul_programat', cursIds)
+    .eq('data_programarii', date)
+  if (error) throw error
+  return (data ?? []) as unknown as ProgramareRow[]
 }

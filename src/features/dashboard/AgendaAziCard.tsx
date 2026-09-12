@@ -1,14 +1,18 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { listLeads } from '@/features/leads/api'
+import { listLeadsAgendaAzi } from '@/features/leads/api'
 import { groupTodayLeads } from '@/features/leads/TodayPanel'
 
 // Rezumatul „de azi" pentru recepție: adună într-un singur loc lead-urile care
 // cer acțiune azi (reutilizează groupTodayLeads din /leads). Restanțele de sunat
 // sunt în cardul separat DatorniciWorklistCard de pe același Dashboard.
 export function AgendaAziCard() {
-  const leadsQ = useQuery({ queryKey: ['leads'], queryFn: listLeads })
+  // Cheie sub prefixul ['leads'] → invalidările din modalele de lead o prind și pe ea.
+  const leadsQ = useQuery({
+    queryKey: ['leads', 'agenda-azi'],
+    queryFn: listLeadsAgendaAzi,
+  })
   const groups = useMemo(
     () => groupTodayLeads(leadsQ.data ?? []),
     [leadsQ.data],

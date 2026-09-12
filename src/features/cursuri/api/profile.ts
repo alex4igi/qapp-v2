@@ -450,6 +450,61 @@ export async function getCursDatorii(params: {
   )
 }
 
+// Aceeași agregare, dar pentru MAI MULTE cursuri într-o singură cerere (KPI
+// „Restanțieri azi" de pe dashboard trimitea 14 cereri paralele, una per grupă).
+// Paginat: peste 1000 de rânduri PostgREST ar trunchia tăcut totalul.
+export async function getCursuriDatorii(params: {
+  cursIds: string[]
+  sezonStart: string
+  sezonEnd: string
+}): Promise<Map<string, CursDatorieRow[]>> {
+  const out = new Map<string, CursDatorieRow[]>()
+  if (params.cursIds.length === 0) return out
+  const rows = await fetchAllRows(() =>
+    supabase
+      .from('plati_inrolari')
+      .select('id_curs, id_cursant, nume_client, prenume_client, rest')
+      .in('id_curs', params.cursIds)
+      .eq('prescris', false)
+      .eq('viitor', false)
+      .gte('data_incepere', params.sezonStart)
+      .lte('data_incepere', params.sezonEnd)
+      .order('id_enrollment', { ascending: true }),
+  )
+
+  const byCurs = new Map<string, Map<string, CursDatorieRow>>()
+  for (const r of rows) {
+    if (!r.id_curs || !r.id_cursant) continue
+    const rest = Number(r.rest ?? 0)
+    if (rest <= 0) continue
+    let byClient = byCurs.get(r.id_curs)
+    if (!byClient) {
+      byClient = new Map<string, CursDatorieRow>()
+      byCurs.set(r.id_curs, byClient)
+    }
+    const existing = byClient.get(r.id_cursant)
+    if (existing) {
+      existing.rest += rest
+    } else {
+      byClient.set(r.id_cursant, {
+        clientId: r.id_cursant,
+        nume: r.nume_client ?? '',
+        prenume: r.prenume_client,
+        rest,
+      })
+    }
+  }
+  for (const [cursId, byClient] of byCurs) {
+    out.set(
+      cursId,
+      Array.from(byClient.values()).sort((a, b) =>
+        `${a.nume} ${a.prenume ?? ''}`.localeCompare(`${b.nume} ${b.prenume ?? ''}`),
+      ),
+    )
+  }
+  return out
+}
+
 // ============================================================
 // Clienți activi fără prezență recentă
 // ============================================================

@@ -3,6 +3,7 @@ import type { Lead, StatusLead } from '@/types/db'
 import { InteresBadge } from './Badges'
 import { FOLLOWUP_DAYS, INACTIVE_DAYS } from './constants'
 import { timpRelativ } from './LeadHistory'
+import type { LeadAgenda } from './api'
 
 type Props = {
   leads: Lead[]
@@ -12,13 +13,13 @@ type Props = {
   defaultExpanded?: boolean
 }
 
-type TodayGroups = {
-  reminders: Lead[]
-  programatiAzi: Lead[]
-  callbacks: Lead[]
-  staleNew: Lead[]
-  noFollowup: Lead[]
-  inactive: Lead[]
+type TodayGroups<T> = {
+  reminders: T[]
+  programatiAzi: T[]
+  callbacks: T[]
+  staleNew: T[]
+  noFollowup: T[]
+  inactive: T[]
 }
 
 const TERMINAL: StatusLead[] = ['convertit', 'pierdut']
@@ -33,19 +34,23 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.toDateString() === b.toDateString()
 }
 
-// Un lead apare o singură dată, în primul grup care îl prinde.
-export function groupTodayLeads(leads: Lead[], now = new Date()): TodayGroups {
+// Un lead apare o singură dată, în primul grup care îl prinde. Generic pe câmpurile
+// folosite la grupare: panoul din /leads dă Lead complet, dashboard-ul doar LeadAgenda.
+export function groupTodayLeads<T extends LeadAgenda>(
+  leads: T[],
+  now = new Date(),
+): TodayGroups<T> {
   const endOfToday = new Date(now)
   endOfToday.setHours(23, 59, 59, 999)
   const cutoff24h = now.getTime() - DAY
   const cutoffFollowup = now.getTime() - FOLLOWUP_DAYS * DAY
   const cutoffInactive = now.getTime() - INACTIVE_DAYS * DAY
-  const reminders: Lead[] = []
-  const programatiAzi: Lead[] = []
-  const callbacks: Lead[] = []
-  const staleNew: Lead[] = []
-  const noFollowup: Lead[] = []
-  const inactive: Lead[] = []
+  const reminders: T[] = []
+  const programatiAzi: T[] = []
+  const callbacks: T[] = []
+  const staleNew: T[] = []
+  const noFollowup: T[] = []
+  const inactive: T[] = []
   for (const l of leads) {
     if (TERMINAL.includes(l.status)) continue
     // Lead marcat „deja client" nu intră în call-list-ul de lucru.
@@ -96,7 +101,7 @@ export function groupTodayLeads(leads: Lead[], now = new Date()): TodayGroups {
     (a.data_callback_dorit ?? '').localeCompare(b.data_callback_dorit ?? ''),
   )
   staleNew.sort((a, b) => a.created.localeCompare(b.created))
-  const byLastActivity = (a: Lead, b: Lead) =>
+  const byLastActivity = (a: T, b: T) =>
     (a.ultima_contactare_la ?? a.created).localeCompare(
       b.ultima_contactare_la ?? b.created,
     )

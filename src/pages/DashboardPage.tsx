@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Select, Spinner } from '@/components/ui'
-import { saliOptions, cursuriOptionsForCurrentTeacher, sezonActiv } from '@/lib/lookups'
+import { saliWithLocatie, cursuriOptionsForCurrentTeacher, sezonActiv } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
@@ -37,7 +37,9 @@ export function DashboardPage() {
   // complet PLUS o secțiune cu grupele lui de azi — aditiv, nu în locul lui.
   const teacherLens = hasTeacherLens(role, teacherId) && !teacherMode
   const { date } = useWorkingDate()
-  const { locatieId } = useWorkingLocatie()
+  // `ready` = locația de lucru e decisă; altfel fiecare query cheiat pe locație ar
+  // rula o dată cu „toate" și încă o dată după ce se încarcă lista de locații.
+  const { locatieId, ready: locatieReady } = useWorkingLocatie()
   const [params, setParams] = useSearchParams()
 
   const salaId = params.get('sala') ?? ''
@@ -62,11 +64,26 @@ export function DashboardPage() {
     ? (teacherCursuriQ.data ?? []).map((o) => o.value)
     : null
 
+  // Aceeași cheie ca InchirieriAziCard (toate sălile, cu locația) — un singur query;
+  // filtrul pe locația de lucru se face aici.
   const saliQ = useQuery({
-    queryKey: ['lookup', 'sali', locatieId ?? 'all'],
-    queryFn: () => saliOptions(locatieId),
+    queryKey: ['lookup', 'sali-nume'],
+    queryFn: saliWithLocatie,
     enabled: !teacherMode,
   })
+  const saliOptions = useMemo(
+    () =>
+      (saliQ.data ?? [])
+        .filter((s) => !locatieId || s.locatie === locatieId)
+        .map((s) => ({ value: s.id, label: s.nume })),
+    [saliQ.data, locatieId],
+  )
+
+  const sezonQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ-detalii'],
+    queryFn: sezonActiv,
+  })
+  const sezon = sezonQ.data
 
   // Evenimentele zilei — staff-facing (ca KPI-urile), nu pentru teacher.
   const eventsQ = useQuery({
@@ -82,6 +99,7 @@ export function DashboardPage() {
       date,
       salaId,
       locatieId ?? 'all',
+      sezon?.id ?? 'fara-sezon',
       teacherCursIds,
     ],
     queryFn: () =>
@@ -89,16 +107,14 @@ export function DashboardPage() {
         date,
         salaId: salaId || null,
         locatieId: locatieId ?? null,
+        sezon: sezon ?? null,
         cursIds: teacherCursIds,
       }),
-    enabled: !teacherMode || teacherCursuriQ.isSuccess,
+    enabled:
+      locatieReady &&
+      sezonQ.isSuccess &&
+      (!teacherMode || teacherCursuriQ.isSuccess),
   })
-
-  const sezonQ = useQuery({
-    queryKey: ['lookup', 'sezon-activ-detalii'],
-    queryFn: sezonActiv,
-  })
-  const sezon = sezonQ.data
   const ziRO = (iso: string) =>
     new Date(iso).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long' })
   const numeSezon = sezon?.numele_sezonului ?? 'Sezonul'
@@ -148,11 +164,11 @@ export function DashboardPage() {
             : undefined
         }
         actions={
-          !teacherMode && (saliQ.data ?? []).length > 1 ? (
+          !teacherMode && saliOptions.length > 1 ? (
             <div className="w-40">
               <Select
                 placeholder="Toate sălile"
-                options={saliQ.data ?? []}
+                options={saliOptions}
                 value={salaId}
                 onChange={(e) => updateSala(e.target.value)}
               />

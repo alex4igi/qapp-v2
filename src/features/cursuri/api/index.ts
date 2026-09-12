@@ -33,6 +33,7 @@ export {
   getCursClientiInactivi,
   getCursClientiFaraDocumente,
   getCursDatorii,
+  getCursuriDatorii,
   getCursFaraPrezenteRecente,
   getCursLuni,
   getCursIstoric,

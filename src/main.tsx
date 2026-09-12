@@ -16,6 +16,17 @@ import App from './App.tsx'
 // cheie marchează toate query-urile stale; React Query re-fetch-uiește doar pe
 // cele montate = exact pagina curentă, fără reload de browser. Acoperă orice
 // modal, prezent sau viitor, fără să trebuiască să enumerăm chei per modal.
+// PostgREST 57014 = „canceling statement due to statement timeout" (8 s pe rolul
+// authenticated). Reîncercarea nu ajută — aceeași interogare grea ține DB-ul ocupat
+// pentru toți ceilalți; cele 3 reluări implicite transformau un timeout în ~30 s.
+function isStatementTimeout(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === '57014'
+  )
+}
+
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onSuccess: () => {
@@ -29,9 +40,17 @@ const queryClient = new QueryClient({
       // să se sincronizeze între taburi diferite (ex: leads într-un tab,
       // dashboard grupă în altul) fără refresh manual.
       refetchOnWindowFocus: true,
+      // O singură reluare pentru erori trecătoare; niciuna pentru timeout-uri.
+      retry: (failureCount, error) =>
+        !isStatementTimeout(error) && failureCount < 1,
     },
   },
 })
+
+// Lookup-urile (locații, săli, sezoane, cursuri pentru selectoare) se schimbă rar și
+// sunt cerute de mai multe carduri/pagini — le ținem proaspete 5 minute. Orice
+// salvare le invalidează oricum prin invalidateQueries() de mai sus.
+queryClient.setQueryDefaults(['lookup'], { staleTime: 5 * 60_000 })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -24,6 +24,13 @@ type Ctx = {
   options: SelectOption[]
   locatieNume: string | null
   loading: boolean
+  /**
+   * True când `locatieId` e decis: locație blocată pe cont, preferință salvată, sau
+   * lista de locații deja încărcată. Până atunci `locatieId` e null doar provizoriu —
+   * paginile care cheiază query-uri pe locație așteaptă `ready` ca să nu le ruleze
+   * de două ori (o dată cu „toate", apoi cu locația implicită).
+   */
+  ready: boolean
   /** True dacă locația vine din app_metadata și user-ul nu o poate schimba. */
   locked: boolean
   /** True dacă userul are dreptul să basculeze între locații + „Toate". */
@@ -85,12 +92,14 @@ export function WorkingLocatieProvider({ children }: { children: ReactNode }) {
     }
     const found =
       effective ? options.find((o) => o.value === effective)?.label ?? null : null
+    const ready = locked || storedPref !== null || !locatiiQ.isPending
     return {
       locatieId: effective,
       setLocatieId,
       options,
       locatieNume: found,
       loading: locatiiQ.isLoading,
+      ready,
       locked,
       canChange,
     }
@@ -101,6 +110,7 @@ export function WorkingLocatieProvider({ children }: { children: ReactNode }) {
     canChange,
     locatiiQ.data,
     locatiiQ.isLoading,
+    locatiiQ.isPending,
     setLocatieId,
   ])
 
