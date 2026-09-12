@@ -34,6 +34,9 @@ type Body = {
   datorii?: string[]
   // abonament: include înrolările în plan (false => părintele plătește DOAR datorii one-off).
   includeInrolari?: boolean
+  // abonament: plata integrală a sezonului cu −5% (contract, Anexa 1). Suma și lista de
+  // rate vin din plan_plata_integrala_sezon — clientul nu alege lunile.
+  platesteIntegral?: boolean
   // rezervare: cod de voucher opțional, aplicat pe prețul ședinței (validat server-side).
   voucherCod?: string
 }
@@ -72,7 +75,7 @@ Deno.serve(async (req) => {
       return json({ error: 'invalid token' }, 401)
     }
 
-    const { clientId, kind = 'abonament', sesiuneId, evenimentId, qty, panaLa, datorii, includeInrolari, voucherCod } = (await req.json()) as Body
+    const { clientId, kind = 'abonament', sesiuneId, evenimentId, qty, panaLa, datorii, includeInrolari, voucherCod, platesteIntegral } = (await req.json()) as Body
     if (!clientId) return json({ error: 'clientId obligatoriu' }, 400)
 
     // Client scopat pe JWT-ul părintelui => RPC-urile validează apartenența la familie
@@ -84,6 +87,7 @@ Deno.serve(async (req) => {
     let amount = 0
     let plan: unknown[] = []
     let rezervareId: string | null = null
+    let plataIntegrala = false
     let voucherId: string | null = null
     let nrBilete: number | null = null
 
@@ -140,6 +144,19 @@ Deno.serve(async (req) => {
         amount = redus
         voucherId = verdict.voucher_id as string
       }
+    } else if (platesteIntegral) {
+      // Plata integrală a sezonului (−5%): eligibilitatea ȘI prețurile vin din DB.
+      const { data: planRes, error: planErr } = await userClient.rpc('plan_plata_integrala_sezon', {
+        p_client: clientId,
+      })
+      if (planErr) return json({ error: planErr.message }, 403)
+      if (!planRes?.eligibil) {
+        return json({ error: planRes?.motiv ?? 'Plata integrală a sezonului nu e disponibilă.' }, 400)
+      }
+      amount = Number(planRes?.amount ?? 0)
+      plan = planRes?.plan ?? []
+      plataIntegrala = true
+      if (amount <= 0) return json({ error: 'Nimic de plătit pentru acest membru.' }, 400)
     } else {
       // Abonament: recalculează restanța FIFO server-side (sursa de adevăr a sumei).
       // Include opțional datoriile one-off (Bilet/Merch/Taxă) selectate (plată integrală).
@@ -182,6 +199,7 @@ Deno.serve(async (req) => {
       fifo_plan: plan,
       status: 'pending',
       order_type: kind,
+      plata_integrala: plataIntegrala,
       rezervare_id: rezervareId,
       voucher_id: voucherId,
       eveniment_id: kind === 'bilet' ? evenimentId : null,
@@ -200,7 +218,9 @@ Deno.serve(async (req) => {
       ? `Rezervare ședință Quasar Dance (${orderRef})`
       : kind === 'bilet'
         ? `Bilete spectacol Quasar Dance (${orderRef})`
-        : `Plată abonament Quasar Dance (${orderRef})`
+        : plataIntegrala
+          ? `Plată integrală sezon Quasar Dance (${orderRef})`
+          : `Plată abonament Quasar Dance (${orderRef})`
     const startReq = {
       config: {
         language: 'ro',
