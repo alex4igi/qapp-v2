@@ -106,6 +106,24 @@ rată DIN 2026-2027 — datoriile vechi nu-ți anulează locul nou. Fără gardu
 prima rulare ar fi suspendat 241 de clienți (mediana 197 zile de întârziere),
 adică arhiva de datornici, nu cursanții de azi.
 
+#### 3c. Promo se pierde și la mutarea într-o trupă
+
+Trupele nu au preț de reînscriere. Audițiile sunt **după** campania promo, deci
+copilul e reînscris implicit în grupa lui (ca să-și țină locul) și abia apoi,
+dacă intră, e mutat în trupă. `muta_inrolare_curs` tratează asta ca regulă de
+business, nu ca eroare:
+
+- `este_reinscriere = false` + `promo_anulat_la` pe **toată seria mutată**;
+- lunile neplătite din luna curentă încolo — **inclusiv luna selectată** — trec
+  pe rata trupei (`pret_anual / 10`);
+- lunile deja plătite și cele din trecut **rămân la prețul lor** (nu rescriem
+  plăți și nu taxăm cu tariful trupei o lună petrecută în grupă). Diferența nu
+  se cere automat — fereastra de mutare o spune explicit;
+- pierderea promo-ului nu depinde de bifa „Aplică tariful noului curs".
+
+La **grupe** fără `pret_lunar_promo` excepția rămâne: acolo lipsa prețului e
+fișă incompletă, nu regulă.
+
 **Promo se termină odată cu locul:** triggerul `trg_enrollments_reziliere_promo`
 pune `promo_anulat_la` și `este_reinscriere = false` la orice reziliere a unei
 înrolări aflate pe promo. La o eventuală reîntoarcere pe același curs,
@@ -138,6 +156,7 @@ mai are de decis.
 | Alerta pentru recepție | `getClientEligibilityContext` → `EligibilityAlerts.tsx` |
 | Regula 50 de zile | `suspenda_datornici_50_zile()`, chemat din edge function `cron-morning` (care trimite și emailul) |
 | Promo se termină cu locul | trigger `trg_enrollments_reziliere_promo` + gardul din `createInrolari` |
+| Promo se pierde la mutarea în trupă | `muta_inrolare_curs` → `MoveEnrollmentModal.tsx` |
 | SMS reminder | `get_sms_recipients` (`are_reducere`) → `templates.ts` |
 
 **Capcană:** penalizarea trăiește în DOUĂ locuri (cron + motor) și trebuie ținute
@@ -149,4 +168,5 @@ Migrațiile relevante: `20260518110000` (politica inițială), `20260701120000`
 `20260831170000` + `20260831170100` (promo fix + penalizare), `20260831170200`
 (SMS `are_reducere`), `20260831190000` (regula 50 de zile + promo se termină cu locul),
 `20260911150000` („cel mai scump" = preț de listă; frate pe același curs vizibil în preview),
-`20260911160000` (rata plătită întreg ocupă locul integral → frații primesc reducerea).
+`20260911160000` (rata plătită întreg ocupă locul integral → frații primesc reducerea),
+`20260912100000` (promo se pierde la mutarea în trupă + `cursul` în triggerul de recalcul).

@@ -240,6 +240,31 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
                   actual (au deja încasări).
                 </p>
               )}
+              {preview.promo_pierdut && (
+                <p className="mt-1 font-medium text-amber-700">
+                  Trupele nu au preț de reînscriere: promo-ul se pierde.{' '}
+                  {preview.promo_luni > 0 ? (
+                    <>
+                      {preview.promo_luni}{' '}
+                      {preview.promo_luni === 1 ? 'lună trece' : 'luni trec'} pe
+                      tariful trupei ({preview.tarif} lei).
+                    </>
+                  ) : (
+                    <>Nicio lună neplătită de repreţuit.</>
+                  )}
+                  {preview.promo_platite > 0 && (
+                    <>
+                      {' '}
+                      {preview.promo_platite}{' '}
+                      {preview.promo_platite === 1
+                        ? 'lună rămâne'
+                        : 'luni rămân'}{' '}
+                      la prețul promo (plătite sau din trecut) — diferența nu se
+                      cere automat.
+                    </>
+                  )}
+                </p>
+              )}
             </div>
           )}
 

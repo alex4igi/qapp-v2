@@ -818,6 +818,11 @@ export type MoveEnrollmentResult = {
   platite: number
   tarif: number | null
   tarif_promo: number | null
+  // Trupele nu au preț de reînscriere: la mutarea într-o trupă promo-ul se
+  // pierde, iar lunile neplătite trec pe tariful trupei.
+  promo_pierdut: boolean
+  promo_luni: number
+  promo_platite: number
 }
 
 // Preview cu aceleași garduri ca mutarea reală, fără scriere — modalul îl
