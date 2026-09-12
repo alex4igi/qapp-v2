@@ -72,6 +72,7 @@ export type GrupaLead = Enums<'grupa_lead'>
 export type InteresLead = Enums<'interes_lead'>
 export type AppFeedbackTip = Enums<'app_feedback_tip'>
 export type AppFeedbackStatus = Enums<'app_feedback_status'>
+export type AppFeedbackSursa = Enums<'app_feedback_sursa'>
 export type StatusRezervare = Enums<'status_rezervare'>
 export type StatusSpectacol = Enums<'status_spectacol'>
 

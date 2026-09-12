@@ -3,6 +3,7 @@ import { applyWordSearch } from '@/lib/search'
 import type {
   AppFeedback,
   AppFeedbackStatus,
+  AppFeedbackSursa,
   InsertDto,
   UpdateDto,
 } from '@/types/db'
@@ -12,6 +13,7 @@ export const PAGE_SIZE = 25
 export type AppFeedbackListParams = {
   search: string
   status: AppFeedbackStatus | ''
+  sursa: AppFeedbackSursa | ''
   page: number
 }
 export type AppFeedbackListResult = { rows: AppFeedback[]; total: number }
@@ -20,6 +22,7 @@ export type AppFeedbackListResult = { rows: AppFeedback[]; total: number }
 export async function listAppFeedback({
   search,
   status,
+  sursa,
   page,
 }: AppFeedbackListParams): Promise<AppFeedbackListResult> {
   const from = page * PAGE_SIZE
@@ -32,6 +35,7 @@ export async function listAppFeedback({
     .range(from, to)
 
   if (status) query = query.eq('status', status)
+  if (sursa) query = query.eq('sursa', sursa)
 
   query = applyWordSearch(query, search, ['titlu', 'detalii'])
 

@@ -1,5 +1,5 @@
 import type { SelectOption } from '@/components/ui'
-import type { AppFeedbackStatus, AppFeedbackTip } from '@/types/db'
+import type { AppFeedbackStatus, AppFeedbackSursa, AppFeedbackTip } from '@/types/db'
 
 // Opțiuni pentru Select (value = enum DB fără diacritice; label = afișaj cu emoji/diacritice).
 export const tipOptions: SelectOption[] = [
@@ -20,6 +20,21 @@ export const TIP_LABEL: Record<AppFeedbackTip, string> = {
   Bug: '🐞 Bug',
   Idee: '💡 Idee',
   Intrebare: '❓ Întrebare',
+}
+
+export const sursaOptions: SelectOption[] = [
+  { label: '🏢 Din aplicație (staff)', value: 'staff' },
+  { label: '👤 Din portal (membru)', value: 'portal' },
+]
+
+export const SURSA_LABEL: Record<AppFeedbackSursa, string> = {
+  staff: '🏢 Staff',
+  portal: '👤 Membru',
+}
+
+export const SURSA_BADGE: Record<AppFeedbackSursa, string> = {
+  staff: 'bg-quasar-gray-light text-quasar-gray',
+  portal: 'bg-amber-100 text-amber-800',
 }
 
 export const STATUS_LABEL: Record<AppFeedbackStatus, string> = {

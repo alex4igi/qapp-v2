@@ -14,8 +14,16 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { formatDate } from '@/lib/format'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
-import type { AppFeedback, AppFeedbackStatus } from '@/types/db'
-import { STATUS_BADGE, STATUS_LABEL, TIP_LABEL, statusOptions } from './constants'
+import type { AppFeedback, AppFeedbackStatus, AppFeedbackSursa } from '@/types/db'
+import {
+  STATUS_BADGE,
+  STATUS_LABEL,
+  SURSA_BADGE,
+  SURSA_LABEL,
+  TIP_LABEL,
+  statusOptions,
+  sursaOptions,
+} from './constants'
 import { AppFeedbackModal } from './AppFeedbackModal'
 import { AppFeedbackTriageModal } from './AppFeedbackTriageModal'
 import { getAppFeedback, listAppFeedback, PAGE_SIZE } from './api'
@@ -35,9 +43,16 @@ const columns: Column<AppFeedback>[] = [
   {
     header: 'Autor',
     cell: (f) => (
-      <span className="text-quasar-gray">{f.autor_email ?? '—'}</span>
+      <span className="flex items-center gap-2">
+        <span
+          className={`rounded px-2 py-0.5 text-xs font-medium ${SURSA_BADGE[f.sursa]}`}
+        >
+          {SURSA_LABEL[f.sursa]}
+        </span>
+        <span className="text-quasar-gray">{f.autor_email ?? '—'}</span>
+      </span>
     ),
-    sortValue: (f) => f.autor_email?.toLowerCase(),
+    sortValue: (f) => `${f.sursa} ${f.autor_email?.toLowerCase() ?? ''}`,
   },
   {
     header: 'Pagina',
@@ -78,6 +93,7 @@ export function AppFeedbackListPage() {
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<AppFeedbackStatus | ''>('')
+  const [sursa, setSursa] = useState<AppFeedbackSursa | ''>('')
   const [page, setPage] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
   const [selected, setSelected] = useState<AppFeedback | null>(null)
@@ -115,8 +131,8 @@ export function AppFeedbackListPage() {
   }, [searchInput])
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['app-feedback', { search, status, page }],
-    queryFn: () => listAppFeedback({ search, status, page }),
+    queryKey: ['app-feedback', { search, status, sursa, page }],
+    queryFn: () => listAppFeedback({ search, status, sursa, page }),
     placeholderData: keepPreviousData,
   })
 
@@ -156,6 +172,17 @@ export function AppFeedbackListPage() {
             value={status}
             onChange={(e) => {
               setStatus(e.target.value as AppFeedbackStatus | '')
+              setPage(0)
+            }}
+          />
+        </div>
+        <div className="w-52">
+          <Select
+            placeholder="Toate sursele"
+            options={sursaOptions}
+            value={sursa}
+            onChange={(e) => {
+              setSursa(e.target.value as AppFeedbackSursa | '')
               setPage(0)
             }}
           />

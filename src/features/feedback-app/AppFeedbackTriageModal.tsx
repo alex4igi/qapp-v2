@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { humanizeError } from '@/lib/errorMessage'
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -6,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { formatDateTime } from '@/lib/format'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import type { AppFeedback, AppFeedbackStatus } from '@/types/db'
-import { STATUS_BADGE, STATUS_LABEL, TIP_LABEL, statusOptions } from './constants'
+import { STATUS_BADGE, STATUS_LABEL, SURSA_BADGE, SURSA_LABEL, TIP_LABEL, statusOptions } from './constants'
 import { updateAppFeedback, deleteAppFeedback } from './api'
 
 type Props = {
@@ -107,12 +108,33 @@ export function AppFeedbackTriageModal({ feedback, onClose }: Props) {
           >
             {STATUS_LABEL[feedback.status]}
           </span>
+          <span
+            className={`rounded px-2 py-0.5 font-medium ${SURSA_BADGE[feedback.sursa]}`}
+          >
+            {SURSA_LABEL[feedback.sursa]}
+          </span>
           <span className="text-quasar-gray">{formatDateTime(feedback.created)}</span>
         </div>
 
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-quasar-gray">Autor</dt>
-          <dd className="text-quasar-black">{feedback.autor_email ?? '—'}</dd>
+          <dd className="text-quasar-black">
+            {feedback.autor_email ? (
+              <a className="underline" href={`mailto:${feedback.autor_email}`}>
+                {feedback.autor_email}
+              </a>
+            ) : (
+              '—'
+            )}
+            {feedback.autor_client_id && (
+              <>
+                {' · '}
+                <Link className="underline" to={`/clienti/${feedback.autor_client_id}`}>
+                  vezi fișa membrului
+                </Link>
+              </>
+            )}
+          </dd>
           <dt className="text-quasar-gray">Pagina</dt>
           <dd className="text-quasar-black">{feedback.pagina ?? '—'}</dd>
         </dl>

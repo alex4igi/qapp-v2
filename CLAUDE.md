@@ -60,4 +60,11 @@ penalizarea pe scadență) stau în **[docs/reguli-preturi-reduceri.md](./docs/r
 sursa de adevăr, cu maparea regulă → loc în cod. Citește-o înainte să atingi
 `recalculate_pool_discount`, `preview_pool_discount` sau `cancel_discount_familie_restant`.
 
+**Grila de salarizare a instructorilor** (propunere sept. 2026, neimplementată) stă în
+**[docs/grila-salarizare-instructori.md](./docs/grila-salarizare-instructori.md)** — bază pe rang ×
+nivel, bonus KPI în trei trepte, praguri de 8 și 14 cursanți, diurnă și plată pe eveniment.
+⚠️ Conține și definiția corectă a lui „cursant plătitor": **`reziliat` NU înseamnă că omul a plecat**
+(e bifat și pe lunile încheiate) — se filtrează pe `data_reziliere`. Citește-o înainte să atingi
+`calculeaza_salariu_teacher` sau orice numărătoare de cursanți pe lună.
+
 Pentru detalii despre Quasar Dance (companie, instructori, trupe, abonamente, locații, surse leads, pipeline conversie), vezi memoria persistentă (`MEMORY.md` și fișierele `project_*.md` din `~/.claude/projects/.../memory/`). Memoriile sunt sursa principală de adevăr pentru context business — ARCHITECTURE.md descrie doar codul.
