@@ -15,15 +15,20 @@ export function ProtectedRoute({
   allowedRoles,
   requiresTeacherProfile,
 }: Props) {
-  const { session, role, loading, teacherId, teacherLoading } = useAuth()
+  const { session, role, loading, bootSlow, teacherId, teacherLoading } = useAuth()
   const landing = useLandingRoute()
 
   // Profilul de instructor se rezolvă asincron după login — fără gardul ăsta un
   // manager care predă ar fi aruncat afară de pe /grupele-mele la refresh.
   if (loading || (requiresTeacherProfile && teacherLoading)) {
     return (
-      <div className="flex h-screen items-center justify-center text-quasar-gray">
-        Se încarcă…
+      <div className="flex h-screen flex-col items-center justify-center gap-2 text-quasar-gray">
+        <span>Se încarcă…</span>
+        {bootSlow && (
+          <span className="text-sm">
+            Reînnoim sesiunea — durează mai mult ca de obicei.
+          </span>
+        )}
       </div>
     )
   }
