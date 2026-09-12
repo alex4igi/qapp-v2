@@ -1,4 +1,5 @@
-import { Spinner, TextInput } from '@/components/ui'
+import { Select, Spinner, TextInput } from '@/components/ui'
+import { capacitateGrupaOptionsCu } from '@/lib/capacitateGrupa'
 import type { CursRow, Tip } from '../helpers'
 
 type Props = {
@@ -77,8 +78,9 @@ export function Step2Cursuri({ loading, tip, cursuri, setCursuri }: Props) {
                     />
                   </td>
                   <td className="px-2 py-1">
-                    <TextInput
-                      type="number"
+                    <Select
+                      placeholder="—"
+                      options={capacitateGrupaOptionsCu(c.capacitate_maxima)}
                       value={c.capacitate_maxima}
                       onChange={(e) => {
                         const next = [...cursuri]

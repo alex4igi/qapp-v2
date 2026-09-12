@@ -65,12 +65,18 @@ export async function saliOptions(
   return (data ?? []).map((s) => ({ value: s.id, label: s.nume }))
 }
 
-export type SalaRow = { id: string; nume: string; locatie: string | null }
+export type SalaRow = {
+  id: string
+  nume: string
+  locatie: string | null
+  // Capacitatea standard a sălii = treapta implicită pentru grupele ținute acolo.
+  capacitate: number | null
+}
 
 export async function saliWithLocatie(): Promise<SalaRow[]> {
   const { data, error } = await supabase
     .from('sali')
-    .select('id, nume, locatie')
+    .select('id, nume, locatie, capacitate')
     .order('nume', { ascending: true })
   if (error) throw error
   return data ?? []

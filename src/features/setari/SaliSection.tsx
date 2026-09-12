@@ -11,6 +11,7 @@ import {
   Spinner,
   type Column,
 } from '@/components/ui'
+import { capacitateGrupaOptionsCu } from '@/lib/capacitateGrupa'
 import type { Sala } from '@/types/db'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { listSali, listLocatii, createSala, updateSala, deleteSala } from './api'
@@ -199,11 +200,13 @@ export function SaliSection() {
                 onChange={(e) => set('locatie')(e.target.value)}
               />
             </Field>
+            {/* Capacitatea sălii e treapta implicită a grupelor ținute acolo,
+                deci se alege din aceleași trepte ca mărimea grupei. */}
             <Field label="Capacitate" htmlFor="sala-cap">
-              <TextInput
+              <Select
                 id="sala-cap"
-                type="number"
-                min={0}
+                placeholder="—"
+                options={capacitateGrupaOptionsCu(form.capacitate)}
                 value={form.capacitate}
                 onChange={(e) => set('capacitate')(e.target.value)}
               />

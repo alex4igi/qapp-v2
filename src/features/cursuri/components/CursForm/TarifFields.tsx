@@ -1,15 +1,19 @@
-import { Checkbox, Field, TextInput } from '@/components/ui'
+import { Checkbox, Field, Select, TextInput } from '@/components/ui'
+import { capacitateGrupaOptionsCu } from '@/lib/capacitateGrupa'
 import type { FormState, SetField } from './helpers'
 
 type Props = {
   form: FormState
   set: SetField
+  /** Capacitatea standard a sălii alese — treapta implicită pentru grupă. */
+  capacitateSala: number | null
 }
 
 // Tarife (capacitate maximă, preț lunar/PROMO/anual/ședință) și flag-uri
 // (one-time, suspendat). Facultativul se plătește pe lună sau pe ședință, deci
 // PROMO, prețul anual și prețul de reziliere sunt ascunse acolo.
-export function TarifFields({ form, set }: Props) {
+// Capacitatea e o listă de trepte, nu un număr liber — vezi @/lib/capacitateGrupa.
+export function TarifFields({ form, set, capacitateSala }: Props) {
   return (
     <>
       <div
@@ -18,13 +22,16 @@ export function TarifFields({ form, set }: Props) {
         }
       >
         <Field label="Capacitate max." htmlFor="capacitate">
-          <TextInput
+          <Select
             id="capacitate"
-            type="number"
-            min={0}
+            placeholder="—"
+            options={capacitateGrupaOptionsCu(form.capacitate_maxima)}
             value={form.capacitate_maxima}
             onChange={(e) => set('capacitate_maxima', e.target.value)}
           />
+          {capacitateSala != null && (
+            <p className="mt-1 text-xs text-muted">Standard sală: {capacitateSala}</p>
+          )}
         </Field>
         <Field label="Preț lunar" htmlFor="pret_lunar">
           <TextInput

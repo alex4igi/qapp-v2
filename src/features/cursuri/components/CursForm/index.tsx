@@ -114,6 +114,23 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
     }
   }, [sali.data, form.sala, form.locatie])
 
+  // Capacitatea grupei = treapta sălii. O punem doar când câmpul e GOL: pe un
+  // curs care are deja o capacitate, schimbarea sălii nu are voie să rescrie
+  // tăcut numitorul bonusului de ocupare din salariu.
+  const capacitateSala = useMemo(() => {
+    const found = (sali.data ?? []).find((s) => s.id === form.sala)
+    return found?.capacitate && found.capacitate > 0 ? found.capacitate : null
+  }, [sali.data, form.sala])
+
+  useEffect(() => {
+    if (capacitateSala == null || form.capacitate_maxima.trim()) return
+    setForm((prev) =>
+      prev.capacitate_maxima.trim()
+        ? prev
+        : { ...prev, capacitate_maxima: String(capacitateSala) },
+    )
+  }, [capacitateSala, form.capacitate_maxima])
+
   const saliOpts = useMemo(() => {
     const rows = sali.data ?? []
     const filtered = form.locatie
@@ -295,7 +312,7 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
           />
         </div>
         <div data-sectiune="tarif">
-          <TarifFields form={form} set={set} />
+          <TarifFields form={form} set={set} capacitateSala={capacitateSala} />
         </div>
         {/* Avertisment NON-BLOCANT: lipsa esențialelor nu oprește salvarea.
             Nu enumeră câmpurile — rail-ul de alături le listează deja. */}
