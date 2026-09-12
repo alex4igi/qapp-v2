@@ -72,6 +72,7 @@ export function RetentieSection({ rows }: { rows: StartSezonRetentieRow[] }) {
         rows={rows}
         rowKey={(r) => r.curs_id}
         defaultSort={{ idx: 2, dir: 'desc' }}
+        maxHeight={460}
         emptyMessage="Nimic de arătat pentru sezonul selectat."
       />
     </Section>

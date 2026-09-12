@@ -34,6 +34,10 @@ type Props<T> = {
   defaultSort?: { idx: number; dir?: SortDir }
   // Cardul de pe telefon, când stivuirea implicită a coloanelor nu e destul.
   mobileCard?: (row: T) => ReactNode
+  // Înălțime maximă a tabelului (ex: 460). Peste ea, tabelul își face propriul
+  // scroll și antetul rămâne lipit sus. Pentru pagini de raport cu mai multe liste
+  // lungi una sub alta, unde altfel a treia secțiune ajunge la doi metri de derulare.
+  maxHeight?: number | string
 }
 
 function compareValues(
@@ -112,6 +116,7 @@ export function DataTable<T>({
   rowClassName,
   defaultSort,
   mobileCard,
+  maxHeight,
 }: Props<T>) {
   const isMobile = useIsMobile()
   const [sortIdx, setSortIdx] = useState<number | null>(defaultSort?.idx ?? null)
@@ -223,7 +228,13 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-sm">
+    <div
+      className={cn(
+        'overflow-x-auto rounded-2xl border border-line bg-card shadow-sm',
+        maxHeight != null && 'overflow-y-auto',
+      )}
+      style={maxHeight != null ? { maxHeight } : undefined}
+    >
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-line bg-surface text-left">
@@ -242,6 +253,9 @@ export function DataTable<T>({
                   }
                   className={cn(
                     'px-3 py-2.5 font-semibold text-ink',
+                    // Lipit sus doar când tabelul are scroll propriu; `bg-surface` se
+                    // repetă pe celulă pentru că fundalul de pe <tr> nu acoperă la sticky.
+                    maxHeight != null && 'sticky top-0 z-10 bg-surface',
                     col.className,
                   )}
                 >

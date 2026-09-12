@@ -73,6 +73,7 @@ export function RosterSection({ rows }: { rows: StartSezonRosterRow[] }) {
         rowKey={(r) => r.curs_id}
         onRowClick={(r) => navigate(`/cursuri/${r.curs_id}`)}
         defaultSort={{ idx: 3, dir: 'desc' }}
+        maxHeight={460}
         emptyMessage="Niciun curs creat pentru sezonul selectat."
       />
     </Section>

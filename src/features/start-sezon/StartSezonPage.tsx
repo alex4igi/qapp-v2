@@ -5,6 +5,7 @@ import { KpiCard } from '@/features/statistici/KpiCard'
 import {
   getStartSezonNerevenit,
   getStartSezonNoi,
+  getStartSezonReinscrieri,
   getStartSezonRetentie,
   getStartSezonRoster,
   getStartSezonSumar,
@@ -12,6 +13,7 @@ import {
 } from './api'
 import { NerevenitSection } from './components/NerevenitSection'
 import { NoiSection } from './components/NoiSection'
+import { ReinscrieriSection } from './components/ReinscrieriSection'
 import { RetentieSection } from './components/RetentieSection'
 import { RosterSection } from './components/RosterSection'
 
@@ -80,6 +82,11 @@ export function StartSezonPage() {
     queryFn: () => getStartSezonRoster(sezonId),
     ...on,
   })
+  const reinscrieriQ = useQuery({
+    queryKey: ['start-sezon', 'reinscrieri', sezonId],
+    queryFn: () => getStartSezonReinscrieri(sezonId),
+    ...on,
+  })
 
   const s = sumarQ.data ?? null
   const nerevenit = s ? s.pool_total - s.pool_revenit : 0
@@ -121,7 +128,7 @@ export function StartSezonPage() {
           Nu am putut calcula sumarul: {(sumarQ.error as Error).message}
         </p>
       ) : s ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <KpiCard
             label="Înrolări în sezon"
             value={s.inrolari}
@@ -132,6 +139,29 @@ export function StartSezonPage() {
             value={`${s.grupe_active} / ${s.grupe_total}`}
             hint="din cele create pentru sezon"
           />
+          {/* Campania de reînscrieri există arhivată doar pentru sezoanele în care a
+              fost ținută; pe restul rămâne cifra din steagul de promo. */}
+          {s.semnate_total > 0 ? (
+            <>
+              <KpiCard
+                label="Reînscrieri intrate"
+                value={`${s.semnate_total - s.semnate_lipsa} / ${s.semnate_total}`}
+                hint="din câți au semnat în campania din primăvară"
+              />
+              <KpiCard
+                label="Semnate, dar lipsă"
+                value={s.semnate_lipsa}
+                tone={s.semnate_lipsa > 0 ? 'warning' : 'positive'}
+                hint="au semnat reînscrierea, n-au înrolare în sezonul nou"
+              />
+            </>
+          ) : (
+            <KpiCard
+              label="Reînscrieri"
+              value={s.reinscrieri}
+              hint="înrolări cu preț promo de reînscriere în aplicație"
+            />
+          )}
           <KpiCard
             label="Nu s-au întors"
             value={nerevenit}
@@ -144,15 +174,16 @@ export function StartSezonPage() {
             tone="positive"
             hint="fără nicio urmă anterioară la Quasar"
           />
-          <KpiCard
-            label="Reînscrieri"
-            value={s.reinscrieri}
-            hint="înrolări cu preț promo de reînscriere în aplicație"
-          />
         </div>
       ) : (
         <p className="text-sm text-muted">Alege un sezon.</p>
       )}
+
+      {reinscrieriQ.isLoading ? (
+        <Spinner />
+      ) : (reinscrieriQ.data ?? []).length > 0 ? (
+        <ReinscrieriSection rows={reinscrieriQ.data ?? []} />
+      ) : null}
 
       {nerevenitQ.isLoading ? (
         <Spinner />
@@ -189,6 +220,13 @@ export function StartSezonPage() {
             <strong className="text-ink">„Cine era în casă"</strong> = abonamente plătite și
             nereziliate începute în ultimele cinci luni dinaintea startului de sezon. Pentru
             un sezon care începe în septembrie asta înseamnă aprilie–iunie plus vara.
+          </li>
+          <li>
+            <strong className="text-ink">Reînscrierile semnate</strong> vin din cele trei
+            registre Excel ale campaniei din primăvară, arhivate în aplicație o singură
+            dată. Legătura cu fișa s-a făcut după nume: 235 potriviri exacte, 68 pe al
+            doilea prenume, 8 cu ortografie diferită, 2 prin steagul de promo și 5 ambigue —
+            ultimele sunt marcate în tabel, ca să fie verificate manual.
           </li>
           <li>
             <strong className="text-ink">Luna de start nu contează ca istoric.</strong> Cine

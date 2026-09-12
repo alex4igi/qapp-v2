@@ -7918,6 +7918,99 @@ export type Database = {
           },
         ]
       }
+      reinscrieri_semnate: {
+        Row: {
+          client: string | null
+          created: string
+          dublura_nume: string | null
+          grupe_excel: string[]
+          id: string
+          locatie_excel: string
+          nume_excel: string
+          potrivire: string
+          sezon_id: string
+        }
+        Insert: {
+          client?: string | null
+          created?: string
+          dublura_nume?: string | null
+          grupe_excel?: string[]
+          id?: string
+          locatie_excel: string
+          nume_excel: string
+          potrivire?: string
+          sezon_id: string
+        }
+        Update: {
+          client?: string | null
+          created?: string
+          dublura_nume?: string | null
+          grupe_excel?: string[]
+          id?: string
+          locatie_excel?: string
+          nume_excel?: string
+          potrivire?: string
+          sezon_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reinscrieri_semnate_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_semnate_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_semnate_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "reinscrieri_semnate_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "reinscrieri_semnate_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reinscrieri_semnate_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "reinscrieri_semnate_client_fkey"
+            columns: ["client"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "reinscrieri_semnate_sezon_id_fkey"
+            columns: ["sezon_id"]
+            isOneToOne: false
+            referencedRelation: "sezoane"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salarii_teacher: {
         Row: {
           anul: number
@@ -12360,8 +12453,10 @@ export type Database = {
         Returns: {
           client_id: string
           grupe: string
+          locatii: string
           nume: string
           prenume: string
+          semnase: boolean
           status: string
           suma_sezon: number
           telefon: string
@@ -12377,6 +12472,21 @@ export type Database = {
           nume: string
           prenume: string
           telefon: string
+        }[]
+      }
+      get_start_sezon_reinscrieri: {
+        Args: { p_sezon: string }
+        Returns: {
+          client_id: string
+          cursuri_noi: string
+          dublura_nume: string
+          grupe_excel: string
+          inrolat: boolean
+          locatie_excel: string
+          nume: string
+          nume_excel: string
+          potrivire: string
+          status: string
         }[]
       }
       get_start_sezon_retentie: {
@@ -12415,6 +12525,8 @@ export type Database = {
           pool_revenit: number
           pool_total: number
           reinscrieri: number
+          semnate_lipsa: number
+          semnate_total: number
         }[]
       }
       get_statistica_prezente_achitare: {

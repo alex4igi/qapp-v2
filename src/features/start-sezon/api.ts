@@ -31,6 +31,10 @@ export type StartSezonSumar = {
   pool_revenit: number
   clienti_noi: number
   reinscrieri: number
+  /** Câți au semnat în campania arhivată din Excel. */
+  semnate_total: number
+  /** Dintre ei, câți n-au încă nicio înrolare în sezonul nou. */
+  semnate_lipsa: number
 }
 
 export async function getStartSezonSumar(
@@ -68,8 +72,11 @@ export type StartSezonNerevenitRow = {
   telefon: string | null
   status: string | null
   grupe: string | null
+  locatii: string | null
   ultima_luna: string | null
   suma_sezon: number | null
+  /** A semnat în campania de reînscrieri, dar tot nu s-a întors. */
+  semnase: boolean
 }
 
 export async function getStartSezonNerevenit(
@@ -99,6 +106,31 @@ export async function getStartSezonNoi(
   })
   if (error) throw error
   return (data ?? []) as StartSezonNouRow[]
+}
+
+export type StartSezonReinscriereRow = {
+  client_id: string | null
+  /** Numele din fișa CRM; cade pe numele din registru dacă fișa lipsește. */
+  nume: string
+  nume_excel: string
+  locatie_excel: string
+  grupe_excel: string | null
+  /** exact | fuzzy | aprox | promo | ambiguu — cât de sigură e legătura cu fișa. */
+  potrivire: string
+  dublura_nume: string | null
+  status: string | null
+  inrolat: boolean
+  cursuri_noi: string | null
+}
+
+export async function getStartSezonReinscrieri(
+  sezonId: string,
+): Promise<StartSezonReinscriereRow[]> {
+  const { data, error } = await supabase.rpc('get_start_sezon_reinscrieri', {
+    p_sezon: sezonId,
+  })
+  if (error) throw error
+  return (data ?? []) as StartSezonReinscriereRow[]
 }
 
 export type StartSezonRosterRow = {

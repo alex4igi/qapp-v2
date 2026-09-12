@@ -41,6 +41,7 @@ export function NoiSection({ rows }: { rows: StartSezonNouRow[] }) {
         rowKey={(r) => r.client_id}
         onRowClick={(r) => navigate(`/clienti/${r.client_id}`)}
         defaultSort={{ idx: 3, dir: 'desc' }}
+        maxHeight={460}
         emptyMessage="Niciun client complet nou în sezonul selectat."
       />
     </Section>
