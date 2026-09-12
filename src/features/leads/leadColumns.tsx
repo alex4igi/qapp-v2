@@ -279,13 +279,13 @@ export function buildLeadColumns(opts: {
               e.stopPropagation()
               onLogContact(l)
             }}
-            className="rounded p-1 text-quasar-gray transition-colors hover:bg-quasar-gray-light hover:text-quasar-black"
+            className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink transition-colors hover:border-quasar-yellow hover:bg-quasar-yellow"
             title="Loghează contact"
           >
-            📞
+            📞 Loghează
           </button>
         ) : null,
-      className: 'text-right',
+      className: 'whitespace-nowrap',
     },
   }
 

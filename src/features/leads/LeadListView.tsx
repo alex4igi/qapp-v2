@@ -9,9 +9,12 @@ import type { LeadFiltersValue } from './LeadFilters'
 // DUPĂ sortare, deci vârful listei rămâne corect (cei mai neglijați primii).
 const RENDER_CAP = 300
 
+// „actiuni" stă lipit de „Ultim contact", nu la capătul din dreapta: acolo cădea
+// în afara zonei citite și nimeni nu-l mai apăsa. Butonul e răspunsul direct la
+// coloana de dinaintea lui.
 const COLOANE: LeadColumnKey[] = [
-  'nume', 'telefon', 'locatie', 'status', 'ultimContact', 'adaugat',
-  'prezenta', 'interes', 'observatii', 'actiuni',
+  'nume', 'telefon', 'locatie', 'status', 'ultimContact', 'actiuni',
+  'adaugat', 'prezenta', 'interes', 'observatii',
 ]
 
 // Lista se deschide ordonată după „Adăugat" descrescător — cele mai noi lead-uri
