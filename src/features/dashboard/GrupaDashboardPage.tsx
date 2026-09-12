@@ -1,7 +1,16 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Spinner, Tabs, Badge, WhatsAppIcon, type BadgeTone } from '@/components/ui'
+import {
+  Button,
+  Field,
+  Select,
+  Spinner,
+  Tabs,
+  Badge,
+  WhatsAppIcon,
+  type BadgeTone,
+} from '@/components/ui'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
@@ -17,14 +26,16 @@ import { formatRON, formatDate, formatMonth } from '@/lib/format'
 import { vineLaLabel } from '@/lib/ultimaPrezenta'
 import { waLink, waGroupLink } from '@/lib/phone'
 import { listSezoane } from '@/features/plati/api'
-import { getCursDatorii } from '@/features/cursuri/api'
+import { getCursDatorii, getCursLuni } from '@/features/cursuri/api'
 import { RestantieriTab } from '@/features/cursuri/pages/CursProfilePage/tabs/RestantieriTab'
 import {
   getGrupaDashboard,
+  getGrupaIstoricLuna,
   type RosterStatus,
   type GrupaRosterRow,
   type GrupaFostRow,
   type GrupaDashboard,
+  type GrupaIstoricRow,
 } from './api'
 
 type RosterView = 'cards' | 'list' | 'cols'
@@ -514,6 +525,78 @@ function FostiSection({
   )
 }
 
+// Rosterul unei luni încheiate: cine era în grupă și cum a venit. Nu are toggle
+// de prezență — o lună închisă se citește, nu se mai bifează.
+function RosterIstoric({
+  luna,
+  sedinte,
+  rows,
+  navigate,
+}: {
+  luna: string
+  sedinte: number
+  rows: GrupaIstoricRow[]
+  navigate: (to: string) => void
+}) {
+  if (rows.length === 0) {
+    return (
+      <p className="rounded-2xl border border-line bg-card p-6 text-center text-sm text-muted">
+        Niciun cursant înrolat în {formatMonth(`${luna}-01`)}.
+      </p>
+    )
+  }
+  return (
+    <>
+      <div className="mb-3 text-xs text-muted">
+        {rows.length} cursanți · {sedinte} ședințe cu catalog făcut în{' '}
+        {formatMonth(`${luna}-01`)}
+      </div>
+      <div className="overflow-x-auto rounded-2xl border border-line bg-card">
+        <table className="w-full text-sm">
+          <thead className="bg-surface text-left text-xs uppercase text-muted">
+            <tr>
+              <th className="w-10 px-3 py-2 text-right">#</th>
+              <th className="px-3 py-2">Cursant</th>
+              <th className="px-3 py-2 text-right">Prezențe</th>
+              <th className="px-3 py-2 text-right">Absențe</th>
+              <th className="px-3 py-2">Ultima prezență</th>
+              <th className="px-3 py-2 text-right">Restanță</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {rows.map((r, i) => (
+              <tr
+                key={r.clientId}
+                className="cursor-pointer hover:bg-quasar-yellow/10"
+                onClick={() => navigate(`/clienti/${r.clientId}`)}
+              >
+                <td className="px-3 py-2 text-right text-muted">{i + 1}.</td>
+                <td className="px-3 py-2 font-medium text-ink">
+                  {[r.nume, r.prenume].filter(Boolean).join(' ')}
+                </td>
+                <td className="px-3 py-2 text-right text-ink">{r.prezente}</td>
+                <td className="px-3 py-2 text-right text-muted">{r.absente}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-muted">
+                  {r.ultimaPrezenta ? formatDate(r.ultimaPrezenta) : '—'}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {r.restanta > 0 ? (
+                    <span className="font-semibold text-danger">
+                      {formatRON(r.restanta)}
+                    </span>
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
 export function GrupaDashboardPage() {
   const { cursId } = useParams<{ cursId: string }>()
   const navigate = useNavigate()
@@ -554,15 +637,64 @@ export function GrupaDashboardPage() {
   // iar preferința salvată de pe desktop nu se scurge aici.
   const view: RosterView = isMobile ? 'cards' : rosterView
 
+  // Luna afișată. `null` = urmează data de lucru din header (fluxul zilnic);
+  // orice altceva = vizualizare istorică, read-only.
+  const lunaDeLucru = date.slice(0, 7)
+  const [lunaAleasa, setLunaAleasa] = useState<string | null>(null)
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['grupa-dashboard', cursId, date],
     queryFn: () => getGrupaDashboard({ cursId: cursId!, date }),
     enabled: Boolean(cursId),
   })
 
-  // Sezonul curent + restanțierii cursului (tab Restanțieri) — refolosesc logica fișei cursului.
+  const luniQ = useQuery({
+    queryKey: ['curs', cursId, 'luni'],
+    queryFn: () => getCursLuni(cursId!),
+    enabled: Boolean(cursId),
+  })
+
+  // Grupă dintr-un sezon închis: se deschide direct pe ultima lună cu oameni.
+  // Pe grupele sezonului curent nu se schimbă nimic — luna de lucru e în listă.
+  const lunaImplicita = useMemo(() => {
+    const luni = luniQ.data ?? []
+    if (luni.length > 0 && !luni.some((l) => l.luna === lunaDeLucru)) {
+      return luni[0].luna
+    }
+    return lunaDeLucru
+  }, [luniQ.data, lunaDeLucru])
+
+  const lunaActiva = lunaAleasa ?? lunaImplicita
+  const esteIstoric = lunaActiva !== lunaDeLucru
+
+  const istoricQ = useQuery({
+    queryKey: ['grupa-istoric', cursId, lunaActiva],
+    queryFn: () => getGrupaIstoricLuna({ cursId: cursId!, luna: lunaActiva }),
+    enabled: Boolean(cursId) && esteIstoric,
+  })
+
+  const lunaOptions = useMemo(() => {
+    const luni = luniQ.data ?? []
+    const optiuni = luni.map((l) => ({
+      value: l.luna,
+      label: `${formatMonth(`${l.luna}-01`)} · ${l.cursanti} cursanți`,
+    }))
+    for (const l of [lunaActiva, lunaDeLucru]) {
+      if (!optiuni.some((o) => o.value === l)) {
+        optiuni.unshift({
+          value: l,
+          label: `${formatMonth(`${l}-01`)} · 0 cursanți`,
+        })
+      }
+    }
+    return optiuni
+  }, [luniQ.data, lunaActiva, lunaDeLucru])
+
+  // Restanțele se citesc pe sezonul CURSULUI, nu pe cel care conține ziua de azi:
+  // o grupă din 2025-2026 raporta zero restanțieri, pentru că fereastra căutată
+  // era sezonul în curs.
   const sezoaneQ = useQuery({ queryKey: ['sezoane-list'], queryFn: listSezoane })
-  const sezon = useMemo(() => {
+  const sezonActiv = useMemo(() => {
     const list = sezoaneQ.data ?? []
     if (!list.length) return null
     const today = new Date().toISOString().slice(0, 10)
@@ -576,6 +708,17 @@ export function GrupaDashboardPage() {
       ) ?? list[0]
     )
   }, [sezoaneQ.data])
+  const cursSezonId = data?.sezonId ?? null
+  const sezon = useMemo(() => {
+    const list = sezoaneQ.data ?? []
+    const alCursului = cursSezonId
+      ? list.find((s) => s.id === cursSezonId)
+      : null
+    return alCursului ?? sezonActiv
+  }, [sezoaneQ.data, cursSezonId, sezonActiv])
+  const sezonIncheiat = Boolean(
+    sezon && sezonActiv && sezon.id !== sezonActiv.id,
+  )
   const restantieriQ = useQuery({
     queryKey: ['curs', cursId, 'restantieri', sezon?.id],
     queryFn: () =>
@@ -772,26 +915,68 @@ export function GrupaDashboardPage() {
           <div className="mt-1 truncate text-[13px] text-rail-soft">{meta || '—'}</div>
         </div>
         <div className="text-right max-md:w-full max-md:text-left">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-quasar-yellow">
-            Prezenți azi
-          </div>
-          <div className="fnum mt-1 font-display text-2xl font-bold">
-            {present} <span className="text-base text-rail-soft">/ {enrolled}</span>
-          </div>
-          <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-rail-2 max-md:w-full">
-            <div
-              className="h-full rounded-full bg-quasar-yellow"
-              style={{ width: `${occPct}%` }}
-            />
-          </div>
+          {esteIstoric ? (
+            <>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-quasar-yellow">
+                {formatMonth(`${lunaActiva}-01`)}
+              </div>
+              <div className="fnum mt-1 font-display text-2xl font-bold">
+                {istoricQ.data?.rows.length ?? 0}{' '}
+                <span className="text-base text-rail-soft">cursanți</span>
+              </div>
+              <div className="mt-2 text-[12px] text-rail-soft">
+                {istoricQ.data?.sedinte ?? 0} ședințe cu catalog
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-quasar-yellow">
+                Prezenți azi
+              </div>
+              <div className="fnum mt-1 font-display text-2xl font-bold">
+                {present} <span className="text-base text-rail-soft">/ {enrolled}</span>
+              </div>
+              <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-rail-2 max-md:w-full">
+                <div
+                  className="h-full rounded-full bg-quasar-yellow"
+                  style={{ width: `${occPct}%` }}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* lecția zilei din programul metodologic (nimic dacă grupa n-are program) */}
-      <div className="mt-5">
-        <LectieBanner cursId={cursId!} data={date} />
-        <EvaluariCountdown cursId={cursId} variant="inline" />
+      <div className="mt-5 flex flex-wrap items-end gap-3">
+        <div className="w-56">
+          <Field label="Luna" htmlFor="grupa-luna">
+            <Select
+              id="grupa-luna"
+              options={lunaOptions}
+              value={lunaActiva}
+              onChange={(e) => setLunaAleasa(e.target.value)}
+            />
+          </Field>
+        </div>
+        {esteIstoric && (
+          <Badge tone="warn" className="mb-2">
+            Vizualizare istorică — prezența nu se modifică
+          </Badge>
+        )}
+        {sezonIncheiat && sezon && (
+          <Badge tone="neutral" className="mb-2">
+            Sezon {sezon.numele_sezonului}
+          </Badge>
+        )}
       </div>
+
+      {/* lecția zilei din programul metodologic (nimic dacă grupa n-are program) */}
+      {!esteIstoric && (
+        <div className="mt-5">
+          <LectieBanner cursId={cursId!} data={date} />
+          <EvaluariCountdown cursId={cursId} variant="inline" />
+        </div>
+      )}
 
       {/* tab-uri */}
       <div className="mt-5">
@@ -805,7 +990,22 @@ export function GrupaDashboardPage() {
         />
       </div>
 
-      {tab === 'roster' && (
+      {tab === 'roster' && esteIstoric && (
+        <div className="mt-2">
+          {istoricQ.isLoading ? (
+            <Spinner />
+          ) : (
+            <RosterIstoric
+              luna={lunaActiva}
+              sedinte={istoricQ.data?.sedinte ?? 0}
+              rows={istoricQ.data?.rows ?? []}
+              navigate={(to) => navigate(to)}
+            />
+          )}
+        </div>
+      )}
+
+      {tab === 'roster' && !esteIstoric && (
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">

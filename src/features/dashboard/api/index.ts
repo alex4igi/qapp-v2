@@ -22,7 +22,8 @@ export type {
   GrupaFostRow,
   GrupaDashboard,
 } from './grupa'
-export { getGrupaDashboard } from './grupa'
+export { getGrupaDashboard, getGrupaIstoricLuna } from './grupa'
+export type { GrupaIstoricLuna, GrupaIstoricRow } from './grupa'
 
 export type {
   IncasareAziRow,

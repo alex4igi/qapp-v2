@@ -1,6 +1,7 @@
 // Query-uri pentru tab-urile profilului unui curs: clienți activi, inactivi,
 // datorii, fără prezență, ocupare (vs capacitate).
 import { supabase } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 import { fetchVineLaByClient, type VineLa } from '@/lib/ultimaPrezenta'
 
 function todayIso(): string {
@@ -27,10 +28,20 @@ function monthBounds(iso: string): { start: string; end: string } {
   }
 }
 
-// Înrolările active la cursul X care acoperă luna curentă, cu clientul atașat.
-// „Activă în luna curentă" = NEreziliată AND (data_incepere <= sfârșit lună)
-// AND (data_final IS NULL OR data_final >= început lună). NU folosim `activ` —
-// la datele migrate din v1 e nesigur (vezi dashboard/api/grupa.ts).
+// Luna de lucru a fișei cursului: "YYYY-MM". Lipsa ei = luna curentă (exact
+// comportamentul dinainte de selectorul de lună).
+export function lunaCurenta(): string {
+  return todayIso().slice(0, 7)
+}
+
+function lunaBounds(luna?: string | null): { start: string; end: string } {
+  return monthBounds(luna ? `${luna}-01` : todayIso())
+}
+
+// Înrolările la cursul X care acoperă luna dată, cu clientul atașat.
+// „Acoperă luna" = (data_incepere <= sfârșit lună) AND (data_final IS NULL OR
+// data_final >= început lună). NU folosim `activ` — la datele migrate din v1 e
+// nesigur (vezi dashboard/api/grupa.ts).
 type ActiveEnrollmentRow = {
   id: string
   suma: number | null
@@ -39,31 +50,40 @@ type ActiveEnrollmentRow = {
   client: { id: string; nume: string; prenume: string | null } | null
 }
 
-async function fetchActiveEnrollmentsThisMonth(
+async function fetchEnrollmentsForMonth(
   cursId: string,
+  luna?: string | null,
 ): Promise<ActiveEnrollmentRow[]> {
-  const { start, end } = monthBounds(todayIso())
-  const { data, error } = await supabase
+  const { start, end } = lunaBounds(luna)
+  const esteLunaCurenta = start.slice(0, 7) === lunaCurenta()
+  let q = supabase
     .from('enrollments')
     .select(
       'id, suma, data_incepere, data_final, client:clienti(id, nume, prenume)',
     )
     .eq('cursul', cursId)
-    .eq('reziliat', false)
     .lte('data_incepere', end)
     .or(`data_final.is.null,data_final.gte.${start}`)
+  // Pe luna curentă `reziliat` e semnalul corect: cine tocmai a plecat e bifat.
+  // Pe o lună ÎNCHISĂ nu e — bifa se pune în masă pe lunile încheiate (la
+  // închiderea sezonului), deci filtrul ar goli rosterul istoric. Acolo întrebăm
+  // `data_reziliere`, singura dată reală a plecării.
+  if (esteLunaCurenta) q = q.eq('reziliat', false)
+  else q = q.or(`data_reziliere.is.null,data_reziliere.gte.${start}`)
+  const { data, error } = await q
   if (error) throw error
   return (data ?? []) as unknown as ActiveEnrollmentRow[]
 }
 
 // Clienții cu rezervare OPEN ne-anulată pe o ședință din luna curentă (ex.
 // ședințele bonus din promo: acces 29-30 iun pe abonamentul de iulie). Înrolarea
-// lor nu acoperă luna curentă, deci nu ies din fetchActiveEnrollmentsThisMonth,
+// lor nu acoperă luna curentă, deci nu ies din fetchEnrollmentsForMonth,
 // dar au totuși acces la curs în această lună → trebuie listați ca activi.
 async function fetchOpenReservationClientsThisMonth(
   cursId: string,
+  luna?: string | null,
 ): Promise<ActiveEnrollmentRow[]> {
-  const { start, end } = monthBounds(todayIso())
+  const { start, end } = lunaBounds(luna)
   const { data: sesiuni, error: sErr } = await supabase
     .from('open_sesiuni')
     .select('id')
@@ -126,7 +146,10 @@ export type CursOcupare = {
   media: number | null
 }
 
-export async function getCursOcupare(cursId: string): Promise<CursOcupare> {
+export async function getCursOcupare(
+  cursId: string,
+  luna?: string | null,
+): Promise<CursOcupare> {
   const { data: curs, error: cErr } = await supabase
     .from('cursuri')
     .select('capacitate_maxima, facultativ')
@@ -138,7 +161,7 @@ export async function getCursOcupare(cursId: string): Promise<CursOcupare> {
 
   // Recurent: roster distinct activ în luna curentă (oamenii din sală).
   if (!facultativ) {
-    const enrRows = await fetchActiveEnrollmentsThisMonth(cursId)
+    const enrRows = await fetchEnrollmentsForMonth(cursId, luna)
     const unici = new Set<string>()
     for (const e of enrRows) if (e.client) unici.add(e.client.id)
     return { activi: unici.size, capacitate, facultativ, media: null }
@@ -148,7 +171,7 @@ export async function getCursOcupare(cursId: string): Promise<CursOcupare> {
   // (cei mai mulți prezenți distincți într-o ședință din luna curentă), nu suma unicilor.
   // Filtrăm prin JOIN pe curs — un `.in(enrollmentIds)` ar exploda URL-ul: cursurile
   // facultative au sute de înrolări „Per ședință" (data_final null = active la infinit).
-  const { start, end } = monthBounds(todayIso())
+  const { start, end } = lunaBounds(luna)
   const { data: prez, error: pErr } = await supabase
     .from('prezente')
     .select('client, data, enr:enrollments!inner(cursul)')
@@ -196,10 +219,11 @@ export type CursClientActiv = {
 
 export async function getCursClientiActivi(
   cursId: string,
+  luna?: string | null,
 ): Promise<CursClientActiv[]> {
   const [monthEnr, openEnr] = await Promise.all([
-    fetchActiveEnrollmentsThisMonth(cursId),
-    fetchOpenReservationClientsThisMonth(cursId),
+    fetchEnrollmentsForMonth(cursId, luna),
+    fetchOpenReservationClientsThisMonth(cursId, luna),
   ])
   const enrRows = [...monthEnr, ...openEnr]
   if (enrRows.length === 0) return []
@@ -287,8 +311,9 @@ export type CursClientFaraDoc = {
 // Refolosește lista de clienți activi + o singură interogare pe documente.
 export async function getCursClientiFaraDocumente(
   cursId: string,
+  luna?: string | null,
 ): Promise<CursClientFaraDoc[]> {
-  const activi = await getCursClientiActivi(cursId)
+  const activi = await getCursClientiActivi(cursId, luna)
   if (activi.length === 0) return []
   const ids = activi.map((c) => c.clientId)
   const { data, error } = await supabase
@@ -316,6 +341,7 @@ export type CursClientInactiv = {
 
 export async function getCursClientiInactivi(
   cursId: string,
+  luna?: string | null,
 ): Promise<CursClientInactiv[]> {
   // 1) toate enrolările (oricare status) la cursul ăsta + clientul lor
   const { data: allEnr, error: eErr } = await supabase
@@ -329,8 +355,8 @@ export async function getCursClientiInactivi(
   }>
   if (allEnrRows.length === 0) return []
 
-  // 2) clienții activi acum (excluzi)
-  const activeRows = await fetchActiveEnrollmentsThisMonth(cursId)
+  // 2) clienții activi în luna afișată (excluzi)
+  const activeRows = await fetchEnrollmentsForMonth(cursId, luna)
   const activeClientIds = new Set<string>()
   for (const e of activeRows) if (e.client) activeClientIds.add(e.client.id)
 
@@ -444,7 +470,7 @@ export async function getCursFaraPrezenteRecente(params: {
 }): Promise<CursFaraPrezentaRow[]> {
   const days = params.days ?? 21
   const cutoff = isoDaysAgo(days)
-  const enrRows = await fetchActiveEnrollmentsThisMonth(params.cursId)
+  const enrRows = await fetchEnrollmentsForMonth(params.cursId)
   if (enrRows.length === 0) return []
 
   // Ultima prezență per client (join pe curs, nu `.in(enrollmentIds)`)
@@ -494,5 +520,192 @@ export async function getCursFaraPrezenteRecente(params: {
     if (a.ultimaPrezenta == null) return -1
     if (b.ultimaPrezenta == null) return 1
     return a.ultimaPrezenta.localeCompare(b.ultimaPrezenta)
+  })
+}
+
+// ============================================================
+// Lunile grupei (selectorul „Luna" din fișa cursului + pagina grupei)
+// ============================================================
+
+export type CursLuna = { luna: string; cursanti: number }
+
+// Un rând de înrolare acoperă un interval, nu doar luna lui de început: plata
+// integrală pe sezon are `data_final` peste ~10 luni. Plafonul e o plasă de
+// siguranță pentru date murdare (data_final absurd de departe).
+const MAX_LUNI_PE_INROLARE = 24
+
+function nextMonth(luna: string): string {
+  const [y, m] = luna.split('-').map(Number)
+  return m === 12
+    ? `${y + 1}-01`
+    : `${y}-${String(m + 1).padStart(2, '0')}`
+}
+
+function monthsCovered(
+  dataIncepere: string,
+  dataFinal: string | null,
+): string[] {
+  const start = dataIncepere.slice(0, 7)
+  // Fără `data_final` NU extrapolăm: rândurile „Per ședință" de la facultative au
+  // data_final NULL și ar inventa toate lunile de la ședința lor până azi.
+  const end = dataFinal ? dataFinal.slice(0, 7) : start
+  if (end <= start) return [start]
+  const out: string[] = []
+  let cur = start
+  while (cur <= end && out.length < MAX_LUNI_PE_INROLARE) {
+    out.push(cur)
+    cur = nextMonth(cur)
+  }
+  return out
+}
+
+type IstoricEnrollmentRow = {
+  id: string
+  data_incepere: string | null
+  data_final: string | null
+  client: { id: string; nume: string; prenume: string | null } | null
+}
+
+async function fetchAllEnrollmentsForCurs(
+  cursId: string,
+): Promise<IstoricEnrollmentRow[]> {
+  return fetchAllRows<IstoricEnrollmentRow>(() =>
+    supabase
+      .from('enrollments')
+      .select('id, data_incepere, data_final, client:clienti(id, nume, prenume)')
+      .eq('cursul', cursId)
+      .order('id'),
+  ) as unknown as Promise<IstoricEnrollmentRow[]>
+}
+
+// Lunile în care grupa a avut oameni, cele mai noi întâi. Alimentează selectorul
+// de lună — oferă doar luni care chiar întorc un roster, nu un calendar gol.
+export async function getCursLuni(cursId: string): Promise<CursLuna[]> {
+  const rows = await fetchAllEnrollmentsForCurs(cursId)
+  const byLuna = new Map<string, Set<string>>()
+  for (const r of rows) {
+    if (!r.client || !r.data_incepere) continue
+    for (const luna of monthsCovered(r.data_incepere, r.data_final)) {
+      let set = byLuna.get(luna)
+      if (!set) {
+        set = new Set<string>()
+        byLuna.set(luna, set)
+      }
+      set.add(r.client.id)
+    }
+  }
+  return Array.from(byLuna, ([luna, clienti]) => ({
+    luna,
+    cursanti: clienti.size,
+  })).sort((a, b) => b.luna.localeCompare(a.luna))
+}
+
+// ============================================================
+// Istoric complet: toți cursanții care au trecut vreodată prin grupă
+// ============================================================
+
+export type CursIstoricRow = {
+  clientId: string
+  nume: string
+  prenume: string | null
+  // "YYYY-MM" — prima și ultima lună facturată pe ACEASTĂ grupă.
+  primaLuna: string | null
+  ultimaLuna: string | null
+  luniFacturate: number
+  prezente: number
+  ultimaPrezenta: string | null
+  // Are înrolare care acoperă luna curentă la grupa asta.
+  activAcum: boolean
+  vineLa: VineLa | null
+}
+
+// Fără fereastră de lună și fără fereastra de 180 de zile a „foștilor": aici
+// intră toți oamenii care au avut vreodată o înrolare pe grupă. E singurul loc
+// din app unde o grupă de sezon închis își arată efectiv cursanții.
+export async function getCursIstoric(cursId: string): Promise<CursIstoricRow[]> {
+  const enrRows = await fetchAllEnrollmentsForCurs(cursId)
+  if (enrRows.length === 0) return []
+
+  type Acc = {
+    nume: string
+    prenume: string | null
+    luni: Set<string>
+  }
+  const byClient = new Map<string, Acc>()
+  for (const r of enrRows) {
+    if (!r.client || !r.data_incepere) continue
+    let acc = byClient.get(r.client.id)
+    if (!acc) {
+      acc = { nume: r.client.nume, prenume: r.client.prenume, luni: new Set() }
+      byClient.set(r.client.id, acc)
+    }
+    for (const luna of monthsCovered(r.data_incepere, r.data_final)) {
+      acc.luni.add(luna)
+    }
+  }
+  if (byClient.size === 0) return []
+
+  // Prezențele grupei, paginate: un curs cu 3 sezoane depășește lejer plafonul
+  // tăcut de 1000 de rânduri al PostgREST. JOIN pe curs, nu `.in(enrollmentIds)`
+  // (facultativele au sute de înrolări → URL spart).
+  const prezRows = await fetchAllRows<{
+    id: string
+    client: string | null
+    data: string | null
+    status: string | null
+  }>(() =>
+    supabase
+      .from('prezente')
+      .select('id, client, data, status, enr:enrollments!inner(cursul)')
+      .eq('enr.cursul', cursId)
+      .order('id'),
+  )
+  const prezenteByClient = new Map<string, number>()
+  const ultimaByClient = new Map<string, string>()
+  for (const p of prezRows) {
+    if (!p.client || p.status !== 'Prezent') continue
+    prezenteByClient.set(p.client, (prezenteByClient.get(p.client) ?? 0) + 1)
+    if (p.data) {
+      const prev = ultimaByClient.get(p.client)
+      if (!prev || p.data > prev) ultimaByClient.set(p.client, p.data)
+    }
+  }
+
+  const activi = await fetchEnrollmentsForMonth(cursId)
+  const activiIds = new Set<string>()
+  for (const e of activi) if (e.client) activiIds.add(e.client.id)
+
+  const rows: CursIstoricRow[] = Array.from(byClient, ([clientId, acc]) => {
+    const luni = Array.from(acc.luni).sort()
+    return {
+      clientId,
+      nume: acc.nume,
+      prenume: acc.prenume,
+      primaLuna: luni[0] ?? null,
+      ultimaLuna: luni[luni.length - 1] ?? null,
+      luniFacturate: luni.length,
+      prezente: prezenteByClient.get(clientId) ?? 0,
+      ultimaPrezenta: ultimaByClient.get(clientId) ?? null,
+      activAcum: activiIds.has(clientId),
+      vineLa: null,
+    }
+  })
+
+  // „Unde e acum" are sens doar pentru cine a plecat de la grupa asta.
+  const vineLa = await fetchVineLaByClient({
+    clienti: rows
+      .filter((r) => !r.activAcum)
+      .map((r) => ({ id: r.clientId, ultimaPrezenta: r.ultimaPrezenta })),
+    exceptCursId: cursId,
+  })
+  for (const r of rows) r.vineLa = vineLa.get(r.clientId) ?? null
+
+  // Cei mai recent plecați sus — lista se citește de sus în jos la recuperare.
+  return rows.sort((a, b) => {
+    const cmp = (b.ultimaLuna ?? '').localeCompare(a.ultimaLuna ?? '')
+    if (cmp !== 0) return cmp
+    return `${a.nume} ${a.prenume ?? ''}`.localeCompare(
+      `${b.nume} ${b.prenume ?? ''}`,
+    )
   })
 }

@@ -8,6 +8,9 @@ type Props = {
   loading: boolean
   rows: CursClientActiv[]
   cursNume: string
+  // Luna afișată de fișă („septembrie 2025") — mesajul de listă goală trebuie să
+  // spună care lună e goală, nu „luna curentă".
+  lunaLabel?: string
   pretLunarPromo: number | null
   onRowClick: (clientId: string) => void
   onActivateReinscriere: (clientId: string) => void
@@ -18,6 +21,7 @@ export function ClientiActiviTab({
   loading,
   rows,
   cursNume,
+  lunaLabel,
   pretLunarPromo,
   onRowClick,
   onActivateReinscriere,
@@ -27,7 +31,7 @@ export function ClientiActiviTab({
   if (rows.length === 0) {
     return (
       <p className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-quasar-gray shadow-sm">
-        Niciun client activ la acest curs în luna curentă.
+        Niciun client activ la acest curs în {lunaLabel ?? 'luna curentă'}.
       </p>
     )
   }

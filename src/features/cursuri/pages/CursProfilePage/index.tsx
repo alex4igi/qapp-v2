@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Spinner, Tabs, WhatsAppIcon } from '@/components/ui'
+import { Badge, Button, Field, Select, Spinner, Tabs, WhatsAppIcon } from '@/components/ui'
 import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist, type StareItem } from '@/lib/checklist'
@@ -24,6 +24,7 @@ import {
   isTeacher,
 } from '@/lib/rolesMatrix'
 import { waGroupLink } from '@/lib/phone'
+import { formatMonth } from '@/lib/format'
 import { ComposeMesajGrupaModal } from '@/features/announcements/ComposeMesajGrupaModal'
 import { CursForm } from '../../CursForm'
 import { CURS_CHECKLIST, type SectiuneCurs } from '@/lib/checklist/specs/curs'
@@ -35,7 +36,10 @@ import {
   getCursClientiFaraDocumente,
   getCursDatorii,
   getCursFaraPrezenteRecente,
+  getCursIstoric,
+  getCursLuni,
   getCursTeacheri,
+  lunaCurenta,
   activateReinscriere,
   toggleCursArchived,
   deleteCurs,
@@ -50,6 +54,7 @@ import { RestantieriTab } from './tabs/RestantieriTab'
 import { ClientiInactiviTab } from './tabs/ClientiInactiviTab'
 import { FaraDocumenteTab } from './tabs/FaraDocumenteTab'
 import { DetaliiTab } from './tabs/DetaliiTab'
+import { IstoricTab } from './tabs/IstoricTab'
 import { OpenSesiuniTab } from './tabs/OpenSesiuniTab'
 
 type TabId =
@@ -58,6 +63,7 @@ type TabId =
   | 'restantieri'
   | 'open'
   | 'fara-documente'
+  | 'istoric'
   | 'evenimente'
   | 'metodologie'
   | 'detalii'
@@ -67,6 +73,10 @@ export function CursProfilePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<TabId>('activi')
+  // Luna de lucru a fișei ("YYYY-MM"). Tot ce e roster (activi, inactivi, fără
+  // documente, ocupare) se citește pe ea, nu pe „azi" — altfel o grupă dintr-un
+  // sezon încheiat arată goală. `null` = n-a ales nimeni nimic încă.
+  const [lunaAleasa, setLunaAleasa] = useState<string | null>(null)
   const [inactiviOpen, setInactiviOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [focusSection, setFocusSection] = useState<SectiuneCurs | undefined>()
@@ -99,34 +109,64 @@ export function CursProfilePage() {
     enabled: Boolean(id),
   })
 
+  const luniQuery = useQuery({
+    queryKey: ['curs', id, 'luni'],
+    queryFn: () => getCursLuni(id!),
+    enabled: Boolean(id),
+  })
+
+  // Grupă dintr-un sezon închis: se deschide direct pe ultima lună cu oameni. Pe
+  // grupele sezonului curent nu se schimbă nimic — luna curentă e în listă.
+  const lunaImplicita = useMemo(() => {
+    const luni = luniQuery.data ?? []
+    if (luni.length > 0 && !luni.some((l) => l.luna === lunaCurenta())) {
+      return luni[0].luna
+    }
+    return lunaCurenta()
+  }, [luniQuery.data])
+
+  const luna = lunaAleasa ?? lunaImplicita
+  const esteLunaIstorica = luna !== lunaCurenta()
+
+  // „Absenți" e un semnal de acum (fără prezență în ultimele 21 de zile) — pe o
+  // lună închisă n-ar însemna nimic, deci tab-ul dispare și selecția cade înapoi
+  // pe „Clienți activi".
+  const tabActiv: TabId = esteLunaIstorica && tab === 'absenti' ? 'activi' : tab
+
   const ocupareQuery = useQuery({
-    queryKey: ['curs', id, 'ocupare'],
-    queryFn: () => getCursOcupare(id!),
+    queryKey: ['curs', id, 'ocupare', luna],
+    queryFn: () => getCursOcupare(id!, luna),
     enabled: Boolean(id),
   })
 
   const activiQuery = useQuery({
-    queryKey: ['curs', id, 'clienti-activi'],
-    queryFn: () => getCursClientiActivi(id!),
-    enabled: Boolean(id) && tab === 'activi',
+    queryKey: ['curs', id, 'clienti-activi', luna],
+    queryFn: () => getCursClientiActivi(id!, luna),
+    enabled: Boolean(id) && tabActiv === 'activi',
   })
 
   const inactiviQuery = useQuery({
-    queryKey: ['curs', id, 'clienti-inactivi'],
-    queryFn: () => getCursClientiInactivi(id!),
-    enabled: Boolean(id) && tab === 'activi' && inactiviOpen,
+    queryKey: ['curs', id, 'clienti-inactivi', luna],
+    queryFn: () => getCursClientiInactivi(id!, luna),
+    enabled: Boolean(id) && tabActiv === 'activi' && inactiviOpen,
   })
 
   const faraDocQuery = useQuery({
-    queryKey: ['curs', id, 'fara-documente'],
-    queryFn: () => getCursClientiFaraDocumente(id!),
-    enabled: Boolean(id) && tab === 'fara-documente',
+    queryKey: ['curs', id, 'fara-documente', luna],
+    queryFn: () => getCursClientiFaraDocumente(id!, luna),
+    enabled: Boolean(id) && tabActiv === 'fara-documente',
+  })
+
+  const istoricQuery = useQuery({
+    queryKey: ['curs', id, 'istoric'],
+    queryFn: () => getCursIstoric(id!),
+    enabled: Boolean(id) && tabActiv === 'istoric',
   })
 
   const absentiQuery = useQuery({
     queryKey: ['curs', id, 'absenti-21z'],
     queryFn: () => getCursFaraPrezenteRecente({ cursId: id!, days: 21 }),
-    enabled: Boolean(id) && tab === 'absenti',
+    enabled: Boolean(id) && tabActiv === 'absenti',
   })
 
   const sezoaneQuery = useQuery({
@@ -149,45 +189,78 @@ export function CursProfilePage() {
     )
   }, [sezoaneQuery.data])
 
+  // Restanțele se citesc pe sezonul CURSULUI, nu pe cel care conține ziua de azi:
+  // altfel o grupă din 2025-2026 raportează zero restanțieri, pentru că fereastra
+  // căutată e sezonul în curs.
+  const sezonCurs = useMemo(() => {
+    const list = sezoaneQuery.data ?? []
+    const cursSezonId = cursQuery.data?.sezon
+    return list.find((s) => s.id === cursSezonId) ?? sezonCurent
+  }, [sezoaneQuery.data, cursQuery.data?.sezon, sezonCurent])
+
+  const sezonIncheiat = Boolean(
+    sezonCurs && sezonCurent && sezonCurs.id !== sezonCurent.id,
+  )
+
   const restantieriQuery = useQuery({
-    queryKey: ['curs', id, 'restantieri', sezonCurent?.id],
+    queryKey: ['curs', id, 'restantieri', sezonCurs?.id],
     queryFn: () =>
       getCursDatorii({
         cursId: id!,
-        sezonStart: sezonCurent!.data_incepere!,
-        sezonEnd: sezonCurent!.data_final!,
+        sezonStart: sezonCurs!.data_incepere!,
+        sezonEnd: sezonCurs!.data_final!,
       }),
     enabled:
-      Boolean(id && sezonCurent?.data_incepere && sezonCurent?.data_final) &&
-      tab === 'restantieri',
+      Boolean(id && sezonCurs?.data_incepere && sezonCurs?.data_final) &&
+      tabActiv === 'restantieri',
   })
 
   // Hartă de etichete: un titular arhivat trebuie să apară în continuare pe fișă.
   const teacheri = useQuery({
     queryKey: ['lookup', 'teacheri', 'cu-arhivati'],
     queryFn: () => teacheriOptions(undefined, { includeArhivati: true }),
-    enabled: tab === 'detalii',
+    enabled: tabActiv === 'detalii',
   })
   const sali = useQuery({
     queryKey: ['lookup', 'sali'],
     queryFn: () => saliOptions(),
-    enabled: tab === 'detalii',
+    enabled: tabActiv === 'detalii',
   })
   const sezoane = useQuery({
     queryKey: ['lookup', 'sezoane'],
     queryFn: sezoaneOptions,
-    enabled: tab === 'detalii',
+    enabled: tabActiv === 'detalii',
   })
   const locatii = useQuery({
     queryKey: ['lookup', 'locatii'],
     queryFn: locatiiOptions,
-    enabled: tab === 'detalii',
+    enabled: tabActiv === 'detalii',
   })
   const cursTeacheri = useQuery({
     queryKey: ['curs', id, 'teacheri'],
     queryFn: () => getCursTeacheri(id!),
-    enabled: Boolean(id) && tab === 'detalii',
+    enabled: Boolean(id) && tabActiv === 'detalii',
   })
+
+  const lunaLabel = formatMonth(`${luna}-01`)
+  const lunaOptions = useMemo(() => {
+    const luni = luniQuery.data ?? []
+    const optiuni = luni.map((l) => ({
+      value: l.luna,
+      label: `${formatMonth(`${l.luna}-01`)} · ${l.cursanti} cursanți`,
+    }))
+    // Luna curentă (și cea aleasă manual) rămân selectabile chiar dacă grupa
+    // n-are pe nimeni în ele — altfel nu se mai poate reveni „la azi".
+    for (const l of [luna, lunaCurenta()]) {
+      if (!optiuni.some((o) => o.value === l)) {
+        optiuni.unshift({
+          value: l,
+          label: `${formatMonth(`${l}-01`)} · 0 cursanți`,
+        })
+      }
+    }
+    return optiuni
+  }, [luniQuery.data, luna])
 
   if (cursQuery.isLoading) return <Spinner />
   if (cursQuery.isError || !cursQuery.data) {
@@ -277,29 +350,54 @@ export function CursProfilePage() {
         }
       >
         <div className="min-w-0">
+          <div className="mb-4 flex flex-wrap items-end gap-3">
+            <div className="w-64">
+              <Field label="Luna" htmlFor="curs-luna">
+                <Select
+                  id="curs-luna"
+                  options={lunaOptions}
+                  value={luna}
+                  onChange={(e) => setLunaAleasa(e.target.value)}
+                />
+              </Field>
+            </div>
+            {esteLunaIstorica && (
+              <Badge tone="warn" className="mb-2">
+                Vizualizare istorică — {lunaLabel}
+              </Badge>
+            )}
+            {sezonIncheiat && sezonCurs && (
+              <Badge tone="neutral" className="mb-2">
+                Sezon {sezonCurs.numele_sezonului}
+              </Badge>
+            )}
+          </div>
+
           <Tabs
             tabs={[
               { id: 'activi',      label: 'Clienți activi' },
-              { id: 'absenti',     label: 'Absenți' },
+              ...(esteLunaIstorica ? [] : [{ id: 'absenti', label: 'Absenți' }]),
               { id: 'restantieri', label: 'Restanțieri' },
               ...(curs.facultativ && curs.rezervari_online
                 ? [{ id: 'open', label: 'Sesiuni OPEN' }]
                 : []),
               { id: 'fara-documente', label: 'Fără documente' },
+              { id: 'istoric',     label: 'Istoric' },
               { id: 'evenimente',  label: 'Evenimente' },
               ...(curs.facultativ ? [] : [{ id: 'metodologie', label: 'Metodologie' }]),
               { id: 'detalii',     label: 'Detalii curs' },
             ]}
-            active={tab}
+            active={tabActiv}
             onChange={(t) => setTab(t as TabId)}
           />
 
-          {tab === 'activi' && (
+          {tabActiv === 'activi' && (
             <>
               <ClientiActiviTab
                 loading={activiQuery.isLoading}
                 rows={activiQuery.data ?? []}
                 cursNume={curs.numele}
+                lunaLabel={lunaLabel}
                 pretLunarPromo={curs.facultativ ? null : curs.pret_lunar_promo}
                 onRowClick={(cid) => navigate(`/clienti/${cid}`)}
                 onActivateReinscriere={(cid) =>
@@ -347,7 +445,7 @@ export function CursProfilePage() {
             </>
           )}
 
-          {tab === 'absenti' && (
+          {tabActiv === 'absenti' && (
             <AbsentiTab
               loading={absentiQuery.isLoading}
               rows={absentiQuery.data ?? []}
@@ -356,7 +454,7 @@ export function CursProfilePage() {
             />
           )}
 
-          {tab === 'restantieri' && (
+          {tabActiv === 'restantieri' && (
             <RestantieriTab
               loading={restantieriQuery.isLoading}
               rows={restantieriQuery.data ?? []}
@@ -366,7 +464,7 @@ export function CursProfilePage() {
             />
           )}
 
-          {tab === 'open' && curs.facultativ && curs.rezervari_online && (
+          {tabActiv === 'open' && curs.facultativ && curs.rezervari_online && (
             <OpenSesiuniTab
               cursId={curs.id}
               canManage={!isTeacher(role)}
@@ -374,7 +472,7 @@ export function CursProfilePage() {
             />
           )}
 
-          {tab === 'fara-documente' && (
+          {tabActiv === 'fara-documente' && (
             <FaraDocumenteTab
               loading={faraDocQuery.isLoading}
               rows={faraDocQuery.data ?? []}
@@ -382,13 +480,22 @@ export function CursProfilePage() {
             />
           )}
 
-          {tab === 'evenimente' && (
+          {tabActiv === 'istoric' && (
+            <IstoricTab
+              loading={istoricQuery.isLoading}
+              rows={istoricQuery.data ?? []}
+              cursNume={curs.numele}
+              onRowClick={(cid) => navigate(`/clienti/${cid}`)}
+            />
+          )}
+
+          {tabActiv === 'evenimente' && (
             <div className="mt-4">
               <GrupaEvenimenteSection cursId={curs.id} />
             </div>
           )}
 
-          {tab === 'metodologie' && !curs.facultativ && (
+          {tabActiv === 'metodologie' && !curs.facultativ && (
             <MetodologieTab
               cursId={curs.id}
               programId={curs.program_metodologic}
@@ -397,7 +504,7 @@ export function CursProfilePage() {
             />
           )}
 
-          {tab === 'detalii' && (
+          {tabActiv === 'detalii' && (
             <DetaliiTab
               curs={curs}
               teacherLabel={labelOf(teacheri.data, curs.teacher)}

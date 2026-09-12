@@ -24,6 +24,8 @@ export type {
   CursClientFaraDoc,
   CursDatorieRow,
   CursFaraPrezentaRow,
+  CursLuna,
+  CursIstoricRow,
 } from './profile'
 export {
   getCursOcupare,
@@ -32,6 +34,9 @@ export {
   getCursClientiFaraDocumente,
   getCursDatorii,
   getCursFaraPrezenteRecente,
+  getCursLuni,
+  getCursIstoric,
+  lunaCurenta,
 } from './profile'
 
 export type { CursTeacherAsignment } from './teachers'

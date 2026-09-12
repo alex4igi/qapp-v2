@@ -63,6 +63,9 @@ export type GrupaFostRow = {
 export type GrupaDashboard = {
   cursId: string
   cursNume: string
+  // Sezonul cursului — restanțele și „e grupă din alt sezon?" se citesc pe el,
+  // nu pe sezonul care conține ziua de azi.
+  sezonId: string | null
   ora: string | null
   teacher: string | null
   sala: string | null
@@ -93,7 +96,7 @@ export async function getGrupaDashboard(params: {
   const { data: curs, error: cursErr } = await supabase
     .from('cursuri')
     .select(
-      'id, numele, ora, facultativ, link_whatsapp, sala:sali(nume), teacher:teacheri!fk_cursuri_teacher(nume, prenume)',
+      'id, numele, ora, facultativ, link_whatsapp, sezon, sala:sali(nume), teacher:teacheri!fk_cursuri_teacher(nume, prenume)',
     )
     .eq('id', params.cursId)
     .single()
@@ -104,6 +107,7 @@ export async function getGrupaDashboard(params: {
     ora: string | null
     facultativ: boolean
     link_whatsapp: string | null
+    sezon: string | null
     sala: { nume: string } | null
     teacher: { nume: string; prenume: string | null } | null
   }
@@ -202,6 +206,7 @@ export async function getGrupaDashboard(params: {
   const baseHeader = {
     cursId: cursRow.id,
     cursNume: cursRow.numele,
+    sezonId: cursRow.sezon,
     ora: cursRow.ora,
     sala: cursRow.sala?.nume ?? null,
     facultativ: Boolean(cursRow.facultativ),
@@ -655,5 +660,159 @@ export async function getGrupaDashboard(params: {
     roster,
     fosti,
     counters,
+  }
+}
+
+// ============================================================
+// Vizualizare istorică: rosterul grupei pe o lună ÎNCHEIATĂ
+// ============================================================
+
+export type GrupaIstoricRow = {
+  clientId: string
+  nume: string
+  prenume: string | null
+  poza: string | null
+  telefon: string | null
+  prezente: number
+  absente: number
+  ultimaPrezenta: string | null
+  restanta: number
+}
+
+export type GrupaIstoricLuna = {
+  luna: string
+  // Ședințe cu catalog făcut în luna aia (zile distincte cu prezențe bifate).
+  sedinte: number
+  rows: GrupaIstoricRow[]
+}
+
+// Cine era în grupă într-o lună trecută, cu prezențele lunii — nu „statusul de
+// azi", care pe o lună închisă n-are niciun înțeles. Pagina grupei o folosește
+// când luna aleasă nu e luna curentă; fluxul zilnic rămâne pe getGrupaDashboard.
+export async function getGrupaIstoricLuna(params: {
+  cursId: string
+  luna: string
+}): Promise<GrupaIstoricLuna> {
+  const monthStart = `${params.luna}-01`
+  const monthEnd = endOfMonth(monthStart)
+
+  // NU filtrăm pe `reziliat`: bifa se pune în masă pe lunile încheiate (la
+  // închiderea sezonului), deci ar goli exact rosterul pe care îl căutăm.
+  // Plecarea reală e `data_reziliere` — cine a plecat ÎNAINTE de luna asta iese.
+  const { data: enrData, error: enrErr } = await supabase
+    .from('enrollments')
+    .select(
+      'id, suma, client:clienti(id, nume, prenume, foto, telefon)',
+    )
+    .eq('cursul', params.cursId)
+    .lte('data_incepere', monthEnd)
+    .or(`data_final.is.null,data_final.gte.${monthStart}`)
+    .or(`data_reziliere.is.null,data_reziliere.gte.${monthStart}`)
+  if (enrErr) throw enrErr
+  const enrollments = (enrData ?? []) as unknown as Array<{
+    id: string
+    suma: number | null
+    client: {
+      id: string
+      nume: string
+      prenume: string | null
+      foto: string | null
+      telefon: string | null
+    } | null
+  }>
+  if (enrollments.length === 0) {
+    return { luna: params.luna, sedinte: 0, rows: [] }
+  }
+
+  const enrollmentIds = enrollments.map((e) => e.id)
+  const clientByEnrId = new Map<string, string>()
+  for (const e of enrollments) if (e.client) clientByEnrId.set(e.id, e.client.id)
+
+  const prezente = (
+    await Promise.all(
+      chunk(enrollmentIds, IN_CHUNK).map((ids) =>
+        fetchAllRows<{
+          id: string
+          enrollment: string | null
+          data: string | null
+          status: Enums<'status_prezenta'> | null
+        }>(() =>
+          supabase
+            .from('prezente')
+            .select('id, enrollment, data, status')
+            .in('enrollment', ids)
+            .gte('data', monthStart)
+            .lte('data', monthEnd)
+            .order('id'),
+        ),
+      ),
+    )
+  ).flat()
+
+  const zile = new Set<string>()
+  const prezenteByClient = new Map<string, number>()
+  const absenteByClient = new Map<string, number>()
+  const ultimaByClient = new Map<string, string>()
+  for (const p of prezente) {
+    const clientId = p.enrollment ? clientByEnrId.get(p.enrollment) : undefined
+    if (!clientId) continue
+    if (p.data) zile.add(p.data)
+    if (p.status === 'Prezent') {
+      prezenteByClient.set(clientId, (prezenteByClient.get(clientId) ?? 0) + 1)
+      if (p.data) {
+        const prev = ultimaByClient.get(clientId)
+        if (!prev || p.data > prev) ultimaByClient.set(clientId, p.data)
+      }
+    } else if (p.status === 'Absent' || p.status === 'Motivat') {
+      absenteByClient.set(clientId, (absenteByClient.get(clientId) ?? 0) + 1)
+    }
+  }
+
+  const { data: incasariRows, error: iErr } = await supabase
+    .from('incasari')
+    .select('inregistrare, suma')
+    .in('inregistrare', enrollmentIds)
+  if (iErr) throw iErr
+  const paidByEnr = new Map<string, number>()
+  for (const r of incasariRows ?? []) {
+    if (!r.inregistrare) continue
+    paidByEnr.set(
+      r.inregistrare,
+      (paidByEnr.get(r.inregistrare) ?? 0) + Number(r.suma ?? 0),
+    )
+  }
+
+  // Un cursant poate avea mai multe înrolări pe lună (ex. rând lunar + bonus) —
+  // restanța se adună, restul se deduplică pe client.
+  const byClient = new Map<string, GrupaIstoricRow>()
+  for (const e of enrollments) {
+    if (!e.client) continue
+    const rest = Math.max(0, Number(e.suma ?? 0) - (paidByEnr.get(e.id) ?? 0))
+    const existing = byClient.get(e.client.id)
+    if (existing) {
+      existing.restanta += rest
+      continue
+    }
+    byClient.set(e.client.id, {
+      clientId: e.client.id,
+      nume: e.client.nume,
+      prenume: e.client.prenume,
+      poza: e.client.foto,
+      telefon: e.client.telefon,
+      prezente: prezenteByClient.get(e.client.id) ?? 0,
+      absente: absenteByClient.get(e.client.id) ?? 0,
+      ultimaPrezenta: ultimaByClient.get(e.client.id) ?? null,
+      restanta: rest,
+    })
+  }
+
+  return {
+    luna: params.luna,
+    sedinte: zile.size,
+    rows: Array.from(byClient.values()).sort(
+      (a, b) =>
+        a.nume.localeCompare(b.nume, 'ro') ||
+        (a.prenume || '').localeCompare(b.prenume || '', 'ro'),
+    ),
   }
 }
