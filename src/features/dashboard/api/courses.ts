@@ -13,6 +13,10 @@ export type DashboardCourse = {
   enrolled: number
   prezenti: number
   capacitate: number | null
+  // Leads programați la grupă în ziua afișată. Stau în afara lui `enrolled`/`prezenti`
+  // (aceia sunt cursanți înrolați), dar sunt oameni în sală — vezi cardul din agendă.
+  leads: number
+  leadsPrezenti: number
 }
 
 // Cursurile zilei pentru sala/locația selectată. Pentru teacher se poate
@@ -151,6 +155,43 @@ export async function getDashboardCourses(params: {
     prezByCurs.set(c, (prezByCurs.get(c) ?? 0) + 1)
   }
 
+  // Leads programați azi la aceste grupe. Prezența lor NU stă în `prezente`, ci în
+  // `programari_leads.prezenta` — de aceea cardul îi rata complet și arăta „7/7"
+  // când în sală erau 8. Filtrele oglindesc rosterul din grupa.ts, ca să iasă
+  // aceleași persoane în ambele locuri.
+  const { data: programari, error: pgErr } = await supabase
+    .from('programari_leads')
+    .select('cursul_programat, prezenta, lead:leads(id, status, id_client)')
+    .in('cursul_programat', cursIds)
+    .eq('data_programarii', params.date)
+  if (pgErr) throw pgErr
+  const programariRows = (programari ?? []) as unknown as Array<{
+    cursul_programat: string | null
+    prezenta: string | null
+    lead: { id: string; status: string | null; id_client: string | null } | null
+  }>
+  const leadsByCurs = new Map<string, { total: number; prezenti: number }>()
+  const seenLead = new Set<string>()
+  for (const p of programariRows) {
+    const c = p.cursul_programat
+    if (!c || !p.lead) continue
+    const key = `${c}:${p.lead.id}`
+    if (seenLead.has(key)) continue
+    if (
+      p.lead.status === 'pierdut' ||
+      p.lead.status === 'nurture' ||
+      p.lead.status === 'waiting_list'
+    )
+      continue
+    // Lead convertit al cărui client e deja în roster: ar fi numărat de două ori.
+    if (p.lead.id_client && clientsByCurs.get(c)?.has(p.lead.id_client)) continue
+    seenLead.add(key)
+    const acc = leadsByCurs.get(c) ?? { total: 0, prezenti: 0 }
+    acc.total += 1
+    if (p.prezenta === 'prezent') acc.prezenti += 1
+    leadsByCurs.set(c, acc)
+  }
+
   return cursRows
     .map((c) => ({
       id: c.id,
@@ -163,6 +204,8 @@ export async function getDashboardCourses(params: {
       enrolled: enrolledByCurs.get(c.id) ?? 0,
       prezenti: prezByCurs.get(c.id) ?? 0,
       capacitate: c.capacitate_maxima,
+      leads: leadsByCurs.get(c.id)?.total ?? 0,
+      leadsPrezenti: leadsByCurs.get(c.id)?.prezenti ?? 0,
     }))
     .sort((a, b) => (a.ora ?? '').localeCompare(b.ora ?? ''))
 }

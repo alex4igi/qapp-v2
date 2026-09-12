@@ -66,7 +66,8 @@ function GroupBarCard({
   to: string
   isToday: boolean
 }) {
-  const { numele, ora, sala, teacher, enrolled, prezenti, capacitate } = course
+  const { numele, ora, sala, teacher, enrolled, prezenti, capacitate, leads, leadsPrezenti } =
+    course
   // Inel = rata de prezență a zilei (prezenți / înscriși).
   const attPct = enrolled > 0 ? Math.min(100, Math.round((prezenti / enrolled) * 100)) : 0
   // Bară = rata de ocupare (înscriși / capacitate).
@@ -103,6 +104,16 @@ function GroupBarCard({
           <div className="mt-1.5 text-[12.5px] text-muted-2">
             <span className="fnum font-display font-bold text-ink">{prezenti}</span> /{' '}
             {enrolled} prezenți
+            {/* Leadurile programate azi sunt oameni în sală, dar nu sunt cursanți:
+                stau lângă cifră, nu în ea (inelul rămâne rata cursanților). */}
+            {leads > 0 && (
+              <span
+                className="ml-1.5 text-[11.5px] text-muted"
+                title={`${leadsPrezenti} ${leadsPrezenti === 1 ? 'prezent' : 'prezenți'} din ${leads} ${leads === 1 ? 'lead programat' : 'leads programate'} azi`}
+              >
+                +{leads} {leads === 1 ? 'lead' : 'leads'}
+              </span>
+            )}
           </div>
         </div>
       </div>
