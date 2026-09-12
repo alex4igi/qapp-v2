@@ -1,0 +1,479 @@
+[
+ {
+  "id": "036da2d9-7598-5045-a98b-6974ea079180",
+  "client": "bcf0d81b-15b6-523a-b751-3d677633ab7a",
+  "cursul": "78f374f2-df71-5f71-a731-24084f8f5d0f",
+  "data_incepere": "2026-06-01",
+  "suma": 240,
+  "suma_baza": 240,
+  "rest": 240
+ },
+ {
+  "id": "04c2e91c-8085-52bb-842a-3f595e91bd12",
+  "client": "96bca608-f311-54b8-b90c-b23d065ec2cf",
+  "cursul": "37a1a9cd-0a01-5bff-8bf6-d961ef76f20c",
+  "data_incepere": "2026-06-01",
+  "suma": 270,
+  "suma_baza": 270,
+  "rest": 270
+ },
+ {
+  "id": "06414ecf-7ac4-5992-bb34-2f09a2a4efae",
+  "client": "e1e15d0c-d2ac-5620-bd94-e03ca6fb5cf3",
+  "cursul": "567fd5ab-db58-5c22-be24-92c17b011660",
+  "data_incepere": "2024-03-02",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "13722c5d-4c50-5bbe-b69d-f8c73bdec61d",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-06-27",
+  "suma": 30,
+  "suma_baza": 30,
+  "rest": 30
+ },
+ {
+  "id": "15b88f13-a748-5cd2-950d-28e88f8dabdc",
+  "client": "ca5ca157-589b-522f-a9ff-6bc6475e9e0f",
+  "cursul": "a996373b-b8cc-50a6-9e6d-c69c0ec58542",
+  "data_incepere": "2024-06-03",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "16a5a58c-8135-577a-ac0c-6e2a75d6fb43",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2022-12-17",
+  "suma": 35,
+  "suma_baza": 35,
+  "rest": 35
+ },
+ {
+  "id": "17eebe26-886f-4470-9399-58aacb9dcd01",
+  "client": "7b58982f-29a7-540a-bc7d-b1656ea5e0f7",
+  "cursul": "85a19356-f4c7-4f51-bac2-3d9d22be8699",
+  "data_incepere": "2026-07-01",
+  "suma": 260,
+  "suma_baza": 260,
+  "rest": 190
+ },
+ {
+  "id": "1f38a420-e289-588f-8a18-3231692eec90",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-07-27",
+  "suma": 30,
+  "suma_baza": 30,
+  "rest": 30
+ },
+ {
+  "id": "258c597d-5c1a-5060-b090-f7a8877f36f9",
+  "client": "4bf09567-9b6b-5f14-b22a-dd7c9dde6ac4",
+  "cursul": "34bc6643-d3e1-59ff-be0b-f7b3a764621e",
+  "data_incepere": "2024-04-06",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "26ee7092-92b0-5f2c-be0e-1d89dcfecc51",
+  "client": "81b6acb5-e07a-5f04-b09c-bb89de398b91",
+  "cursul": "fddb0050-f9b4-5da2-a1c3-6545bd415dc1",
+  "data_incepere": "2026-06-01",
+  "suma": 260,
+  "suma_baza": 260,
+  "rest": 260
+ },
+ {
+  "id": "2c5fc924-79c6-52c1-a06a-353d8d4dc1f9",
+  "client": "a92c1cd6-5dca-52b2-927c-53717473dc38",
+  "cursul": "52bfd7ff-d9de-579a-b499-874d7e62d4db",
+  "data_incepere": "2024-05-11",
+  "suma": 180,
+  "suma_baza": 180,
+  "rest": 80
+ },
+ {
+  "id": "325b044e-e797-549a-9995-5e431e5ff80f",
+  "client": "d99cae02-28c8-5a86-ad11-6b6780eb0cd6",
+  "cursul": "567fd5ab-db58-5c22-be24-92c17b011660",
+  "data_incepere": "2023-12-03",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "3deebb9a-5b9c-5bf3-ad8e-30ad017ab65c",
+  "client": "38fbf31e-0114-5df9-8583-0cd076449f48",
+  "cursul": "34bc6643-d3e1-59ff-be0b-f7b3a764621e",
+  "data_incepere": "2024-05-11",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "402412f0-d5f3-53e5-8007-e86deba57856",
+  "client": "bcdf912e-1c69-5887-bf1a-5a9e82966f5f",
+  "cursul": "196aa9af-4f96-5907-af58-d558b857491c",
+  "data_incepere": "2026-06-01",
+  "suma": 260,
+  "suma_baza": 260,
+  "rest": 260
+ },
+ {
+  "id": "45c3d02f-b297-5f1a-acb3-1b81dea5b452",
+  "client": "94a36086-5eab-5991-95d9-05c131963350",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-08-22",
+  "suma": 35,
+  "suma_baza": 35,
+  "rest": 35
+ },
+ {
+  "id": "4828bb79-0f29-50ba-8703-412f23b23d8b",
+  "client": "b0a078be-5e5e-520a-889b-9618c395c77b",
+  "cursul": "7d5afa9c-81f4-5acf-9c13-f5fa12a80432",
+  "data_incepere": "2026-04-01",
+  "suma": 170,
+  "suma_baza": 170,
+  "rest": 170
+ },
+ {
+  "id": "494d2f49-ad91-5189-9dad-0b89e59831fe",
+  "client": "589acf10-df7a-5ea3-b261-29c007754989",
+  "cursul": "44935a4f-487e-5193-8178-10abc5b15a22",
+  "data_incepere": "2024-08-01",
+  "suma": 180,
+  "suma_baza": 180,
+  "rest": 180
+ },
+ {
+  "id": "49c24ba8-23c0-5585-90c9-b4449021bf34",
+  "client": "7b8d7911-db96-50aa-ace5-6d3846e0e719",
+  "cursul": "8c01624c-3e34-5f06-a153-ae356d610829",
+  "data_incepere": "2026-06-01",
+  "suma": 260,
+  "suma_baza": 260,
+  "rest": 260
+ },
+ {
+  "id": "4cf3c31b-860b-5cca-85a2-1d4c797e3d8b",
+  "client": "3209a312-f53f-5a59-893f-0995fb6c7ec9",
+  "cursul": "4209e4af-7dd3-593e-a356-8ef030793c04",
+  "data_incepere": "2026-06-01",
+  "suma": 170,
+  "suma_baza": 170,
+  "rest": 170
+ },
+ {
+  "id": "51daf799-2e3e-55c3-bf32-6952aa251486",
+  "client": "a92c1cd6-5dca-52b2-927c-53717473dc38",
+  "cursul": "52bfd7ff-d9de-579a-b499-874d7e62d4db",
+  "data_incepere": "2023-10-01",
+  "suma": 180,
+  "suma_baza": 180,
+  "rest": 180
+ },
+ {
+  "id": "5b9b4cf0-f77a-43f8-9e6a-f021b1920b5f",
+  "client": "17c3d0e2-bc76-4b51-adaa-86ea9126da7c",
+  "cursul": "c44efeb4-b9ab-45a1-a609-808b8fef8b07",
+  "data_incepere": "2026-08-01",
+  "suma": 170,
+  "suma_baza": 170,
+  "rest": 100
+ },
+ {
+  "id": "5d65fafc-0499-4761-88fb-f2a4f122d1fe",
+  "client": "20dce69f-3dfb-462e-99bb-012819276eb7",
+  "cursul": "8589e8aa-9fb3-4d6b-9f15-b10d36975a00",
+  "data_incepere": "2026-07-01",
+  "suma": 150,
+  "suma_baza": 150,
+  "rest": 150
+ },
+ {
+  "id": "65cfdab3-19eb-5a50-8288-b41aff465e96",
+  "client": "b1fbd728-ffbb-51e4-a516-c5c3fdf30819",
+  "cursul": "638e220b-fa64-508c-b241-93344a781511",
+  "data_incepere": "2025-07-23",
+  "suma": 60,
+  "suma_baza": 60,
+  "rest": 10
+ },
+ {
+  "id": "6a10738b-44f9-5f07-9bb6-9ebcb37521c4",
+  "client": "feeeca9c-4751-5ed1-928b-5d25bb8898ce",
+  "cursul": "8c01624c-3e34-5f06-a153-ae356d610829",
+  "data_incepere": "2026-06-01",
+  "suma": 260,
+  "suma_baza": 260,
+  "rest": 260
+ },
+ {
+  "id": "6d186a1f-107e-5a2e-aebb-8d57767bbdc1",
+  "client": "95c3ccc3-2293-543d-bb56-1513e4a25c4f",
+  "cursul": "4209e4af-7dd3-593e-a356-8ef030793c04",
+  "data_incepere": "2026-06-01",
+  "suma": 160,
+  "suma_baza": 160,
+  "rest": 160
+ },
+ {
+  "id": "7884fce5-858c-5bd3-8ead-4db0900ff39a",
+  "client": "d01afe13-f9d8-5816-9011-6c5a82ba9b91",
+  "cursul": "567fd5ab-db58-5c22-be24-92c17b011660",
+  "data_incepere": "2024-09-14",
+  "suma": 220,
+  "suma_baza": 220,
+  "rest": 220
+ },
+ {
+  "id": "81bd2cde-5108-57e8-ae11-f5c484525e24",
+  "client": "4af99248-c0f2-58b9-b5dc-6ce19d0c6c2b",
+  "cursul": "567fd5ab-db58-5c22-be24-92c17b011660",
+  "data_incepere": "2025-03-09",
+  "suma": 220,
+  "suma_baza": 220,
+  "rest": 220
+ },
+ {
+  "id": "823ad6f9-0c32-5186-be16-871ff86ec80c",
+  "client": "e9764749-d0db-58e0-8e9d-e0e9718f637d",
+  "cursul": "7bf664a6-8ccf-54c1-9df6-169ce3b7e9fc",
+  "data_incepere": "2026-06-01",
+  "suma": 260,
+  "suma_baza": 260,
+  "rest": 260
+ },
+ {
+  "id": "82c5ae43-006c-54fc-86bc-f35cc2d9ceb0",
+  "client": "23dfb1ed-18b8-5187-a2b2-681e3832f65f",
+  "cursul": "7d5afa9c-81f4-5acf-9c13-f5fa12a80432",
+  "data_incepere": "2026-06-01",
+  "suma": 170,
+  "suma_baza": 170,
+  "rest": 170
+ },
+ {
+  "id": "88a0ccdd-efbd-5d55-84e1-f664f8b34389",
+  "client": "866bcb92-396f-520e-adc0-36f410f4a7db",
+  "cursul": "a996373b-b8cc-50a6-9e6d-c69c0ec58542",
+  "data_incepere": "2023-10-01",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "918abd9b-a053-581d-8ed1-f36647f5a7b8",
+  "client": "e53d50f6-c9de-5ba7-8df6-0cd9107d9211",
+  "cursul": "4263525e-a137-5cdd-85b1-52c0619acf1c",
+  "data_incepere": "2026-06-01",
+  "suma": 170,
+  "suma_baza": 170,
+  "rest": 170
+ },
+ {
+  "id": "9536c1cd-93cd-5108-bf4a-83f3b05c3c1d",
+  "client": "11d370e1-0877-5fa3-81c4-75b6783e0978",
+  "cursul": "567fd5ab-db58-5c22-be24-92c17b011660",
+  "data_incepere": "2024-10-05",
+  "suma": 220,
+  "suma_baza": 220,
+  "rest": 30
+ },
+ {
+  "id": "96baf10f-b76f-445c-919c-99ae31e40e9f",
+  "client": "b1fbd728-ffbb-51e4-a516-c5c3fdf30819",
+  "cursul": "04b1cef0-2047-4651-86cd-14c362245dc1",
+  "data_incepere": "2026-08-06",
+  "suma": 60,
+  "suma_baza": 60,
+  "rest": 60
+ },
+ {
+  "id": "9cf90d24-94c5-53a2-8c7c-4b3c354068b3",
+  "client": "fbc0efd5-ca65-5b16-b452-6251731fed71",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-09-26",
+  "suma": 30,
+  "suma_baza": 30,
+  "rest": 30
+ },
+ {
+  "id": "a8ce9d5c-bc78-5400-af31-1da9f2d114c7",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-01-22",
+  "suma": 35,
+  "suma_baza": 35,
+  "rest": 35
+ },
+ {
+  "id": "aed27511-c985-53bb-8d0b-819735b41e29",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-08-15",
+  "suma": 30,
+  "suma_baza": 30,
+  "rest": 20
+ },
+ {
+  "id": "afde7bef-b196-5480-9d05-f1969722f476",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-07-27",
+  "suma": 30,
+  "suma_baza": 30,
+  "rest": 30
+ },
+ {
+  "id": "b36b7a0a-92e6-5f3b-8844-118a5f07d11d",
+  "client": "bcf0d81b-15b6-523a-b751-3d677633ab7a",
+  "cursul": "78f374f2-df71-5f71-a731-24084f8f5d0f",
+  "data_incepere": "2026-04-01",
+  "suma": 240,
+  "suma_baza": 240,
+  "rest": 240
+ },
+ {
+  "id": "bdadb6be-1101-5172-a3de-cdb774005556",
+  "client": "4bf09567-9b6b-5f14-b22a-dd7c9dde6ac4",
+  "cursul": "34bc6643-d3e1-59ff-be0b-f7b3a764621e",
+  "data_incepere": "2024-09-14",
+  "suma": 220,
+  "suma_baza": 220,
+  "rest": 220
+ },
+ {
+  "id": "bea3d27f-0a41-5ced-a711-4122eed4f1e1",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-08-08",
+  "suma": 30,
+  "suma_baza": 30,
+  "rest": 20
+ },
+ {
+  "id": "c9c50124-d0e1-5e96-8a0c-f32e3525981d",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-01-29",
+  "suma": 35,
+  "suma_baza": 35,
+  "rest": 35
+ },
+ {
+  "id": "d1e359a6-69fb-59d4-8927-9525fbcad442",
+  "client": "6309cbff-4b20-5497-a23d-641c790bcc97",
+  "cursul": "44935a4f-487e-5193-8178-10abc5b15a22",
+  "data_incepere": "2023-10-01",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "d6cd3e07-f0c1-5e46-a81e-5b8ddcecbbda",
+  "client": "3689e965-c3a7-55d7-bb06-f0cd42b3d391",
+  "cursul": "52bfd7ff-d9de-579a-b499-874d7e62d4db",
+  "data_incepere": "2023-10-02",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 20
+ },
+ {
+  "id": "d97be603-a225-5864-b35e-ebd7ca65d9dd",
+  "client": "5edcfa17-0eb2-516d-ac3e-f388375ea71b",
+  "cursul": "567fd5ab-db58-5c22-be24-92c17b011660",
+  "data_incepere": "2024-03-09",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "d990235f-0ea0-5623-b8e2-42cac21abde3",
+  "client": "8bc1143d-a547-5048-b393-a4b465f719e8",
+  "cursul": "fddb0050-f9b4-5da2-a1c3-6545bd415dc1",
+  "data_incepere": "2026-06-01",
+  "suma": 260,
+  "suma_baza": 260,
+  "rest": 10
+ },
+ {
+  "id": "dddce5d7-ad1a-5bd8-9e40-163ba3a00702",
+  "client": "c53c430c-a481-5d0e-a962-192a8b1fc0cf",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2019-03-23",
+  "suma": 20,
+  "suma_baza": 20,
+  "rest": 10
+ },
+ {
+  "id": "de38546a-5f79-5e3c-9100-721e8342ba4d",
+  "client": "94a36086-5eab-5991-95d9-05c131963350",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2022-03-05",
+  "suma": 30,
+  "suma_baza": 30,
+  "rest": 30
+ },
+ {
+  "id": "e470fa10-94e5-512b-a792-2af1733a07e3",
+  "client": "75bc4012-14b0-51f9-b27c-2b909658ac4c",
+  "cursul": "4a8a4a5c-e502-5a0a-94c9-5277c92a287b",
+  "data_incepere": "2026-06-01",
+  "suma": 240,
+  "suma_baza": 240,
+  "rest": 240
+ },
+ {
+  "id": "ed8eaa1d-cc66-5c17-9320-a77aacfb81a4",
+  "client": "c0aea36d-f08c-598b-a4e8-d16f5dfb99f1",
+  "cursul": "7d5afa9c-81f4-5acf-9c13-f5fa12a80432",
+  "data_incepere": "2026-06-01",
+  "suma": 170,
+  "suma_baza": 170,
+  "rest": 170
+ },
+ {
+  "id": "f0e50c30-34c2-512a-9aeb-eb2245d1acf4",
+  "client": "a92c1cd6-5dca-52b2-927c-53717473dc38",
+  "cursul": "049f1c1d-0391-5d24-a0a9-1e9bdaf9bb48",
+  "data_incepere": "2023-09-30",
+  "suma": 30,
+  "suma_baza": 30,
+  "rest": 30
+ },
+ {
+  "id": "f2161ae2-1700-5cf3-8e79-c4c3998ecf98",
+  "client": "18eba567-a042-58ef-9c53-5d7edb78ebaa",
+  "cursul": "52bfd7ff-d9de-579a-b499-874d7e62d4db",
+  "data_incepere": "2024-03-04",
+  "suma": 200,
+  "suma_baza": 200,
+  "rest": 200
+ },
+ {
+  "id": "fc861789-f95c-4879-bc6d-c060c2e8b93e",
+  "client": "f25b9ade-a9ae-5e2e-aaee-1b076e27d864",
+  "cursul": "e98d92b2-aeb7-4b71-8364-58e914879205",
+  "data_incepere": "2026-08-06",
+  "suma": 50,
+  "suma_baza": 50,
+  "rest": 50
+ },
+ {
+  "id": "fe0d0056-b0e1-5469-8832-2c03ca0ed6c9",
+  "client": "874029f1-bcc6-5ed8-a4dc-8f847f338b8c",
+  "cursul": "9f8d1e44-4630-537a-a942-0eeb86ceb970",
+  "data_incepere": "2023-09-24",
+  "suma": 35,
+  "suma_baza": 35,
+  "rest": 25
+ }
+]
