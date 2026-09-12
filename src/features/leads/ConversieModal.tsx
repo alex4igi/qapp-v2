@@ -62,6 +62,9 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
   const [showManualLink, setShowManualLink] = useState(false)
   const [manualLink, setManualLink] = useState('')
   const [preparingContract, setPreparingContract] = useState(false)
+  // Clientul e deja salvat pe pasul 2 — ieșirea pe X/Escape ar lăsa un client
+  // fără înrolare (fantomă în roster), deci o confirmăm explicit.
+  const [confirmExit, setConfirmExit] = useState(false)
   const [contractFamilie, setContractFamilie] = useState<{ id: string; nume: string } | null>(
     null,
   )
@@ -84,6 +87,7 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     setManualLink('')
     setPreparingContract(false)
     setContractFamilie(null)
+    setConfirmExit(false)
     // detecție duplicat + grupa sugerată de programare
     void findMatchingClient(lead).then((m) => {
       setMatched(m)
@@ -169,6 +173,14 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     onClose()
   }
 
+  function handleRequestClose() {
+    if (conversionResult) {
+      setConfirmExit(true)
+      return
+    }
+    onClose()
+  }
+
   async function handleTrimiteContract() {
     if (!conversionResult) return
     setError(null)
@@ -217,11 +229,20 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
       <Modal
         open={open}
         title={conversionResult ? 'Client salvat — contract' : 'Finalizare înscriere'}
-        onClose={onClose}
+        onClose={handleRequestClose}
         footer={
-          conversionResult ? (
-            <Button variant="ghost" onClick={finish}>
-              Sări peste
+          confirmExit ? (
+            <>
+              <Button variant="ghost" onClick={() => setConfirmExit(false)}>
+                Înapoi
+              </Button>
+              <Button variant="danger" onClick={onClose}>
+                Ies fără înrolare
+              </Button>
+            </>
+          ) : conversionResult ? (
+            <Button variant="secondary" onClick={finish}>
+              Continuă la înrolare →
             </Button>
           ) : (
             <>
@@ -243,21 +264,44 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
           )
         }
       >
-        {conversionResult ? (
+        {confirmExit ? (
+          <p className="text-sm">
+            Clientul <strong>e deja salvat</strong>. Dacă ieși acum, rămâne fără înrolare
+            — nu apare în nicio grupă și nu are ce plăti.
+          </p>
+        ) : conversionResult ? (
           <div className="space-y-3">
             <p className="text-sm text-quasar-gray">
-              Clientul a fost salvat. Vrei să trimiți acum un contract la semnat?
+              Clientul a fost salvat. Contractul e opțional — poți continua și fără el.
             </p>
 
             <div className="flex flex-col gap-2">
-              <Button onClick={handleTrimiteContract} disabled={preparingContract}>
-                {preparingContract ? 'Se pregătește…' : 'Trimite contract prin Contracte'}
-              </Button>
+              <div>
+                <Button
+                  className="w-full"
+                  onClick={handleTrimiteContract}
+                  disabled={preparingContract}
+                >
+                  {preparingContract ? 'Se pregătește…' : 'Trimite contract prin Contracte'}
+                </Button>
+                <p className="mt-1 text-xs text-quasar-gray">
+                  Trimite părintelui un link de semnat, prin SMS.
+                </p>
+              </div>
 
               {!showManualLink ? (
-                <Button variant="secondary" onClick={() => setShowManualLink(true)}>
-                  Am deja un link (adaugă manual)
-                </Button>
+                <div>
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => setShowManualLink(true)}
+                  >
+                    Am deja un link (adaugă manual)
+                  </Button>
+                  <p className="mt-1 text-xs text-quasar-gray">
+                    Salvează un link existent în Documente, fără SMS.
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-2 rounded-md border border-quasar-gray/30 p-3">
                   <Field label="Link contract" htmlFor="conv-manual-link">
