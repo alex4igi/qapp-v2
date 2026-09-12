@@ -154,14 +154,17 @@ export function LeadModal({
   }, [open, lead, defaultStatus, startScheduling])
 
   // ESC închide modalul (shell propriu, nu mai folosim componenta Modal).
+  // Cât timp e deschis un flux copil (conversie / înrolare), ESC e al lui:
+  // altfel inchidea si shell-ul, demontand copilul impreuna cu confirmarile lui
+  // de iesire — clientul ramanea creat, fara inrolare.
   useEffect(() => {
-    if (!open) return
+    if (!open || convertFlow || enrollData) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open, onClose, convertFlow, enrollData])
 
   // Prefill selecția cursului/evenimentului la editarea unui lead deja programat.
   useEffect(() => {

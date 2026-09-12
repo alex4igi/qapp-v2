@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Button } from './Button'
 
 type Props = {
@@ -18,10 +18,20 @@ const SIZE_CLASS: Record<NonNullable<Props['size']>, string> = {
 }
 
 export function Modal({ open, title, onClose, children, footer, size = 'md', minHeight }: Props) {
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  // Escape închide DOAR modalul din vârf. Fiecare instanță ascultă pe window,
+  // deci pe modale stivuite (conversia leadului peste fișa leadului) un singur
+  // Escape le închidea pe toate — inclusiv peste confirmările de ieșire.
+  // Ordinea din DOM = ordinea de stivuire (toate au z-50), deci ultimul overlay
+  // e cel de deasupra; o citim la apăsare, nu la montare.
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Escape') return
+      const overlays = document.querySelectorAll('[data-modal-overlay]')
+      if (overlays[overlays.length - 1] !== overlayRef.current) return
+      onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -33,6 +43,8 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', min
     // `pointerdown`, nu `mousedown`: pe touch al doilea nu se emite decât ca
     // eveniment de compatibilitate, deci tapul pe fundal nu închidea modalul.
     <div
+      ref={overlayRef}
+      data-modal-overlay=""
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 max-md:items-end max-md:p-0"
       onPointerDown={onClose}
     >
