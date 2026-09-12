@@ -1227,6 +1227,13 @@ export type Database = {
             foreignKeyName: "confirmari_inrolare_sms_enrollment_id_fkey"
             columns: ["enrollment_id"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmari_inrolare_sms_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
             referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_enrollment"]
           },
@@ -4633,6 +4640,13 @@ export type Database = {
             foreignKeyName: "fk_incasari_inregistrare"
             columns: ["inregistrare"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_incasari_inregistrare"
+            columns: ["inregistrare"]
+            isOneToOne: false
             referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_enrollment"]
           },
@@ -6094,6 +6108,13 @@ export type Database = {
             foreignKeyName: "motivari_absenta_enrollment_fkey"
             columns: ["enrollment"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motivari_absenta_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
             referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_enrollment"]
           },
@@ -6416,6 +6437,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "plati_inrolari"
             referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "open_rezervari_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "open_rezervari_enrollment_fkey"
@@ -6914,6 +6942,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "plati_inrolari"
             referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "fk_prezente_enrollment"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "fk_prezente_enrollment"
@@ -7852,6 +7887,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "plati_inrolari"
             referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "reinscrieri_gate_enrollment_id_fkey"
@@ -9238,6 +9280,13 @@ export type Database = {
             foreignKeyName: "voucher_redemptions_enrollment_fkey"
             columns: ["enrollment"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
             referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_enrollment"]
           },
@@ -10252,7 +10301,7 @@ export type Database = {
           cod_voucher: string | null
           data_incepere: string | null
           data_platii: string | null
-          id: number | null
+          id: string | null
           id_curs: string | null
           id_cursant: string | null
           id_enrollment: string | null
@@ -10522,7 +10571,7 @@ export type Database = {
       }
       restante_curs_luna: {
         Row: {
-          id: number | null
+          id: string | null
           id_curs: string | null
           luna: string | null
           nume_curs: string | null
@@ -10534,7 +10583,7 @@ export type Database = {
       }
       restante_locatie_luna: {
         Row: {
-          id: number | null
+          id: string | null
           id_locatie: string | null
           luna: string | null
           nume_locatie: string | null
@@ -10546,7 +10595,7 @@ export type Database = {
       }
       restante_sala_luna: {
         Row: {
-          id: number | null
+          id: string | null
           id_sala: string | null
           luna: string | null
           nume_sala: string | null
@@ -10558,7 +10607,7 @@ export type Database = {
       }
       restante_teacher_luna: {
         Row: {
-          id: number | null
+          id: string | null
           id_teacher: string | null
           luna: string | null
           nume_teacher: string | null
