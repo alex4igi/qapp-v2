@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Spinner, type BadgeTone } from '@/components/ui'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
@@ -34,19 +35,60 @@ function weekDays(iso: string): Date[] {
 
 type Status = { text: string; tone: BadgeTone }
 
-// Pastila de status se calculează din oră vs. ora curentă, doar când privim ziua
-// de azi. Durata cursului o asumăm ~60 min (nu o avem în datele de dashboard).
-function statusPill(ora: string | null, isToday: boolean): Status | null {
-  if (!isToday || !ora) return null
+// Durata cursului o asumăm ~60 min (nu o avem în datele de dashboard).
+const DURATA_MIN = 60
+
+function oraToMin(ora: string | null): number | null {
+  if (!ora) return null
   const m = /(\d{1,2}):(\d{2})/.exec(ora)
-  if (!m) return null
-  const start = Number(m[1]) * 60 + Number(m[2])
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null
+}
+
+function nowMin(): number {
   const now = new Date()
-  const cur = now.getHours() * 60 + now.getMinutes()
+  return now.getHours() * 60 + now.getMinutes()
+}
+
+// Pastila de status se calculează din oră vs. ora curentă, doar când privim ziua
+// de azi.
+function statusPill(ora: string | null, isToday: boolean): Status | null {
+  if (!isToday) return null
+  const start = oraToMin(ora)
+  if (start == null) return null
+  const cur = nowMin()
   if (cur < start) return { text: 'Urmează', tone: 'warn' }
-  if (cur <= start + 60) return { text: 'Acum', tone: 'success' }
+  if (cur <= start + DURATA_MIN) return { text: 'Acum', tone: 'success' }
   return { text: 'Încheiat', tone: 'neutral' }
 }
+
+// Vederea implicită pe „azi" arată doar orele din jurul momentului: ora curentă (cu
+// toate grupele ei — la aceeași oră sunt de obicei două săli), ultima oră încheiată și
+// următoarea. Dimineața (nimic încheiat) și seara (nimic de urmat) se completează tot
+// la 3 ore, ca lista să nu rămână cu un singur card. Alex, 12 sept 2026: recepția
+// vrea „ce e acum", nu 14 carduri de derulat.
+function oreInJurulMomentului(courses: DashboardCourse[], cur: number): Set<number> {
+  const ore = [...new Set(courses.map((c) => oraToMin(c.ora)).filter((m): m is number => m != null))]
+    .sort((a, b) => a - b)
+  const acum = ore.filter((o) => o <= cur && cur <= o + DURATA_MIN)
+  const incheiate = ore.filter((o) => o + DURATA_MIN < cur)
+  const urmatoare = ore.filter((o) => o > cur)
+  const keep = new Set(acum)
+  if (incheiate.length) keep.add(incheiate[incheiate.length - 1])
+  if (urmatoare.length) keep.add(urmatoare[0])
+  let iUrm = 1
+  let iInch = 2
+  while (keep.size < 3) {
+    if (iUrm < urmatoare.length) keep.add(urmatoare[iUrm++])
+    else if (iInch <= incheiate.length) keep.add(incheiate[incheiate.length - iInch++])
+    else break
+  }
+  return keep
+}
+
+// Sub pragul ăsta nu are rost să ascundem nimic (și nici butonul nu apare).
+const MIN_GRUPE_PENTRU_RESTRANGERE = 6
+// Preferința „vreau toate grupele" se ține minte per browser, ca locația de lucru.
+const TOATE_GRUPELE_KEY = 'qapp.dashboard_toate_grupele'
 
 // Culoarea inelului reflectă calitatea prezenței de azi.
 function attColor(prezenti: number, enrolled: number): string {
@@ -147,13 +189,56 @@ type Props = {
   isError?: boolean
   salaId: string
   emptyMessage: string
+  /** false = arată mereu toate grupele (ex. „Grupele mele azi", liste scurte). */
+  compact?: boolean
 }
 
-export function DailyAgenda({ courses, loading, isError, salaId, emptyMessage }: Props) {
+export function DailyAgenda({
+  courses,
+  loading,
+  isError,
+  salaId,
+  emptyMessage,
+  compact = true,
+}: Props) {
   const { date, setDate, isToday, resetToToday } = useWorkingDate()
   const days = weekDays(date)
 
   const nGroups = courses.length
+
+  const [toateGrupele, setToateGrupele] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(TOATE_GRUPELE_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+  const toggleToateGrupele = () =>
+    setToateGrupele((v) => {
+      const next = !v
+      try {
+        localStorage.setItem(TOATE_GRUPELE_KEY, next ? '1' : '0')
+      } catch {
+        /* localStorage indisponibil — în memorie e ok */
+      }
+      return next
+    })
+
+  // Restrângerea are sens doar pe „azi" (altfel nu există „acum") și doar când sunt
+  // destule grupe ca să merite. Sumarul de mai jos rămâne pe TOATE grupele.
+  const restrange =
+    compact && isToday && !toateGrupele && nGroups >= MIN_GRUPE_PENTRU_RESTRANGERE
+  const vizibile = useMemo(() => {
+    if (!restrange) return courses
+    const keep = oreInJurulMomentului(courses, nowMin())
+    return courses.filter((c) => {
+      const m = oraToMin(c.ora)
+      return m == null || keep.has(m)
+    })
+  }, [courses, restrange])
+  const ascunse = nGroups - vizibile.length
+  const arataButon =
+    compact && isToday && nGroups >= MIN_GRUPE_PENTRU_RESTRANGERE && (toateGrupele || ascunse > 0)
   const prezentiMarcati = courses.reduce((a, c) => a + c.prezenti, 0)
   const ramase = isToday
     ? courses.filter((c) => {
@@ -262,16 +347,31 @@ export function DailyAgenda({ courses, loading, isError, salaId, emptyMessage }:
           {emptyMessage}
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((c) => (
-            <GroupBarCard
-              key={c.id}
-              course={c}
-              isToday={isToday}
-              to={`/grupa/${c.id}${salaId ? `?sala=${salaId}` : ''}`}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            {vizibile.map((c) => (
+              <GroupBarCard
+                key={c.id}
+                course={c}
+                isToday={isToday}
+                to={`/grupa/${c.id}${salaId ? `?sala=${salaId}` : ''}`}
+              />
+            ))}
+          </div>
+          {arataButon && (
+            <div className="mt-3 flex justify-center">
+              <button
+                type="button"
+                onClick={toggleToateGrupele}
+                className="rounded-[10px] border border-line bg-card px-3.5 py-2 text-[13px] font-semibold text-muted-2 transition-colors hover:border-quasar-yellow hover:text-ink"
+              >
+                {toateGrupele
+                  ? 'Arată doar grupele din jurul orei'
+                  : `Arată toate cele ${nGroups} grupe`}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

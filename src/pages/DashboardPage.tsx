@@ -211,15 +211,19 @@ export function DashboardPage() {
             isError={false}
             salaId={salaId}
             emptyMessage="Nicio grupă a ta programată azi."
+            compact={false}
           />
         </div>
       )}
 
+      {/* Instructorul își vede toate grupele (sunt puține); staff-ul primește implicit
+          doar orele din jurul momentului, cu buton pentru lista completă. */}
       <DailyAgenda
         courses={coursesQ.data ?? []}
         loading={coursesQ.isLoading || (teacherMode && teacherCursuriQ.isLoading)}
         isError={coursesQ.isError}
         salaId={salaId}
+        compact={!teacherMode}
         emptyMessage={
           inafaraSezonului ??
           (teacherMode
