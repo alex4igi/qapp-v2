@@ -427,7 +427,9 @@ export type Database = {
       }
       app_feedback: {
         Row: {
+          autor_client_id: string | null
           autor_email: string | null
+          autor_portal_account_id: string | null
           autor_user_id: string | null
           created: string
           detalii: string | null
@@ -435,13 +437,16 @@ export type Database = {
           pagina: string | null
           raspuns: string | null
           status: Database["public"]["Enums"]["app_feedback_status"]
+          sursa: Database["public"]["Enums"]["app_feedback_sursa"]
           tip: Database["public"]["Enums"]["app_feedback_tip"]
           titlu: string
           updated: string
           user_agent: string | null
         }
         Insert: {
+          autor_client_id?: string | null
           autor_email?: string | null
+          autor_portal_account_id?: string | null
           autor_user_id?: string | null
           created?: string
           detalii?: string | null
@@ -449,13 +454,16 @@ export type Database = {
           pagina?: string | null
           raspuns?: string | null
           status?: Database["public"]["Enums"]["app_feedback_status"]
+          sursa?: Database["public"]["Enums"]["app_feedback_sursa"]
           tip: Database["public"]["Enums"]["app_feedback_tip"]
           titlu: string
           updated?: string
           user_agent?: string | null
         }
         Update: {
+          autor_client_id?: string | null
           autor_email?: string | null
+          autor_portal_account_id?: string | null
           autor_user_id?: string | null
           created?: string
           detalii?: string | null
@@ -463,12 +471,70 @@ export type Database = {
           pagina?: string | null
           raspuns?: string | null
           status?: Database["public"]["Enums"]["app_feedback_status"]
+          sursa?: Database["public"]["Enums"]["app_feedback_sursa"]
           tip?: Database["public"]["Enums"]["app_feedback_tip"]
           titlu?: string
           updated?: string
           user_agent?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_feedback_autor_client_id_fkey"
+            columns: ["autor_client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_feedback_autor_client_id_fkey"
+            columns: ["autor_client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_feedback_autor_client_id_fkey"
+            columns: ["autor_client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "app_feedback_autor_client_id_fkey"
+            columns: ["autor_client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "app_feedback_autor_client_id_fkey"
+            columns: ["autor_client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_feedback_autor_client_id_fkey"
+            columns: ["autor_client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "app_feedback_autor_client_id_fkey"
+            columns: ["autor_client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "app_feedback_autor_portal_account_id_fkey"
+            columns: ["autor_portal_account_id"]
+            isOneToOne: false
+            referencedRelation: "portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_log: {
         Row: {
@@ -2587,6 +2653,7 @@ export type Database = {
           data_final: string | null
           data_incepere: string | null
           data_reziliere: string | null
+          discount_integral: number
           este_reinscriere: boolean
           foloseste_pret_promo: boolean
           id: string
@@ -2611,6 +2678,7 @@ export type Database = {
           data_final?: string | null
           data_incepere?: string | null
           data_reziliere?: string | null
+          discount_integral?: number
           este_reinscriere?: boolean
           foloseste_pret_promo?: boolean
           id?: string
@@ -2635,6 +2703,7 @@ export type Database = {
           data_final?: string | null
           data_incepere?: string | null
           data_reziliere?: string | null
+          discount_integral?: number
           este_reinscriere?: boolean
           foloseste_pret_promo?: boolean
           id?: string
@@ -6069,6 +6138,7 @@ export type Database = {
           nr_bilete: number | null
           order_ref: string
           order_type: string
+          plata_integrala: boolean
           rezervare_id: string | null
           status: string
           updated: string
@@ -6088,6 +6158,7 @@ export type Database = {
           nr_bilete?: number | null
           order_ref: string
           order_type?: string
+          plata_integrala?: boolean
           rezervare_id?: string | null
           status?: string
           updated?: string
@@ -6107,6 +6178,7 @@ export type Database = {
           nr_bilete?: number | null
           order_ref?: string
           order_type?: string
+          plata_integrala?: boolean
           rezervare_id?: string | null
           status?: string
           updated?: string
@@ -8183,6 +8255,7 @@ export type Database = {
           data_incepere: string | null
           id: string
           numele_sezonului: string
+          scadenta_plata_integrala: string | null
           scadenta_prima_rata: string | null
           scadenta_ultima_rata: string | null
           stare: string
@@ -8196,6 +8269,7 @@ export type Database = {
           data_incepere?: string | null
           id?: string
           numele_sezonului: string
+          scadenta_plata_integrala?: string | null
           scadenta_prima_rata?: string | null
           scadenta_ultima_rata?: string | null
           stare?: string
@@ -8209,6 +8283,7 @@ export type Database = {
           data_incepere?: string | null
           id?: string
           numele_sezonului?: string
+          scadenta_plata_integrala?: string | null
           scadenta_prima_rata?: string | null
           scadenta_ultima_rata?: string | null
           stare?: string
@@ -11111,6 +11186,21 @@ export type Database = {
         Args: { p_lead: string }
         Returns: undefined
       }
+      enrollments_sezon_gap_report: {
+        Args: never
+        Returns: {
+          client_nume: string
+          curs_nume: string
+          data_final: string
+          data_incepere: string
+          enrollment_id: string
+          rest: number
+          sezon_final: string
+          sezon_nume: string
+          sezon_start: string
+          suma: number
+        }[]
+      }
       evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
       exclude_cursant_evaluare: {
         Args: {
@@ -12605,6 +12695,7 @@ export type Database = {
         Returns: number
       }
       ore_pe_zi_valid: { Args: { m: Json }; Returns: boolean }
+      plan_plata_integrala_sezon: { Args: { p_client: string }; Returns: Json }
       poate_evalua_cursul: { Args: { p_curs: string }; Returns: boolean }
       pontaj_aproba_luna: {
         Args: { p_luna: string; p_nota?: string; p_user_id: string }
@@ -12980,6 +13071,17 @@ export type Database = {
         Args: { p_force?: boolean; p_program: string }
         Returns: undefined
       }
+      submit_app_feedback_portal: {
+        Args: {
+          p_client?: string
+          p_detalii?: string
+          p_pagina?: string
+          p_tip: string
+          p_titlu: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
       submit_grupa_evaluare: {
         Args: { p_curs: string; p_sesiune: string }
         Returns: number
@@ -13085,6 +13187,7 @@ export type Database = {
         | "Planificat"
         | "Rezolvat"
         | "Respins"
+      app_feedback_sursa: "staff" | "portal"
       app_feedback_tip: "Bug" | "Idee" | "Intrebare"
       canal_comunicare: "Online" | "Offline"
       canal_contact: "telefon" | "sms" | "email" | "dm"
@@ -13125,6 +13228,7 @@ export type Database = {
         | "Acrobatică"
         | "Zumba"
         | "Nu știu încă"
+        | "Teatru"
       interes_programare: "Dans" | "Gimnastica"
       lead_action_type:
         | "created"
@@ -13354,6 +13458,7 @@ export const Constants = {
         "Rezolvat",
         "Respins",
       ],
+      app_feedback_sursa: ["staff", "portal"],
       app_feedback_tip: ["Bug", "Idee", "Intrebare"],
       canal_comunicare: ["Online", "Offline"],
       canal_contact: ["telefon", "sms", "email", "dm"],
@@ -13391,6 +13496,7 @@ export const Constants = {
         "Acrobatică",
         "Zumba",
         "Nu știu încă",
+        "Teatru",
       ],
       interes_programare: ["Dans", "Gimnastica"],
       lead_action_type: [

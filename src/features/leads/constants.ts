@@ -57,6 +57,7 @@ export const INTERESE = [
   'K-pop',
   'Acrobatică',
   'Zumba',
+  'Teatru',
   'Nu știu încă',
 ] as const
 
