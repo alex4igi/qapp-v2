@@ -199,6 +199,13 @@ export type Database = {
             foreignKeyName: "absente_21z_curs_fkey"
             columns: ["curs"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "absente_21z_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -242,6 +249,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "absente_21z_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -516,6 +530,13 @@ export type Database = {
             columns: ["locatie_id"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "audit_log_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -1136,6 +1157,13 @@ export type Database = {
             referencedRelation: "plati_inrolari"
             referencedColumns: ["id_enrollment"]
           },
+          {
+            foreignKeyName: "confirmari_inrolare_sms_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_enrollment"]
+          },
         ]
       }
       confirmari_programare_sms: {
@@ -1629,6 +1657,13 @@ export type Database = {
             foreignKeyName: "curs_lectii_override_curs_id_fkey"
             columns: ["curs_id"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "curs_lectii_override_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -1841,6 +1876,13 @@ export type Database = {
             foreignKeyName: "fk_cursuri_cursul_original"
             columns: ["cursul_original"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_cursul_original"
+            columns: ["cursul_original"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -1884,6 +1926,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -2046,6 +2095,13 @@ export type Database = {
             columns: ["curs_id"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "cursuri_teacheri_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_curs"]
           },
           {
@@ -2263,6 +2319,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -2677,6 +2740,13 @@ export type Database = {
             foreignKeyName: "fk_enrollments_cursul"
             columns: ["cursul"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_cursul"
+            columns: ["cursul"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -2891,6 +2961,13 @@ export type Database = {
             foreignKeyName: "evaluari_cursul_fkey"
             columns: ["cursul"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evaluari_cursul_fkey"
+            columns: ["cursul"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -3084,6 +3161,13 @@ export type Database = {
             columns: ["curs_id"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evaluari_exceptii_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_curs"]
           },
           {
@@ -3391,6 +3475,13 @@ export type Database = {
             foreignKeyName: "evenimente_curs_fkey"
             columns: ["curs"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -3454,6 +3545,13 @@ export type Database = {
             foreignKeyName: "evenimente_curs_tinta_fkey"
             columns: ["curs_tinta"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "evenimente_curs_tinta_fkey"
+            columns: ["curs_tinta"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -3497,6 +3595,13 @@ export type Database = {
             columns: ["locatie_id"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "evenimente_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -4231,6 +4336,13 @@ export type Database = {
             foreignKeyName: "fk_feedback_cursul"
             columns: ["cursul"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "fk_feedback_cursul"
+            columns: ["cursul"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -4449,6 +4561,13 @@ export type Database = {
             referencedColumns: ["id_enrollment"]
           },
           {
+            foreignKeyName: "fk_incasari_inregistrare"
+            columns: ["inregistrare"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
             foreignKeyName: "fk_incasari_locatie"
             columns: ["locatie"]
             isOneToOne: false
@@ -4467,6 +4586,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_incasari_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -4687,6 +4813,13 @@ export type Database = {
             foreignKeyName: "inchirieri_locatie_fkey"
             columns: ["locatie"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "inchirieri_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_locatie"]
           },
@@ -4849,6 +4982,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_inventar_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -5093,6 +5233,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "kpi_grila_locatii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -5874,6 +6021,13 @@ export type Database = {
             referencedRelation: "plati_inrolari"
             referencedColumns: ["id_enrollment"]
           },
+          {
+            foreignKeyName: "motivari_absenta_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_enrollment"]
+          },
         ]
       }
       motive_abandon: {
@@ -6192,6 +6346,13 @@ export type Database = {
             referencedColumns: ["id_enrollment"]
           },
           {
+            foreignKeyName: "open_rezervari_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
             foreignKeyName: "open_rezervari_incasare_fkey"
             columns: ["incasare"]
             isOneToOne: false
@@ -6282,6 +6443,13 @@ export type Database = {
             columns: ["curs"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "open_sesiuni_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_curs"]
           },
           {
@@ -6675,6 +6843,13 @@ export type Database = {
             referencedRelation: "plati_inrolari"
             referencedColumns: ["id_enrollment"]
           },
+          {
+            foreignKeyName: "fk_prezente_enrollment"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_enrollment"]
+          },
         ]
       }
       program_jurnal: {
@@ -6748,6 +6923,13 @@ export type Database = {
             columns: ["curs_id"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "program_jurnal_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_curs"]
           },
           {
@@ -7001,6 +7183,13 @@ export type Database = {
             foreignKeyName: "fk_progr_curs"
             columns: ["cursul_programat"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "fk_progr_curs"
+            columns: ["cursul_programat"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -7051,6 +7240,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_progr_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -7353,6 +7549,13 @@ export type Database = {
             foreignKeyName: "reconcilieri_cash_locatie_fkey"
             columns: ["locatie"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "reconcilieri_cash_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_locatie"]
           },
@@ -7526,6 +7729,13 @@ export type Database = {
             foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
             columns: ["curs_tinta_id"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_curs_tinta_id_fkey"
+            columns: ["curs_tinta_id"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -7569,6 +7779,13 @@ export type Database = {
             columns: ["enrollment_id"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "reinscrieri_gate_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_enrollment"]
           },
           {
@@ -7723,6 +7940,13 @@ export type Database = {
             foreignKeyName: "fk_sali_locatie"
             columns: ["locatie"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_sali_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_locatie"]
           },
@@ -7852,6 +8076,13 @@ export type Database = {
             columns: ["curs_id"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "sesiune_evaluare_grupe_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_curs"]
           },
           {
@@ -8096,6 +8327,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_sms_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -8381,6 +8619,13 @@ export type Database = {
             foreignKeyName: "spectacol_acte_curs_fkey"
             columns: ["curs"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "spectacol_acte_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -8583,6 +8828,13 @@ export type Database = {
             columns: ["locatie_id"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "staff_pontaj_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -8908,6 +9160,13 @@ export type Database = {
             referencedColumns: ["id_enrollment"]
           },
           {
+            foreignKeyName: "voucher_redemptions_enrollment_fkey"
+            columns: ["enrollment"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
             foreignKeyName: "voucher_redemptions_incasare_fkey"
             columns: ["incasare"]
             isOneToOne: false
@@ -9065,6 +9324,13 @@ export type Database = {
             columns: ["curs"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "fk_vouchere_curs"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_curs"]
           },
           {
@@ -9258,6 +9524,13 @@ export type Database = {
             foreignKeyName: "datorii_locatie_fkey"
             columns: ["locatie"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "datorii_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_locatie"]
           },
@@ -9411,6 +9684,13 @@ export type Database = {
             foreignKeyName: "fk_enrollments_cursul"
             columns: ["curs"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_cursul"
+            columns: ["curs"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -9454,6 +9734,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_sali_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -9646,6 +9933,13 @@ export type Database = {
             foreignKeyName: "fk_enrollments_cursul"
             columns: ["curs"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_cursul"
+            columns: ["curs"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -9689,6 +9983,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_sali_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -9833,6 +10134,13 @@ export type Database = {
             foreignKeyName: "fk_sali_locatie"
             columns: ["locatie"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_sali_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_locatie"]
           },
@@ -9923,6 +10231,103 @@ export type Database = {
             columns: ["id_voucher"]
             isOneToOne: false
             referencedRelation: "vouchere"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plati_inrolari_toate: {
+        Row: {
+          data_incepere: string | null
+          id_curs: string | null
+          id_enrollment: string | null
+          id_locatie: string | null
+          id_sala: string | null
+          id_teacher: string | null
+          nume_curs: string | null
+          nume_locatie: string | null
+          platit: number | null
+          prescris: boolean | null
+          rest: number | null
+          reziliat: boolean | null
+          total_de_plata: number | null
+          viitor: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_cursuri_sala"
+            columns: ["id_sala"]
+            isOneToOne: false
+            referencedRelation: "incasari_sala_luna"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_sala"
+            columns: ["id_sala"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_sala"
+            columns: ["id_sala"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_sala"
+            columns: ["id_sala"]
+            isOneToOne: false
+            referencedRelation: "restante_sala_luna"
+            referencedColumns: ["id_sala"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_sala"
+            columns: ["id_sala"]
+            isOneToOne: false
+            referencedRelation: "sali"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_teacher"
+            columns: ["id_teacher"]
+            isOneToOne: false
+            referencedRelation: "incasari_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_teacher"
+            columns: ["id_teacher"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_teacher"
+            columns: ["id_teacher"]
+            isOneToOne: false
+            referencedRelation: "profil_teacher"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_teacher"
+            columns: ["id_teacher"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_teacher"
+            columns: ["id_teacher"]
+            isOneToOne: false
+            referencedRelation: "restante_teacher_luna"
+            referencedColumns: ["id_teacher"]
+          },
+          {
+            foreignKeyName: "fk_cursuri_teacher"
+            columns: ["id_teacher"]
+            isOneToOne: false
+            referencedRelation: "teacheri"
             referencedColumns: ["id"]
           },
         ]
@@ -10186,6 +10591,13 @@ export type Database = {
             foreignKeyName: "fk_enrollments_cursul"
             columns: ["curs"]
             isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_cursul"
+            columns: ["curs"]
+            isOneToOne: false
             referencedRelation: "raport_financiar"
             referencedColumns: ["id_curs"]
           },
@@ -10229,6 +10641,13 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "fk_sali_locatie"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
             referencedColumns: ["id_locatie"]
           },
           {
