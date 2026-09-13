@@ -1,73 +1,78 @@
-nume,tip,localitate
+nume,tip,localitate,alias
 # Lista de start pentru catalogul de unitati de invatamant (scripts/seed-unitati-invatamant.mjs).
 # Compusa din cunostinte generale despre Iasi — TREBUIE verificata inainte de import:
 # denumirile oficiale pot diferi (numarul scolii, patronul, forma „Colegiul National" vs „Liceul Teoretic").
 # Sterge ce nu exista, corecteaza ce e gresit, adauga ce lipseste. Randurile care incep cu # se ignora.
+# Coloana `alias` = porecle separate prin ; (UMF, TUIASI). Doua drumuri, cu reguli diferite:
+#  - in selector cautarea e pe bucati de text, deci „umf iasi" gaseste unitatea chiar si numai cu „UMF";
+#  - la scriere directa (portal, import) potrivirea e EXACTA pe alias, deci merita trecute si variantele
+#    probabile („UMF Iasi"). Ce nu se potriveste ajunge intrare noua, marcata „de verificat".
+# Pune alias DOAR pentru ce nu se gaseste deja in nume — „Cantemir" e in nume, nu are nevoie de alias.
 # Gradinitele lipsesc intentionat (sunt multe si se schimba des) — se adauga din aplicatie, la nevoie.
-"Școala Gimnazială „Ion Creangă” Iași",Școală,Iași
-"Școala Gimnazială „Ionel Teodoreanu” Iași",Școală,Iași
-"Școala Gimnazială „Bogdan Petriceicu Hasdeu” Iași",Școală,Iași
-"Școala Gimnazială „Otilia Cazimir” Iași",Școală,Iași
-"Școala Gimnazială „Elena Cuza” Iași",Școală,Iași
-"Școala Gimnazială „Titu Maiorescu” Iași",Școală,Iași
-"Școala Gimnazială „Alexandru Vlahuță” Iași",Școală,Iași
-"Școala Gimnazială „Ion Simionescu” Iași",Școală,Iași
-"Școala Gimnazială „Carol I” Iași",Școală,Iași
-"Școala Gimnazială „George Coșbuc” Iași",Școală,Iași
-"Școala Gimnazială „Vasile Conta” Iași",Școală,Iași
-"Școala Gimnazială „Alecu Russo” Iași",Școală,Iași
-"Școala Gimnazială „Mihail Sadoveanu” Iași",Școală,Iași
-"Școala Gimnazială „Nicolae Iorga” Iași",Școală,Iași
-"Școala Gimnazială „Ștefan Bârsănescu” Iași",Școală,Iași
-"Școala Gimnazială „Dimitrie A. Sturdza” Iași",Școală,Iași
-"Școala Gimnazială „Constantin Erbiceanu” Iași",Școală,Iași
-"Școala Gimnazială „Petru Rareș” Iași",Școală,Iași
-"Școala Gimnazială „Veronica Micle” Iași",Școală,Iași
-"Colegiul Național Iași",Liceu,Iași
-"Colegiul Național „Emil Racoviță” Iași",Liceu,Iași
-"Colegiul Național „Costache Negruzzi” Iași",Liceu,Iași
-"Colegiul Național „Mihai Eminescu” Iași",Liceu,Iași
-"Colegiul Național „Garabet Ibrăileanu” Iași",Liceu,Iași
-"Colegiul Național de Artă „Octav Băncilă” Iași",Liceu,Iași
-"Liceul Teoretic „Dimitrie Cantemir” Iași",Liceu,Iași
-"Liceul Teoretic „Vasile Alecsandri” Iași",Liceu,Iași
-"Liceul Teoretic „Miron Costin” Iași",Liceu,Iași
-"Liceul Teoretic de Informatică „Grigore Moisil” Iași",Liceu,Iași
-"Liceul Teoretic „Al. I. Cuza” Iași",Liceu,Iași
-"Liceul Teoretic Waldorf Iași",Liceu,Iași
-"Liceul cu Program Sportiv Iași",Liceu,Iași
-"Colegiul Tehnic „Gheorghe Asachi” Iași",Liceu,Iași
-"Colegiul Tehnic „Ioan C. Ștefănescu” Iași",Liceu,Iași
-"Colegiul Tehnic „Mihail Sturdza” Iași",Liceu,Iași
-"Colegiul Tehnic de Electronică și Telecomunicații „Gheorghe Mârzescu” Iași",Liceu,Iași
-"Colegiul Tehnic de Transporturi și Construcții Iași",Liceu,Iași
-"Colegiul Economic Administrativ Iași",Liceu,Iași
-"Liceul Tehnologic Economic „Virgil Madgearu” Iași",Liceu,Iași
-"Liceul Tehnologic „Petru Poni” Iași",Liceu,Iași
-"Colegiul Agricol și de Industrie Alimentară „Vasile Adamachi” Iași",Liceu,Iași
-"Colegiul Pedagogic „Vasile Lupu” Iași",Liceu,Iași
-"Seminarul Teologic Ortodox „Sfântul Vasile cel Mare” Iași",Liceu,Iași
-"Liceul Teologic Romano-Catolic „Sfântul Iosif” Iași",Liceu,Iași
-"Colegiul „Richard Wurmbrand” Iași",Liceu,Iași
-"Universitatea „Alexandru Ioan Cuza” Iași",Universitate,Iași
-"Universitatea de Medicină și Farmacie „Grigore T. Popa” Iași",Universitate,Iași
-"Universitatea Tehnică „Gheorghe Asachi” Iași",Universitate,Iași
-"Universitatea de Științele Vieții „Ion Ionescu de la Brad” Iași",Universitate,Iași
-"Universitatea Națională de Arte „George Enescu” Iași",Universitate,Iași
-"Universitatea „Petre Andrei” Iași",Universitate,Iași
-"Școala Gimnazială Miroslava",Școală,Miroslava
-"Școala Gimnazială Valea Adâncă",Școală,Valea Adâncă (Miroslava)
-"Școala Gimnazială Valea Lupului",Școală,Valea Lupului
-"Școala Gimnazială Rediu",Școală,Rediu
-"Școala Gimnazială Lețcani",Școală,Lețcani
-"Școala Gimnazială Tomești",Școală,Tomești
-"Școala Gimnazială Holboca",Școală,Holboca
-"Școala Gimnazială Dancu",Școală,Dancu (Holboca)
-"Școala Gimnazială Bârnova",Școală,Bârnova
-"Școala Gimnazială Ciurea",Școală,Ciurea
-"Școala Gimnazială Aroneanu",Școală,Aroneanu
-"Școala Gimnazială Popricani",Școală,Popricani
-"Școala Gimnazială Horlești",Școală,Horlești
-"Școala Gimnazială Schitu Duca",Școală,Schitu Duca
-"Școala Gimnazială Movileni",Școală,Movileni
-"Școala Gimnazială Ungheni",Școală,Ungheni (Iași)
+"Școala Gimnazială „Ion Creangă” Iași",Școală,Iași,
+"Școala Gimnazială „Ionel Teodoreanu” Iași",Școală,Iași,
+"Școala Gimnazială „Bogdan Petriceicu Hasdeu” Iași",Școală,Iași,"BP Hasdeu"
+"Școala Gimnazială „Otilia Cazimir” Iași",Școală,Iași,
+"Școala Gimnazială „Elena Cuza” Iași",Școală,Iași,
+"Școala Gimnazială „Titu Maiorescu” Iași",Școală,Iași,
+"Școala Gimnazială „Alexandru Vlahuță” Iași",Școală,Iași,
+"Școala Gimnazială „Ion Simionescu” Iași",Școală,Iași,
+"Școala Gimnazială „Carol I” Iași",Școală,Iași,
+"Școala Gimnazială „George Coșbuc” Iași",Școală,Iași,
+"Școala Gimnazială „Vasile Conta” Iași",Școală,Iași,
+"Școala Gimnazială „Alecu Russo” Iași",Școală,Iași,
+"Școala Gimnazială „Mihail Sadoveanu” Iași",Școală,Iași,
+"Școala Gimnazială „Nicolae Iorga” Iași",Școală,Iași,
+"Școala Gimnazială „Ștefan Bârsănescu” Iași",Școală,Iași,
+"Școala Gimnazială „Dimitrie A. Sturdza” Iași",Școală,Iași,
+"Școala Gimnazială „Constantin Erbiceanu” Iași",Școală,Iași,
+"Școala Gimnazială „Petru Rareș” Iași",Școală,Iași,
+"Școala Gimnazială „Veronica Micle” Iași",Școală,Iași,
+"Colegiul Național Iași",Liceu,Iași,"CN Iasi;Liceul Internat"
+"Colegiul Național „Emil Racoviță” Iași",Liceu,Iași,"CNER"
+"Colegiul Național „Costache Negruzzi” Iași",Liceu,Iași,"CNCN"
+"Colegiul Național „Mihai Eminescu” Iași",Liceu,Iași,"CNME"
+"Colegiul Național „Garabet Ibrăileanu” Iași",Liceu,Iași,"CNGI"
+"Colegiul Național de Artă „Octav Băncilă” Iași",Liceu,Iași,"Liceul de Arta"
+"Liceul Teoretic „Dimitrie Cantemir” Iași",Liceu,Iași,
+"Liceul Teoretic „Vasile Alecsandri” Iași",Liceu,Iași,
+"Liceul Teoretic „Miron Costin” Iași",Liceu,Iași,
+"Liceul Teoretic de Informatică „Grigore Moisil” Iași",Liceu,Iași,
+"Liceul Teoretic „Al. I. Cuza” Iași",Liceu,Iași,"Alexandru Ioan Cuza"
+"Liceul Teoretic Waldorf Iași",Liceu,Iași,
+"Liceul cu Program Sportiv Iași",Liceu,Iași,"LPS"
+"Colegiul Tehnic „Gheorghe Asachi” Iași",Liceu,Iași,
+"Colegiul Tehnic „Ioan C. Ștefănescu” Iași",Liceu,Iași,"Textila"
+"Colegiul Tehnic „Mihail Sturdza” Iași",Liceu,Iași,
+"Colegiul Tehnic de Electronică și Telecomunicații „Gheorghe Mârzescu” Iași",Liceu,Iași,
+"Colegiul Tehnic de Transporturi și Construcții Iași",Liceu,Iași,
+"Colegiul Economic Administrativ Iași",Liceu,Iași,"CEA"
+"Liceul Tehnologic Economic „Virgil Madgearu” Iași",Liceu,Iași,
+"Liceul Tehnologic „Petru Poni” Iași",Liceu,Iași,"Chimie"
+"Colegiul Agricol și de Industrie Alimentară „Vasile Adamachi” Iași",Liceu,Iași,
+"Colegiul Pedagogic „Vasile Lupu” Iași",Liceu,Iași,
+"Seminarul Teologic Ortodox „Sfântul Vasile cel Mare” Iași",Liceu,Iași,
+"Liceul Teologic Romano-Catolic „Sfântul Iosif” Iași",Liceu,Iași,
+"Colegiul „Richard Wurmbrand” Iași",Liceu,Iași,
+"Universitatea „Alexandru Ioan Cuza” Iași",Universitate,Iași,"UAIC"
+"Universitatea de Medicină și Farmacie „Grigore T. Popa” Iași",Universitate,Iași,"UMF;UMF Iasi"
+"Universitatea Tehnică „Gheorghe Asachi” Iași",Universitate,Iași,"TUIASI;Politehnica"
+"Universitatea de Științele Vieții „Ion Ionescu de la Brad” Iași",Universitate,Iași,"USV;USAMV;Agronomie"
+"Universitatea Națională de Arte „George Enescu” Iași",Universitate,Iași,"UNAGE;Conservator"
+"Universitatea „Petre Andrei” Iași",Universitate,Iași,"UPA"
+"Școala Gimnazială Miroslava",Școală,Miroslava,
+"Școala Gimnazială Valea Adâncă",Școală,Valea Adâncă (Miroslava),
+"Școala Gimnazială Valea Lupului",Școală,Valea Lupului,
+"Școala Gimnazială Rediu",Școală,Rediu,
+"Școala Gimnazială Lețcani",Școală,Lețcani,
+"Școala Gimnazială Tomești",Școală,Tomești,
+"Școala Gimnazială Holboca",Școală,Holboca,
+"Școala Gimnazială Dancu",Școală,Dancu (Holboca),
+"Școala Gimnazială Bârnova",Școală,Bârnova,
+"Școala Gimnazială Ciurea",Școală,Ciurea,
+"Școala Gimnazială Aroneanu",Școală,Aroneanu,
+"Școala Gimnazială Popricani",Școală,Popricani,
+"Școala Gimnazială Horlești",Școală,Horlești,
+"Școala Gimnazială Schitu Duca",Școală,Schitu Duca,
+"Școala Gimnazială Movileni",Școală,Movileni,
+"Școala Gimnazială Ungheni",Școală,Ungheni (Iași),

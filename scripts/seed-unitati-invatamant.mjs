@@ -1,7 +1,9 @@
 // Importă lista curatoriată de unități de învățământ în `unitati_invatamant`.
 //
-// Sursa: scripts/data/unitati-invatamant.csv (nume,tip,localitate; liniile cu #
-// se ignoră). Intrările importate de aici pleacă cu `de_verificat = false` —
+// Sursa: scripts/data/unitati-invatamant.csv (nume,tip,localitate,alias — aliasurile
+// separate prin ';'; liniile cu # se ignoră). Rulările următoare SINCRONIZEAZĂ
+// tip/localitate/alias pentru unitățile din CSV (atenție: suprascriu editările
+// făcute între timp pe acele rânduri). Intrările importate de aici pleacă cu `de_verificat = false` —
 // sunt lista oficială. Cele născute din ce tastează recepția/portalul rămân
 // `de_verificat = true`, ca să poată fi triate ulterior.
 //
@@ -65,10 +67,14 @@ const rows = raw
   .slice(1) // antetul
   .map(parseLine)
   .filter((c) => c[0])
-  .map(([nume, tip, localitate]) => ({
+  .map(([nume, tip, localitate, alias]) => ({
     nume,
     tip: tip || null,
     localitate: localitate || null,
+    alias: (alias ?? '')
+      .split(';')
+      .map((a) => a.trim())
+      .filter(Boolean),
     de_verificat: false,
   }))
 
@@ -86,18 +92,29 @@ if (colide.length) {
 
 const { data: existente, error: eSel } = await db
   .from('unitati_invatamant')
-  .select('id, nume, de_verificat')
+  .select('id, nume, tip, localitate, alias, de_verificat')
 if (eSel) throw eSel
 const dupaNorm = new Map(existente.map((u) => [norm(u.nume), u]))
 
 const deAdaugat = rows.filter((r) => !dupaNorm.has(norm(r.nume)))
-const deConfirmat = rows
+// Sincronizăm și rândurile deja existente: altfel aliasurile adăugate în CSV
+// după primul import n-ar ajunge niciodată în DB.
+const deSincronizat = rows
   .map((r) => ({ r, ex: dupaNorm.get(norm(r.nume)) }))
-  .filter(({ ex }) => ex && ex.de_verificat)
+  .filter(
+    ({ r, ex }) =>
+      ex &&
+      (ex.de_verificat ||
+        ex.nume !== r.nume ||
+        ex.tip !== r.tip ||
+        ex.localitate !== r.localitate ||
+        (ex.alias ?? []).join('|') !== r.alias.join('|')),
+  )
 
 console.log(`CSV: ${rows.length} unități | în DB: ${existente.length}`)
-console.log(`→ de adăugat: ${deAdaugat.length} | de confirmat (existau tastate): ${deConfirmat.length}`)
-for (const { r, ex } of deConfirmat) console.log(`   confirm „${ex.nume}" → „${r.nume}"`)
+console.log(`→ de adăugat: ${deAdaugat.length} | de sincronizat: ${deSincronizat.length}`)
+for (const { r, ex } of deSincronizat)
+  console.log(`   sync „${ex.nume}"${ex.nume !== r.nume ? ` → „${r.nume}"` : ''}${r.alias.length ? ` [${r.alias.join(', ')}]` : ''}`)
 
 if (dryRun) {
   console.log('\n(dry-run — nu s-a scris nimic)')
@@ -108,12 +125,18 @@ if (deAdaugat.length) {
   const { error } = await db.from('unitati_invatamant').insert(deAdaugat)
   if (error) throw error
 }
-for (const { r, ex } of deConfirmat) {
+for (const { r, ex } of deSincronizat) {
   const { error } = await db
     .from('unitati_invatamant')
-    .update({ nume: r.nume, tip: r.tip, localitate: r.localitate, de_verificat: false })
+    .update({
+      nume: r.nume,
+      tip: r.tip,
+      localitate: r.localitate,
+      alias: r.alias,
+      de_verificat: false,
+    })
     .eq('id', ex.id)
   if (error) throw error
 }
 
-console.log(`✅ Gata: +${deAdaugat.length} adăugate, ${deConfirmat.length} confirmate.`)
+console.log(`✅ Gata: +${deAdaugat.length} adăugate, ${deSincronizat.length} sincronizate.`)

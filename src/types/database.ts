@@ -9247,6 +9247,7 @@ export type Database = {
       }
       unitati_invatamant: {
         Row: {
+          alias: string[]
           created_at: string
           de_verificat: boolean
           id: string
@@ -9255,6 +9256,7 @@ export type Database = {
           tip: string | null
         }
         Insert: {
+          alias?: string[]
           created_at?: string
           de_verificat?: boolean
           id?: string
@@ -9263,6 +9265,7 @@ export type Database = {
           tip?: string | null
         }
         Update: {
+          alias?: string[]
           created_at?: string
           de_verificat?: boolean
           id?: string
@@ -12920,6 +12923,7 @@ export type Database = {
           tip: string
         }[]
       }
+      match_unitate: { Args: { p_text: string }; Returns: string }
       muta_inrolare_curs: {
         Args: {
           p_aplica_tarif_nou?: boolean

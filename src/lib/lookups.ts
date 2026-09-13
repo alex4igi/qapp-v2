@@ -279,13 +279,18 @@ function calcAge(dataNasterii: string | null): number | null {
 export async function unitatiInvatamantOptions(): Promise<SelectOption[]> {
   const { data, error } = await supabase
     .from('unitati_invatamant')
-    .select('nume, tip, localitate')
+    .select('nume, tip, localitate, alias')
     .order('nume', { ascending: true })
   if (error) throw error
+  // Aliasurile intră în subtitlu tocmai ca să fie căutabile (Combobox filtrează
+  // și pe `secondary`): „umf" trebuie să găsească „Grigore T. Popa".
   return (data ?? []).map((u) => ({
     value: u.nume,
     label: u.nume,
-    secondary: [u.tip, u.localitate].filter(Boolean).join(' · ') || undefined,
+    secondary:
+      [u.tip, u.localitate, (u.alias ?? []).join(', ')]
+        .filter(Boolean)
+        .join(' · ') || undefined,
   }))
 }
 
