@@ -22,7 +22,7 @@ const ACTION_LABEL: Record<string, string> = {
   incasare_modified: 'Modificare încasare',
   incasare_deleted: 'Ștergere încasare',
   lead_deleted: 'Ștergere lead',
-  curs_archived: 'Arhivare curs',
+  curs_archived: 'Suspendare curs',
   teacher_archived: 'Arhivare instructor',
   client_data_changed: 'Modificare date client',
 }
@@ -75,7 +75,13 @@ function summarizeValues(row: AuditLogRow): string {
     const n = row.new_value as { suma?: number } | null
     return `${o?.suma ?? '?'} RON → ${n?.suma ?? '?'} RON`
   }
-  if (row.action === 'curs_archived' || row.action === 'teacher_archived') {
+  // Aceeași cheie de audit, două vocabulare: cursurile se suspendă, instructorii
+  // se arhivează. Rândurile vechi rămân valide — s-a schimbat doar eticheta.
+  if (row.action === 'curs_archived') {
+    const n = row.new_value as { suspendat?: boolean } | null
+    return n?.suspendat ? 'Suspendat' : 'Re-activat'
+  }
+  if (row.action === 'teacher_archived') {
     const n = row.new_value as { suspendat?: boolean; arhivat?: boolean } | null
     const archived = n?.suspendat ?? n?.arhivat
     return archived ? 'Arhivat' : 'Dezarhivat'

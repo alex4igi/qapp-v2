@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageHeader, Field, Select, DateInput, Spinner } from '@/components/ui'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
+import { cursActivInLuna } from '@/features/cursuri/api'
 import { sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import type { StatusPrezenta } from '@/types/db'
 import {
@@ -81,10 +82,20 @@ export function PrezentePage() {
     sezonId: sezonFilter || null,
   })
 
+  // Prezențele se marchează doar pe lunile în care grupa chiar s-a ținut: o lună
+  // de suspendare n-a existat, iar prezențele din ea ar intra în KPI și în
+  // modelele de salariu pe prezență.
+  const activInLuna = useQuery({
+    queryKey: ['curs', cursId, 'activ-in-luna', data?.slice(0, 7)],
+    queryFn: () => cursActivInLuna(cursId, data),
+    enabled: Boolean(cursId) && Boolean(data),
+  })
+  const lunaSuspendata = activInLuna.data === false
+
   const roster = useQuery({
     queryKey: ['prezente', 'roster', cursId, data],
     queryFn: () => getCursRoster(cursId, data),
-    enabled: Boolean(cursId) && Boolean(data),
+    enabled: Boolean(cursId) && Boolean(data) && activInLuna.data === true,
   })
 
   const enrollmentIds = useMemo(
@@ -169,7 +180,13 @@ export function PrezentePage() {
         <p className="text-sm text-quasar-gray">
           Alege un curs pentru a marca prezențele.
         </p>
-      ) : roster.isLoading ? (
+      ) : lunaSuspendata ? (
+        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          ⏸ Grupa e suspendată în luna asta — nu se marchează prezențe pe ea.
+          Alege o dată dintr-o lună dinaintea suspendării, sau re-activează grupa
+          din fișa cursului.
+        </p>
+      ) : roster.isLoading || activInLuna.isLoading ? (
         <Spinner />
       ) : (roster.data ?? []).length === 0 ? (
         <p className="text-sm text-quasar-gray">

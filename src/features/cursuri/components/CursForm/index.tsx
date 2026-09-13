@@ -5,11 +5,19 @@ import { Button, Checkbox, Modal, Spinner } from '@/components/ui'
 import { ChecklistRail } from '@/components/checklist'
 import { evalueazaChecklist } from '@/lib/checklist'
 import {
+  ArchiveConfirmModal,
+  LEXIC_SUSPENDARE,
+} from '@/features/shared/ArchiveConfirmModal'
+import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal'
+import { useAuth } from '@/hooks/useAuth'
+import { isAdminOrHigher, isManagerOrHigher } from '@/lib/rolesMatrix'
+import {
   teacheriOptions,
   saliWithLocatie,
   locatiiOptions,
   sezoaneOptions,
 } from '@/lib/lookups'
+import { formatMonth } from '@/lib/format'
 import type { Curs } from '@/types/db'
 import { CURS_CHECKLIST, type SectiuneCurs } from '@/lib/checklist/specs/curs'
 import {
@@ -18,6 +26,11 @@ import {
   getCursTeacheri,
   setCursTeacheri,
   countPrezenteCurs,
+  setCursSuspendare,
+  getSuspendareDeschisa,
+  aplicaTriajSuspendare,
+  deleteCurs,
+  type TriajSuspendare,
 } from '../../api'
 import {
   buildCursPayload,
@@ -27,6 +40,11 @@ import {
   type FormState,
   type SetField,
 } from './helpers'
+import {
+  LunaSuspendareField,
+  lunaCurentaIso,
+} from '../LunaSuspendareField'
+import { TriajCursantiPanel } from '../TriajCursantiPanel'
 import { DetaliiFields } from './DetaliiFields'
 import { ProgramFields } from './ProgramFields'
 import { TarifFields } from './TarifFields'
@@ -37,14 +55,28 @@ type Props = {
   onClose: () => void
   /** Deschide formularul derulat la secțiunea unui câmp lipsă (din checklist). */
   focusSection?: SectiuneCurs
+  /** Apelat după ștergerea definitivă — fișa cursului nu mai există. */
+  onDeleted?: () => void
 }
 
-export function CursForm({ open, curs, onClose, focusSection }: Props) {
+export function CursForm({ open, curs, onClose, focusSection, onDeleted }: Props) {
   const queryClient = useQueryClient()
+  const { role } = useAuth()
   const isEdit = Boolean(curs)
   const [form, setForm] = useState<FormState>(() => initialState(curs))
   const [error, setError] = useState<string | null>(null)
   const [mutareSezonOk, setMutareSezonOk] = useState(false)
+  const [suspendOpen, setSuspendOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [lunaSuspendare, setLunaSuspendare] = useState(lunaCurentaIso)
+  const [orarGolOk, setOrarGolOk] = useState(false)
+  const [triaj, setTriaj] = useState<TriajSuspendare>({ tip: 'nimic' })
+
+  // Suspendare/ștergere doar pe un curs existent. Suspendarea trece prin
+  // `toggleCursSuspendat` (motiv obligatoriu + audit_log), nu prin payload-ul
+  // formularului — de asta nu mai există bifa brută „Suspendat".
+  const canSuspend = isEdit && isManagerOrHigher(role)
+  const canDelete = isEdit && isAdminOrHigher(role)
 
   // Gard mutare între sezoane: un curs deja predat își duce istoria cu el (înrolări,
   // prezențe), iar salariile și rapoartele se citesc pe sezonul lunii — schimbarea
@@ -63,6 +95,16 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
   useEffect(() => {
     if (!mutaSezon) setMutareSezonOk(false)
   }, [mutaSezon])
+
+  // O grupă care rămâne fără nicio zi nu se mai ține — e o suspendare scrisă pe
+  // ocolite, dar fără lună, fără motiv și fără urmă în audit. Salariul ar continua
+  // s-o plătească, pentru că el se uită la suspendare, nu la orar.
+  const aveaZile = (curs?.zile?.length ?? 0) > 0
+  const orarGolit = isEdit && aveaZile && form.zile.length === 0
+
+  useEffect(() => {
+    if (!orarGolit) setOrarGolOk(false)
+  }, [orarGolit])
   const bodyRef = useRef<HTMLDivElement>(null)
 
   // Rosterul COMPLET de instructori, nefiltrat pe sezon. Filtrarea pe sezonul
@@ -86,6 +128,38 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
     queryKey: ['lookup', 'sezoane'],
     queryFn: sezoaneOptions,
   })
+
+  // Luna suspendării curente: re-activarea nu poate porni din ea sau dinainte.
+  const suspendareQ = useQuery({
+    queryKey: ['curs', curs?.id, 'suspendare-deschisa'],
+    queryFn: () => getSuspendareDeschisa(curs!.id),
+    enabled: Boolean(curs?.id),
+  })
+
+  // Butonul urmărește EXISTENȚA unei suspendări, nu flagul „suspendat acum":
+  // o oprire programată din noiembrie lasă flagul pe false, dar nu mai poate fi
+  // suspendată încă o dată — se poate doar retrage.
+  const suspendareDeschisa = suspendareQ.data ?? null
+  const areSuspendare = Boolean(suspendareDeschisa)
+  const suspendareProgramata =
+    !form.suspendat && suspendareDeschisa ? suspendareDeschisa.din_luna : null
+
+  // Suspendare → implicit luna curentă. Re-activare → prima lună de după oprire,
+  // dar nu mai devreme de luna curentă.
+  useEffect(() => {
+    if (!suspendOpen) return
+    const acum = lunaCurentaIso()
+    setTriaj({ tip: 'nimic' })
+    if (!suspendareQ.data) {
+      setLunaSuspendare(acum)
+      return
+    }
+    const din = suspendareQ.data.din_luna
+    if (!din) return
+    const [y, m] = din.split('-').map(Number)
+    const urmatoarea = `${new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7)}-01`
+    setLunaSuspendare(urmatoarea > acum ? urmatoarea : acum)
+  }, [suspendOpen, suspendareQ.data])
 
   // La editarea unui curs existent, încarcă asocierile M:N pentru a precompleta co-instructorul
   const cursTeacheriQ = useQuery({
@@ -236,6 +310,12 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
       setError('Se verifică istoricul grupei — încearcă din nou într-o clipă.')
       return
     }
+    if (orarGolit && !orarGolOk) {
+      setError(
+        'Ai scos toate zilele de curs. Asta e o suspendare — folosește „Suspendă", ca să aibă lună și motiv, sau bifează confirmarea de la Zile.',
+      )
+      return
+    }
     if (cereConfirmareMutare && !mutareSezonOk) {
       setError(
         'Cursul are prezențe înregistrate. Bifează confirmarea de la Sezon sau lasă-l în sezonul lui.',
@@ -267,6 +347,23 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
       className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]"
     >
       <form id="curs-form" onSubmit={handleSubmit} className="min-w-0 space-y-3">
+        {form.suspendat ? (
+          <div className="rounded-md border border-line bg-surface px-3 py-2 text-xs text-muted-2">
+            ⏸ <strong className="text-ink">Curs suspendat</strong>
+            {suspendareQ.data?.din_luna
+              ? ` din ${formatMonth(suspendareQ.data.din_luna)}`
+              : ''}
+            . Din luna aia încolo nu apare în agenda zilei, nu intră în salariul
+            instructorului, nu ține sala ocupată și nu se mai vinde la rezervări
+            online. Prezențele se pot marca doar pe lunile dinainte. Rămâne în
+            lista de cursuri, cu tot istoricul. Îl repornești cu „Re-activează".
+          </div>
+        ) : suspendareProgramata ? (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            ⏳ <strong>Suspendare programată din {formatMonth(suspendareProgramata)}.</strong>{' '}
+            Până atunci grupa merge normal — apare în agendă și se plătește.
+          </div>
+        ) : null}
         <div data-sectiune="detalii">
           <DetaliiFields
             form={form}
@@ -277,6 +374,28 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
           />
         </div>
         <div data-sectiune="program">
+          {orarGolit && (
+            <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+              <p className="text-sm font-bold text-amber-900">
+                Grupa rămâne fără nicio zi de curs
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                Fără zile, grupa nu mai apare în prezențe și în calendar — practic
+                e suspendată, dar fără lună, fără motiv și fără urmă în audit, iar
+                salariul instructorului o plătește în continuare. Dacă asta voiai,
+                închide fereastra și folosește{' '}
+                <strong>⏸ Suspendă</strong>.
+              </p>
+              <div className="mt-2">
+                <Checkbox
+                  id="confirma-orar-gol"
+                  label="Nu e suspendare — doar golesc orarul temporar"
+                  checked={orarGolOk}
+                  onChange={(e) => setOrarGolOk(e.target.checked)}
+                />
+              </div>
+            </div>
+          )}
           <ProgramFields
             form={form}
             set={set}
@@ -332,23 +451,164 @@ export function CursForm({ open, curs, onClose, focusSection }: Props) {
   )
 
   return (
-    <Modal
-      open={open}
-      title={isEdit ? 'Editează curs' : 'Curs nou'}
-      onClose={onClose}
-      size="xl"
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Anulează
-          </Button>
-          <Button type="submit" form="curs-form" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Se salvează…' : 'Salvează'}
-          </Button>
-        </>
-      }
-    >
-      {formBody}
-    </Modal>
+    <>
+      <Modal
+        open={open}
+        title={isEdit ? 'Editează curs' : 'Curs nou'}
+        onClose={onClose}
+        size="xl"
+        footer={
+          <>
+            {(canSuspend || canDelete) && (
+              <div className="mr-auto flex flex-wrap items-center gap-2">
+                {canSuspend && (
+                  <Button
+                    variant={areSuspendare ? 'secondary' : 'ghost'}
+                    onClick={() => setSuspendOpen(true)}
+                    title={
+                      suspendareProgramata
+                        ? 'Retrage suspendarea programată'
+                        : areSuspendare
+                          ? 'Readu cursul în agendă, salarii și statistici'
+                          : 'Scoate cursul din agendă, salarii și statistici, păstrând istoricul'
+                    }
+                  >
+                    {suspendareProgramata
+                      ? '✕ Retrage suspendarea'
+                      : areSuspendare
+                        ? '▶ Re-activează'
+                        : '⏸ Suspendă'}
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    variant="danger"
+                    onClick={() => setDeleteOpen(true)}
+                    title="Șterge definitiv cursul"
+                  >
+                    🗑 Șterge
+                  </Button>
+                )}
+              </div>
+            )}
+            <Button variant="secondary" onClick={onClose}>
+              Anulează
+            </Button>
+            <Button type="submit" form="curs-form" disabled={mutation.isPending}>
+              {mutation.isPending ? 'Se salvează…' : 'Salvează'}
+            </Button>
+          </>
+        }
+      >
+        {formBody}
+      </Modal>
+
+      {suspendOpen && curs && (
+        <ArchiveConfirmModal
+          open
+          lexic={LEXIC_SUSPENDARE}
+          title={
+            suspendareProgramata
+              ? 'Retrage suspendarea programată'
+              : areSuspendare
+                ? 'Re-activează curs'
+                : 'Suspendă curs'
+          }
+          entityLabel={curs.numele}
+          archive={!areSuspendare}
+          onConfirm={async (motiv) => {
+            // Întâi cursanții, apoi grupa: dacă triajul cade la jumătate, grupa
+            // rămâne activă și se vede ce n-a mers, în loc să rămână oprită cu
+            // oamenii în aer.
+            if (!areSuspendare) {
+              if (triaj.tip === 'muta' && !triaj.cursNouId) {
+                throw new Error('Alege grupa în care se mută cursanții.')
+              }
+              await aplicaTriajSuspendare({
+                cursId: curs.id,
+                dinLuna: lunaSuspendare,
+                triaj,
+                motiv,
+              })
+            }
+            await setCursSuspendare({
+              cursId: curs.id,
+              suspenda: !areSuspendare,
+              // Retragerea unei programări = re-activare din CHIAR luna ei; RPC-ul
+              // o citește ca anulare și șterge intervalul.
+              dinLuna: suspendareProgramata ?? lunaSuspendare,
+              motiv,
+            })
+            // `cursuri.suspendat` înseamnă „suspendat ÎN LUNA CURENTĂ", nu „are o
+            // suspendare": o oprire programată din noiembrie lasă grupa activă până
+            // atunci. Oglindim exact ce a scris RPC-ul, altfel un „Salvează" dat
+            // imediat după ar trimite înapoi un flag greșit.
+            const acum = lunaCurentaIso()
+            const nouFlag = !areSuspendare
+              ? lunaSuspendare <= acum
+              : suspendareProgramata
+                ? false
+                : lunaSuspendare > acum
+            setForm((prev) => ({ ...prev, suspendat: nouFlag }))
+            await queryClient.invalidateQueries({ queryKey: ['curs', curs.id] })
+            await queryClient.invalidateQueries({ queryKey: ['cursuri'] })
+            await queryClient.invalidateQueries({
+              queryKey: ['curs', curs.id, 'suspendare-deschisa'],
+            })
+            void queryClient.invalidateQueries({ queryKey: ['plati'] })
+            void queryClient.invalidateQueries({ queryKey: ['client'] })
+          }}
+          onClose={() => setSuspendOpen(false)}
+        >
+          {suspendareProgramata ? (
+            <p className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+              Suspendarea era programată din {formatMonth(suspendareProgramata)} și
+              nu apucase să intre în vigoare. Se retrage complet — grupa rămâne
+              activă, fără nicio lună neplătită.
+            </p>
+          ) : (
+            <>
+              <LunaSuspendareField
+                mod={areSuspendare ? 'reactivare' : 'suspendare'}
+                value={lunaSuspendare}
+                onChange={setLunaSuspendare}
+                minExclusiv={
+                  areSuspendare ? suspendareDeschisa?.din_luna ?? null : null
+                }
+              />
+              {!areSuspendare && (
+                <TriajCursantiPanel
+                  cursId={curs.id}
+                  locatieId={form.locatie || null}
+                  sezonId={form.sezon || null}
+                  dinLuna={lunaSuspendare}
+                  triaj={triaj}
+                  onChange={setTriaj}
+                />
+              )}
+            </>
+          )}
+        </ArchiveConfirmModal>
+      )}
+
+      {deleteOpen && curs && (
+        <DeleteConfirmModal
+          open
+          title="Șterge definitiv curs"
+          entityLabel={curs.numele}
+          noun="cursul"
+          alternativa="suspendă"
+          onConfirm={async (force) => {
+            await deleteCurs(curs.id, force)
+            // Întâi ieșim din fișă, apoi invalidăm: altfel fișa rămâne montată
+            // peste refetch și cere un curs care nu mai există (406 în consolă).
+            onDeleted?.()
+            onClose()
+            void queryClient.invalidateQueries({ queryKey: ['cursuri'] })
+          }}
+          onClose={() => setDeleteOpen(false)}
+        />
+      )}
+    </>
   )
 }

@@ -9,8 +9,10 @@ type Props = {
   capacitateSala: number | null
 }
 
-// Tarife (capacitate maximă, preț lunar/PROMO/anual/ședință) și flag-uri
-// (one-time, suspendat). Facultativul se plătește pe lună sau pe ședință, deci
+// Tarife (capacitate maximă, preț lunar/PROMO/anual/ședință) și flag-ul one-time.
+// `suspendat` NU se editează de aici: suspendarea cere motiv și intră în audit_log,
+// deci trece prin butonul „Suspendă" din subsolul modalului.
+// Facultativul se plătește pe lună sau pe ședință, deci
 // PROMO, prețul anual și prețul de reziliere sunt ascunse acolo.
 // Capacitatea e o listă de trepte, nu un număr liber — vezi @/lib/capacitateGrupa.
 export function TarifFields({ form, set, capacitateSala }: Props) {
@@ -98,12 +100,6 @@ export function TarifFields({ form, set, capacitateSala }: Props) {
           label="One-time"
           checked={form.one_time}
           onChange={(e) => set('one_time', e.target.checked)}
-        />
-        <Checkbox
-          id="suspendat"
-          label="Suspendat"
-          checked={form.suspendat}
-          onChange={(e) => set('suspendat', e.target.checked)}
         />
         {form.tip === 'facultativ' && (
           <Checkbox

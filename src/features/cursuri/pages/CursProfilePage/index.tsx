@@ -13,12 +13,9 @@ import {
   sezoaneOptions,
   locatiiOptions,
 } from '@/lib/lookups'
-import { ArchiveConfirmModal } from '@/features/shared/ArchiveConfirmModal'
-import { DeleteConfirmModal } from '@/features/shared/DeleteConfirmModal'
 import { useAuth } from '@/hooks/useAuth'
 import {
   canMesajGrupa,
-  isAdminOrHigher,
   isFrontDeskOrHigher,
   isManagerOrHigher,
   isTeacher,
@@ -39,10 +36,9 @@ import {
   getCursIstoric,
   getCursLuni,
   getCursTeacheri,
+  getSuspendareDeschisa,
   lunaCurenta,
   activateReinscriere,
-  toggleCursArchived,
-  deleteCurs,
 } from '../../api'
 import { GrupaEvenimenteSection } from '@/features/evenimente/GrupaEvenimenteSection'
 import { MetodologieTab } from '@/features/metodologic/tabs/MetodologieTab'
@@ -81,13 +77,9 @@ export function CursProfilePage() {
   const [editOpen, setEditOpen] = useState(false)
   const [focusSection, setFocusSection] = useState<SectiuneCurs | undefined>()
   const [payClientId, setPayClientId] = useState<string | null>(null)
-  const [archiveOpen, setArchiveOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
   const [mesajOpen, setMesajOpen] = useState(false)
   const { role } = useAuth()
   const canSendMesajGrupa = canMesajGrupa(role)
-  const canArchive = isManagerOrHigher(role)
-  const canDelete = isAdminOrHigher(role)
   // Scrierea pe cursuri e permisă doar manager+ (RLS cursuri_manager_update).
   // Fără gard, front-desk vedea butonul, edita și primea eroarea RLS brută.
   const canEdit = isManagerOrHigher(role)
@@ -106,6 +98,14 @@ export function CursProfilePage() {
   const cursQuery = useQuery({
     queryKey: ['curs', id],
     queryFn: () => getCurs(id!),
+    enabled: Boolean(id),
+  })
+
+  // Starea de suspendare, inclusiv cea PROGRAMATĂ într-o lună viitoare: pe aceea
+  // `cursuri.suspendat` e încă false, dar managerul trebuie s-o vadă.
+  const suspendareQuery = useQuery({
+    queryKey: ['curs', id, 'suspendare-deschisa'],
+    queryFn: () => getSuspendareDeschisa(id!),
     enabled: Boolean(id),
   })
 
@@ -298,6 +298,20 @@ export function CursProfilePage() {
         title={curs.numele}
         actions={
           <>
+            {/* Starea de suspendat se vede în header; butonul care o schimbă stă
+                în modalul „Editează". */}
+            {curs.suspendat ? (
+              <Badge tone="warn">
+                ⏸ Suspendat
+                {suspendareQuery.data
+                  ? ` din ${formatMonth(suspendareQuery.data.din_luna)}`
+                  : ''}
+              </Badge>
+            ) : suspendareQuery.data ? (
+              <Badge tone="neutral">
+                ⏳ Se suspendă din {formatMonth(suspendareQuery.data.din_luna)}
+              </Badge>
+            ) : null}
             <ChecklistBadge rezultat={checklist} />
             {canSendMesajGrupa && (
               <Button variant="secondary" onClick={() => setMesajOpen(true)}>
@@ -317,26 +331,6 @@ export function CursProfilePage() {
               </a>
             )}
             {canEdit && <Button onClick={() => openEdit()}>Editează</Button>}
-            {canArchive && (
-              <Button
-                variant={curs.suspendat ? 'secondary' : 'ghost'}
-                onClick={() => setArchiveOpen(true)}
-                title={
-                  curs.suspendat ? 'Dezarhivează cursul' : 'Arhivează cursul'
-                }
-              >
-                {curs.suspendat ? '↩ Dezarhivează' : '📦 Arhivează'}
-              </Button>
-            )}
-            {canDelete && (
-              <Button
-                variant="danger"
-                onClick={() => setDeleteOpen(true)}
-                title="Șterge definitiv cursul"
-              >
-                🗑 Șterge
-              </Button>
-            )}
           </>
         }
         sidebar={
@@ -527,6 +521,7 @@ export function CursProfilePage() {
           open
           curs={curs}
           focusSection={focusSection}
+          onDeleted={() => navigate('/cursuri')}
           onClose={() => {
             setEditOpen(false)
             setFocusSection(undefined)
@@ -548,40 +543,6 @@ export function CursProfilePage() {
           cursId={curs.id}
           cursNume={curs.numele}
           onClose={() => setMesajOpen(false)}
-        />
-      )}
-
-      {archiveOpen && (
-        <ArchiveConfirmModal
-          open
-          title={curs.suspendat ? 'Dezarhivează curs' : 'Arhivează curs'}
-          entityLabel={curs.numele}
-          archive={!curs.suspendat}
-          onConfirm={async (motiv) => {
-            await toggleCursArchived({
-              cursId: curs.id,
-              archive: !curs.suspendat,
-              motiv,
-            })
-            await queryClient.invalidateQueries({ queryKey: ['curs', curs.id] })
-            await queryClient.invalidateQueries({ queryKey: ['cursuri'] })
-          }}
-          onClose={() => setArchiveOpen(false)}
-        />
-      )}
-
-      {deleteOpen && (
-        <DeleteConfirmModal
-          open
-          title="Șterge definitiv curs"
-          entityLabel={curs.numele}
-          noun="cursul"
-          onConfirm={async (force) => {
-            await deleteCurs(curs.id, force)
-            await queryClient.invalidateQueries({ queryKey: ['cursuri'] })
-            navigate('/cursuri')
-          }}
-          onClose={() => setDeleteOpen(false)}
         />
       )}
     </>

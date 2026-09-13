@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { timeToMinutes } from '@/lib/inchirieriPricing'
 import {
   cursStartMinForWeekday,
+  cursSuspendatLaData,
   listCursuriForCalendar,
   listEvenimenteWeek,
   listInchirieriWeek,
@@ -52,6 +53,7 @@ export function useWeekOccupancy(params: {
     for (const c of cursuriQ.data ?? []) {
       if (c.sala !== salaId) continue
       for (const d of days) {
+        if (cursSuspendatLaData(c, d)) continue
         const weekday = new Date(`${d}T00:00:00`).getDay()
         const startMin = cursStartMinForWeekday(c, weekday)
         if (startMin == null) continue

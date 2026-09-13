@@ -2125,6 +2125,116 @@ export type Database = {
           },
         ]
       }
+      cursuri_suspendari: {
+        Row: {
+          curs: string
+          din_luna: string
+          id: string
+          motiv: string
+          motiv_reactivare: string | null
+          pana_luna: string | null
+          reactivat_de: string | null
+          reactivat_la: string | null
+          suspendat_de: string | null
+          suspendat_la: string
+        }
+        Insert: {
+          curs: string
+          din_luna: string
+          id?: string
+          motiv: string
+          motiv_reactivare?: string | null
+          pana_luna?: string | null
+          reactivat_de?: string | null
+          reactivat_la?: string | null
+          suspendat_de?: string | null
+          suspendat_la?: string
+        }
+        Update: {
+          curs?: string
+          din_luna?: string
+          id?: string
+          motiv?: string
+          motiv_reactivare?: string | null
+          pana_luna?: string | null
+          reactivat_de?: string | null
+          reactivat_la?: string | null
+          suspendat_de?: string | null
+          suspendat_la?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "cursuri_suspendari_curs_fkey"
+            columns: ["curs"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
+        ]
+      }
       cursuri_teacheri: {
         Row: {
           created: string
@@ -11308,6 +11418,10 @@ export type Database = {
       current_client: { Args: never; Returns: string }
       current_familie: { Args: never; Returns: string }
       current_teacher_id: { Args: never; Returns: string }
+      curs_activ_in_luna: {
+        Args: { p_curs: string; p_luna: string }
+        Returns: boolean
+      }
       datorii_luna: {
         Args: { p_luna: string }
         Returns: {
@@ -13334,6 +13448,15 @@ export type Database = {
         }
         Returns: string
       }
+      set_curs_suspendare: {
+        Args: {
+          p_curs: string
+          p_din_luna: string
+          p_motiv?: string
+          p_suspenda: boolean
+        }
+        Returns: undefined
+      }
       set_suspendare_datorii: {
         Args: { p_client: string; p_suspendat: boolean }
         Returns: undefined
@@ -13386,6 +13509,7 @@ export type Database = {
           zile_depasire: number
         }[]
       }
+      sync_cursuri_suspendat: { Args: never; Returns: number }
       teacher_can_access_curs: { Args: { p_curs: string }; Returns: boolean }
       trimite_aprobate: { Args: { p_sesiune: string }; Returns: number }
       update_profil_client: {

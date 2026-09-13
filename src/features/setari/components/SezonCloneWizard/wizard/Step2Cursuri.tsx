@@ -1,4 +1,4 @@
-import { Select, Spinner, TextInput } from '@/components/ui'
+import { Badge, Select, Spinner, TextInput } from '@/components/ui'
 import { capacitateGrupaOptionsCu } from '@/lib/capacitateGrupa'
 import type { CursRow, Tip } from '../helpers'
 
@@ -17,6 +17,12 @@ export function Step2Cursuri({ loading, tip, cursuri, setCursuri }: Props) {
           ? 'Extra-sezon: afișează doar cursurile facultative din sursă.'
           : 'Toate cursurile din sezonul sursă. Bifează cele de clonat; poți edita nume / preț lunar / capacitate.'}
       </p>
+      {cursuri.some((c) => c.sursa.suspendat) && (
+        <p className="text-xs text-quasar-gray">
+          ⏸ Grupele suspendate apar în listă, dar vin nebifate — clona se naște
+          activă, deci bifează-le doar dacă vrei să repornești grupa în sezonul nou.
+        </p>
+      )}
       {loading ? (
         <Spinner />
       ) : cursuri.length === 0 ? (
@@ -51,6 +57,11 @@ export function Step2Cursuri({ loading, tip, cursuri, setCursuri }: Props) {
                     />
                   </td>
                   <td className="px-2 py-1">
+                    {c.sursa.suspendat && (
+                      <Badge tone="warn" className="mb-1">
+                        ⏸ Suspendat
+                      </Badge>
+                    )}
                     <TextInput
                       value={c.numele}
                       onChange={(e) => {

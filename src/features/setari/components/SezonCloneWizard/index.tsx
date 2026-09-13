@@ -71,7 +71,7 @@ export function SezonCloneWizard({ onClose, onCreated }: Props) {
       const { data, error } = await supabase
         .from('cursuri')
         .select(
-          'id,numele,varsta,stil,facultativ,pret_lunar,pret_anual,pret_sedinta,pret_lunar_promo,capacitate_maxima',
+          'id,numele,varsta,stil,facultativ,pret_lunar,pret_anual,pret_sedinta,pret_lunar_promo,capacitate_maxima,suspendat',
         )
         .eq('sezon', sursaId)
         .order('numele', { ascending: true })
@@ -89,7 +89,9 @@ export function SezonCloneWizard({ onClose, onCreated }: Props) {
     setCursuri(
       filtrate.map((c) => ({
         sursa: c,
-        selected: true,
+        // Grupele suspendate apar în listă, dar nebifate: clona se naște activă,
+        // deci o bifă moștenită ar reporni tăcut o grupă oprită intenționat.
+        selected: !c.suspendat,
         numele: c.numele,
         pret_lunar: c.pret_lunar?.toString() ?? '',
         capacitate_maxima: c.capacitate_maxima?.toString() ?? '',

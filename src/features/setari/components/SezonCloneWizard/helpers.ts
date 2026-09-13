@@ -11,6 +11,7 @@ export type SursaCurs = {
   pret_sedinta: number | null
   pret_lunar_promo: number | null
   capacitate_maxima: number | null
+  suspendat: boolean
 }
 
 export type CursRow = {

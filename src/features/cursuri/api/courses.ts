@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-import { recordAuditLog } from '@/lib/auditLog'
 import type { Curs, InsertDto, UpdateDto } from '@/types/db'
 
 export async function getCurs(id: string): Promise<Curs> {
@@ -61,46 +60,56 @@ export async function deleteCurs(id: string, force = false): Promise<void> {
   if (error) throw error
 }
 
-// Arhivare/dezarhivare curs (`suspendat = true/false`). Disponibil manager+.
-// Audit log cu motiv obligatoriu la arhivare; la dezarhivare motivul e opțional.
-export async function toggleCursArchived(params: {
+// Suspendare/re-activare curs, cu LUNA de la care se aplică. Intervalul, flagul
+// `cursuri.suspendat` (cache pentru „acum") și urma din audit_log se scriu într-o
+// singură tranzacție, în RPC — vezi migrația 20260913180000.
+export async function setCursSuspendare(params: {
   cursId: string
-  archive: boolean
+  suspenda: boolean
+  /** Ziua 1 a lunii de la care se aplică ("YYYY-MM-01"). */
+  dinLuna: string
   motiv?: string
 }): Promise<void> {
-  const motiv = (params.motiv ?? '').trim()
-  if (params.archive && !motiv) throw new Error('Motivul e obligatoriu la arhivare.')
-
-  const { data: cur, error: gErr } = await supabase
-    .from('cursuri')
-    .select('id, suspendat, sala')
-    .eq('id', params.cursId)
-    .single()
-  if (gErr) throw gErr
-
-  let locatieId: string | null = null
-  if (cur.sala) {
-    const { data: sala } = await supabase
-      .from('sali')
-      .select('locatie')
-      .eq('id', cur.sala)
-      .single()
-    locatieId = (sala as { locatie?: string } | null)?.locatie ?? null
-  }
-
-  const { error: uErr } = await supabase
-    .from('cursuri')
-    .update({ suspendat: params.archive, updated: new Date().toISOString() })
-    .eq('id', params.cursId)
-  if (uErr) throw uErr
-
-  await recordAuditLog({
-    action: 'curs_archived',
-    entityType: 'curs',
-    entityId: params.cursId,
-    oldValue: { suspendat: cur.suspendat },
-    newValue: { suspendat: params.archive },
-    reason: motiv || (params.archive ? null : 'Dezarhivat'),
-    locatieId,
+  const { error } = await supabase.rpc('set_curs_suspendare', {
+    p_curs: params.cursId,
+    p_suspenda: params.suspenda,
+    p_din_luna: params.dinLuna,
+    p_motiv: params.motiv?.trim() || undefined,
   })
+  if (error) throw error
+}
+
+export type CursSuspendare = {
+  id: string
+  din_luna: string
+  motiv: string
+}
+
+// Suspendarea DESCHISĂ a cursului (pana_luna null), dacă există. Re-activarea are
+// nevoie de luna ei: nu se poate reporni dintr-o lună dinaintea opririi.
+export async function getSuspendareDeschisa(
+  cursId: string,
+): Promise<CursSuspendare | null> {
+  const { data, error } = await supabase
+    .from('cursuri_suspendari')
+    .select('id, din_luna, motiv')
+    .eq('curs', cursId)
+    .is('pana_luna', null)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+// „Grupa se ținea în luna asta?" — aceeași funcție pe care o întreabă salariul,
+// ca UI-ul să nu-și inventeze o a doua definiție a suspendării.
+export async function cursActivInLuna(
+  cursId: string,
+  dataIso: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc('curs_activ_in_luna', {
+    p_curs: cursId,
+    p_luna: `${dataIso.slice(0, 7)}-01`,
+  })
+  if (error) throw error
+  return data !== false
 }

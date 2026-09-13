@@ -9,11 +9,14 @@ export {
   getCurs,
   createCurs,
   updateCurs,
-  toggleCursArchived,
+  setCursSuspendare,
+  cursActivInLuna,
+  getSuspendareDeschisa,
   deleteCurs,
   countPrezenteCurs,
 } from './courses'
 
+export type { CursSuspendare } from './courses'
 export type { CursEnrollment } from './enrollments'
 export { getCursEnrollments } from './enrollments'
 
@@ -44,3 +47,9 @@ export type { CursTeacherAsignment } from './teachers'
 export { getCursTeacheri, setCursTeacheri } from './teachers'
 
 export { activateReinscriere } from './reinscrieri'
+
+export type { CursantAfectat, TriajSuspendare, TriajRezultat } from './suspendare'
+export {
+  getCursantiAfectatiDeSuspendare,
+  aplicaTriajSuspendare,
+} from './suspendare'

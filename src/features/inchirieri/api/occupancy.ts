@@ -13,6 +13,18 @@ export type CursCalendar = {
   ora: string | null
   ore_pe_zi: unknown
   durata_cursului: number | null
+  /** Intervalele de suspendare [din_luna, pana_luna). Sala e liberă în ele. */
+  suspendari: { din_luna: string; pana_luna: string | null }[]
+}
+
+// O grupă suspendată nu mai ține sala ocupată — se poate închiria în lunile de
+// pauză. Verificarea e pe ZI, nu pe „acum": săptămâna afișată poate cădea în
+// altă lună decât cea curentă (și poate chiar să le încalece pe amândouă).
+export function cursSuspendatLaData(c: CursCalendar, dataIso: string): boolean {
+  const luna = `${dataIso.slice(0, 7)}-01`
+  return (c.suspendari ?? []).some(
+    (s) => luna >= s.din_luna && (s.pana_luna == null || luna < s.pana_luna),
+  )
 }
 
 // Cursurile din sezonul activ pentru sălile unei locații (pentru ocupare recurentă).
@@ -26,13 +38,15 @@ export async function listCursuriForCalendar(
   if (!sezon) return []
   let q = supabase
     .from('cursuri')
-    .select('id, numele, sala, zile, ora, ore_pe_zi, durata_cursului')
+    .select(
+      'id, numele, sala, zile, ora, ore_pe_zi, durata_cursului, suspendari:cursuri_suspendari(din_luna, pana_luna)',
+    )
     .not('sala', 'is', null)
     .eq('sezon', sezon)
   if (locatieId) q = q.eq('locatie', locatieId)
   const { data, error } = await q
   if (error) throw error
-  return (data ?? []) as CursCalendar[]
+  return (data ?? []) as unknown as CursCalendar[]
 }
 
 export type InchiriereCalendar = {

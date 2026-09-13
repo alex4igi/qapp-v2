@@ -9,6 +9,8 @@ type Props = {
   entityLabel: string
   // Mesaj scurt despre ce se șterge (ex. „instructorul", „cursul").
   noun: string
+  /** Ce-i recomandăm în loc de ștergere: „arhivează" (implicit) sau „suspendă". */
+  alternativa?: string
   // force=true => șterge chiar dacă există dependențe (le orfanizează).
   onConfirm: (force: boolean) => Promise<void>
   onClose: () => void
@@ -24,6 +26,7 @@ export function DeleteConfirmModal({
   title,
   entityLabel,
   noun,
+  alternativa = 'arhivează',
   onConfirm,
   onClose,
 }: Props) {
@@ -98,7 +101,7 @@ export function DeleteConfirmModal({
             <p className="text-xs text-amber-800">
               Dacă forțezi ștergerea, aceste date <strong>rămân în sistem dar fără
               legătură</strong> cu {noun} (devin orfane) și pot afecta rapoartele.
-              Alternativă recomandată: arhivează în loc de ștergere.
+              Alternativă recomandată: {alternativa} în loc de ștergere.
             </p>
           </div>
         )}
