@@ -8,8 +8,8 @@ type Props = {
   onStartConvert: () => void
 }
 
+// „Nou" n-are hint: zona lui de lucru e chiar formularul de date + logarea contactului.
 const HINT: Partial<Record<StatusLead, string>> = {
-  nou: 'Completează datele din stânga, sună leadul și marchează-l „Contactat".',
   waiting_list: 'Pe lista de așteptare. Când se eliberează un loc, programează-l la o grupă.',
   a_venit: 'A venit la ședința de probă. Dacă se înscrie, convertește-l în client.',
   nu_a_venit: 'Nu a venit la programare. Reprogramează-l („Programat") sau mută-l în Nurture.',

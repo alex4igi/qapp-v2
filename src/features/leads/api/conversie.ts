@@ -171,6 +171,9 @@ export async function getEnrolledClientIds(
 export type LeadConversionInfo = {
   clientId: string
   clientNume: string
+  clientTelefon: string | null
+  clientEmail: string | null
+  clientStatus: string | null
   cursNume: string | null
   cursVarsta: string | null
   cursId: string | null
@@ -182,7 +185,7 @@ export async function getLeadConversionInfo(
 ): Promise<LeadConversionInfo | null> {
   const { data: client, error: cErr } = await supabase
     .from('clienti')
-    .select('id, nume, prenume')
+    .select('id, nume, prenume, telefon, email, status')
     .eq('id', clientId)
     .maybeSingle()
   if (cErr) throw cErr
@@ -207,6 +210,9 @@ export async function getLeadConversionInfo(
   return {
     clientId: client.id as string,
     clientNume: [client.prenume, client.nume].filter(Boolean).join(' ').trim(),
+    clientTelefon: client.telefon ?? null,
+    clientEmail: client.email ?? null,
+    clientStatus: client.status ?? null,
     cursNume: curs?.numele ?? null,
     cursVarsta: curs?.varsta ?? null,
     cursId: curs?.id ?? null,

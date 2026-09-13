@@ -1,7 +1,7 @@
 import type { GrupaLead } from '@/types/db'
 import { INTERESE, GRUPE, GRUPA_LABELS, LOCATII } from '../../constants'
 import type { LeadForm } from '../../api'
-import { inputStyle, selectStyle, sectionLabel, L } from '../styles'
+import { selectStyle, sectionLabel, L } from '../styles'
 
 type Props = {
   form: LeadForm
@@ -9,22 +9,12 @@ type Props = {
   campanii: { value: string; label: string }[]
 }
 
-// Secțiunea „Detalii" din rail: părinte, data nașterii, sursă, locație, interes,
-// grupă de vârstă. O singură coloană: rail-ul are ~280px utili, iar selecturile
-// („Ștefan cel Mare", „— selectează —") nu încap pe două.
-export function DetaliiSection({ form, set, campanii }: Props) {
+// Secțiunea „Profil & interes": sursă, locație, interes, grupă de vârstă.
+export function ProfilInteresSection({ form, set, campanii }: Props) {
   return (
     <>
-      <div style={sectionLabel}>Detalii</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-        <div>
-          <L>Nume părinte</L>
-          <input className="qf" value={form.nume_parinte} onChange={(e) => set('nume_parinte', e.target.value)} style={inputStyle} />
-        </div>
-        <div>
-          <L>Data nașterii</L>
-          <input className="qf" type="date" value={form.data_nasterii} onChange={(e) => set('data_nasterii', e.target.value)} style={inputStyle} />
-        </div>
+      <div style={{ ...sectionLabel, marginTop: '22px' }}>Profil &amp; interes</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '13px', marginTop: '11px' }}>
         <div>
           <L req>Sursă (campanie)</L>
           <select className="qf" value={form.sursa} onChange={(e) => set('sursa', e.target.value)} style={selectStyle}>

@@ -48,7 +48,7 @@ import { waLink } from '@/lib/phone'
 import { LeadHistory } from '../LeadHistory'
 import { LogContactModal } from '../LogContactModal'
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
-import { STATUS_TONE } from './styles'
+import { STATUS_TONE, sectionLabel } from './styles'
 import { EMPTY, fromLead } from './helpers'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { IdentityRail } from './IdentityRail'
@@ -58,7 +58,7 @@ import { ProgramareSection } from './sections/ProgramareSection'
 import { ContactatSection } from './sections/ContactatSection'
 import { PierdutSection } from './sections/PierdutSection'
 import { DateContactSection, type DupHit } from './sections/DateContactSection'
-import { DetaliiSection } from './sections/DetaliiSection'
+import { ProfilInteresSection } from './sections/ProfilInteresSection'
 import { PasUrmatorSection } from './sections/PasUrmatorSection'
 
 type Props = {
@@ -89,6 +89,9 @@ export function LeadModal({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'detalii' | 'istoric'>('detalii')
   const [showLogContact, setShowLogContact] = useState(false)
+  // Formularul de date stă în zona de lucru a statusului „Nou"; pe celelalte
+  // statusuri apare doar la cerere („Editează datele" din rail).
+  const [editMode, setEditMode] = useState(false)
   // Flux de conversie (Finalizare înscriere → înrolare), pornit din pasul „Convertit".
   const [convertFlow, setConvertFlow] = useState(false)
   const [enrollData, setEnrollData] = useState<ConversieResult | null>(null)
@@ -148,6 +151,7 @@ export function LeadModal({
     setDupHit(null)
     setConfirmDelete(false)
     setTab('detalii')
+    setEditMode(false)
     setSelectie('')
     setIgnoreVarsta(false)
     setPlinDinServer(false)
@@ -446,16 +450,20 @@ export function LeadModal({
     // Salvarea merge și din tab-ul Istoric (rail-ul e editabil acolo); eroarea
     // se afișează însă în panoul de detalii.
     setTab('detalii')
+    // Câmp lipsă din formularul de date → îl aducem la vedere, indiferent de status.
     if (!form.nume.trim()) {
       setError('Numele este obligatoriu.')
+      setEditMode(true)
       return
     }
     if (!form.telefon.trim()) {
       setError('Telefonul este obligatoriu.')
+      setEditMode(true)
       return
     }
     if (!form.sursa) {
       setError('Sursa (campania) este obligatorie.')
+      setEditMode(true)
       return
     }
     // Programare: dacă statusul e „Programat", data + curs/eveniment sunt
@@ -497,24 +505,26 @@ export function LeadModal({
     background: active ? 'var(--color-rail)' : 'transparent',
     color: active ? '#fff' : '#8A857C',
   })
-  // Datele leadului stau în rail (stânga) pe orice status; pe telefon „Detalii"
-  // coboară sub zona de lucru, ca stepper-ul să nu ajungă după zece inputuri.
-  const contactEl = (
-    <DateContactSection
-      form={form}
-      set={set}
-      dupHit={dupHit}
-      onTelefonChange={(v) => {
-        set('telefon', v)
-        setDupHit(null)
-      }}
-      onTelefonBlur={(v) => void checkDup(v)}
-      onReactivate={(id) => reactivate.mutate(id)}
-      reactivatePending={reactivate.isPending}
-    />
-  )
-  const detaliiEl = (
-    <DetaliiSection form={form} set={set} campanii={campanii.data ?? []} />
+  // Formularul de date: în zona de lucru la „Nou" și la orice lead nou (indiferent
+  // de statusul de pornire), altfel doar la cerere, într-un card sub cardul statusului.
+  const formInWorkArea = form.status === 'nou' || !isEdit
+  const formOnDemand = !formInWorkArea && editMode
+  const editFormEl = (
+    <>
+      <DateContactSection
+        form={form}
+        set={set}
+        dupHit={dupHit}
+        onTelefonChange={(v) => {
+          set('telefon', v)
+          setDupHit(null)
+        }}
+        onTelefonBlur={(v) => void checkDup(v)}
+        onReactivate={(id) => reactivate.mutate(id)}
+        reactivatePending={reactivate.isPending}
+      />
+      <ProfilInteresSection form={form} set={set} campanii={campanii.data ?? []} />
+    </>
   )
 
   return (
@@ -627,8 +637,9 @@ export function LeadModal({
               onLogContact={() => setShowLogContact(true)}
               onMoveToNurture={() => moveToNurture.mutate()}
               movePending={moveToNurture.isPending}
-              contact={contactEl}
-              details={detaliiEl}
+              logContactInRail={!formInWorkArea}
+              onEditToggle={formInWorkArea ? null : () => setEditMode((v) => !v)}
+              editing={editMode}
             />
 
             {/* panou formular (dreapta) */}
@@ -699,6 +710,36 @@ export function LeadModal({
                     onStartConvert={() => setConvertFlow(true)}
                   />
 
+                  {formInWorkArea && (
+                    <>
+                      {editFormEl}
+                      {isEdit && lead && (
+                        <button
+                          type="button"
+                          className="qbtnp"
+                          onClick={() => setShowLogContact(true)}
+                          style={{ marginTop: '22px', width: '100%', height: '52px', border: 'none', borderRadius: '12px', background: 'var(--color-quasar-yellow)', fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A1814" strokeWidth="2.2"><path d="M4 5a2 2 0 0 1 2-2h2.3a1 1 0 0 1 1 .76l.9 3.6a1 1 0 0 1-.5 1.1L8 9.8a13 13 0 0 0 6.2 6.2l1.3-1.6a1 1 0 0 1 1.1-.5l3.6.9a1 1 0 0 1 .8 1V18a2 2 0 0 1-2 2A16 16 0 0 1 4 5Z" /></svg>
+                          Loghează contactul
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {formOnDemand && (
+                    <div style={{ marginTop: '18px', border: '1px solid #EFEBE2', background: '#FBFAF6', borderRadius: '13px', padding: '0 16px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', marginTop: '14px' }}>
+                        <div style={sectionLabel}>Date lead</div>
+                        <span style={{ flex: 1 }} />
+                        <button type="button" onClick={() => setEditMode(false)} style={{ height: '28px', padding: '0 10px', border: '1px solid #E4E0D7', background: '#fff', borderRadius: '7px', fontSize: '12px', fontWeight: 600, color: 'var(--color-muted-2)', cursor: 'pointer' }}>
+                          Ascunde
+                        </button>
+                      </div>
+                      {editFormEl}
+                    </div>
+                  )}
+
                   {/* OBSERVAȚII */}
                   <div style={{ marginTop: '18px' }}>
                     <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-muted-2)', marginBottom: '6px' }}>Observații</div>
@@ -717,8 +758,6 @@ export function LeadModal({
                       />
                     </div>
                   )}
-
-                  {isMobile && <div style={{ marginTop: '22px' }}>{detaliiEl}</div>}
 
                   {error && <div style={{ fontSize: '13px', color: '#C2403F', marginTop: '12px' }}>{error}</div>}
                 </>
