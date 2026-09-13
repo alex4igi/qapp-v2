@@ -127,7 +127,12 @@ h3 {
   color: var(--color-ink) !important;
 }
 .qexit {
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.qexit[aria-pressed='false']:hover:not(:disabled) {
+  color: var(--exit-fg) !important;
+  background: var(--exit-bg) !important;
+  border-color: var(--exit-bd) !important;
 }
 .qact {
   transition: background 0.12s ease;

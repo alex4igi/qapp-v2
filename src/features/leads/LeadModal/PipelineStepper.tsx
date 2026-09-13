@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { StatusLead } from '@/types/db'
 import { STATUS_CONFIG } from '../constants'
 import { STATUS_TONE, sectionLabel } from './styles'
@@ -70,8 +71,24 @@ export function PipelineStepper({
               type="button"
               className="qexit"
               disabled={readOnly}
+              aria-pressed={on}
               onClick={() => onPickStatus(key)}
-              style={{ height: '32px', padding: '0 14px', borderRadius: '20px', cursor: readOnly ? 'default' : 'pointer', fontSize: '12px', fontWeight: 600, color: on ? '#fff' : t.fg, background: on ? t.fg : t.bg, border: '1px solid ' + (on ? t.fg : t.bd) }}
+              // Neapăsate stau stinse (gri pe alb): sunt ieșiri din pipeline, nu
+              // pași. Culoarea statusului apare la hover și rămâne aprinsă cât e activ.
+              style={{
+                height: '32px',
+                padding: '0 14px',
+                borderRadius: '20px',
+                cursor: readOnly ? 'default' : 'pointer',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: on ? '#fff' : '#9A958B',
+                background: on ? t.fg : '#fff',
+                border: '1px solid ' + (on ? t.fg : '#EFEBE2'),
+                '--exit-fg': t.fg,
+                '--exit-bg': t.bg,
+                '--exit-bd': t.bd,
+              } as CSSProperties}
             >
               {STATUS_CONFIG[key].label}
             </button>
