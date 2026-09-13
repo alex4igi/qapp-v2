@@ -10,7 +10,7 @@
 //  1. capacități în afara treptelor (pe cursurile cu sală) — EROARE, e drift
 //  2. săli fără capacitate standard setată — EROARE
 //  3. capacități care diferă de standardul sălii — doar informativ: există
-//     excepții voite (`S Open Class` stă pe 30 în Sala 1, unde standardul e 25,
+//     excepții voite (`S Open Class` stă pe 30 în SCM Studio 1, unde standardul e 25,
 //     fiindcă la open class capacitatea e limita unei ședințe, nu mărimea grupei)
 // Cursurile fără sală ȘI fără locație sunt moloz din v1 (fără înrolări active);
 // se listează doar la numărătoare, nu ca eroare.

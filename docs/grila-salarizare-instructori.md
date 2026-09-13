@@ -103,11 +103,11 @@ coloana „Mărime", ca „standard de la N".
 
 | Capacitate | Sală | În standard | Peste standard | Lei standard | Lei peste |
 |---|---|---|---|---|---|
-| 10 | Ștefan · Sala 2 | 6–8 cursanți | 9+ | 60 | 100 |
+| 10 | SCM Studio 2 | 6–8 cursanți | 9+ | 60 | 100 |
 | 15 | Quasar 4 Kids | 9–12 | 13+ | 90 | 140 |
 | 20 | Nicolina | 12–16 | 17+ | 120 | 180 |
-| 25 | Ștefan · Sala 1 | 15–20 | 21+ | 150 | 220 |
-| 30 | Ștefan · Sala 1, doar `S Open Class` | 18–24 | 25+ | 180 | 260 |
+| 25 | SCM Studio 1 | 15–20 | 21+ | 150 | 220 |
+| 30 | SCM Studio 1, doar `S Open Class` | 18–24 | 25+ | 180 | 260 |
 
 La grupele cu o ședință pe săptămână sumele se înjumătățesc; **pragurile de cursanți rămân la fel**.
 Implementare: `ceil(0.6 × mărime)` pentru standard, `floor(0.8 × mărime) + 1` pentru peste standard.
@@ -118,10 +118,10 @@ Banda 80–81% din prima versiune s-a închis: standardul e `>= 60%`, peste stan
 | Prag | Valoare | Ce decide |
 |---|---|---|
 | **Existența grupei** | **8** cursanți plătitori, testat la 3 luni de la deschidere (§4) | dacă grupa se ține sau se reorganizează |
-| **Bonusul de ocupare** | **60% din mărime** ⇒ 6 în Sala 2 · 9 la Q4K · 12 la Nicolina · 15 în Sala 1 | dacă instructorul ia bani pe ocupare |
+| **Bonusul de ocupare** | **60% din mărime** ⇒ 6 în SCM Studio 2 · 9 la Q4K · 12 la Nicolina · 15 în SCM Studio 1 | dacă instructorul ia bani pe ocupare |
 
 Pragul de 8 n-a fost schimbat niciodată. Consecința suprapunerii: la Nicolina (mărime 20) există o zonă
-de **8–11 cursanți** în care grupa e viabilă, dar bonusul de ocupare e încă 0; în Sala 2 (mărime 10)
+de **8–11 cursanți** în care grupa e viabilă, dar bonusul de ocupare e încă 0; în SCM Studio 2 (mărime 10)
 pragul KPI e sub cel de existență, deci nu apare zona asta. Dacă zona e prea largă, pârghiile sunt
 pragul KPI (60% → 40–50%) sau mărimea sălii (Nicolina 20 → 15), nu pragul de existență.
 
@@ -134,8 +134,8 @@ trepte, cu standardul luat din sala în care se ține grupa.
 
 | Sală | Capacitate standard | Grupe în sezonul activ | Înainte |
 |---|---|---|---|
-| Ștefan cel Mare · Sala 1 | **25** | 21 | 30 (și una cu 35) |
-| Ștefan cel Mare · Sala 2 | **10** | 7 | 10, 12, 13, 14, 15 **și** 30 |
+| SCM Studio 1 | **25** | 21 | 30 (și una cu 35) |
+| SCM Studio 2 | **10** | 7 | 10, 12, 13, 14, 15 **și** 30 |
 | Nicolina | **20** | 21 | 25 la toate |
 | Quasar 4 Kids | **15** | 7 | 15 și 20 |
 
@@ -162,8 +162,8 @@ standard, 4 peste.
 | Locație / sală | Capacitate | Grupe | Miză std/lună | S-ar plăti acum | Cursanți lipsă până la 60% |
 |---|---|---|---|---|---|
 | Nicolina | 20 | 19 | 2.100 | 120 | 111 |
-| Ștefan cel Mare · Sala 1 | 25 | 15 | 2.100 | 965 | 74 |
-| Ștefan cel Mare · Sala 2 | 10 | 7 | 420 | 280 | 8 |
+| SCM Studio 1 | 25 | 15 | 2.100 | 965 | 74 |
+| SCM Studio 2 | 10 | 7 | 420 | 280 | 8 |
 | Quasar 4 Kids | 15 | 7 | 405 | 185 | 35 |
 | *(S LMi Tiny, capacitate 12)* | 12 ⚠️ | 1 | 70 | 0 | 8 |
 
@@ -176,8 +176,8 @@ S LMi Junior INC 8/10 · S SD Kpop 15:30 8/10 · S-S2 SD Varsity INT 8/10.
 plătibili azi, 111 cursanți lipsă până la prag. Aici KPI-ul de ocupare e un obiectiv de umplere, nu un
 bonus curent.
 
-⚠️ **Grupa nouă `S LMi Tiny` (Giulia Butnaru, Sala 2) s-a creat cu capacitatea 12**, în afara celor 5
-trepte — `node scripts/check-capacitate-grupe.mjs` o raportează ca abatere. Standardul Sălii 2 e 10.
+⚠️ **Grupa nouă `S LMi Tiny` (Giulia Butnaru, SCM Studio 2) s-a creat cu capacitatea 12**, în afara celor 5
+trepte — `node scripts/check-capacitate-grupe.mjs` o raportează ca abatere. Standardul lui SCM Studio 2 e 10.
 Cât timp capacitatea e numitorul unui KPI care plătește, valoarea trebuie adusă pe treaptă.
 
 ### KPI-ul de vară — 6 lei de fiecare prezență (Alex, 13 sept.)
@@ -358,8 +358,8 @@ nu funcționează: 34% ocupare medie pe istoric.
 
 | Sală | Grupe | Miză/lună | Pe istoric | Cursanți lipsă până la 60% |
 |---|---|---|---|---|
-| Ștefan cel Mare · Sala 1 | 9 | 1.120 | 630 (56%) | 6 |
-| Ștefan cel Mare · Sala 2 | 5 | 700 | 140 (20%) | 22 |
+| SCM Studio 1 | 9 | 1.120 | 630 (56%) | 6 |
+| SCM Studio 2 | 5 | 700 | 140 (20%) | 22 |
 | Nicolina | 12 | 1.470 | 315 (21%) | 55 |
 | Quasar 4 Kids | 3 | 350 | 140 (40%) | 2 |
 | **Total** | 29 | 3.640 | **1.225 (34%)** | 86 |

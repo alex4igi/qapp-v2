@@ -3,7 +3,7 @@ import type { SelectOption } from '@/components/ui'
 // Mărimea unei grupe e presetată pe 5 trepte (decizie Alex, 12 sept. 2026).
 // Nu e cosmetică: e numitorul KPI-ului de ocupare din grila de salarizare, iar
 // sumele de bonus sunt scrise în grilă exact pe treptele astea
-// (docs/grila-salarizare-instructori.md §2). Cu valori libere — Ștefan Sala 2
+// (docs/grila-salarizare-instructori.md §2). Cu valori libere — SCM Studio 2
 // avea grupe declarate cu 10, 12, 13, 14, 15 ȘI 30 de locuri — aceeași ocupare
 // reală ar plăti diferit de la o grupă la alta.
 export const CAPACITATI_GRUPA = [10, 15, 20, 25, 30] as const

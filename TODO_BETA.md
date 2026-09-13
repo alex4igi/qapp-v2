@@ -54,7 +54,7 @@ Backup `auto_pb_backup_qapp_20260604000000.zip` → `data.db`. Script: `scripts/
 
 **NU sunt bug-uri de cod blocante.** Blocajele reale sunt de DATE, nu de cod:
 
-- [ ] **Date reale de seed** — în DB sunt doar date „TEST". Locațiile (Nicolina, Quasar 4 Kids, Ștefan cel Mare) + sălile (Studio 1/2) există, dar:
+- [ ] **Date reale de seed** — în DB sunt doar date „TEST". Locațiile (Nicolina, Quasar 4 Kids, Ștefan cel Mare) + sălile (SCM Studio 1/2) există, dar:
   - cursurile sunt toate „TEST", majoritatea **fără teacher asignat**, 4/8 **fără locație**
   - nu există clienți/familii reali → 0 RON peste tot
   - → fără date reale nu poți face beta pe criteriile 1, 2, 5, 6
