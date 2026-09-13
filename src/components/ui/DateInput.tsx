@@ -18,6 +18,8 @@ type Props = Omit<
   wrapperClassName?: string
   /** 'wheel' = role zi/lună/an (data nașterii); implicit calendarul pe luni. */
   picker?: 'calendar' | 'wheel'
+  /** Doar pentru 'wheel': anul din centru când câmpul e gol (implicit acum 10 ani). */
+  defaultYearOffset?: number
 }
 
 const LUNI = [
@@ -69,6 +71,7 @@ export function DateInput({
   id,
   wrapperClassName,
   picker = 'calendar',
+  defaultYearOffset,
   ...rest
 }: Props) {
   const [text, setText] = useState(() => isoToEu(value))
@@ -213,6 +216,7 @@ export function DateInput({
         <div className="absolute left-0 top-full z-50 mt-1 rounded-lg border border-line bg-card p-2 shadow-lg">
           <DateWheel
             value={valIso || null}
+            defaultYearOffset={defaultYearOffset}
             onChange={(iso) => {
               setText(isoToEu(iso))
               onChange?.({ target: { value: iso } })

@@ -167,6 +167,8 @@ export function TeacherForm({
             <Field label="Data nașterii" htmlFor="data_nasterii">
               <DateInput
                 id="data_nasterii"
+                picker="wheel"
+                defaultYearOffset={25}
                 value={form.data_nasterii}
                 onChange={(e) => set('data_nasterii')(e.target.value)}
               />

@@ -111,11 +111,12 @@ type Props = {
   value?: string | null
   onChange: (iso: string) => void
   /** Anul din centru când câmpul e gol — implicit acum 10 ani (cursanții sunt copii). */
-  defaultYearOffset?: number
+  defaultYearOffset?: number | undefined
   onDone?: () => void
 }
 
-export function DateWheel({ value, onChange, defaultYearOffset = 10, onDone }: Props) {
+export function DateWheel({ value, onChange, defaultYearOffset, onDone }: Props) {
+  const anBaza = defaultYearOffset ?? 10
   const azi = new Date()
   const anMax = azi.getFullYear()
   const anMin = anMax - 100
@@ -125,7 +126,7 @@ export function DateWheel({ value, onChange, defaultYearOffset = 10, onDone }: P
   // Starea internă ține rolele și când câmpul e gol (nu scriem o dată pe care
   // omul n-a ales-o — abia prima rotire/click comite valoarea).
   const [parts, setParts] = useState<Parts>(
-    () => parse(value) ?? { y: anMax - defaultYearOffset, m: 0, d: 1 },
+    () => parse(value) ?? { y: anMax - anBaza, m: 0, d: 1 },
   )
 
   useEffect(() => {

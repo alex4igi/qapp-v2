@@ -1,3 +1,4 @@
+import { DateInput } from '@/components/ui'
 import type { LeadForm } from '../../api'
 import { inputStyle, sectionLabel, L } from '../styles'
 
@@ -60,7 +61,9 @@ export function DateContactSection({
         </div>
         <div>
           <L>Data nașterii</L>
-          <input className="qf" type="date" value={form.data_nasterii} onChange={(e) => set('data_nasterii', e.target.value)} style={inputStyle} />
+          {/* Roata zi/lună/an, ca în fișa de client. `inputStyle` peste clasele
+              proprii ale lui DateInput, ca să arate ca restul câmpurilor din modal. */}
+          <DateInput picker="wheel" value={form.data_nasterii} onChange={(e) => set('data_nasterii', e.target.value)} style={{ ...inputStyle, paddingRight: '34px' }} />
         </div>
       </div>
     </>

@@ -387,6 +387,7 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
                   <Field label="Data nașterii" htmlFor="conv-nastere">
                     <DateInput
                       id="conv-nastere"
+                      picker="wheel"
                       value={dataNasterii}
                       onChange={(e) => setDataNasterii(e.target.value)}
                     />
