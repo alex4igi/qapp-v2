@@ -1019,6 +1019,7 @@ export type Database = {
           telefon: string | null
           telefonul_2: string | null
           unitate_invatamant: string | null
+          unitate_invatamant_id: string | null
           updated: string
         }
         Insert: {
@@ -1052,6 +1053,7 @@ export type Database = {
           telefon?: string | null
           telefonul_2?: string | null
           unitate_invatamant?: string | null
+          unitate_invatamant_id?: string | null
           updated?: string
         }
         Update: {
@@ -1085,6 +1087,7 @@ export type Database = {
           telefon?: string | null
           telefonul_2?: string | null
           unitate_invatamant?: string | null
+          unitate_invatamant_id?: string | null
           updated?: string
         }
         Relationships: [
@@ -1093,6 +1096,13 @@ export type Database = {
             columns: ["auth_user_id"]
             isOneToOne: false
             referencedRelation: "portal_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clienti_unitate_invatamant_id_fkey"
+            columns: ["unitate_invatamant_id"]
+            isOneToOne: false
+            referencedRelation: "unitati_invatamant"
             referencedColumns: ["id"]
           },
           {
@@ -9235,6 +9245,33 @@ export type Database = {
         }
         Relationships: []
       }
+      unitati_invatamant: {
+        Row: {
+          created_at: string
+          de_verificat: boolean
+          id: string
+          localitate: string | null
+          nume: string
+          tip: string | null
+        }
+        Insert: {
+          created_at?: string
+          de_verificat?: boolean
+          id?: string
+          localitate?: string | null
+          nume: string
+          tip?: string | null
+        }
+        Update: {
+          created_at?: string
+          de_verificat?: boolean
+          id?: string
+          localitate?: string | null
+          nume?: string
+          tip?: string | null
+        }
+        Relationships: []
+      }
       vacante: {
         Row: {
           created: string
@@ -12894,6 +12931,7 @@ export type Database = {
         Returns: Json
       }
       my_teacher_id: { Args: never; Returns: string }
+      norm_unitate: { Args: { p_text: string }; Returns: string }
       notifica_demo_class_completa: {
         Args: { p_eveniment: string }
         Returns: number

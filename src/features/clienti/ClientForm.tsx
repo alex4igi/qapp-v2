@@ -23,7 +23,7 @@ import {
   CLIENT_CHECKLIST,
   type SectiuneClient,
 } from '@/lib/checklist/specs/client'
-import { familiiOptions } from '@/lib/lookups'
+import { familiiOptions, unitatiInvatamantOptions } from '@/lib/lookups'
 import { recordAuditLog } from '@/lib/auditLog'
 import type { Client } from '@/types/db'
 import { createClient, updateClient } from './api'
@@ -141,6 +141,11 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
   const familiiQ = useQuery({
     queryKey: ['lookup', 'familii'],
     queryFn: familiiOptions,
+  })
+
+  const unitatiQ = useQuery({
+    queryKey: ['lookup', 'unitati-invatamant'],
+    queryFn: unitatiInvatamantOptions,
   })
 
   const createFamilieMut = useMutation({
@@ -412,12 +417,17 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
         </Field>
         </div>
 
+        {/* Catalog, nu text liber: altfel aceeași școală intră în zeci de forme
+            și nu se mai poate centraliza. Ce nu e în listă se poate adăuga pe
+            loc — DB-ul normalizează numele și marchează intrarea „de verificat". */}
         <Field label="Unitatea de învățământ" htmlFor="unitate_invatamant">
-          <TextInput
+          <Combobox
             id="unitate_invatamant"
-            placeholder="Școala / liceul unde învață"
+            placeholder="Caută școala / liceul (tastează pentru a căuta)"
+            options={unitatiQ.data ?? []}
             value={form.unitate_invatamant}
-            onChange={(e) => set('unitate_invatamant')(e.target.value)}
+            onChange={set('unitate_invatamant')}
+            allowCustom
           />
         </Field>
 

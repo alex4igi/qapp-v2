@@ -273,6 +273,22 @@ function calcAge(dataNasterii: string | null): number | null {
   return age
 }
 
+// Catalogul de unități de învățământ. Valoarea E numele canonic (nu id-ul):
+// `clienti.unitate_invatamant` rămâne text, iar triggerul din DB îl leagă de
+// catalog și rescrie numele la forma canonică.
+export async function unitatiInvatamantOptions(): Promise<SelectOption[]> {
+  const { data, error } = await supabase
+    .from('unitati_invatamant')
+    .select('nume, tip, localitate')
+    .order('nume', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map((u) => ({
+    value: u.nume,
+    label: u.nume,
+    secondary: [u.tip, u.localitate].filter(Boolean).join(' · ') || undefined,
+  }))
+}
+
 export async function familiiOptions(): Promise<SelectOption[]> {
   const { data, error } = await supabase
     .from('familii')

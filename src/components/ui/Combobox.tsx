@@ -11,6 +11,9 @@ type Props = {
   id?: string
   disabled?: boolean
   allowClear?: boolean
+  /** Permite o valoare care nu e în listă („Adaugă «…»") — pentru cataloage
+   *  deschise, unde valoarea E textul (nu un id). */
+  allowCustom?: boolean
 }
 
 export function Combobox({
@@ -22,6 +25,7 @@ export function Combobox({
   id,
   disabled,
   allowClear = true,
+  allowCustom = false,
 }: Props) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -29,16 +33,27 @@ export function Combobox({
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const selected = options.find((o) => o.value === value) ?? null
+  // Valoarea liberă se afișează ca atare — altfel câmpul ar părea gol după ce
+  // adaugi ceva ce încă nu e în listă.
+  const selected =
+    options.find((o) => o.value === value) ??
+    (allowCustom && value ? { label: value, value } : null)
 
+  // Căutarea e fără diacritice: „scoala gimnaziala" găsește „Școala Gimnazială".
   const filtered = useMemo(() => {
-    const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    const tokens = fold(query).split(/\s+/).filter(Boolean)
     if (tokens.length === 0) return options
     return options.filter((o) => {
-      const haystack = `${o.label} ${o.secondary ?? ''}`.toLowerCase()
+      const haystack = fold(`${o.label} ${o.secondary ?? ''}`)
       return tokens.every((t) => haystack.includes(t))
     })
   }, [options, query])
+
+  const customValue = query.trim()
+  const showCustom =
+    allowCustom &&
+    customValue.length > 1 &&
+    !options.some((o) => fold(o.label) === fold(customValue))
 
   useEffect(() => {
     if (hi >= filtered.length) setHi(0)
@@ -107,6 +122,9 @@ export function Combobox({
             if (open && filtered[hi]) {
               e.preventDefault()
               pick(filtered[hi].value)
+            } else if (open && showCustom) {
+              e.preventDefault()
+              pick(customValue)
             }
           } else if (e.key === 'Backspace' && !query && selected) {
             clear()
@@ -135,7 +153,7 @@ export function Combobox({
 
       {open && (
         <div className="absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-line bg-card shadow-lg">
-          {filtered.length === 0 ? (
+          {filtered.length === 0 && !showCustom ? (
             <div className="px-3 py-2 text-sm text-muted">
               Niciun rezultat.
             </div>
@@ -167,10 +185,32 @@ export function Combobox({
                   )}
                 </li>
               ))}
+              {showCustom && (
+                <li
+                  role="option"
+                  aria-selected={false}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    pick(customValue)
+                  }}
+                  className="cursor-pointer border-t border-line px-3 py-2 text-sm text-ink hover:bg-surface"
+                >
+                  ➕ Adaugă „{customValue}"
+                </li>
+              )}
             </ul>
           )}
         </div>
       )}
     </div>
   )
+}
+
+// Comparație fără diacritice și fără majuscule (căutare, nu identitate).
+function fold(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim()
 }
