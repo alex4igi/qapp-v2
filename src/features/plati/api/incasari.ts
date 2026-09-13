@@ -176,3 +176,53 @@ export async function registerPlataFifo(params: {
   if (error) throw error
   return data ?? []
 }
+
+// ── Plata integrală a sezonului (−5%, Anexa 1 din contract) ──────────────────────
+// Regula (eligibilitate + prețuri) trăiește în DB, în `_plan_plata_integrala`, și e
+// aceeași pentru portal și pentru ghișeu. Aici doar întrebăm și încasăm: suma NU se
+// trimite de la client, o recalculează RPC-ul.
+
+export type PlanIntegralRata = { enrollment_id: string; pay: number }
+
+export type PlanIntegral =
+  | { eligibil: false; motiv: string }
+  | {
+      eligibil: true
+      sezon_id: string
+      sezon_nume: string
+      scadenta: string
+      luni: number
+      total_curent: number
+      total_plata: number
+      discount: number
+      plan: PlanIntegralRata[]
+    }
+
+export async function getPlanPlataIntegrala(clientId: string): Promise<PlanIntegral> {
+  const { data, error } = await supabase.rpc('plan_plata_integrala_staff', {
+    p_client: clientId,
+  })
+  if (error) throw error
+  return data as unknown as PlanIntegral
+}
+
+export async function incaseazaPlataIntegrala(params: {
+  clientId: string
+  tenders: Tender[]
+  data: string
+  locatieId: string
+}): Promise<{ rate: number; total_platit: number; discount: number; sezon: string }> {
+  const { data, error } = await supabase.rpc('incaseaza_plata_integrala_sezon', {
+    p_client: params.clientId,
+    p_tenders: params.tenders as unknown as never,
+    p_data: params.data,
+    p_locatie: params.locatieId,
+  })
+  if (error) throw error
+  return data as unknown as {
+    rate: number
+    total_platit: number
+    discount: number
+    sezon: string
+  }
+}

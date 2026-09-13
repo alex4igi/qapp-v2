@@ -13,7 +13,9 @@ schimb-o și în cod — locurile sunt listate la final.
 > 3. Plătești după termen → pierzi reducerea de familie pe luna aia. Definitiv.
 > 4. **50 de zile întârziere → pierzi locul în grupă.** Accesul se blochează
 >    automat, iar promo se termină odată cu locul.
-> 5. Termene: **20 sept** prima rată, **15** ale lunii restul, **7 iunie** ultima.
+> 5. **Plata întregului sezon dintr-o dată → −5%**, până la 30 septembrie și doar
+>    dacă nu s-a achitat încă nicio rată. Nu se adună cu −10% de familie.
+> 6. Termene: **20 sept** prima rată, **15** ale lunii restul, **7 iunie** ultima.
 >
 > *Cifra o dă aplicația — recepția o citește din formular, n-o calculează.*
 
@@ -135,7 +137,34 @@ din /datorii, cele automate apar cu badge-ul roșu **„Loc de anulat"** (status
 filtrabil), cele manuale rămân „Suspendat" — managerul vede dintr-o privire pe cine
 mai are de decis.
 
-## 4. Termenele de plată
+## 4. Plata integrală a sezonului — −5%
+
+Anexa 1 din contract: „Integrală pentru tot sezonul — 5% — scadent 30.09".
+
+| Condiție | Detaliu |
+|---|---|
+| Până când | `sezoane.scadenta_plata_integrala` (30.09.2026 pe sezonul curent). NULL = oferta nu se aplică pe sezonul ăla |
+| Pentru cine | Per **membru**, nu pe familie — fiecare copil are contractul lui |
+| Pe ce | Doar abonamentele recurente (`Per luna` / `Per an`) din sezonul activ; facultativele se plătesc lună de lună |
+| Când dispare | După termen **sau** după prima rată achitată (sezonul trebuie să fie neatins) |
+
+**Nu se cumulează cu −10% de familie:** pe fiecare rată se aplică una singură, cea mai
+avantajoasă — `suma_nouă = least(suma_curentă, preț_listă − 5%)`. O rată care are deja
+−10% rămâne la −10%, iar dacă TOATE ratele au deja o reducere mai bună, oferta există
+dar discountul e 0.
+
+**Cei 5% se calculează pe valoarea contractului, nu rată cu rată:** `10 × round(290×5%)`
+ar da 150 (5,17%). Diferența de rotunjire se corectează pe prima rată ⇒ 280 + 9×275 =
+**2.755** exact. Dacă cineva întreabă de ce prima rată e 280, ăsta e motivul.
+
+**Două intrări, un singur motor** (`_plan_plata_integrala`): portalul (membrul plătește
+online) și recepția (tab-ul „Datorii" din Plată nouă). Diferă doar momentul în care
+prețul se rescrie: în portal la confirmarea plății (un intent abandonat nu are voie să
+lase reduceri în urmă), la ghișeu în aceeași tranzacție cu încasarea. În ambele cazuri
+ordinea e **întâi banii, apoi `suma`** — `recalculate_pool_discount` ocolește rândurile
+care au deja încasări, deci ordinea inversă ar rescrie prețul înapoi la întreg.
+
+## 5. Termenele de plată
 
 `scadenta_rata(data_incepere, sezon)`:
 
@@ -157,6 +186,9 @@ mai are de decis.
 | Regula 50 de zile | `suspenda_datornici_50_zile()`, chemat din edge function `cron-morning` (care trimite și emailul) |
 | Promo se termină cu locul | trigger `trg_enrollments_reziliere_promo` + gardul din `createInrolari` |
 | Promo se pierde la mutarea în trupă | `muta_inrolare_curs` → `MoveEnrollmentModal.tsx` |
+| Plata integrală −5% (motor comun) | `_plan_plata_integrala(uuid)` |
+| …intrarea portalului | `plan_plata_integrala_sezon` → `netopia-create-payment` → `confirm_netopia_payment` |
+| …intrarea recepției | `plan_plata_integrala_staff` + `incaseaza_plata_integrala_sezon` → `DatoriiUnificateTab.tsx` |
 | SMS reminder | `get_sms_recipients` (`are_reducere`) → `templates.ts` |
 
 **Capcană:** penalizarea trăiește în DOUĂ locuri (cron + motor) și trebuie ținute
@@ -169,4 +201,6 @@ Migrațiile relevante: `20260518110000` (politica inițială), `20260701120000`
 (SMS `are_reducere`), `20260831190000` (regula 50 de zile + promo se termină cu locul),
 `20260911150000` („cel mai scump" = preț de listă; frate pe același curs vizibil în preview),
 `20260911160000` (rata plătită întreg ocupă locul integral → frații primesc reducerea),
-`20260912100000` (promo se pierde la mutarea în trupă + `cursul` în triggerul de recalcul).
+`20260912100000` (promo se pierde la mutarea în trupă + `cursul` în triggerul de recalcul),
+`20260912120000` (plata integrală −5%, intrarea din portal),
+`20260913130000` (același motor, extras + intrarea de la recepție).

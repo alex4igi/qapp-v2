@@ -11007,6 +11007,7 @@ export type Database = {
         Args: { p_curs: string; p_data: string }
         Returns: number
       }
+      _plan_plata_integrala: { Args: { p_client: string }; Returns: Json }
       _sezon_curs_inchis: { Args: { p_curs: string }; Returns: boolean }
       _try_activate_gate: { Args: { p_gate_id: string }; Returns: undefined }
       activate_eligible_sezoane: { Args: never; Returns: number }
@@ -11263,6 +11264,7 @@ export type Database = {
         }
         Returns: Json
       }
+      cron_call_headers: { Args: never; Returns: Json }
       current_client: { Args: never; Returns: string }
       current_familie: { Args: never; Returns: string }
       current_teacher_id: { Args: never; Returns: string }
@@ -12627,6 +12629,15 @@ export type Database = {
         Args: { p_client: string; p_sesiune: string }
         Returns: Json
       }
+      incaseaza_plata_integrala_sezon: {
+        Args: {
+          p_client: string
+          p_data?: string
+          p_locatie?: string
+          p_tenders: Json
+        }
+        Returns: Json
+      }
       inchide_sesiune: { Args: { p_sesiune: string }; Returns: Json }
       inrolari_active_la: {
         Args: { p_data?: string }
@@ -12919,6 +12930,7 @@ export type Database = {
       }
       ore_pe_zi_valid: { Args: { m: Json }; Returns: boolean }
       plan_plata_integrala_sezon: { Args: { p_client: string }; Returns: Json }
+      plan_plata_integrala_staff: { Args: { p_client: string }; Returns: Json }
       poate_evalua_cursul: { Args: { p_curs: string }; Returns: boolean }
       pontaj_aproba_luna: {
         Args: { p_luna: string; p_nota?: string; p_user_id: string }

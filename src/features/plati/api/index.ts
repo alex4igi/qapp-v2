@@ -18,9 +18,11 @@ export {
   endOfMonth,
 } from './calendar'
 
-export type { WorkshopGuestResult } from './incasari'
+export type { WorkshopGuestResult, PlanIntegral, PlanIntegralRata } from './incasari'
 export {
   getEnrollmentIncasari,
+  getPlanPlataIntegrala,
+  incaseazaPlataIntegrala,
   createIncasare,
   createIncasari,
   registerPlataFifo,

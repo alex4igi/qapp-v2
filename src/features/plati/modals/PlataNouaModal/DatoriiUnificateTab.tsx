@@ -9,6 +9,8 @@ import type { Enums, VDatoriiRest, VPlatiInrolari } from '@/types/db'
 import {
   getInrolariClientSezon,
   getInrolariRestanteAnterioare,
+  getPlanPlataIntegrala,
+  incaseazaPlataIntegrala,
   listDatoriiClient,
   listSezoane,
   registerPlataDatoriiFifo,
@@ -83,6 +85,7 @@ export function DatoriiUnificateTab({
   const [card, setCard] = useState('')
   const [useCreditOn, setUseCreditOn] = useState(false)
   const [useCreditAmt, setUseCreditAmt] = useState('')
+  const [integralOn, setIntegralOn] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const clientiQ = useQuery({ queryKey: ['lookup', 'clienti'], queryFn: clientiOptions })
@@ -130,6 +133,18 @@ export function DatoriiUnificateTab({
     enabled: Boolean(clientId),
   })
 
+  // Oferta de plată integrală (−5%, Anexa 1): eligibilitatea o decide DB-ul, aceeași
+  // funcție care servește și portalul — recepția nu are voie să ajungă la alt preț.
+  const planIntegralQ = useQuery({
+    queryKey: ['plan-integral', clientId],
+    queryFn: () => getPlanPlataIntegrala(clientId),
+    enabled: Boolean(clientId),
+  })
+  const planIntegral = planIntegralQ.data
+  const integralOferit =
+    planIntegral?.eligibil === true && (!sezonId || planIntegral.sezon_id === sezonId)
+  const integralActiv = integralOn && integralOferit && planIntegral?.eligibil === true
+
   const creditQ = useQuery({
     queryKey: ['client-credit', clientId],
     queryFn: () => getClientCredit(clientId),
@@ -169,8 +184,12 @@ export function DatoriiUnificateTab({
   // Credit: câți lei din creditul clientului acoperă selecția (întâi înrolări).
   // creditApplied e mereu clampat la min(dorit, disponibil, pool) → sigur chiar
   // dacă inputul e stale. cashPool = restul de încasat Cash/Card.
-  const poolDisplay = partial.trim() ? Number(partial) || 0 : total
-  const creditWanted = useCreditOn ? Number(useCreditAmt) || 0 : 0
+  const poolDisplay = integralActiv
+    ? planIntegral.total_plata
+    : partial.trim()
+      ? Number(partial) || 0
+      : total
+  const creditWanted = integralActiv ? 0 : useCreditOn ? Number(useCreditAmt) || 0 : 0
   const creditApplied = round2(Math.min(creditWanted, credit, Math.max(poolDisplay, 0)))
   const cashPool = round2(Math.max(poolDisplay - creditApplied, 0))
 
@@ -235,6 +254,7 @@ export function DatoriiUnificateTab({
     setCard('')
     setUseCreditOn(false)
     setUseCreditAmt('')
+    setIntegralOn(false)
     setError(null)
   }
   const handleClose = () => {
@@ -245,11 +265,40 @@ export function DatoriiUnificateTab({
 
   const submit = useMutation({
     mutationFn: async () => {
-      if (checkedEnrollOrdered.length === 0 && checkedDatRows.length === 0) {
-        throw new Error('Selectează cel puțin o datorie.')
-      }
       if (!locatieId) {
         throw new Error('Setează locația de lucru din bara de sus (📍 lângă dată).')
+      }
+
+      // Plata integrală a sezonului: un singur RPC, care recalculează el prețurile.
+      // Nu trece prin FIFO — nu alegem noi ce rate se achită, ci tot contractul.
+      if (integralActiv && planIntegral.eligibil) {
+        const tenders = resolveTenders({
+          metoda,
+          total: planIntegral.total_plata,
+          cash,
+          card,
+        })
+        await incaseazaPlataIntegrala({
+          clientId,
+          tenders,
+          data: todayIso(),
+          locatieId,
+        })
+        const platiPeRand = new Map(
+          planIntegral.plan.map((r) => [r.enrollment_id, Number(r.pay)]),
+        )
+        const linii: FacturaLinie[] = []
+        for (const r of enrollRows) {
+          const suma = platiPeRand.get(String(r.id_enrollment))
+          if (suma != null && suma > 0.004) {
+            linii.push({ articol: articolInrolare(r), suma: round2(suma) })
+          }
+        }
+        return { linii, clientId }
+      }
+
+      if (checkedEnrollOrdered.length === 0 && checkedDatRows.length === 0) {
+        throw new Error('Selectează cel puțin o datorie.')
       }
       const partialNum = partial.trim() ? Number(partial) : null
       if (partialNum != null) {
@@ -395,6 +444,7 @@ export function DatoriiUnificateTab({
       void queryClient.invalidateQueries({ queryKey: ['surplus-targets'] })
       void queryClient.invalidateQueries({ queryKey: ['plati-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['client-inrolari-sezon'] })
+      void queryClient.invalidateQueries({ queryKey: ['plan-integral'] })
       onRecorded?.(data.linii, data.clientId)
       handleClose()
     },
@@ -446,6 +496,37 @@ export function DatoriiUnificateTab({
         </p>
       ) : (
         <div className="space-y-4">
+          {integralOferit && planIntegral.eligibil && (
+            <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">
+                    💛 Plată integrală pe tot sezonul — reducere 5%
+                  </p>
+                  <p className="text-xs text-amber-800">
+                    {formatRON(planIntegral.total_curent)} →{' '}
+                    <strong>{formatRON(planIntegral.total_plata)}</strong> ({planIntegral.luni}{' '}
+                    rate) · economie {formatRON(planIntegral.discount)} · doar până la{' '}
+                    {fmtDate(planIntegral.scadenta)}
+                  </p>
+                </div>
+                <Button
+                  variant={integralOn ? 'secondary' : 'primary'}
+                  onClick={() => setIntegralOn(!integralOn)}
+                >
+                  {integralOn ? 'Renunță la reducere' : 'Încasează tot sezonul −5%'}
+                </Button>
+              </div>
+              {integralOn && (
+                <p className="rounded-md bg-amber-100 px-2 py-1 text-xs">
+                  Se încasează toate cele {planIntegral.luni} rate ale sezonului, la prețul
+                  redus — selecția de mai jos e ignorată. Reducerea nu se cumulează: ratele
+                  care au deja −10% de familie rămân la ea.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Abonamente / înrolări */}
           <div>
             <div className="mb-1 flex items-center justify-between">
@@ -492,10 +573,10 @@ export function DatoriiUnificateTab({
                           <td className="px-3 py-2">
                             <input
                               type="checkbox"
-                              className="h-4 w-4 rounded accent-quasar-yellow"
+                              className="h-4 w-4 rounded accent-quasar-yellow disabled:opacity-40"
                               checked={isChecked}
                               onChange={() => toggleEnroll(r)}
-                              disabled={rest === 0}
+                              disabled={rest === 0 || integralActiv}
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -556,7 +637,8 @@ export function DatoriiUnificateTab({
                           <td className="px-3 py-2">
                             <input
                               type="checkbox"
-                              className="h-4 w-4 rounded accent-quasar-yellow"
+                              disabled={integralActiv}
+                              className="h-4 w-4 rounded accent-quasar-yellow disabled:opacity-40"
                               checked={isChecked}
                               onChange={() => toggleEnroll(r)}
                             />
@@ -619,7 +701,8 @@ export function DatoriiUnificateTab({
                           <td className="px-3 py-2">
                             <input
                               type="checkbox"
-                              className="h-4 w-4 rounded accent-quasar-yellow"
+                              disabled={integralActiv}
+                              className="h-4 w-4 rounded accent-quasar-yellow disabled:opacity-40"
                               checked={isChecked}
                               onChange={() => toggleDat(r)}
                             />
@@ -646,7 +729,8 @@ export function DatoriiUnificateTab({
               <label className="flex items-center gap-2 font-medium">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded accent-blue-600"
+                  disabled={integralActiv}
+                  className="h-4 w-4 rounded accent-blue-600 disabled:opacity-40"
                   checked={useCreditOn}
                   onChange={(e) => {
                     setUseCreditOn(e.target.checked)
@@ -688,7 +772,7 @@ export function DatoriiUnificateTab({
             placeholder="ex: 100"
             value={partial}
             onChange={(e) => setPartial(e.target.value)}
-            disabled={total <= 0}
+            disabled={total <= 0 || integralActiv}
           />
         </Field>
         <MetodaPlataField
@@ -708,8 +792,15 @@ export function DatoriiUnificateTab({
         <div className="mr-auto flex flex-col gap-0.5 text-sm">
           <div className="flex items-center gap-3">
             <span className="text-quasar-gray">Total de plată:</span>
-            <span className="text-base font-bold text-quasar-black">{formatRON(total)}</span>
+            <span className="text-base font-bold text-quasar-black">
+              {formatRON(integralActiv ? planIntegral.total_plata : total)}
+            </span>
           </div>
+          {integralActiv && (
+            <span className="text-xs text-amber-800">
+              Sezon integral, reducere aplicată: −{formatRON(planIntegral.discount)}
+            </span>
+          )}
           {creditApplied > 0.004 && (
             <span className="text-xs text-blue-800">
               Din credit: {formatRON(creditApplied)} · De încasat: {formatRON(cashPool)}
@@ -723,7 +814,11 @@ export function DatoriiUnificateTab({
           onClick={() => submit.mutate()}
           disabled={submit.isPending || (creditApplied <= 0.004 && cashPool <= 0.004)}
         >
-          {submit.isPending ? 'Se înregistrează…' : 'Înregistrează plată'}
+          {submit.isPending
+            ? 'Se înregistrează…'
+            : integralActiv
+              ? 'Încasează sezonul integral'
+              : 'Înregistrează plată'}
         </Button>
       </div>
     </div>
