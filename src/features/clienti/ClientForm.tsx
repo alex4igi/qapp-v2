@@ -9,6 +9,7 @@ import {
   Select,
   Combobox,
   Checkbox,
+  Pills,
   Button,
 } from '@/components/ui'
 import {
@@ -84,7 +85,9 @@ function initialState(client?: Client | null): FormState {
     telefonul_2: client?.telefonul_2 ?? '',
     data_nasterii: client?.data_nasterii ?? '',
     sexul: client?.sexul ?? '',
-    status: client?.status ?? '',
+    // Clientul nou intră direct „Activ" — statusul se schimbă doar din fișă,
+    // iar listele („Fișe incomplete", datorii) filtrează pe 'Activ'.
+    status: client?.status ?? 'Activ',
     marime_tricou: client?.marime_tricou ?? '',
     familia: client?.familia ?? '',
     unitate_invatamant: client?.unitate_invatamant ?? '',
@@ -313,31 +316,35 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
           <Field label="Data nașterii" htmlFor="data_nasterii">
             <DateInput
               id="data_nasterii"
+              picker="wheel"
               value={form.data_nasterii}
               onChange={(e) => set('data_nasterii')(e.target.value)}
             />
           </Field>
-          <Field label="Sex" htmlFor="sexul">
-            <Select
-              id="sexul"
-              placeholder="—"
+          <Field label="Sex">
+            <Pills
+              aria-label="Sex"
               options={sexOptions}
               value={form.sexul}
-              onChange={(e) => set('sexul')(e.target.value)}
+              onChange={set('sexul')}
+              className="h-[38px]"
             />
           </Field>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Status" htmlFor="status">
-            <Select
-              id="status"
-              placeholder="—"
-              options={statusClientOptions}
-              value={form.status}
-              onChange={(e) => set('status')(e.target.value)}
-            />
-          </Field>
+          {/* Statusul apare doar la editare — un client nou e „Activ" prin definiție. */}
+          {isEdit && (
+            <Field label="Status" htmlFor="status">
+              <Select
+                id="status"
+                placeholder="—"
+                options={statusClientOptions}
+                value={form.status}
+                onChange={(e) => set('status')(e.target.value)}
+              />
+            </Field>
+          )}
           <Field label="Mărime tricou" htmlFor="marime">
             <Select
               id="marime"

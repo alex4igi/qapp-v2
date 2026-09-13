@@ -1,3 +1,5 @@
+import { pillClass } from '@/components/ui'
+
 type Option = { value: string; label: string }
 
 type Props = {
@@ -34,12 +36,7 @@ export function SalaPills({ options, selected, onChange }: Props) {
             type="button"
             aria-pressed={activ}
             onClick={() => click(o.value)}
-            className={[
-              'rounded-full border px-3 py-1.5 text-sm transition-colors',
-              activ
-                ? 'border-quasar-yellow bg-quasar-yellow font-medium text-quasar-black'
-                : 'border-line text-quasar-gray hover:border-quasar-yellow',
-            ].join(' ')}
+            className={pillClass(activ)}
           >
             {o.label}
           </button>

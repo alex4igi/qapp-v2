@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { InputHTMLAttributes } from 'react'
 import { cn } from '@/lib/cn'
+import { DateWheel } from './DateWheel'
 
 // Selector de dată în format european (DD.MM.YYYY), independent de locale-ul browserului.
 // Valoarea canonică e ISO (YYYY-MM-DD). Calendarul e custom (popover cu selectoare
@@ -15,6 +16,8 @@ type Props = Omit<
   min?: string
   max?: string
   wrapperClassName?: string
+  /** 'wheel' = role zi/lună/an (data nașterii); implicit calendarul pe luni. */
+  picker?: 'calendar' | 'wheel'
 }
 
 const LUNI = [
@@ -65,6 +68,7 @@ export function DateInput({
   placeholder,
   id,
   wrapperClassName,
+  picker = 'calendar',
   ...rest
 }: Props) {
   const [text, setText] = useState(() => isoToEu(value))
@@ -199,13 +203,26 @@ export function DateInput({
         tabIndex={-1}
         onClick={() => !disabled && setOpen((o) => !o)}
         disabled={disabled}
-        aria-label="Deschide calendar"
+        aria-label={picker === 'wheel' ? 'Deschide selectorul de dată' : 'Deschide calendar'}
         className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-base leading-none hover:bg-surface disabled:cursor-not-allowed"
       >
         📅
       </button>
 
-      {open && !disabled && (
+      {open && !disabled && picker === 'wheel' && (
+        <div className="absolute left-0 top-full z-50 mt-1 rounded-lg border border-line bg-card p-2 shadow-lg">
+          <DateWheel
+            value={valIso || null}
+            onChange={(iso) => {
+              setText(isoToEu(iso))
+              onChange?.({ target: { value: iso } })
+            }}
+            onDone={() => setOpen(false)}
+          />
+        </div>
+      )}
+
+      {open && !disabled && picker === 'calendar' && (
         <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border border-line bg-card p-2 shadow-lg">
           <div className="mb-2 flex items-center gap-1">
             <button

@@ -8,19 +8,15 @@ export const sexOptions = opts('B', 'F')
 
 export const statusClientOptions = opts('Activ', 'Inactiv', 'EXclient')
 
-export const marimeTricouOptions = opts(
-  '110cm/4ani',
-  '122cm/6ani',
-  '134cm/8ani',
-  '146cm/10ani',
-  '158cm/12ani',
-  'XS',
-  'S',
-  'M',
-  'L',
-  'XL',
-  'XXL',
-)
+// Grupate „Copii"/„Adulți": mărimile pe vârstă și cele pe litere stau în
+// dropdown sub antete separate (Select le randează ca <optgroup>).
+const grup = (group: string, ...values: string[]): SelectOption[] =>
+  values.map((v) => ({ label: v, value: v, group }))
+
+export const marimeTricouOptions: SelectOption[] = [
+  ...grup('Copii', '110cm/4ani', '122cm/6ani', '134cm/8ani', '146cm/10ani', '158cm/12ani'),
+  ...grup('Adulți', 'XS', 'S', 'M', 'L', 'XL', 'XXL'),
+]
 
 export const nivelCursOptions = opts(
   'Incepator',
