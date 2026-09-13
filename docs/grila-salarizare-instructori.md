@@ -1,14 +1,19 @@
 # Grila de salarizare instructori — sezon 2026-2027
 
 > **Stare: PROPUNERE.** Nimic din documentul ăsta nu e implementat în cod sau intrat în plată.
-> Stabilit împreună cu Alex pe 8–9 septembrie 2026, revizuit pe **12 septembrie 2026**
-> (KPI-uri identice la începător și intermediar, ocupare pe mărime stabilită manual).
+> Stabilit împreună cu Alex pe 8–9 septembrie 2026, revizuit pe 12 septembrie și pe
+> **13 septembrie 2026** (KPI-uri identice la începător și intermediar, ocupare pe mărime
+> stabilită manual, **KPI-ul de vară fixat la 6 lei de fiecare prezență**).
 > Înlocuiește modelul pe praguri de cursanți descris în memoria `project_salarii_teacher`.
 >
 > Rapoarte generate din specificația asta:
-> - [Analiza completă](https://claude.ai/code/artifact/7dbcd26a-eff6-4149-ab12-64117f518100) — pentru management ⚠️ **nesincronizat cu revizia 12 sept.**
-> - [Regulile grilei](https://claude.ai/code/artifact/6eda6ad9-3e7a-4d9a-af80-3ead5a2c4efd) — pentru instructori, fără cifre personale
-> - [Simulări individuale](https://claude.ai/code/artifact/658605e1-6de3-4e12-b3af-8a5a70c3e50c) — o pagină per instructor, pentru discuțiile 1:1
+> - [Analiza completă](https://claude.ai/code/artifact/7dbcd26a-eff6-4149-ab12-64117f518100) — pentru management ⚠️ **nesincronizat din 9 sept.**
+> - [Regulile grilei](https://claude.ai/code/artifact/6eda6ad9-3e7a-4d9a-af80-3ead5a2c4efd) — pentru instructori, fără cifre personale (actualizat 13 sept.: secțiunea Vara)
+> - [Simulări individuale](https://claude.ai/code/artifact/658605e1-6de3-4e12-b3af-8a5a70c3e50c) — o pagină per instructor, pentru discuțiile 1:1 (actualizat 13 sept.)
+> - [Rentabilitatea grupelor](https://claude.ai/code/artifact/c6421638-b614-47f0-b94c-d804e141dba8) — venit vs. cost salarial pe grupă (actualizat 13 sept.)
+>
+> ⚠️ Toate au **link de share fixat pe o versiune veche** — după republicare, cine are linkul vede
+> tot versiunea dinainte până când se mută pinul din meniul de share.
 
 ---
 
@@ -43,12 +48,11 @@ instructor, absent din prima simulare; `S SD Kpop 7-12` s-a împărțit în `S S
 `S SD Kpop 15:30`, ambele la Laura Petria. `S Open Class` are titular „Open Teacher" (nu o persoană)
 și nu intră în salarii.
 
-## 2. Bonusul KPI — trei trepte, doar în sezon
+## 2. Bonusul KPI — trei trepte în sezon, prezențe vara
 
 **Sub standard = 0 · În standard = jumătate din maxim · Peste standard = maximul.**
 **Se plătește doar în cele 10 luni de sezon** (confirmat de Alex, 9 sept.).
-⚠️ **Pentru lunile de vară va exista un set separat de KPI, încă nedefinit.** Până atunci, iulie și
-august intră în calcul doar cu venitul fix (bază + voucher) — suma de mai jos e podeaua verii, nu totalul ei.
+Iulie și august au propriul indicator, **6 lei de fiecare prezență** — vezi mai jos.
 
 > ⚠️ Alex spusese inițial „în standard plătim 80%", dar toate pragurile concrete date
 > (105/210, 70/140, 75/150) sunt exact 50%. Am aplicat numerele.
@@ -150,26 +154,68 @@ Verificare după orice atingere a capacităților: `node scripts/check-capacitat
 la trepte sunt erori, abaterile de la standardul sălii doar informative (există excepția de mai sus).
 Cele **107 cursuri fără sală și fără locație** rămân pe 0: moloz din v1, fără nicio înrolare activă.
 
-**Efectul pe bani, măsurat la 12 septembrie 2026** (înscrierile încă în curs): miza ocupării e
-**7.340 lei/lună la maxim** (4.875 la standard) pe 47 de grupe, iar la ocuparea reală de acum s-ar
-plăti **1.440 lei = 30% din miza de standard**. Benzi: 34 de grupe sub standard, 11 în standard, 2 peste.
+**Efectul pe bani, recalculat la 13 septembrie 2026** (a doua zi de sezon, înscrierile în curs):
+miza ocupării e **7.680 lei/lună la maxim** (5.095 la standard) pe 49 de grupe, iar la ocuparea reală
+de acum s-ar plăti **1.550 lei = 30% din miza de standard**. Benzi: 36 de grupe sub standard, 9 în
+standard, 4 peste.
 
-| Locație / sală | Capacitate | Grupe | Miză/lună | S-ar plăti acum | Cursanți lipsă până la 60% |
+| Locație / sală | Capacitate | Grupe | Miză std/lună | S-ar plăti acum | Cursanți lipsă până la 60% |
 |---|---|---|---|---|---|
-| Nicolina | 20 | 19 | 3.150 | 120 | 115 |
-| Ștefan cel Mare · Sala 1 | 25 | 14 | 2.860 | 895 | 76 |
-| Ștefan cel Mare · Sala 2 | 10 | 7 | 700 | 240 | 8 |
-| Quasar 4 Kids | 15 | 7 | 630 | 185 | 35 |
+| Nicolina | 20 | 19 | 2.100 | 120 | 111 |
+| Ștefan cel Mare · Sala 1 | 25 | 15 | 2.100 | 965 | 74 |
+| Ștefan cel Mare · Sala 2 | 10 | 7 | 420 | 280 | 8 |
+| Quasar 4 Kids | 15 | 7 | 405 | 185 | 35 |
+| *(S LMi Tiny, capacitate 12)* | 12 ⚠️ | 1 | 70 | 0 | 8 |
 
-Cele 13 grupe care ating deja standardul: S SD Varsity INT 29/25 (116%) · K Junior MJ 13/15 ·
-S LMi Junior INC 8/10 · S MaJ Tiny 20/25 · S SD Kpop 12+ 20/25 · S SD Kpop 15:30 8/10 ·
-S MaJ Teen INT 19/25 · S V Junior INC 19/25 · S-S2 SD Varsity INT 7/10 · S SD Kpop 14:30 7/10 ·
-S MaJ Junior INC 17/25 · K Teatru jr 7-10 INT 10/15 · N Acrobatics SD 12/20.
+Cele 13 grupe care iau bani pe ocupare azi: S SD Kpop 12+ 33/25 (132%) · S SD Varsity INT 29/25 ·
+S SD Kpop 14:30 11/10 · K Junior MJ 13/15 · S MaJ Tiny 20/25 · S V Junior INC 19/25 ·
+S MaJ Teen INT 19/25 · S MaJ Junior INC 17/25 · N Acrobatics SD 12/20 · K Teatru jr 7-10 INT 10/15 ·
+S LMi Junior INC 8/10 · S SD Kpop 15:30 8/10 · S-S2 SD Varsity INT 8/10.
 
-La **un singur cursant** de bandă: `N Acro Q LM` 11/20 (ar lua 120) și `S-S2 SD Varsity INC` 5/10 (60).
+⚠️ **Nicolina rămâne problema reală**, nu una de date: 19 grupe, 2.100 lei miză de standard, 120 lei
+plătibili azi, 111 cursanți lipsă până la prag. Aici KPI-ul de ocupare e un obiectiv de umplere, nu un
+bonus curent.
 
-⚠️ **Nicolina rămâne problema reală**, nu una de date: 19 grupe, 3.150 lei miză, 120 lei plătibili azi,
-115 cursanți lipsă până la prag. Aici KPI-ul de ocupare e un obiectiv de umplere, nu un bonus curent.
+⚠️ **Grupa nouă `S LMi Tiny` (Giulia Butnaru, Sala 2) s-a creat cu capacitatea 12**, în afara celor 5
+trepte — `node scripts/check-capacitate-grupe.mjs` o raportează ca abatere. Standardul Sălii 2 e 10.
+Cât timp capacitatea e numitorul unui KPI care plătește, valoarea trebuie adusă pe treaptă.
+
+### KPI-ul de vară — 6 lei de fiecare prezență (Alex, 13 sept.)
+
+**În iulie și august nu se măsoară nici retenția, nici ocuparea.** În locul lor intră un singur
+indicator: **6 lei pentru fiecare prezență** înregistrată la orele ținute în cele două luni, peste
+baza grupelor care au trecut testul de maturitate (§4). Nu are trepte (fiecare prezență se plătește
+la fel, de la prima) și **nu se înjumătățește** la grupele cu o ședință pe săptămână — vara contează
+câte ore se țin efectiv, nu ce program are grupa în sezon. Voucherul și cei 150 lei pe eveniment merg
+mai departe, la fel ca în restul anului.
+
+**Bonusul verii nu depinde de testul de maturitate** — testul decide doar dacă se plătește *baza*.
+Prezențele se plătesc oricum.
+
+**Cât ar fi costat pe vara care tocmai s-a încheiat** (sezonul „Vara 2026", 22 iun.–30 aug.; fereastra
+de plată e însă iulie–august):
+
+| | Prezențe | La 6 lei |
+|---|---|---|
+| Iulie 2026 | 2.010 | **12.060 lei** |
+| August 2026 | 1.386 | **8.316 lei** |
+| **Total pe cele 2 luni** | **3.396** | **20.376 lei** |
+
+Cele 161 de prezențe de la `S Open Class` nu intră (titular „Open Teacher", nu o persoană).
+Pe instructor, iulie + august: Alin Stoleru 3.606 · Bianca David 3.402 · Ioana Perju 2.736 ·
+Eva Manolică 2.322 · Andrei Chiriac 2.118 · Giulia Butnaru 1.578 · Mara Caliman 1.410 ·
+Laura Petria 1.134 · Adrian Geartu 960 · Theo Todica 648 · Ana Plesescu 462. Laura Roșca n-a avut
+ore de vară, deci 0.
+
+**Calibrare:** ~10.200 lei/lună în medie, adică aproximativ cât bonusul de sezon la standard
+(9.630 lei/lună) — vara nu e nici mai ieftină, nici mai scumpă decât o lună obișnuită de bonus.
+Distribuția e însă foarte inegală între cele două luni (12.060 vs 8.316) și între oameni: primii
+patru instructori iau 57% din total. **Vara 2025 ar fi costat 14.256 lei** (2.376 prezențe), deci
+suma crește cu activitatea de vară — ceea ce e chiar intenția indicatorului.
+
+⚠️ **Prezența de vară trebuie trecută la zi în aplicație**, altfel nu există pentru plată. Spre
+deosebire de restul grilei, aici nu e nimic de construit: `prezente` există și se completează deja
+în lunile de vară.
 
 ## 3. Beneficii
 
@@ -206,7 +252,8 @@ plătitori timp de 5 luni consecutive, după cele 3 luni de testare**.
   **se plătește normal în tot sezonul, dar nu și în iulie-august**.
 
 Regula se aplică **pe grupă, nu pe instructor** — un om cu portofoliu mixt poate fi plătit vara
-pentru unele grupe și nu pentru altele.
+pentru unele grupe și nu pentru altele. **Testul decide doar baza**: cei 6 lei pe prezență (§2) se
+plătesc pentru orice oră de vară ținută, indiferent dacă grupa a trecut testul.
 
 **Estimare pe sezonul 2025-2026:** **36 din 50 de grupe** ar fi trecut testul, adică **75% din bază**
 (~15.700 lei/lună în loc de 20.875). Cele două luni de vară ar costa atunci ~**31.400 lei**, nu 41.750.
@@ -232,48 +279,57 @@ Un client se numără la grupa C în luna X dacă are în `enrollments` un rând
 > ⚠️ `.in()` din supabase-js **taie tăcut la 1000 de rânduri**. `enrollments` are 42.798 rânduri —
 > numărătoarea se face paginat cu `.range()`, per curs.
 
-## 6. Rezultatul simulării (orar 2026-2027: 12 instructori, 55 de grupe cu titular, 10 trupe)
+## 6. Rezultatul simulării (orar 2026-2027: 12 instructori, 56 de grupe cu titular, 10 trupe)
 
-Recalculat la **12 septembrie 2026**, pe capacitățile presetate (§2) și pe cursanții plătitori din septembrie.
+Recalculat la **13 septembrie 2026**, a doua zi de sezon: 534 de cursanți plătitori (cu 25 mai mulți
+decât la 12 sept.), o grupă nouă în orar (`S LMi Tiny`).
 
 | Componentă | Ritm | Pe lună | Luni/an | Pe an |
 |---|---|---|---|---|
-| Bază | lunar; vara doar grupele mature | 21.900 | 10 + vara parțial | ~262.800 |
+| Bază | lunar; vara doar grupele mature | 22.200 | 10 + vara parțial | ~266.400 |
 | Vouchere (12 × 300) | lunar, tot anul | 3.600 | 12 | 43.200 |
-| Bonus KPI la standard | doar în sezon | 9.280 | 10 | 92.800 |
-| Bonus KPI la maxim | doar în sezon | 16.150 | 10 | 161.500 |
-| Buget deplasări (8 trupe × 1.200) | pe sezon | 960 | — | 9.600 |
+| Bonus KPI la standard | doar în sezon | 9.630 | 10 | 96.300 |
+| Bonus KPI la maxim | doar în sezon | 16.750 | 10 | 167.500 |
+| **KPI de vară (6 lei/prezență)** | **iulie + august** | **~10.190** | **2** | **20.376** |
+| Buget deplasări (7 trupe × 1.200) | pe sezon | 840 | — | 8.400 |
 | Evenimente | per eveniment | — | — | 1.500 / rundă completă |
 
-- **Lunar vara** (bază + vouchere): **25.500 lei**
-- **Lunar în sezon: 26.460 garantat · 32.300 la ocuparea de azi · 35.740 la standard · 42.610 la maxim**
-- **Total pe an, la standard**: **408.400 lei**
+- **Lunar vara**: **25.800 garantat** (bază + voucher) · **~35.990 cu KPI-ul de vară** — 37.860 în
+  iulie, 34.116 în august, pe activitatea verii trecute.
+- **Lunar în sezon: 26.640 garantat · 32.725 la ocuparea de azi · 36.270 la standard · 43.390 la maxim**
+- **Total pe an, la standard**: **434.676 lei** (era 408.400 la 12 sept., fără KPI-ul de vară; din
+  creștere, 20.376 sunt vara și ~5.900 vin din cursanții în plus și grupa nouă)
 
-**Cifra „azi"** = bază + voucher + deplasări + bonusul de ocupare câștigat efectiv la 12 sept. +
-retenția la standard. Retenția nu se poate măsura în septembrie (n-are lună anterioară), deci intră ca
-ipoteză — e prima gaură de reguli de rezolvat, fiindcă afectează 1 din cele 10 luni de bonus.
+**Cifra „azi"** = bază + voucher + deplasări + bonusul de ocupare câștigat efectiv la 13 sept.
+(1.550 lei) + retenția la standard. Retenția nu se poate măsura în septembrie (n-are lună anterioară),
+deci intră ca ipoteză — e prima gaură de reguli de rezolvat, fiindcă afectează 1 din cele 10 luni de bonus.
 
-**Pe instructor** (lunar vara / azi / la standard / pe an la standard):
-Alin Stoleru 6.050 / 7.300 / 8.260 / 94.750 ·
-Eva Manolică 2.840 / 3.840 / 4.200 / 47.640 ·
-Bianca David 3.050 / 3.770 / 4.150 / 47.600 ·
-Ioana Perju 2.750 / 3.610 / 3.910 / 44.600 ·
-Andrei Chiriac 2.300 / 2.940 / 2.960 / 34.220 ·
-Ana Plesescu 1.760 / 2.200 / 2.700 / 30.500 ·
-Mara Caliman 1.460 / 1.800 / 2.220 / 25.100 ·
-Adrian Geartu 1.310 / 1.660 / 1.780 / 20.370 ·
-Laura Roșca 1.180 / 1.420 / 1.550 / 17.850 ·
-Giulia Butnaru 1.010 / 1.440 / 1.440 / 16.370 ·
-Theo Todica 900 / 1.110 / 1.350 / 15.300 ·
-Laura Petria 900 / 1.230 / 1.230 / 14.100.
+**Pe instructor** (vara garantat / vara cu KPI / azi / la standard / pe an la standard):
+Alin Stoleru 6.050 / 7.850 / 7.305 / 8.265 / 98.356 ·
+Bianca David 3.050 / 4.750 / 3.770 / 4.150 / 51.002 ·
+Eva Manolică 2.835 / 4.000 / 3.838 / 4.198 / 49.967 ·
+Ioana Perju 2.750 / 4.120 / 3.610 / 3.910 / 47.336 ·
+Andrei Chiriac 2.300 / 3.360 / 2.938 / 2.962 / 36.343 ·
+Ana Plesescu 1.760 / 1.990 / 2.202 / 2.698 / 30.957 ·
+Mara Caliman 1.460 / 2.165 / 1.798 / 2.218 / 26.505 ·
+Giulia Butnaru 1.310 / 2.100 / 1.815 / 1.965 / 23.848 ·
+Adrian Geartu 1.310 / 1.790 / 1.655 / 1.775 / 21.330 ·
+Laura Roșca 1.175 / 1.175 / 1.415 / 1.550 / 17.850 ·
+Theo Todica 900 / 1.225 / 1.110 / 1.350 / 15.948 ·
+Laura Petria 900 / 1.470 / 1.270 / 1.230 / 15.234.
 
-**Praguri, la 12 septembrie 2026:** 2 trupe sub 14 — `N Acro Q LM` 11 și `N Acrobatics SD` 12, ambele
-la Alin, plătite ca intermediar și fără buget de deplasări. Pragul de 8 se testează abia din ian. 2027.
+⚠️ KPI-ul de vară e estimat pe prezențele reale ale fiecăruia din iulie–august 2026, la portofoliul de
+vară de atunci — nu la grupele din sezonul nou. E o măsură a activității de vară a omului, nu o promisiune.
 
-⚠️ **Două trupe conduse de non-Experți:** `S 1Up Crew` (Giulia, Junior) are acum **exact 14** cursanți,
-deci e trupă adevărată — în prima versiune problema se stingea fiindcă era sub prag. Plus `S UNIQ Crew`
-(Eva, Senior) cu 15. Grila nu are tarif de trupă la Junior și Senior, deci ambele se plătesc la tariful
-de intermediar al rangului (410, respectiv 480), dar primesc buget de deplasări și retenție de trupă.
+**Praguri, la 13 septembrie 2026:** **3 trupe sub 14** — `N Acro Q LM` 11 și `N Acrobatics SD` 12
+(ambele la Alin), plus `S 1Up Crew` **13** (Giulia), care a coborât de la 14 în două zile. Toate trei
+se plătesc ca intermediar și fără buget de deplasări, deci rămân 7 trupe cu statut, nu 8. Pragul de 8
+cursanți se testează abia din ian. 2027.
+
+⚠️ **Trupe conduse de non-Experți:** `S UNIQ Crew` (Eva, Senior) are 15 cursanți, deci e trupă
+adevărată și problema e vie. `S 1Up Crew` (Giulia, Junior) a coborât sub 14, deci se stinge de la
+sine — dar e o chestiune de un singur înscris, nu o rezolvare. Grila nu are tarif de trupă la Junior
+și Senior, deci ambele se plătesc la tariful de intermediar al rangului (410, respectiv 480).
 **Ori cei doi urcă în rang, ori trupele trec la Experți, ori grila capătă tarif de trupă pe fiecare rang.**
 
 ## 7. Calibrarea pragurilor pe sezonul 2025-2026
@@ -330,6 +386,10 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
    doar treptele, `sali.capacitate` ține standardul. Vezi §2 pentru cifre și pentru cele 3 grupe
    rămase peste capacitate.
 4. **Marcaj în roster** pentru instructorii care se antrenează în trupele proprii.
+4b. **KPI-ul de vară n-are nevoie de nimic nou** — se citește din `prezente`, care se completează deja
+   în iulie–august (3.396 de prezențe în vara 2026). Singura condiție e ca ședințele de vară să fie
+   trecute la zi. Ce lipsește e **testul de maturitate** (§4), care decide dacă intră și baza: cere
+   istoric de 5 luni consecutive cu ≥8 cursanți plătitori, calculat pe `data_reziliere`, nu pe `reziliat`.
 5. **Retenția în prima lună nu are numitor.** În septembrie nu există lună precedentă (august n-are
    înrolări), la fel la orice grupă nou deschisă. De decis: 0, sau indicatorul nu se numără în luna
    aia. Azi ar plăti 0 tăcut, adică o lună din zece fără bonus de retenție pentru toți.
@@ -346,8 +406,9 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
   peste pragul de 14: promovare, schimbare de titular, sau tarif de trupă pe fiecare rang? (§6)
 - **Grupele de Teatru** (Laura Roșca, 4 grupe) — intră pe aceeași grilă ca dansul sau au regim
   propriu? Acum sunt calculate pe grila de dans.
-- **KPI-urile de vară** — Alex a confirmat că vor exista indicatori separați pentru iulie-august,
-  dar nu sunt încă definiți. Voucherul l-am dat tot anul (presupunere, neconfirmată).
+- ~~**KPI-urile de vară**~~ — **ÎNCHIS (13 sept.)**: 6 lei de fiecare prezență din iulie–august, fără
+  trepte și fără înjumătățire, peste baza grupelor mature (§2). Pe vara trecută ar fi costat 20.376 lei.
+  Rămâne presupunerea mea că **voucherul se dă și vara** — neconfirmată de Alex.
 - **Bugetul de deplasări** e anual, dar statutul de trupă e lunar — cum se rezolvă?
 - **Data din lună** la care se face numărătoarea de cursanți (decide direct 700 vs 550 la trupe).
 - **Ce înseamnă concret „ia altceva"** pentru instructorul căruia i se reorganizează grupa.
