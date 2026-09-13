@@ -49,6 +49,9 @@ export function Combobox({
     })
   }, [options, query])
 
+  // Sub ~8 opțiuni lista se citește dintr-o privire; bara ar fi doar zgomot.
+  const showSearchHint = options.length >= 8
+
   const customValue = query.trim()
   const showCustom =
     allowCustom &&
@@ -153,6 +156,29 @@ export function Combobox({
 
       {open && (
         <div className="absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-line bg-card shadow-lg">
+          {/* Bara de căutare: lista deschisă nu spunea nicăieri că se poate filtra
+              tastând, așa că părea că trebuie derulate toate opțiunile. Tastarea
+              merge tot în inputul de deasupra — bara doar o face vizibilă (și, la
+              click, mută focusul acolo). */}
+          {showSearchHint && (
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault()
+                inputRef.current?.focus()
+              }}
+              className="sticky top-0 z-10 flex cursor-text items-center gap-2 border-b border-line bg-card px-3 py-1.5 text-xs text-muted"
+            >
+              <span aria-hidden>🔍</span>
+              {query.trim() ? (
+                <span className="truncate">
+                  <span className="text-ink">{query.trim()}</span> — {filtered.length}{' '}
+                  {filtered.length === 1 ? 'rezultat' : 'rezultate'}
+                </span>
+              ) : (
+                <span>Scrie ca să filtrezi — {options.length} opțiuni</span>
+              )}
+            </div>
+          )}
           {filtered.length === 0 && !showCustom ? (
             <div className="px-3 py-2 text-sm text-muted">
               Niciun rezultat.
