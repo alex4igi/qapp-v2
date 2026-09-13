@@ -187,7 +187,6 @@ type Props = {
   courses: DashboardCourse[]
   loading: boolean
   isError?: boolean
-  salaId: string
   emptyMessage: string
   /** false = arată mereu toate grupele (ex. „Grupele mele azi", liste scurte). */
   compact?: boolean
@@ -197,7 +196,6 @@ export function DailyAgenda({
   courses,
   loading,
   isError,
-  salaId,
   emptyMessage,
   compact = true,
 }: Props) {
@@ -354,7 +352,7 @@ export function DailyAgenda({
                 key={c.id}
                 course={c}
                 isToday={isToday}
-                to={`/grupa/${c.id}${salaId ? `?sala=${salaId}` : ''}`}
+                to={`/grupa/${c.id}`}
               />
             ))}
           </div>

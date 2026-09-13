@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { PageHeader, Select, Spinner } from '@/components/ui'
+import { PageHeader, Spinner } from '@/components/ui'
 import { saliWithLocatie, cursuriOptionsForCurrentTeacher, sezonActiv } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
@@ -18,6 +18,7 @@ import { EventDashboardCard } from '@/features/dashboard/EventDashboardCard'
 import { DatorniciWorklistCard } from '@/features/dashboard/DatorniciWorklistCard'
 import { AgendaAziCard } from '@/features/dashboard/AgendaAziCard'
 import { InchirieriAziCard } from '@/features/dashboard/InchirieriAziCard'
+import { SalaPills } from '@/features/dashboard/SalaPills'
 import { EvaluariCountdown } from '@/features/evaluari/components/EvaluariCountdown'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -42,11 +43,11 @@ export function DashboardPage() {
   const { locatieId, ready: locatieReady } = useWorkingLocatie()
   const [params, setParams] = useSearchParams()
 
-  const salaId = params.get('sala') ?? ''
+  const salaParam = params.get('sala') ?? ''
 
-  const updateSala = (value: string) => {
+  const updateSali = (values: string[]) => {
     const next = new URLSearchParams(params)
-    if (value) next.set('sala', value)
+    if (values.length) next.set('sala', values.join(','))
     else next.delete('sala')
     setParams(next, { replace: true })
   }
@@ -78,6 +79,16 @@ export function DashboardPage() {
         .map((s) => ({ value: s.id, label: s.nume })),
     [saliQ.data, locatieId],
   )
+  // Sălile din URL care nu mai există în locația de lucru se ignoră — altfel,
+  // după schimbarea locației, pagina ar rămâne filtrată pe o sală invizibilă
+  // și ar arăta „niciun curs". Gol = toate sălile locației.
+  const saliSelectate = useMemo(() => {
+    if (!salaParam) return []
+    const available = new Set(saliOptions.map((o) => o.value))
+    const keep = salaParam.split(',').filter((id) => available.has(id))
+    return keep.length === saliOptions.length ? [] : keep
+  }, [salaParam, saliOptions])
+  const salaKey = saliSelectate.join(',')
 
   const sezonQ = useQuery({
     queryKey: ['lookup', 'sezon-activ-detalii'],
@@ -97,7 +108,7 @@ export function DashboardPage() {
       'dashboard',
       'courses',
       date,
-      salaId,
+      salaKey,
       locatieId ?? 'all',
       sezon?.id ?? 'fara-sezon',
       teacherCursIds,
@@ -105,7 +116,7 @@ export function DashboardPage() {
     queryFn: () =>
       getDashboardCourses({
         date,
-        salaId: salaId || null,
+        salaIds: saliSelectate,
         locatieId: locatieId ?? null,
         sezon: sezon ?? null,
         cursIds: teacherCursIds,
@@ -165,14 +176,11 @@ export function DashboardPage() {
         }
         actions={
           !teacherMode && saliOptions.length > 1 ? (
-            <div className="w-40">
-              <Select
-                placeholder="Toate sălile"
-                options={saliOptions}
-                value={salaId}
-                onChange={(e) => updateSala(e.target.value)}
-              />
-            </div>
+            <SalaPills
+              options={saliOptions}
+              selected={saliSelectate}
+              onChange={updateSali}
+            />
           ) : null
         }
       />
@@ -209,7 +217,6 @@ export function DashboardPage() {
             courses={myCoursesToday}
             loading={false}
             isError={false}
-            salaId={salaId}
             emptyMessage="Nicio grupă a ta programată azi."
             compact={false}
           />
@@ -222,18 +229,17 @@ export function DashboardPage() {
         courses={coursesQ.data ?? []}
         loading={coursesQ.isLoading || (teacherMode && teacherCursuriQ.isLoading)}
         isError={coursesQ.isError}
-        salaId={salaId}
         compact={!teacherMode}
         emptyMessage={
           inafaraSezonului ??
           (teacherMode
             ? 'Nicio grupă a ta programată azi.'
-            : `Niciun curs programat în ziua selectată${salaId ? ' pentru această sală' : ''}.`)
+            : `Niciun curs programat în ziua selectată${saliSelectate.length ? ' în sălile selectate' : ''}.`)
         }
       />
 
       {!teacherMode && (
-        <InchirieriAziCard locatieId={locatieId ?? null} salaId={salaId} />
+        <InchirieriAziCard locatieId={locatieId ?? null} salaIds={saliSelectate} />
       )}
 
       {showChart && (

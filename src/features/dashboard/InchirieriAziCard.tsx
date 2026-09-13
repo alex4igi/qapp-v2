@@ -8,13 +8,14 @@ import { listInchirieriWeek, renterLabel } from '@/features/inchirieri/api/occup
 
 type Props = {
   locatieId: string | null
-  salaId?: string
+  /** Sălile selectate în dashboard; gol = toate. */
+  salaIds?: string[]
 }
 
 // Închirierile de săli private din ziua selectată — informativ, fără roster.
 // Intenționat discret (după grupe): recepția vede la ce oră e ocupată sala,
 // ca o rezervare creată azi să nu o ia prin surprindere.
-export function InchirieriAziCard({ locatieId, salaId }: Props) {
+export function InchirieriAziCard({ locatieId, salaIds = [] }: Props) {
   const { date, isToday } = useWorkingDate()
   const { ready: locatieReady } = useWorkingLocatie()
 
@@ -33,9 +34,9 @@ export function InchirieriAziCard({ locatieId, salaId }: Props) {
 
   const rows = useMemo(() => {
     let list = q.data ?? []
-    if (salaId) list = list.filter((r) => r.sala === salaId)
+    if (salaIds.length) list = list.filter((r) => salaIds.includes(r.sala))
     return list.slice().sort((a, b) => a.ora_start.localeCompare(b.ora_start))
-  }, [q.data, salaId])
+  }, [q.data, salaIds])
 
   if (rows.length === 0) return null
 

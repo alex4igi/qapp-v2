@@ -24,13 +24,13 @@ export type DashboardSezon = {
   data_final: string
 }
 
-// Cursurile zilei pentru sala/locația selectată. Pentru teacher se poate
+// Cursurile zilei pentru sălile/locația selectate (`salaIds` gol = toate sălile). Pentru teacher se poate
 // restrânge la `cursIds` (set obținut din `cursuri_teacheri` M:N).
 // `sezon` vine de la pagină (același query cache-uit ca banner-ul de sezon), ca să nu
 // mai facem un fetch separat aici; null = nu există sezon activ.
 export async function getDashboardCourses(params: {
   date: string
-  salaId: string | null
+  salaIds: string[]
   locatieId: string | null
   sezon: DashboardSezon | null
   cursIds?: string[] | null
@@ -61,7 +61,7 @@ export async function getDashboardCourses(params: {
     .eq('suspendat', false)
 
   if (sezon) cursQ = cursQ.eq('sezon', sezon.id)
-  if (params.salaId) cursQ = cursQ.eq('sala', params.salaId)
+  if (params.salaIds.length) cursQ = cursQ.in('sala', params.salaIds)
   if (params.locatieId) cursQ = cursQ.eq('sala.locatie', params.locatieId)
   if (params.cursIds) cursQ = cursQ.in('id', params.cursIds)
 
