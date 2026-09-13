@@ -58,7 +58,8 @@ import { ProgramareSection } from './sections/ProgramareSection'
 import { ContactatSection } from './sections/ContactatSection'
 import { PierdutSection } from './sections/PierdutSection'
 import { DateContactSection, type DupHit } from './sections/DateContactSection'
-import { ProfilInteresSection } from './sections/ProfilInteresSection'
+import { DetaliiSection } from './sections/DetaliiSection'
+import { PasUrmatorSection } from './sections/PasUrmatorSection'
 
 type Props = {
   open: boolean
@@ -442,6 +443,9 @@ export function LeadModal({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    // Salvarea merge și din tab-ul Istoric (rail-ul e editabil acolo); eroarea
+    // se afișează însă în panoul de detalii.
+    setTab('detalii')
     if (!form.nume.trim()) {
       setError('Numele este obligatoriu.')
       return
@@ -493,6 +497,25 @@ export function LeadModal({
     background: active ? 'var(--color-rail)' : 'transparent',
     color: active ? '#fff' : '#8A857C',
   })
+  // Datele leadului stau în rail (stânga) pe orice status; pe telefon „Detalii"
+  // coboară sub zona de lucru, ca stepper-ul să nu ajungă după zece inputuri.
+  const contactEl = (
+    <DateContactSection
+      form={form}
+      set={set}
+      dupHit={dupHit}
+      onTelefonChange={(v) => {
+        set('telefon', v)
+        setDupHit(null)
+      }}
+      onTelefonBlur={(v) => void checkDup(v)}
+      onReactivate={(id) => reactivate.mutate(id)}
+      reactivatePending={reactivate.isPending}
+    />
+  )
+  const detaliiEl = (
+    <DetaliiSection form={form} set={set} campanii={campanii.data ?? []} />
+  )
 
   return (
     <>
@@ -580,8 +603,11 @@ export function LeadModal({
             </button>
           </div>
 
-          {/* body: două panouri (pe telefon, unul sub altul) */}
-          <div
+          {/* body: două panouri (pe telefon, unul sub altul). E chiar formularul,
+              ca inputurile din rail să conteze la submit (Enter, butonul din footer). */}
+          <form
+            id="lead-form"
+            onSubmit={handleSubmit}
             style={{
               display: 'flex',
               flexDirection: isMobile ? 'column' : 'row',
@@ -601,6 +627,8 @@ export function LeadModal({
               onLogContact={() => setShowLogContact(true)}
               onMoveToNurture={() => moveToNurture.mutate()}
               movePending={moveToNurture.isPending}
+              contact={contactEl}
+              details={detaliiEl}
             />
 
             {/* panou formular (dreapta) */}
@@ -608,7 +636,7 @@ export function LeadModal({
               {isEdit && lead && tab === 'istoric' ? (
                 <LeadHistory leadId={lead.id} />
               ) : (
-                <form id="lead-form" onSubmit={handleSubmit}>
+                <>
                   <PipelineStepper
                     status={form.status}
                     canStartConvert={isEdit && Boolean(lead)}
@@ -665,23 +693,10 @@ export function LeadModal({
                     />
                   )}
 
-                  <DateContactSection
-                    form={form}
-                    set={set}
-                    dupHit={dupHit}
-                    onTelefonChange={(v) => {
-                      set('telefon', v)
-                      setDupHit(null)
-                    }}
-                    onTelefonBlur={(v) => void checkDup(v)}
-                    onReactivate={(id) => reactivate.mutate(id)}
-                    reactivatePending={reactivate.isPending}
-                  />
-
-                  <ProfilInteresSection
-                    form={form}
-                    set={set}
-                    campanii={campanii.data ?? []}
+                  <PasUrmatorSection
+                    status={form.status}
+                    canConvert={isEdit && Boolean(lead)}
+                    onStartConvert={() => setConvertFlow(true)}
                   />
 
                   {/* OBSERVAȚII */}
@@ -703,11 +718,13 @@ export function LeadModal({
                     </div>
                   )}
 
+                  {isMobile && <div style={{ marginTop: '22px' }}>{detaliiEl}</div>}
+
                   {error && <div style={{ fontSize: '13px', color: '#C2403F', marginTop: '12px' }}>{error}</div>}
-                </form>
+                </>
               )}
             </div>
-          </div>
+          </form>
 
           {/* footer */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 22px', borderTop: '1px solid var(--color-line)', background: '#FBFAF6' }}>
@@ -724,7 +741,7 @@ export function LeadModal({
             )}
             <div style={{ flex: 1 }} />
             <button type="button" onClick={onClose} style={{ height: '40px', padding: '0 16px', border: '1px solid #E4E0D7', background: '#fff', borderRadius: '9px', fontSize: '13.5px', fontWeight: 600, color: 'var(--color-ink)', cursor: 'pointer' }}>Anulează</button>
-            {tab === 'detalii' && canEditLeads(role) && (
+            {canEditLeads(role) && (
               <button type="submit" form="lead-form" disabled={save.isPending} className="qbtnp" style={{ height: '40px', padding: '0 20px', border: 'none', background: 'var(--color-quasar-yellow)', borderRadius: '9px', fontSize: '13.5px', fontWeight: 700, color: 'var(--color-ink)', cursor: 'pointer' }}>
                 {save.isPending
                   ? 'Se salvează…'
