@@ -19,17 +19,13 @@
 // NU trimite SMS.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { leaduriProtejate } from '../_shared/leadNurture.ts'
+import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 const DAY = 86_400_000
 
 Deno.serve(async (req) => {
-  const cronSecret = Deno.env.get('CRON_SECRET')
-  if (cronSecret) {
-    const auth = req.headers.get('authorization')
-    if (auth !== `Bearer ${cronSecret}`) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  }
+  const refuz = refuzaApelStrain(req)
+  if (refuz) return refuz
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,

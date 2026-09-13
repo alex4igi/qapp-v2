@@ -15,6 +15,7 @@
 //   CRON_SECRET (opțional) — dacă e setat, cere Authorization: Bearer <secret>.
 import { serviceClient, lazyCampanie, insertLead } from '../_shared/intake.ts'
 import { GRAPH, parseLeadFields, type FieldDatum } from '../_shared/meta.ts'
+import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 type GraphLead = {
   id: string
@@ -41,10 +42,8 @@ async function graphGet(url: string): Promise<Record<string, unknown>> {
 }
 
 Deno.serve(async (req) => {
-  const cronSecret = Deno.env.get('CRON_SECRET')
-  if (cronSecret && req.headers.get('authorization') !== `Bearer ${cronSecret}`) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const refuz = refuzaApelStrain(req)
+  if (refuz) return refuz
 
   const token = Deno.env.get('META_SYSTEM_USER_TOKEN')
   if (!token) {

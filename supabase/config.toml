@@ -433,6 +433,10 @@ verify_jwt = false
 [functions.pull-meta-leads]
 verify_jwt = false
 
+# Apelată de pg_cron zilnic — trimite conversiile offline la Meta.
+[functions.push-meta-conversions]
+verify_jwt = false
+
 # Portal membri — login propriu (director separat de auth.users). Endpoint public:
 # primește email+parolă (nu JWT), verifică în portal_accounts și emite tokenul portalului.
 [functions.portal-auth]

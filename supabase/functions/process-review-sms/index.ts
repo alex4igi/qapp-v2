@@ -10,15 +10,11 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { buildSms, sendSms } from '../_shared/sms.ts'
 import { getProgramareSms } from '../_shared/leadLocatie.ts'
 import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
+import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 Deno.serve(async (req) => {
-  const cronSecret = Deno.env.get('CRON_SECRET')
-  if (cronSecret) {
-    const auth = req.headers.get('authorization')
-    if (auth !== `Bearer ${cronSecret}`) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  }
+  const refuz = refuzaApelStrain(req)
+  if (refuz) return refuz
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,

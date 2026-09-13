@@ -11,6 +11,7 @@
 // nu dublează SMS-uri.
 import { notificaContract } from '../_shared/contractNotify.ts'
 import { logEvent, portalUrl, randomToken, serviceClient, sha256Hex } from '../_shared/contracte.ts'
+import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -23,6 +24,9 @@ const REMINDER_DAYS = [3, 7]
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405)
+
+  const refuz = refuzaApelStrain(req)
+  if (refuz) return refuz
 
   try {
     const admin = serviceClient()

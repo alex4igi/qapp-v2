@@ -17,6 +17,7 @@ import { getProgramareSms } from '../_shared/leadLocatie.ts'
 import { localDateBucharest } from '../_shared/quietHours.ts'
 import { leaduriProtejate } from '../_shared/leadNurture.ts'
 import { sendEmail } from '../_shared/messaging.ts'
+import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 function startOfDay(date: Date) {
   const d = new Date(date)
@@ -151,13 +152,8 @@ function buildSuspendariEmail(rows: SuspendatRow[]): { subject: string; html: st
 }
 
 Deno.serve(async (req) => {
-  const cronSecret = Deno.env.get('CRON_SECRET')
-  if (cronSecret) {
-    const auth = req.headers.get('authorization')
-    if (auth !== `Bearer ${cronSecret}`) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  }
+  const refuz = refuzaApelStrain(req)
+  if (refuz) return refuz
 
   // Rulează o singură dată pe zi, la ora locală țintă (10:00). Cealaltă invocare
   // UTC (sezonul opus) cade pe altă oră locală și iese aici fără efect.
