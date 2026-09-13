@@ -25,6 +25,19 @@ export const nivelCursOptions = opts(
   'Trupa',
 )
 
+// `cursuri.stil` e coloană text, nu enum în DB — lista de aici e singurul lucru
+// care ține vocabularul închis. A fost text liber până în 09-2026 și derivase pe
+// locații („Streetdance" la Ștefan cel Mare vs „Street Dance" la Nicolina), deci
+// aceeași disciplină se număra de mai multe ori în orice grupare pe stil.
+export const stilCursOptions = opts(
+  'Street Dance',
+  'Gimnastica',
+  'K-Pop',
+  'Teatru',
+  'Zumba',
+  'Open',
+)
+
 export const varstaCursOptions = opts(
   'Tiny 4-7',
   'Junior 7-10',

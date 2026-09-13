@@ -1,5 +1,5 @@
 import { Field, Select, TextInput, type SelectOption } from '@/components/ui'
-import { varstaCursOptions } from '@/lib/enums'
+import { stilCursOptions, varstaCursOptions } from '@/lib/enums'
 import { nivelFaraTrupa, tipCursOptions, type FormState, type SetField, type TipCurs } from './helpers'
 
 type Props = {
@@ -20,6 +20,13 @@ export function DetaliiFields({
   coInstructorOptions,
 }: Props) {
   const isTrupa = form.tip === 'recurent-trupa'
+
+  // Cursurile din sezoanele vechi pot avea un stil în afara vocabularului; îl
+  // ținem ca opțiune, altfel selectul l-ar rescrie tăcut la prima salvare.
+  const stiluri =
+    !form.stil || stilCursOptions.some((o) => o.value === form.stil)
+      ? stilCursOptions
+      : [...stilCursOptions, { label: form.stil, value: form.stil }]
 
   const onTipChange = (next: TipCurs) => {
     setForm((prev) => ({
@@ -42,8 +49,10 @@ export function DetaliiFields({
           />
         </Field>
         <Field label="Stil" htmlFor="stil">
-          <TextInput
+          <Select
             id="stil"
+            placeholder="—"
+            options={stiluri}
             value={form.stil}
             onChange={(e) => set('stil', e.target.value)}
           />
