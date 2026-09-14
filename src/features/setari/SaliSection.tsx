@@ -20,7 +20,10 @@ type FormState = {
   nume: string
   locatie: string
   capacitate: string
+  minimCursanti: string
 }
+
+const MINIM_CURSANTI_STANDARD = 8
 
 export function SaliSection() {
   const queryClient = useQueryClient()
@@ -29,6 +32,7 @@ export function SaliSection() {
     nume: '',
     locatie: '',
     capacitate: '',
+    minimCursanti: String(MINIM_CURSANTI_STANDARD),
   })
   const [error, setError] = useState<string | null>(null)
 
@@ -77,6 +81,12 @@ export function SaliSection() {
       className: 'w-28',
       sortValue: (s) => s.capacitate ?? 0,
     },
+    {
+      header: 'Minim cursanți',
+      cell: (s) => s.minim_cursanti,
+      className: 'w-32',
+      sortValue: (s) => s.minim_cursanti,
+    },
   ]
 
   const open = (s: Sala | null) => {
@@ -85,6 +95,7 @@ export function SaliSection() {
       nume: s?.nume ?? '',
       locatie: s?.locatie ?? '',
       capacitate: s?.capacitate != null ? String(s.capacitate) : '',
+      minimCursanti: String(s?.minim_cursanti ?? MINIM_CURSANTI_STANDARD),
     })
     setError(null)
   }
@@ -103,6 +114,7 @@ export function SaliSection() {
         nume: form.nume.trim(),
         locatie: form.locatie || null,
         capacitate: form.capacitate ? Number(form.capacitate) : null,
+        minim_cursanti: Number(form.minimCursanti),
       }
       return isEdit ? updateSala(editing!.id, payload) : createSala(payload)
     },
@@ -129,6 +141,11 @@ export function SaliSection() {
     setError(null)
     if (!form.nume.trim()) {
       setError('Numele sălii este obligatoriu.')
+      return
+    }
+    const minim = Number(form.minimCursanti)
+    if (!Number.isInteger(minim) || minim < 1 || minim > 30) {
+      setError('Minimul de cursanți trebuie să fie un număr între 1 și 30.')
       return
     }
     save.mutate()
@@ -210,6 +227,19 @@ export function SaliSection() {
                 value={form.capacitate}
                 onChange={(e) => set('capacitate')(e.target.value)}
               />
+            </Field>
+            <Field label="Minim cursanți pe grupă" htmlFor="sala-minim">
+              <TextInput
+                id="sala-minim"
+                type="number"
+                min={1}
+                max={30}
+                value={form.minimCursanti}
+                onChange={(e) => set('minimCursanti')(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-quasar-gray">
+                Sub acest număr 3 luni la rând, grupa e propusă pentru suspendare.
+              </p>
             </Field>
             {error && <p className="text-sm text-red-600">{error}</p>}
           </form>

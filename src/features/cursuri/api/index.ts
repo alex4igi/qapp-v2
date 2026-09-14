@@ -53,3 +53,12 @@ export {
   getCursantiAfectatiDeSuspendare,
   aplicaTriajSuspendare,
 } from './suspendare'
+
+export type { GrupaPragMinim, LunaPragMinim, StarePragMinim } from './pragMinim'
+export {
+  getGrupeSubMinim,
+  lunaScurta,
+  serieSubMinim,
+  motivSuspendareSubMinim,
+  LUNI_PANA_LA_PROPUNERE,
+} from './pragMinim'

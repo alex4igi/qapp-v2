@@ -57,16 +57,25 @@ type Props = {
   focusSection?: SectiuneCurs
   /** Apelat după ștergerea definitivă — fișa cursului nu mai există. */
   onDeleted?: () => void
+  /** Deschide direct confirmarea de suspendare, fără formularul de editare. */
+  doarSuspendare?: { motiv: string }
 }
 
-export function CursForm({ open, curs, onClose, focusSection, onDeleted }: Props) {
+export function CursForm({
+  open,
+  curs,
+  onClose,
+  focusSection,
+  onDeleted,
+  doarSuspendare,
+}: Props) {
   const queryClient = useQueryClient()
   const { role } = useAuth()
   const isEdit = Boolean(curs)
   const [form, setForm] = useState<FormState>(() => initialState(curs))
   const [error, setError] = useState<string | null>(null)
   const [mutareSezonOk, setMutareSezonOk] = useState(false)
-  const [suspendOpen, setSuspendOpen] = useState(false)
+  const [suspendOpen, setSuspendOpen] = useState(Boolean(doarSuspendare))
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [lunaSuspendare, setLunaSuspendare] = useState(lunaCurentaIso)
   const [orarGolOk, setOrarGolOk] = useState(false)
@@ -453,7 +462,7 @@ export function CursForm({ open, curs, onClose, focusSection, onDeleted }: Props
   return (
     <>
       <Modal
-        open={open}
+        open={open && !doarSuspendare}
         title={isEdit ? 'Editează curs' : 'Curs nou'}
         onClose={onClose}
         size="xl"
@@ -516,6 +525,7 @@ export function CursForm({ open, curs, onClose, focusSection, onDeleted }: Props
           }
           entityLabel={curs.numele}
           archive={!areSuspendare}
+          motivInitial={doarSuspendare?.motiv}
           onConfirm={async (motiv) => {
             // Întâi cursanții, apoi grupa: dacă triajul cade la jumătate, grupa
             // rămâne activă și se vede ce n-a mers, în loc să rămână oprită cu
@@ -558,7 +568,11 @@ export function CursForm({ open, curs, onClose, focusSection, onDeleted }: Props
             void queryClient.invalidateQueries({ queryKey: ['plati'] })
             void queryClient.invalidateQueries({ queryKey: ['client'] })
           }}
-          onClose={() => setSuspendOpen(false)}
+          onClose={() => {
+            setSuspendOpen(false)
+            // Fără formularul din spate n-ai unde să rămâi.
+            if (doarSuspendare) onClose()
+          }}
         >
           {suspendareProgramata ? (
             <p className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900">

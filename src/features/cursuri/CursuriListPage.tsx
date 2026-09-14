@@ -10,6 +10,7 @@ import {
   Select,
   DataTable,
   Spinner,
+  Badge,
   type Column,
 } from '@/components/ui'
 import {
@@ -28,10 +29,13 @@ import { CURS_CHECKLIST } from '@/lib/checklist/specs/curs'
 import { CursForm } from './CursForm'
 import {
   getCursuriChecklistFields,
+  getGrupeSubMinim,
   listCursuri,
   listCursuriFilterOptions,
   PAGE_SIZE,
+  type GrupaPragMinim,
 } from './api'
+import { PragMinimPanel } from './components/PragMinimPanel'
 import { formatOra } from './program'
 
 const FARA_LOCATIE = '— Fără locație —'
@@ -45,6 +49,7 @@ function tipLabel(c: VListaCursuri): string {
 
 const makeColumns = (
   checklistById: Map<string, Rezultat>,
+  pragMinimById: Map<string, GrupaPragMinim>,
 ): Column<VListaCursuri>[] => [
   {
     header: 'Curs',
@@ -93,11 +98,25 @@ const makeColumns = (
   },
   {
     header: 'Înscriși',
-    cell: (c) =>
-      c.capacitate_maxima
+    cell: (c) => {
+      const inscrisi = c.capacitate_maxima
         ? `${c.inscrisi}/${c.capacitate_maxima}`
-        : c.inscrisi,
-    className: 'w-24',
+        : c.inscrisi
+      const prag = c.id ? pragMinimById.get(c.id) : undefined
+      if (prag?.stare !== 'de_suspendat' && prag?.stare !== 'in_observatie') {
+        return inscrisi
+      }
+      return (
+        <span className="flex flex-col items-start gap-0.5">
+          <span>{inscrisi}</span>
+          <Badge tone={prag.stare === 'de_suspendat' ? 'danger' : 'warn'}>
+            sub minim {prag.luniSubConsecutive}{' '}
+            {prag.luniSubConsecutive === 1 ? 'lună' : 'luni'}
+          </Badge>
+        </span>
+      )
+    },
+    className: 'w-28',
     sortValue: (c) => c.inscrisi ?? 0,
   },
   {
@@ -263,7 +282,29 @@ export function CursuriListPage() {
     return m
   }, [checklistQ.data])
 
-  const columns = useMemo(() => makeColumns(checklistById), [checklistById])
+  // Pragul minim se evaluează doar pe sezonul activ: pe unul încheiat nu mai e
+  // nimic de decis. RPC-ul e doar pentru manageri, ca și suspendarea.
+  const pragMinimActiv =
+    isManagerOrHigher(role) &&
+    Boolean(sezonActivQ.data) &&
+    sezonFilter === sezonActivQ.data
+  const pragMinimQ = useQuery({
+    queryKey: ['cursuri', 'prag-minim', sezonFilter],
+    queryFn: () => getGrupeSubMinim({ sezonId: sezonFilter }),
+    enabled: pragMinimActiv,
+  })
+
+  const pragMinimById = useMemo(() => {
+    const m = new Map<string, GrupaPragMinim>()
+    if (!pragMinimActiv) return m
+    for (const g of pragMinimQ.data ?? []) m.set(g.cursId, g)
+    return m
+  }, [pragMinimQ.data, pragMinimActiv])
+
+  const columns = useMemo(
+    () => makeColumns(checklistById, pragMinimById),
+    [checklistById, pragMinimById],
+  )
 
   const groups = useMemo(() => {
     const rows = data?.rows ?? []
@@ -359,6 +400,10 @@ export function CursuriListPage() {
           </Field>
         </div>
       </div>
+
+      {pragMinimActiv && pragMinimQ.data && (
+        <PragMinimPanel grupe={pragMinimQ.data} />
+      )}
 
       {isLoading ? (
         <Spinner />

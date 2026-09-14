@@ -61,6 +61,8 @@ type Props = {
   lexic?: ArchiveLexic
   /** Conținut suplimentar în formular (ex. luna de la care repornește grupa). */
   children?: React.ReactNode
+  /** Motiv precompletat, editabil (ex. suspendarea propusă de pragul minim). */
+  motivInitial?: string
   onConfirm: (motiv: string) => Promise<void>
   onClose: () => void
 }
@@ -72,10 +74,11 @@ export function ArchiveConfirmModal({
   archive,
   lexic = LEXIC_ARHIVARE,
   children,
+  motivInitial,
   onConfirm,
   onClose,
 }: Props) {
-  const [motiv, setMotiv] = useState('')
+  const [motiv, setMotiv] = useState(motivInitial ?? '')
   const [error, setError] = useState<string | null>(null)
 
   const run = useMutation({

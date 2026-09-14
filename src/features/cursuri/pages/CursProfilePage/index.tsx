@@ -37,9 +37,12 @@ import {
   getCursLuni,
   getCursTeacheri,
   getSuspendareDeschisa,
+  getGrupeSubMinim,
+  motivSuspendareSubMinim,
   lunaCurenta,
   activateReinscriere,
 } from '../../api'
+import { PragMinimBanner } from '../../components/PragMinimBanner'
 import { GrupaEvenimenteSection } from '@/features/evenimente/GrupaEvenimenteSection'
 import { MetodologieTab } from '@/features/metodologic/tabs/MetodologieTab'
 import { CursSidebar } from './CursSidebar'
@@ -75,6 +78,8 @@ export function CursProfilePage() {
   const [lunaAleasa, setLunaAleasa] = useState<string | null>(null)
   const [inactiviOpen, setInactiviOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  // Motivul precompletat când suspendarea pornește din semnalul „sub minim".
+  const [suspendaSubMinim, setSuspendaSubMinim] = useState<string | null>(null)
   const [focusSection, setFocusSection] = useState<SectiuneCurs | undefined>()
   const [payClientId, setPayClientId] = useState<string | null>(null)
   const [mesajOpen, setMesajOpen] = useState(false)
@@ -108,6 +113,14 @@ export function CursProfilePage() {
     queryFn: () => getSuspendareDeschisa(id!),
     enabled: Boolean(id),
   })
+
+  // Pragul minim de existență — RPC-ul e doar pentru manageri, ca și suspendarea.
+  const pragMinimQuery = useQuery({
+    queryKey: ['curs', id, 'prag-minim'],
+    queryFn: () => getGrupeSubMinim({ cursId: id! }),
+    enabled: Boolean(id) && canEdit,
+  })
+  const pragMinim = pragMinimQuery.data?.[0] ?? null
 
   const luniQuery = useQuery({
     queryKey: ['curs', id, 'luni'],
@@ -344,6 +357,14 @@ export function CursProfilePage() {
         }
       >
         <div className="min-w-0">
+          {pragMinim && (
+            <PragMinimBanner
+              grupa={pragMinim}
+              onSuspenda={() =>
+                setSuspendaSubMinim(motivSuspendareSubMinim(pragMinim))
+              }
+            />
+          )}
           <div className="mb-4 flex flex-wrap items-end gap-3">
             <div className="w-64">
               <Field label="Luna" htmlFor="curs-luna">
@@ -525,6 +546,20 @@ export function CursProfilePage() {
           onClose={() => {
             setEditOpen(false)
             setFocusSection(undefined)
+          }}
+        />
+      )}
+
+      {suspendaSubMinim && (
+        <CursForm
+          open
+          curs={curs}
+          doarSuspendare={{ motiv: suspendaSubMinim }}
+          onClose={() => {
+            setSuspendaSubMinim(null)
+            void queryClient.invalidateQueries({
+              queryKey: ['curs', curs.id, 'prag-minim'],
+            })
           }}
         />
       )}

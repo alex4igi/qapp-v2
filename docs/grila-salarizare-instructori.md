@@ -118,12 +118,12 @@ Banda 80–81% din prima versiune s-a închis: standardul e `>= 60%`, peste stan
 
 | Prag | Valoare | Ce decide |
 |---|---|---|
-| **Existența grupei** | **8** cursanți plătitori, testat la 3 luni de la deschidere (§4) | dacă grupa se ține sau se reorganizează |
+| **Existența grupei** | **8** cursanți plătitori (**6** în SCM Studio 2), 3 luni încheiate la rând (§4) | dacă grupa se ține sau se suspendă |
 | **Bonusul de ocupare** | **60% din mărime** ⇒ 6 în SCM Studio 2 · 9 la Q4K · 12 la Nicolina · 15 în SCM Studio 1 | dacă instructorul ia bani pe ocupare |
 
-Pragul de 8 n-a fost schimbat niciodată. Consecința suprapunerii: la Nicolina (mărime 20) există o zonă
-de **8–11 cursanți** în care grupa e viabilă, dar bonusul de ocupare e încă 0; în SCM Studio 2 (mărime 10)
-pragul KPI e sub cel de existență, deci nu apare zona asta. Dacă zona e prea largă, pârghiile sunt
+Pragul de 8 n-a fost schimbat; din 14 sept. 2026 SCM Studio 2 are excepția de 6 (decizia lui Alex).
+Consecința suprapunerii: la Nicolina (mărime 20) există o zonă de **8–11 cursanți** în care grupa e
+viabilă, dar bonusul de ocupare e încă 0; în SCM Studio 2 (mărime 10) cele două praguri coincid la 6. Dacă zona e prea largă, pârghiile sunt
 pragul KPI (60% → 40–50%) sau mărimea sălii (Nicolina 20 → 15), nu pragul de existență.
 
 ### Mărimea grupei — numitorul ocupării
@@ -265,8 +265,29 @@ deosebire de restul grilei, aici nu e nimic de construit: `prezente` există și
 
 | Prag | Se aplică | Când se măsoară | Ce se întâmplă sub prag |
 |---|---|---|---|
-| **8 cursanți plătitori** | orice grupă | abia la **3 luni de la lansare** (⇒ primul test ian. 2027) | grupa se **reorganizează**; instructorul o pierde sau ia alta |
+| **8 cursanți plătitori** (**6** în SCM Studio 2) | orice grupă, fără open class | **3 luni încheiate la rând** sub prag, după luna lansării (⇒ primul semnal posibil 1 ian. 2027) | grupa e **propusă pentru suspendare**, cu cursanții repartizați — **nu automat**, decide managerul |
 | **14 cursanți plătitori** | trupe | **din prima lună**, apoi lunar | plătită ca intermediar, **pierde bugetul de deplasări**, **păstrează** cei 150 lei/eveniment |
+
+### Pragul minim în aplicație (LIVE în DB din 14 sept. 2026)
+
+- **Pragul stă pe sală:** `sali.minim_cursanti` (standard 8, SCM Studio 2 = 6), editabil în Setări → Săli.
+  Cursurile fără sală cad pe 8.
+- **Regula stă o singură dată în DB:** `_grupe_sub_minim` (migrația `20260914110000`). Luna lansării =
+  cea mai târzie dintre începutul sezonului și crearea cursului; ea e de rodaj și nu se testează. Se
+  testează doar lunile **încheiate**. O lună suspendată rupe șirul. Open class (`stil = 'Open'`) și
+  cursurile one-time sunt excluse.
+- **Stări:** `in_rodaj` (nicio lună testată încă) · `ok` · `in_observatie` (1–2 luni sub) ·
+  `de_suspendat` (3+) · `suspendat` (are deja o suspendare deschisă sau programată).
+- **Alarma:** cronul `grupe-sub-minim-lunar` (pe 1 ale lunii, 06:00 UTC) trimite o notificare-de-rezolvat
+  fiecărui owner/admin/manager pentru fiecare grupă `de_suspendat`, o dată per grupă per lună evaluată,
+  doar cât sezonul e în curs. Dacă managerul ține grupa și ea rămâne sub prag, întrebarea revine luna
+  următoare.
+- **În UI:** banner în fișa cursului cu butonul „Suspendă și repartizează" (deschide suspendarea existentă,
+  cu triajul cursanților și motivul precompletat); panou + insignă în coloana „Înscriși" pe /cursuri,
+  pe sezonul activ. Doar manager+.
+- **Verificat pe 2025-2026:** la 1 ian. 2026 ar fi fost semnalate 6 grupe (dintre care S Vi Zumba Fitness
+  a fost suspendată între timp), 12 pe tot sezonul (inclusiv S Acro MiniQ's, semnalată în aprilie). `N Dans 11-15 SD INC` ar fi fost
+  semnalată în mai și a urcat la 11 în aceeași lună — exact motivul pentru care suspendarea nu e automată.
 
 ### Testul de maturitate — condiția pentru plata de vară
 
@@ -302,6 +323,11 @@ Un client se numără la grupa C în luna X dacă are în `enrollments` un rând
 > 4.183 rânduri reziliate din 7.343, dar **doar 356 au `data_reziliere` și `motiv_reziliere`**.
 > Filtrarea pe `reziliat` a dat vârfuri de 2–4× mai mici decât realitatea.
 > Detalii: memoria `project_reziliat_flag_falsifica_istoricul`.
+>
+> **În SQL definiția există o singură dată:** `cursanti_platitori_luna(curs, luna)` (migrația
+> `20260914110000`). Excepție de formă: din sezonul 2026-2027 înrolările „Per ședință" au `data_final`
+> NULL — ședința se numără doar în luna în care a fost ținută, altfel un om cu o ședință în septembrie
+> s-ar număra până în iunie.
 >
 > ⚠️ `.in()` din supabase-js **taie tăcut la 1000 de rânduri**. `enrollments` are 42.798 rânduri —
 > numărătoarea se face paginat cu `.range()`, per curs.
