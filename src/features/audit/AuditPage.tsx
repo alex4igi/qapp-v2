@@ -21,6 +21,7 @@ const ACTION_LABEL: Record<string, string> = {
   enrollment_deleted: 'Ștergere înrolare',
   incasare_modified: 'Modificare încasare',
   incasare_deleted: 'Ștergere încasare',
+  incasare_moved: 'Mutare plată la alt client',
   lead_deleted: 'Ștergere lead',
   curs_archived: 'Suspendare curs',
   teacher_archived: 'Arhivare instructor',
@@ -89,6 +90,11 @@ function summarizeValues(row: AuditLogRow): string {
   if (row.action === 'incasare_deleted') {
     const o = row.old_value as { suma?: number; client?: string } | null
     return `${o?.client ?? '?'}: ${o?.suma ?? '?'} RON șters`
+  }
+  if (row.action === 'incasare_moved') {
+    const o = row.old_value as { client_nume?: string } | null
+    const n = row.new_value as { client_nume?: string; suma?: number } | null
+    return `${n?.suma ?? '?'} RON: ${o?.client_nume ?? '?'} → ${n?.client_nume ?? '?'}`
   }
   if (row.action === 'incasare_modified') {
     const o = row.old_value as { suma?: number } | null

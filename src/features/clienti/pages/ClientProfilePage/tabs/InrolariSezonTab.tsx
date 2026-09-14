@@ -12,6 +12,7 @@ type Props = {
   onUseCredit?: () => void
   onAskRezilia: (id: string) => void
   onAdjustPrice?: (enrollmentId: string) => void
+  onMoveIncasare?: (row: ClientInrolareSezon) => void
   onMoveCurs?: (enrollmentId: string) => void
   onCorectDate?: (enrollmentId: string) => void
   onMotiveaza?: (enrollmentId: string) => void
@@ -30,6 +31,7 @@ export function InrolariSezonTab({
   onUseCredit,
   onAskRezilia,
   onAdjustPrice,
+  onMoveIncasare,
   onMoveCurs,
   onCorectDate,
   onMotiveaza,
@@ -106,6 +108,14 @@ export function InrolariSezonTab({
                     label: 'Ajustează',
                     title: 'Ajustează prețul înrolării (cu motiv + audit)',
                     onClick: () => onAdjustPrice(r.id_enrollment),
+                  })
+                if (onMoveIncasare && (r.platit ?? 0) > 0)
+                  actions.push({
+                    icon: '💸',
+                    label: 'Mută plata la alt client',
+                    title:
+                      'Plata încasată din greșeală aici dispare de la acest client și apare la clientul corect',
+                    onClick: () => onMoveIncasare(r),
                   })
                 if (onMoveCurs)
                   actions.push({

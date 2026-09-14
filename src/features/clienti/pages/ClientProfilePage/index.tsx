@@ -17,6 +17,7 @@ import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
 import { UseCreditModal } from '@/features/plati/UseCreditModal'
 import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
+import { MutaIncasareModal } from '@/features/plati/modals/MutaIncasareModal'
 import { CorecteazaDataModal } from '@/features/plati/CorecteazaDataModal'
 import { MotivareAbsentaModal } from '@/features/plati/MotivareAbsentaModal'
 import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentSedinteModal'
@@ -80,6 +81,7 @@ export function ClientProfilePage() {
   const [adjustEnrollmentId, setAdjustEnrollmentId] = useState<string | null>(null)
   const [useCreditOpen, setUseCreditOpen] = useState(false)
   const [moveEnrollmentId, setMoveEnrollmentId] = useState<string | null>(null)
+  const [mutaPlataRow, setMutaPlataRow] = useState<ClientInrolareSezon | null>(null)
   const [corectDataEnrollmentId, setCorectDataEnrollmentId] = useState<string | null>(null)
   const [motivareEnrollmentId, setMotivareEnrollmentId] = useState<string | null>(null)
   const [convertSedintaId, setConvertSedintaId] = useState<string | null>(null)
@@ -423,6 +425,11 @@ export function ClientProfilePage() {
               onAdjustPrice={
                 canManagerActions ? (eId) => setAdjustEnrollmentId(eId) : undefined
               }
+              // Recepția corectează aici plățile puse pe alt copil; serverul o limitează
+              // la ultimele 14 zile și la locația ei (manager+ fără limită).
+              onMoveIncasare={
+                isFrontDeskOrHigher(role) ? (r) => setMutaPlataRow(r) : undefined
+              }
               // Mutarea între grupe e permisă și front_desk-ului; managerul
               // primește o notificare informativă (vezi notify_enrollment_move).
               onMoveCurs={(eId) => setMoveEnrollmentId(eId)}
@@ -543,6 +550,16 @@ export function ClientProfilePage() {
           open
           enrollmentId={moveEnrollmentId}
           onClose={() => setMoveEnrollmentId(null)}
+        />
+      )}
+
+      {mutaPlataRow && (
+        <MutaIncasareModal
+          open
+          clientId={client.id}
+          clientNume={`${client.nume ?? ''} ${client.prenume ?? ''}`.trim()}
+          luna={mutaPlataRow}
+          onClose={() => setMutaPlataRow(null)}
         />
       )}
 

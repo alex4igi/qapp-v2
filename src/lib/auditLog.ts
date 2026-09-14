@@ -10,6 +10,7 @@ export type AuditAction =
   | 'enrollment_deleted'
   | 'incasare_modified'
   | 'incasare_deleted'
+  | 'incasare_moved'
   | 'lead_deleted'
   | 'curs_archived'
   | 'teacher_archived'
