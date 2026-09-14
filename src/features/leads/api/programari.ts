@@ -55,6 +55,44 @@ export async function getLatestProgramare(
   }
 }
 
+export type ProgramareActiva = {
+  id: string
+  data: string
+  ora: string | null
+  evenimentId: string | null
+  unde: string | null
+}
+
+// Programările neconsumate ale leadului (azi sau în viitor) — ca înscrierea din
+// rosterul clasei demo să întrebe înainte să lase leadul cu două programări.
+export async function listProgramariActive(
+  leadId: string,
+): Promise<ProgramareActiva[]> {
+  const d = new Date()
+  const azi = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const { data, error } = await supabase
+    .from('programari_leads')
+    .select(
+      'id, data_programarii, ora, eveniment_programat, curs_rel:cursuri!fk_progr_curs(numele), eveniment_rel:evenimente(nume_eveniment)',
+    )
+    .eq('lead', leadId)
+    .eq('prezenta', 'programat')
+    .gte('data_programarii', azi)
+    .order('data_programarii', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    data: p.data_programarii as string,
+    ora: p.ora ?? null,
+    evenimentId: p.eveniment_programat ?? null,
+    unde:
+      (p.curs_rel as { numele: string | null } | null)?.numele ??
+      (p.eveniment_rel as { nume_eveniment: string | null } | null)
+        ?.nume_eveniment ??
+      null,
+  }))
+}
+
 // Reprogramarea înlocuiește, nu adaugă: șterge celelalte programări neconsumate
 // (azi sau în viitor) ale leadului, altfel cron-morning trimite reminder și pentru
 // data veche. Prin RPC — RLS-ul dă DELETE pe programari_leads doar adminului.

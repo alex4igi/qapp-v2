@@ -11,7 +11,12 @@ import {
 } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
 import { clientiOptions } from '@/lib/lookups'
-import { enqueueConfirmareProgramare } from '@/features/leads/api'
+import { formatDate } from '@/lib/format'
+import {
+  enqueueConfirmareProgramare,
+  inlocuiesteProgramarileLead,
+  listProgramariActive,
+} from '@/features/leads/api'
 // Valorile trebuie să rămână sincron cu enumul `interes_lead` din DB — le luăm
 // din sursa lor, nu le duplicăm aici.
 import { INTERESE } from '@/features/leads/constants'
@@ -50,6 +55,9 @@ export function InscriereDemoModal({
 
   const [term, setTerm] = useState('')
   const [leadId, setLeadId] = useState('')
+  // Leadul ales are deja altă programare activă: recepția decide explicit dacă o
+  // înlocuiește sau le păstrează pe amândouă (altfel primește reminder pentru ambele).
+  const [alegere, setAlegere] = useState<'inlocuieste' | 'ambele' | null>(null)
   const [clientId, setClientId] = useState('')
   const [adusDe, setAdusDe] = useState('')
   const [walkIn, setWalkIn] = useState({
@@ -70,6 +78,20 @@ export function InscriereDemoModal({
     queryFn: () => searchLeads(term),
     enabled: open && term.trim().length >= 2,
   })
+  const programariActive = useQuery({
+    queryKey: ['leads', 'programari-active', leadId],
+    queryFn: () => listProgramariActive(leadId),
+    enabled: open && mode === 'lead' && Boolean(leadId),
+  })
+  // Reînscrierea pe aceeași clasă e idempotentă, deci nu e conflict.
+  const alteProgramari =
+    mode === 'lead'
+      ? (programariActive.data ?? []).filter((p) => p.evenimentId !== evenimentId)
+      : []
+  const asteaptaAlegere =
+    mode === 'lead' &&
+    Boolean(leadId) &&
+    (programariActive.isLoading || (alteProgramari.length > 0 && !alegere))
 
   // „Adus de" e provenienta reala a inscrierii: un cursant si-a adus prietenul.
   const sursa = (): SursaInscriere =>
@@ -104,6 +126,9 @@ export function InscriereDemoModal({
           adusDe: adusDe || null,
           permiteOverbook,
         })
+        if (alteProgramari.length > 0 && alegere === 'inlocuieste') {
+          await inlocuiesteProgramarileLead(leadId, programareId)
+        }
         await enqueueConfirmareProgramare(leadId, programareId)
         return
       }
@@ -146,7 +171,7 @@ export function InscriereDemoModal({
             Anulează
           </Button>
           <Button
-            disabled={save.isPending}
+            disabled={save.isPending || asteaptaAlegere}
             onClick={() => {
               setError(null)
               setInfo(null)
@@ -205,7 +230,10 @@ export function InscriereDemoModal({
                 <button
                   key={l.id}
                   type="button"
-                  onClick={() => setLeadId(l.id)}
+                  onClick={() => {
+                    setLeadId(l.id)
+                    setAlegere(null)
+                  }}
                   className={[
                     'flex w-full items-center justify-between px-3 py-2 text-left text-sm',
                     l.id === leadId ? 'bg-quasar-yellow/30' : 'hover:bg-quasar-gray-light',
@@ -217,6 +245,34 @@ export function InscriereDemoModal({
               ))
             )}
           </div>
+          {alteProgramari.length > 0 && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-sm leading-relaxed text-amber-900">
+              <p>
+                <strong>Are deja programare:</strong>{' '}
+                {alteProgramari
+                  .map((p) =>
+                    [formatDate(p.data), p.ora?.slice(0, 5), p.unde]
+                      .filter(Boolean)
+                      .join(' · '),
+                  )
+                  .join('; ')}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  variant={alegere === 'inlocuieste' ? 'primary' : 'secondary'}
+                  onClick={() => setAlegere('inlocuieste')}
+                >
+                  Înlocuiește cu clasa asta
+                </Button>
+                <Button
+                  variant={alegere === 'ambele' ? 'primary' : 'secondary'}
+                  onClick={() => setAlegere('ambele')}
+                >
+                  Păstrează ambele
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
