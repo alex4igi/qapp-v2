@@ -11,6 +11,7 @@ import {
   getDashboardCourses,
   getDashboardChart,
   getDashboardEvents,
+  type SalaFilter,
 } from '@/features/dashboard/api'
 import { DailyAgenda } from '@/features/dashboard/DailyAgenda'
 import { DashboardKpis } from '@/features/dashboard/DashboardKpis'
@@ -89,6 +90,13 @@ export function DashboardPage() {
     return keep.length === saliOptions.length ? [] : keep
   }, [salaParam, saliOptions])
   const salaKey = saliSelectate.join(',')
+  const salaFilter = useMemo<SalaFilter | null>(() => {
+    if (saliSelectate.length === 0) return null
+    const locatieIds = (saliQ.data ?? []).flatMap((s) =>
+      saliSelectate.includes(s.id) && s.locatie ? [s.locatie] : [],
+    )
+    return { salaIds: saliSelectate, locatieIds: [...new Set(locatieIds)] }
+  }, [saliSelectate, saliQ.data])
 
   const sezonQ = useQuery({
     queryKey: ['lookup', 'sezon-activ-detalii'],
@@ -189,7 +197,7 @@ export function DashboardPage() {
           cât timp e o rundă deschisă. Se auto-ascunde în rest. */}
       <EvaluariCountdown variant="inline" />
 
-      {!teacherMode && <DashboardKpis date={date} courses={courseRefs} />}
+      {!teacherMode && <DashboardKpis date={date} courses={courseRefs} sali={salaFilter} />}
 
       {!teacherMode && <AgendaAziCard />}
 

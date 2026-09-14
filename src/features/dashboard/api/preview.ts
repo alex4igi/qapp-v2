@@ -1,5 +1,14 @@
 import { supabase } from '@/lib/supabase'
 import { getCursuriDatorii } from '@/features/cursuri/api'
+import {
+  INCASARI_SALA_SELECT,
+  PROGRAMARI_SALA_SELECT,
+  incasareInSali,
+  programareInSali,
+  type IncasareSalaRefs,
+  type ProgramareSalaRefs,
+  type SalaFilter,
+} from './salaFilter'
 
 // Preview-uri pentru KPI-urile zilei (afișate la deschiderea cardului).
 // Liste scurte, lazy — interogate doar când userul deschide cardul.
@@ -20,28 +29,29 @@ export type IncasareAziRow = {
 export async function getIncasariAzi(
   date: string,
   locatieId?: string | null,
+  sali: SalaFilter | null = null,
 ): Promise<IncasareAziRow[]> {
   let q = supabase
     .from('incasari')
-    .select('id, suma, metoda, clienti(nume, prenume)')
+    .select(`id, suma, metoda, clienti(nume, prenume), ${INCASARI_SALA_SELECT}`)
     .eq('data', date)
   if (locatieId) q = q.eq('locatie', locatieId)
   const { data, error } = await q.order('suma', { ascending: false })
   if (error) throw error
-  return (data ?? []).map((r) => {
-    const row = r as unknown as {
-      id: string
-      suma: number | null
-      metoda: string | null
-      clienti: { nume: string | null; prenume: string | null } | null
-    }
-    return {
+  const rows = (data ?? []) as unknown as (IncasareSalaRefs & {
+    id: string
+    suma: number | null
+    metoda: string | null
+    clienti: { nume: string | null; prenume: string | null } | null
+  })[]
+  return rows
+    .filter((r) => incasareInSali(sali, r))
+    .map((row) => ({
       id: row.id,
       nume: personName(row.clienti),
       suma: Number(row.suma ?? 0),
       metoda: row.metoda,
-    }
-  })
+    }))
 }
 
 export type ProgramareAziRow = {
@@ -54,20 +64,25 @@ export type ProgramareAziRow = {
 export async function getProgramariAzi(
   date: string,
   locatieId?: string | null,
+  sali: SalaFilter | null = null,
 ): Promise<ProgramareAziRow[]> {
   let q = supabase
     .from('programari_leads')
-    .select('id, cursul_programat, eveniment_programat, lead:leads(nume, prenume)')
+    .select(
+      `id, cursul_programat, eveniment_programat, lead:leads(nume, prenume), ${PROGRAMARI_SALA_SELECT}`,
+    )
     .eq('data_programarii', date)
   if (locatieId) q = q.eq('locatie', locatieId)
   const { data, error } = await q
   if (error) throw error
-  const rows = (data ?? []) as unknown as Array<{
-    id: string
-    cursul_programat: string | null
-    eveniment_programat: string | null
-    lead: { nume: string | null; prenume: string | null } | null
-  }>
+  const rows = ((data ?? []) as unknown as Array<
+    ProgramareSalaRefs & {
+      id: string
+      cursul_programat: string | null
+      eveniment_programat: string | null
+      lead: { nume: string | null; prenume: string | null } | null
+    }
+  >).filter((r) => programareInSali(sali, r))
   const cursIds = [...new Set(rows.map((r) => r.cursul_programat).filter(Boolean))] as string[]
   // Programările pe clase demo n-au curs — numele vine din eveniment, altfel
   // toată săptămâna demo apărea ca „—" în agenda zilei.

@@ -5,6 +5,7 @@ export { dayOfWeekRO, todayIso, isoDaysAgo } from './helpers'
 
 export type { DashboardKpis } from './kpi'
 export { getDashboardKpis } from './kpi'
+export type { SalaFilter } from './salaFilter'
 
 export type { DashboardCourse } from './courses'
 export { getDashboardCourses } from './courses'

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Spinner, Badge } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
@@ -9,6 +9,7 @@ import {
   getIncasariAzi,
   getProgramariAzi,
   getRestantieriAzi,
+  type SalaFilter,
 } from './api'
 
 type Panel = 'incasari' | 'programari' | 'restante'
@@ -99,19 +100,25 @@ const CAP = 8
 export function DashboardKpis({
   date,
   courses,
+  sali,
 }: {
   date: string
   courses: { id: string; numele: string }[]
+  /** Sălile bifate pe dashboard; null = toate. */
+  sali: SalaFilter | null
 }) {
   const [open, setOpen] = useState<Panel | null>(null)
   const toggle = (p: Panel) => setOpen((cur) => (cur === p ? null : p))
 
   const { locatieId, ready: locatieReady } = useWorkingLocatie()
+  const salaKey = sali?.salaIds.join(',') ?? 'toate'
 
   const kpisQ = useQuery({
-    queryKey: ['dashboard', 'kpis', date, locatieId ?? 'all'],
-    queryFn: () => getDashboardKpis(date, locatieId),
+    queryKey: ['dashboard', 'kpis', date, locatieId ?? 'all', salaKey],
+    queryFn: () => getDashboardKpis(date, locatieId, sali),
     enabled: locatieReady,
+    // La click pe o sală cifra rămâne pe loc până vine cea nouă, nu clipește „—".
+    placeholderData: keepPreviousData,
   })
 
   // Sezonul activ — același query (și aceeași cheie) ca lista de cursuri a zilei și
@@ -134,13 +141,13 @@ export function DashboardKpis({
   const restanteTotal = (restanteQ.data ?? []).reduce((a, r) => a + r.rest, 0)
 
   const incasariQ = useQuery({
-    queryKey: ['preview', 'incasari', date, locatieId ?? 'all'],
-    queryFn: () => getIncasariAzi(date, locatieId),
+    queryKey: ['preview', 'incasari', date, locatieId ?? 'all', salaKey],
+    queryFn: () => getIncasariAzi(date, locatieId, sali),
     enabled: open === 'incasari',
   })
   const programariQ = useQuery({
-    queryKey: ['preview', 'programari', date, locatieId ?? 'all'],
-    queryFn: () => getProgramariAzi(date, locatieId),
+    queryKey: ['preview', 'programari', date, locatieId ?? 'all', salaKey],
+    queryFn: () => getProgramariAzi(date, locatieId, sali),
     enabled: open === 'programari',
   })
 
