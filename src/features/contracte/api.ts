@@ -112,6 +112,50 @@ export async function listTargetsCampanie(campanieId: string): Promise<CampanieT
   return (data ?? []) as CampanieTarget[]
 }
 
+// ============================================================
+// Bulk pe selecție de clienți (fără campanie)
+// ============================================================
+
+export type ContractTarget = {
+  client_id: string
+  client_nume: string
+  familie_id: string | null
+  familie_nume: string | null
+  telefon: string | null
+  email: string | null
+  locatie_nume: string | null
+  cursuri: string[]
+}
+
+// Un rând per client cu înrolare în curs sau viitoare; filtrele sunt opționale.
+export async function listTargetsContracte(params: {
+  sezonId?: string | null
+  locatieId?: string | null
+  cursId?: string | null
+}): Promise<ContractTarget[]> {
+  const { data, error } = await supabase.rpc('list_targets_contracte', {
+    p_sezon: params.sezonId || undefined,
+    p_locatie: params.locatieId || undefined,
+    p_curs: params.cursId || undefined,
+  })
+  if (error) throw error
+  return (data ?? []) as ContractTarget[]
+}
+
+export type ContractActiv = { familie_id: string; client_id: string | null; status: string }
+
+// Contractele vii pe un șablon — oglinda gardului de dublură din contract-send,
+// ca lista să arate dinainte cine ar fi refuzat la trimitere.
+export async function listContracteActivePeTemplate(templateId: string): Promise<ContractActiv[]> {
+  const { data, error } = await supabase
+    .from('contracte')
+    .select('familie_id, client_id, status')
+    .eq('template_id', templateId)
+    .in('status', ['trimis', 'deschis', 'semnat', 'finalizat'])
+  if (error) throw error
+  return data ?? []
+}
+
 export async function anuleazaContract(id: string): Promise<void> {
   const { error } = await supabase
     .from('contracte')

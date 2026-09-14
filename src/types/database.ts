@@ -1011,6 +1011,7 @@ export type Database = {
           opt_out_motiv: string | null
           participari_concurs: string[]
           prenume: string | null
+          reprezinta_familia: boolean
           sexul: Database["public"]["Enums"]["sex"] | null
           status: Database["public"]["Enums"]["status_client"] | null
           suspendat_datorii: boolean
@@ -1045,6 +1046,7 @@ export type Database = {
           opt_out_motiv?: string | null
           participari_concurs?: string[]
           prenume?: string | null
+          reprezinta_familia?: boolean
           sexul?: Database["public"]["Enums"]["sex"] | null
           status?: Database["public"]["Enums"]["status_client"] | null
           suspendat_datorii?: boolean
@@ -1079,6 +1081,7 @@ export type Database = {
           opt_out_motiv?: string | null
           participari_concurs?: string[]
           prenume?: string | null
+          reprezinta_familia?: boolean
           sexul?: Database["public"]["Enums"]["sex"] | null
           status?: Database["public"]["Enums"]["status_client"] | null
           suspendat_datorii?: boolean
@@ -8219,6 +8222,7 @@ export type Database = {
           created: string
           id: string
           locatie: string | null
+          minim_cursanti: number
           nume: string
           old_loc_id: number | null
           updated: string
@@ -8228,6 +8232,7 @@ export type Database = {
           created?: string
           id?: string
           locatie?: string | null
+          minim_cursanti?: number
           nume: string
           old_loc_id?: number | null
           updated?: string
@@ -8237,6 +8242,7 @@ export type Database = {
           created?: string
           id?: string
           locatie?: string | null
+          minim_cursanti?: number
           nume?: string
           old_loc_id?: number | null
           updated?: string
@@ -11147,6 +11153,22 @@ export type Database = {
         Args: { p_target_locatie_ids: string[]; p_target_roles: string[] }
         Returns: string[]
       }
+      _grupe_sub_minim: {
+        Args: { p_curs?: string; p_la?: string; p_sezon?: string }
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          cursanti_luna_curenta: number
+          luna_lansare: string
+          luni: Json
+          luni_sub_consecutive: number
+          minim: number
+          sala_nume: string
+          sezon_in_curs: boolean
+          stare: string
+          teacher_nume: string
+        }[]
+      }
       _is_anunt_expeditor: { Args: { p_anunt: string }; Returns: boolean }
       _is_anunt_recipient: { Args: { p_anunt: string }; Returns: boolean }
       _luni_achitate_curs: {
@@ -11400,6 +11422,13 @@ export type Database = {
         }
         Returns: string
       }
+      creeaza_familie_proprie: {
+        Args: { p_client_id: string }
+        Returns: {
+          familie_id: string
+          familie_nume: string
+        }[]
+      }
       creeaza_lead_si_inscrie_la_demo: {
         Args: {
           p_adus_de?: string
@@ -11421,6 +11450,10 @@ export type Database = {
       curs_activ_in_luna: {
         Args: { p_curs: string; p_luna: string }
         Returns: boolean
+      }
+      cursanti_platitori_luna: {
+        Args: { p_curs: string; p_luna: string }
+        Returns: number
       }
       datorii_luna: {
         Args: { p_luna: string }
@@ -11964,6 +11997,22 @@ export type Database = {
           tip_plata: Database["public"]["Enums"]["tip_plata"]
           varsta: Database["public"]["Enums"]["varsta_curs"]
           zile: Database["public"]["Enums"]["zi_saptamana"][]
+        }[]
+      }
+      get_grupe_sub_minim: {
+        Args: { p_curs?: string; p_sezon?: string }
+        Returns: {
+          curs_id: string
+          curs_nume: string
+          cursanti_luna_curenta: number
+          luna_lansare: string
+          luni: Json
+          luni_sub_consecutive: number
+          minim: number
+          sala_nume: string
+          sezon_in_curs: boolean
+          stare: string
+          teacher_nume: string
         }[]
       }
       get_incasare_invoice_lines: {
@@ -12945,6 +12994,19 @@ export type Database = {
           telefon: string
         }[]
       }
+      list_targets_contracte: {
+        Args: { p_curs?: string; p_locatie?: string; p_sezon?: string }
+        Returns: {
+          client_id: string
+          client_nume: string
+          cursuri: string[]
+          email: string
+          familie_id: string
+          familie_nume: string
+          locatie_nume: string
+          telefon: string
+        }[]
+      }
       locuri_ocupate_eveniment: {
         Args: { p_eveniment: string }
         Returns: number
@@ -13056,6 +13118,10 @@ export type Database = {
       norm_unitate: { Args: { p_text: string }; Returns: string }
       notifica_demo_class_completa: {
         Args: { p_eveniment: string }
+        Returns: number
+      }
+      notifica_grupe_sub_minim: {
+        Args: { p_la?: string; p_sezon?: string }
         Returns: number
       }
       notifications_mark_all_read: { Args: never; Returns: number }

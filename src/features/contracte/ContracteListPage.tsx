@@ -19,6 +19,7 @@ import {
   anuleazaContract,
   getContractEvents,
   getPdfSignedUrl,
+  listCampaniiDeschise,
   listContracte,
   listDistinctTipuri,
   type ContractRow,
@@ -26,6 +27,7 @@ import {
 import { CONTRACT_STATUS_LABEL, CONTRACT_TIP_LABEL } from './constants'
 import { TrimiteContractModal } from './TrimiteContractModal'
 import { TrimiteBulkModal } from './TrimiteBulkModal'
+import { TrimiteBulkClientiModal } from './TrimiteBulkClientiModal'
 import { SabloaneTab } from './SabloaneTab'
 import { formatDateTime } from '@/lib/format'
 
@@ -94,12 +96,21 @@ export function ContracteListPage() {
   const [tip, setTip] = useState('')
   const [sendOpen, setSendOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkClientiOpen, setBulkClientiOpen] = useState(false)
   const [eventsFor, setEventsFor] = useState<ContractRow | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
   const { data: tipuriExistente = [] } = useQuery({
     queryKey: ['contract-templates-tipuri'],
     queryFn: listDistinctTipuri,
+  })
+
+  // Bulk-ul pe campanie de reînscriere are ținte doar când există o campanie
+  // deschisă; altfel butonul ar deschide un modal gol.
+  const { data: campaniiDeschise = [] } = useQuery({
+    queryKey: ['campanii-deschise'],
+    queryFn: listCampaniiDeschise,
+    enabled: activeTab === 'contracte',
   })
 
   const { data: rows, isLoading } = useQuery({
@@ -243,8 +254,13 @@ export function ContracteListPage() {
               className="w-52"
             />
             <div className="ml-auto flex gap-2">
-              <Button variant="secondary" onClick={() => setBulkOpen(true)}>
-                Bulk campanie
+              {campaniiDeschise.length > 0 && (
+                <Button variant="secondary" onClick={() => setBulkOpen(true)}>
+                  Bulk campanie
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => setBulkClientiOpen(true)}>
+                Trimite în bulk
               </Button>
               <Button onClick={() => setSendOpen(true)}>Trimite contract</Button>
             </div>
@@ -267,6 +283,9 @@ export function ContracteListPage() {
 
       {sendOpen && <TrimiteContractModal open onClose={() => setSendOpen(false)} />}
       {bulkOpen && <TrimiteBulkModal open onClose={() => setBulkOpen(false)} />}
+      {bulkClientiOpen && (
+        <TrimiteBulkClientiModal open onClose={() => setBulkClientiOpen(false)} />
+      )}
       {eventsFor && <EventsModal contract={eventsFor} onClose={() => setEventsFor(null)} />}
     </div>
   )
