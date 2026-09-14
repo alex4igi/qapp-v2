@@ -11,8 +11,9 @@ const IBAN = 'RO85 INGB 0000 9999 1498 9082'
 const TELEFOANE_LOCATIE: Record<string, string> = {
   'Ștefan cel Mare': '0730 534 172',
   Nicolina: '0770 227 580',
-  'Quasar 4 Kids': '0745 371 200',
-  'Quasar for Kids': '0745 371 200',
+  // Intenționat numărul Nicolinei — vezi comentariul din _shared/sms.ts.
+  'Quasar 4 Kids': '0770 227 580',
+  'Quasar for Kids': '0770 227 580',
 }
 const TELEFON_DEFAULT = '0730 534 172'
 

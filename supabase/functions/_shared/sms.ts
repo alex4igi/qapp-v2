@@ -29,7 +29,9 @@ const REVIEW_LINKS: Record<string, string> = {
 const TELEFOANE: Record<string, string> = {
   'Ștefan cel Mare': '0730 534 172',
   Nicolina: '0770 227 580',
-  'Quasar 4 Kids': '0745 371 200',
+  // Intentionat numarul Nicolinei: receptia de acolo face inscrierile Q4K, iar
+  // 0745 371 200 (cel din CLAUDE.md) nu stie de clienti. Decizie Alex, 14.09.2026.
+  'Quasar 4 Kids': '0770 227 580',
 }
 const TELEFON_DEFAULT = '0730 534 172'
 

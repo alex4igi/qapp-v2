@@ -200,7 +200,9 @@ Buna ziua! Pentru a pastra {locul lui X / locurile lui X si Y} la Quasar Dance, 
 |---|---|
 | Ștefan cel Mare | 0730 534 172 |
 | Nicolina | 0770 227 580 |
-| Quasar 4 Kids | 0745 371 200 |
+| Quasar 4 Kids | 0770 227 580 |
+
+> Q4K folosește **intenționat** numărul Nicolinei în SMS (recepția Nicolina face înscrierile Q4K; 0745 371 200 nu știe de clienți). Site-ul și restul documentelor păstrează 0745 371 200. Decizie Alex, 14.09.2026.
 
 > Sursa: momentan doar în acest doc / CLAUDE.md — NU în DB. De adăugat: lookup hardcoded în cod sau coloană `locatii.telefon`.
 
