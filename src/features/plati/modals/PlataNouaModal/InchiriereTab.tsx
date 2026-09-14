@@ -10,9 +10,8 @@ import {
   Combobox,
   Button,
 } from '@/components/ui'
-import { clientiOptions, locatiiOptions, saliOptions } from '@/lib/lookups'
+import { clientiOptions, locatiiOptions, saliOptions, teacheriOptions } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
 import { isPrivileged } from '@/lib/rolesMatrix'
@@ -110,11 +109,14 @@ export function InchiriereTab({ onClose, defaultInchiriere }: Props) {
     queryFn: () => saliOptions(locatie),
     enabled: Boolean(locatie),
   })
-  // Chiriașul NU se filtrează pe locația de lucru: un instructor care predă la
-  // Nicolina poate închiria o sală pe Ștefan cel Mare (și invers) — locul unde
-  // predă n-are legătură cu sala pe care o rezervă. Filtrul implicit pe locație
-  // îl scotea din listă și îl făcea nerezervabil.
-  const teacheriQ = useTeacheriOptions({ locatieId: null })
+  // Chiriașul e roster-ul complet, NU filtrat pe locație sau sezon: unde și dacă
+  // predă acum n-are legătură cu sala pe care o rezervă. Filtrul pe locație scotea
+  // instructorii de la Nicolina, iar cel pe sezonul activ pe oricine n-are încă o
+  // grupă în sezonul curent (ex. Ignat Alexandru în 2026-2027).
+  const teacheriQ = useQuery({
+    queryKey: ['lookup', 'teacheri', 'roster'],
+    queryFn: () => teacheriOptions(),
+  })
   const clientiQ = useQuery({
     queryKey: ['lookup', 'clienti'],
     queryFn: clientiOptions,
