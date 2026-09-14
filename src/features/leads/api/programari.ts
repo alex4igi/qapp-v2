@@ -55,6 +55,20 @@ export async function getLatestProgramare(
   }
 }
 
+// Reprogramarea înlocuiește, nu adaugă: șterge celelalte programări neconsumate
+// (azi sau în viitor) ale leadului, altfel cron-morning trimite reminder și pentru
+// data veche. Prin RPC — RLS-ul dă DELETE pe programari_leads doar adminului.
+export async function inlocuiesteProgramarileLead(
+  leadId: string,
+  pastreazaId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('inlocuieste_programari_lead', {
+    p_lead: leadId,
+    p_pastreaza: pastreazaId,
+  })
+  if (error) throw error
+}
+
 // Programează SMS-ul de confirmare prin RPC — upsert în coada
 // `confirmari_programare_sms` cu send_after = now()+2min (resetat la re-editare în
 // fereastră). Confirmarea se leagă de PROGRAMARE: dă-i id-ul rândului tocmai creat,

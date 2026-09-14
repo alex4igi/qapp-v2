@@ -38,6 +38,7 @@ import {
   listEvenimenteProgramabile,
   createProgramareLead,
   getLatestProgramare,
+  inlocuiesteProgramarileLead,
   enqueueConfirmareProgramare,
   markLeadConvertit,
   getLeadConversionInfo,
@@ -403,6 +404,10 @@ export function LeadModal({
             ora: sel.ora,
           })
         }
+        // Programarea veche iese, altfel omul primește reminder și pe data veche.
+        // Înainte de enqueue: ștergerea ei ia prin cascadă rândul din coadă legat
+        // de ea, iar enqueue-ul pune la loc rândul pentru programarea nouă.
+        await inlocuiesteProgramarileLead(leadId, programareId)
         // Confirmarea SMS pleacă după 2 min, legată de programarea asta: scoaterea
         // omului de pe listă în interval o anulează (fereastră de undo).
         await enqueueConfirmareProgramare(leadId, programareId)

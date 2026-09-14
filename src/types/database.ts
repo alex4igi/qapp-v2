@@ -12793,6 +12793,10 @@ export type Database = {
         Returns: Json
       }
       inchide_sesiune: { Args: { p_sesiune: string }; Returns: Json }
+      inlocuieste_programari_lead: {
+        Args: { p_lead: string; p_pastreaza: string }
+        Returns: number
+      }
       inrolari_active_la: {
         Args: { p_data?: string }
         Returns: {
