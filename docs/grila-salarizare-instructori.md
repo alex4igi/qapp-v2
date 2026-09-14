@@ -3,7 +3,8 @@
 > **Stare: PROPUNERE.** Nimic din documentul ăsta nu e implementat în cod sau intrat în plată.
 > Stabilit împreună cu Alex pe 8–9 septembrie 2026, revizuit pe 12 septembrie și pe
 > **13 septembrie 2026** (KPI-uri identice la începător și intermediar, ocupare pe mărime
-> stabilită manual, **KPI-ul de vară fixat la 6 lei de fiecare prezență**).
+> stabilită manual, **KPI-ul de vară fixat la 6 lei de fiecare prezență**) și pe 14 septembrie
+> (**ocuparea din septembrie legată de campania de reînscrieri**).
 > Înlocuiește modelul pe praguri de cursanți descris în memoria `project_salarii_teacher`.
 >
 > Rapoarte generate din specificația asta:
@@ -179,6 +180,32 @@ bonus curent.
 ⚠️ **Grupa nouă `S LMi Tiny` (Giulia Butnaru, SCM Studio 2) s-a creat cu capacitatea 12**, în afara celor 5
 trepte — `node scripts/check-capacitate-grupe.mjs` o raportează ca abatere. Standardul lui SCM Studio 2 e 10.
 Cât timp capacitatea e numitorul unui KPI care plătește, valoarea trebuie adusă pe treaptă.
+
+### Septembrie — ocuparea se plătește după campania de reînscrieri (Alex, 14 sept.)
+
+**În septembrie, bonusul de ocupare nu depinde de grupă, ci de cât de bine a mers campania de
+reînscrieri** a sezonului. Se aplică la toți instructorii deodată:
+
+| Campania de reînscrieri, față de target | Bonusul de ocupare din septembrie |
+|---|---|
+| **95%–105%** | **la standard**, la toate grupele |
+| **peste 105%** | **peste standard**, la toate grupele |
+
+Sumele sunt cele din tabelul de ocupare (după mărimea grupei, înjumătățite la o ședință pe săptămână).
+Cele 7 trupe cu statut nu au ocupare, deci regula nu le atinge; trupele sub 14, plătite ca
+intermediar, intră.
+
+**Cât costă, pe orarul de la 13 sept.:** ocuparea măsurată pe grupă ar plăti **1.550 lei**. Cu campania
+la 95–105%, regula plătește **5.095 lei** (+3.545), iar peste 105% plătește **7.680 lei** (+6.130). E o
+singură lună pe an.
+
+**Condiția ca regula să funcționeze:** target-ul se fixează **înainte să pornească campania**, în
+`campanii_reinscriere.target_clienti`. Campania pentru 2026-2027 (contracte semnate între 22 aprilie și
+3 iunie 2026) s-a ținut în registre Excel, fără target: `campanii_reinscriere` are 0 rânduri, iar
+registrele au doar totaluri (292 de reînscrieri complete, 31 nefinalizate).
+
+**Încă de lămurit** (§9): ce se întâmplă sub 95%; dacă regula e podea sau înlocuiește măsurarea; ce se
+numără ca „realizat"; dacă se aplică deja în septembrie 2026.
 
 ### KPI-ul de vară — 6 lei de fiecare prezență (Alex, 13 sept.)
 
@@ -393,12 +420,27 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 5. **Retenția în prima lună nu are numitor.** În septembrie nu există lună precedentă (august n-are
    înrolări), la fel la orice grupă nou deschisă. De decis: 0, sau indicatorul nu se numără în luna
    aia. Azi ar plăti 0 tăcut, adică o lună din zece fără bonus de retenție pentru toți.
+   Recomandarea mea (14 sept., neconfirmată): prima lună a oricărei grupe plătește retenția la standard.
+   Cu ocuparea din septembrie legată de campanie (§2), retenția e singurul indicator rămas descoperit.
+6. **Realizarea campaniei de reînscrieri trebuie să fie o cifră citită din aplicație**, nu din Excel:
+   target în `campanii_reinscriere.target_clienti`, realizat calculat din înrolări, la o dată fixă.
 
 ## 9. Decizii încă deschise
 
 - ~~**Capacitățile declarate**~~ — **ÎNCHIS (12 sept.)**: mărimea = `capacitate_maxima`, presetată pe
   5 trepte cu standardul sălii; backfill aplicat. Bonusul de ocupare e acum 15% plătibil pe
   înscrișii de azi, cu plafonul scăzut de la 9.940 la 8.040 lei/lună (§2).
+- **Ocuparea din septembrie după campania de reînscrieri** (regula din §2, 14 sept.) — de lămurit:
+  - **Sub 95%:** se măsoară normal ocuparea fiecărei grupe, sau 0 la toți? Recomand măsurarea normală,
+    altfel o campanie ratată taie și bonusul grupelor care s-au umplut singure.
+  - **Podea sau înlocuire:** o grupă care e singură peste standard, cu campania la 95–105%, ia peste
+    standard? Recomand podea: se plătește treapta mai mare dintre cele două.
+  - **Ce înseamnă „realizat":** contract semnat, înrolare cu preț de reînscriere activă la 20 sept.
+    (termenul primei rate), sau prima rată plătită? Recomand plata primei rate, singura care nu se
+    mai pierde după campanie.
+  - **Septembrie 2026:** campania din primăvară n-a avut target, deci regula se poate aplica de acum
+    doar dacă target-ul există pe undeva; altfel intră prima dată în septembrie 2027.
+- **Retenția din septembrie** — rămâne descoperită (§8 punctul 5).
 - **Retenția rămâne pe jumătate în standard sau urcă la ~2/3**, ca ocuparea? Azi grila are două
   logici diferite pentru „în standard" (§2).
 - **Tariful Junior × Intermediar (410 lei)** — derivat de mine, neconfirmat. Atinge 4 instructori.
