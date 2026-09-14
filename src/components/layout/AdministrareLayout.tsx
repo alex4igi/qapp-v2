@@ -5,10 +5,10 @@ import { canAccessRoute, type AppRoute } from '@/lib/rolesMatrix'
 
 // Hub „Administrare": paginile de config, scoase din rail și adunate sub un
 // tab-bar comun. Fiecare tab e un link către ruta existentă (paths neschimbate,
-// deci deep-link-urile și linkurile interne rămân valide).
+// deci deep-link-urile și linkurile interne rămân valide). Contracte a ieșit de
+// aici — e submeniu la Clienți (nu mai trăiește sub tab-bar-ul de mai jos).
 const TABS: { label: string; path: AppRoute }[] = [
   { label: 'Setări',          path: '/setari' },
-  { label: 'Contracte',       path: '/contracte' },
   { label: 'Inventar',        path: '/inventar' },
   { label: 'Pontaj',          path: '/pontaj-staff' },
   { label: 'Audit',           path: '/audit' },
@@ -19,8 +19,8 @@ const TABS: { label: string; path: AppRoute }[] = [
 
 /**
  * Landing-ul `/administrare`: sare pe primul tab pe care rolul chiar îl poate
- * deschide. Hub-ul e accesibil întregului staff, dar paginile de sub el nu sunt
- * (recepția vede doar Contracte) — o țintă fixă ar trimite-o într-un 403.
+ * deschide. Hub-ul e acum PRIVILEGED (toate tab-urile sunt manager+) — de când
+ * Contracte a ieșit din el, recepția nu mai are motiv să intre aici.
  */
 export function AdministrareIndex() {
   const { role } = useAuth()

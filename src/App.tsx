@@ -286,6 +286,16 @@ function App() {
             </Route>
           </Route>
 
+          {/* Contracte — submeniu la Clienți (a ieșit din hub-ul Administrare). */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/contracte']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="contracte" element={<ContracteListPage />} />
+              {/* Tab „Șabloane" trăiește în ContracteListPage; ruta separată
+                  există ca intrare directă (bookmark) — auto-selectează tab-ul. */}
+              <Route path="contracte/sabloane" element={<ContracteListPage />} />
+            </Route>
+          </Route>
+
           {/* Leads are gard propriu (nu blocul /clienti): agenția externă de ads
               vede fișele de lead, dar nimic din clienți/plăți/facturare. */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/leads']} />}>
@@ -362,24 +372,13 @@ function App() {
 
           {/* Hub „Administrare" — cele 6 pagini de config sub un tab-bar comun
               (AdministrareLayout). Paths neschimbate → deep-link-uri & linkuri
-              interne rămân valide. Organizație (owner-only) are gard propriu. */}
-          {/* Landing-ul hub-ului e deschis întregului staff, dar sare pe primul
-              tab permis rolului — paginile de sub el au garduri separate. */}
+              interne rămân valide. Organizație (owner-only) are gard propriu.
+              Contracte a ieșit din hub — vezi blocul de sub /clienti. */}
+          {/* Landing-ul hub-ului sare pe primul tab permis rolului — paginile de
+              sub el au garduri separate (toate PRIVILEGED+). */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/administrare']} />}>
             <Route element={<AppLayout />}>
               <Route path="administrare" element={<AdministrareIndex />} />
-            </Route>
-          </Route>
-
-          {/* Contracte — singurul tab al hub-ului deschis și recepției. */}
-          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/contracte']} />}>
-            <Route element={<AppLayout />}>
-              <Route element={<AdministrareLayout />}>
-                <Route path="contracte" element={<ContracteListPage />} />
-                {/* Tab „Șabloane" trăiește în ContracteListPage; ruta separată
-                    există ca intrare directă (bookmark) — auto-selectează tab-ul. */}
-                <Route path="contracte/sabloane" element={<ContracteListPage />} />
-              </Route>
             </Route>
           </Route>
 

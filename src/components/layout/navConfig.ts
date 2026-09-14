@@ -30,6 +30,7 @@ export const navSections: NavSection[] = [
       { label: 'Leads',      path: '/leads' },
       { label: 'Clienți',    path: '/clienti' },
       { label: 'Familii',    path: '/familii' },
+      { label: 'Contracte',  path: '/contracte' },
       { label: 'Prezențe',   path: '/prezente' },
       { label: 'Absenți 21z', path: '/absente-21z' },
       { label: 'Evaluări',   path: '/evaluari' },
@@ -101,14 +102,14 @@ export const navSections: NavSection[] = [
   },
   {
     // Hub cu tab-uri — cele 6 pagini de config au ieșit din rail. Anunțuri +
-    // Feedback aplicație trăiesc în meniul contului (AccountMenu).
+    // Feedback aplicație trăiesc în meniul contului (AccountMenu). Contracte a
+    // ieșit din hub — e submeniu la Clienți.
     label: 'Administrare',
     color: '#9aa3b2',
     leaf: true,
     matchPrefixes: [
       '/administrare',
       '/setari',
-      '/contracte',
       '/inventar',
       '/pontaj-staff',
       '/audit',

@@ -67,4 +67,8 @@ nivel, bonus KPI în trei trepte, praguri de 8 și 14 cursanți, diurnă și pla
 (e bifat și pe lunile încheiate) — se filtrează pe `data_reziliere`. Citește-o înainte să atingi
 `calculeaza_salariu_teacher` sau orice numărătoare de cursanți pe lună.
 
+**Salarizarea managerului de studio** (decisă 14 sept. 2026, neimplementată) stă în
+**[docs/bonus-manager-studio.md](./docs/bonus-manager-studio.md)** — bază pe locație, bonus pe încasări
+(rata lunii verificată la finalul lunii următoare) și bonus pe ocupare (locuri ocupate / capacitatea grupelor).
+
 Pentru detalii despre Quasar Dance (companie, instructori, trupe, abonamente, locații, surse leads, pipeline conversie), vezi memoria persistentă (`MEMORY.md` și fișierele `project_*.md` din `~/.claude/projects/.../memory/`). Memoriile sunt sursa principală de adevăr pentru context business — ARCHITECTURE.md descrie doar codul.

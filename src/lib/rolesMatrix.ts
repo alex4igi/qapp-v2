@@ -79,7 +79,8 @@ export const ROUTE_ACCESS = {
   // Reconciliere CRM ↔ Google/Meta Ads. Landing-ul rolului `marketing`.
   '/marketing': WITH_MARKETING,
   // Trimitere contracte + întreținerea șabloanelor: tot staff-ul, recepția
-  // inclusă (ea pregătește dosarele familiilor).
+  // inclusă (ea pregătește dosarele familiilor). Submeniu la Clienți, nu mai
+  // trăiește sub hub-ul Administrare.
   '/contracte': ALL_STAFF,
   // Editorul vizual modifică structura legală a contractelor, dar un șablon
   // deja folosit e imutabil în DB (`locked_at` + trg_contract_template_lock):
@@ -91,11 +92,10 @@ export const ROUTE_ACCESS = {
   '/metodologic': PRIVILEGED,
   '/setari': PRIVILEGED,
   // Hub „Administrare" — landing cu tab-uri peste paginile de config (Setări,
-  // Contracte, Inventar, Pontaj, Audit, Organizație). Deschis întregului staff
-  // DOAR ca landing: fiecare pagină de sub hub își păstrează propriul gard de
-  // rută (front_desk ajunge astfel la Contracte, nu și la Setări/Audit), iar
-  // landing-ul redirectează spre primul tab accesibil rolului.
-  '/administrare': ALL_STAFF,
+  // Inventar, Pontaj, Audit, Fișe incomplete, Grile KPI, Organizație). Toate
+  // sunt PRIVILEGED+ (Contracte a ieșit de aici, e submeniu la Clienți), deci
+  // hub-ul însuși e restrâns la fel — recepția nu mai are ce căuta în el.
+  '/administrare': PRIVILEGED,
   '/opt-out': PRIVILEGED,
   // Rutele „mele" de instructor: deschise oricărui rol, dar condiționate de
   // existența unui profil legat (vezi REQUIRES_TEACHER_PROFILE). Un manager care
