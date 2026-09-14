@@ -59,9 +59,8 @@ export const ROUTE_ACCESS = {
   // Zonă dedicată CFO (finanțe) — izolată de operațional. Doar owner + admin.
   '/cfo': ADMIN_OR_OWNER,
   // Raport de început de sezon (cine s-a întors, cine nu, cine e nou). Pagină de
-  // citit, fără nicio acțiune — listele de lucru zilnice ale recepției stau în
-  // /datorii și /absente-21z, ca să nu se dubleze munca în două locuri.
-  '/start-sezon': PRIVILEGED,
+  // citit, fără nicio acțiune — vizibilă și recepției.
+  '/start-sezon': ALL_STAFF,
   '/scorecard': PRIVILEGED,
   '/vouchere': PRIVILEGED,
   '/inventar': PRIVILEGED,
