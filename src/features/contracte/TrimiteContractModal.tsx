@@ -1,9 +1,18 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Field, Modal, Select, Spinner, TextInput } from '@/components/ui'
+import { Badge, Button, Checkbox, Field, Modal, Select, Spinner, TextInput } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
-import { listFamilii } from '@/features/familii/api'
-import { getFamilieMembers } from '@/features/familii/api'
+import {
+  creeazaFamilieProprie,
+  getFamilieMembers,
+  listFamilii,
+} from '@/features/familii/api'
+import {
+  searchClientiPentruContract,
+  type ClientPentruContract,
+} from '@/features/clienti/api'
+import { calcAge } from '@/features/clienti/pages/ClientProfilePage/helpers'
 import { listTemplates, sendContracte } from './api'
 import { CONTRACT_TIP_LABEL } from './constants'
 
@@ -13,17 +22,35 @@ type Props = {
   // precompletare când modalul e deschis de pe profilul unei familii
   familieId?: string
   familieNume?: string
+  // precompletare când modalul e deschis de pe fișa unui client
+  client?: ClientPentruContract
 }
 
-export function TrimiteContractModal({ open, onClose, familieId, familieNume }: Props) {
+type Familie = { id: string; nume: string }
+
+const numeClient = (c: Pick<ClientPentruContract, 'nume' | 'prenume'>) =>
+  `${c.nume} ${c.prenume ?? ''}`.trim()
+
+export function TrimiteContractModal({ open, onClose, familieId, familieNume, client }: Props) {
   const queryClient = useQueryClient()
+  const blocat = Boolean(familieId || client)
   const [templateId, setTemplateId] = useState('')
   const [search, setSearch] = useState('')
-  const [selFamilie, setSelFamilie] = useState<{ id: string; nume: string } | null>(
-    familieId ? { id: familieId, nume: familieNume ?? '' } : null,
+  const [selFamilie, setSelFamilie] = useState<Familie | null>(() => {
+    if (familieId) return { id: familieId, nume: familieNume ?? '' }
+    if (client?.familia) return { id: client.familia, nume: client.familii?.nume_familie ?? '' }
+    return null
+  })
+  // Clientul ales n-are familie: contractul pleacă doar după ce adultul devine
+  // reprezentantul propriei familii (creată la trimitere).
+  const [faraFamilie, setFaraFamilie] = useState<ClientPentruContract | null>(
+    client && !client.familia ? client : null,
   )
-  const [clientId, setClientId] = useState('')
-  const [result, setResult] = useState<string | null>(null)
+  const [seReprezintaSingur, setSeReprezintaSingur] = useState(true)
+  const [clientId, setClientId] = useState(client?.id ?? '')
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const cautare = open && !selFamilie && !faraFamilie && search.trim().length >= 2
 
   const { data: templates } = useQuery({
     queryKey: ['contract-templates'],
@@ -31,10 +58,16 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume }: 
     enabled: open,
   })
 
-  const { data: familii, isFetching: searching } = useQuery({
+  const { data: familii, isFetching: searchingFamilii } = useQuery({
     queryKey: ['familii-search', search],
     queryFn: () => listFamilii({ search, page: 0 }),
-    enabled: open && !selFamilie && search.trim().length >= 2,
+    enabled: cautare,
+  })
+
+  const { data: clienti, isFetching: searchingClienti } = useQuery({
+    queryKey: ['clienti-search-contract', search],
+    queryFn: () => searchClientiPentruContract(search),
+    enabled: cautare,
   })
 
   const { data: membri } = useQuery({
@@ -52,43 +85,96 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume }: 
     [templates],
   )
 
+  const varsta = faraFamilie ? calcAge(faraFamilie.data_nasterii) : null
+  const poateCreaFamilia =
+    !!faraFamilie &&
+    varsta !== null &&
+    varsta >= 18 &&
+    seReprezintaSingur &&
+    !!(faraFamilie.telefon || faraFamilie.email)
+
   const send = useMutation({
-    mutationFn: () =>
-      sendContracte({
+    mutationFn: async () => {
+      let familie = selFamilie
+      let vizat = clientId || null
+      let familieCreata: string | null = null
+      if (!familie && faraFamilie) {
+        familie = await creeazaFamilieProprie(faraFamilie.id)
+        vizat = faraFamilie.id
+        familieCreata = familie.nume
+        // de-acum clientul are familie: o retrimitere după o eroare nu o mai creează
+        setSelFamilie(familie)
+        setClientId(faraFamilie.id)
+        setFaraFamilie(null)
+        void queryClient.invalidateQueries({ queryKey: ['lookup', 'familii'] })
+        void queryClient.invalidateQueries({ queryKey: ['familii'] })
+        void queryClient.invalidateQueries({ queryKey: ['client', faraFamilie.id] })
+        void queryClient.invalidateQueries({ queryKey: ['client-familia'] })
+      }
+      const results = await sendContracte({
         templateId,
-        targets: [{ familieId: selFamilie!.id, clientId: clientId || null }],
-      }),
-    onSuccess: (results) => {
-      const r = results[0]
+        targets: [{ familieId: familie!.id, clientId: vizat }],
+      })
+      return { r: results[0], familieCreata }
+    },
+    onSuccess: ({ r, familieCreata }) => {
+      const prefix = familieCreata ? `Familia „${familieCreata}” a fost creată. ` : ''
       if (!r?.ok) {
-        setResult(`Nu s-a putut trimite: ${r?.error ?? 'eroare necunoscută'}`)
+        setResult({ ok: false, text: `${prefix}Nu s-a putut trimite: ${r?.error ?? 'eroare necunoscută'}` })
         return
       }
       queryClient.invalidateQueries({ queryKey: ['contracte'] })
       const canal = r.canal === 'email' ? 'email' : 'SMS'
       if (r.amanat) {
-        setResult('Contractul e creat. SMS-ul a prins zona interzisă — pleacă automat dimineață.')
+        setResult({
+          ok: true,
+          text: `${prefix}Contractul e creat. SMS-ul a prins zona interzisă — pleacă automat dimineață.`,
+        })
       } else if (r.notificat) {
-        setResult(`Linkul de semnare a fost trimis prin ${canal}.`)
+        setResult({ ok: true, text: `${prefix}Linkul de semnare a fost trimis prin ${canal}.` })
       } else {
-        setResult(
-          `Contractul e creat, dar linkul NU a plecat (${canal}): ${
+        setResult({
+          ok: false,
+          text: `${prefix}Contractul e creat, dar linkul NU a plecat (${canal}): ${
             r.notificareEroare ?? 'eroare necunoscută'
           }. Trimite-l manual.`,
-        )
+        })
       }
     },
-    onError: (e) => setResult(humanizeError(e)),
+    onError: (e) => setResult({ ok: false, text: humanizeError(e) }),
   })
+
+  function alegeClient(c: ClientPentruContract) {
+    if (c.familia) {
+      setSelFamilie({ id: c.familia, nume: c.familii?.nume_familie ?? '' })
+      setClientId(c.id)
+    } else {
+      setFaraFamilie(c)
+      setSeReprezintaSingur(true)
+    }
+  }
+
+  function schimba() {
+    setSelFamilie(null)
+    setFaraFamilie(null)
+    setClientId('')
+    setResult(null)
+  }
 
   function close() {
     setResult(null)
     setSearch('')
-    if (!familieId) setSelFamilie(null)
-    setClientId('')
+    if (!blocat) {
+      setSelFamilie(null)
+      setFaraFamilie(null)
+      setClientId('')
+    }
     send.reset()
     onClose()
   }
+
+  const searching = searchingFamilii || searchingClienti
+  const areRezultate = (familii?.rows.length ?? 0) > 0 || (clienti?.length ?? 0) > 0
 
   return (
     <Modal open={open} onClose={close} title="Trimite contract la semnat">
@@ -102,14 +188,61 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume }: 
           />
         </Field>
 
-        <Field label="Familia">
+        <Field label="Către">
           {selFamilie ? (
             <div className="flex items-center gap-2">
               <span className="font-medium">{selFamilie.nume || 'Familie selectată'}</span>
-              {!familieId && (
-                <Button variant="ghost" onClick={() => setSelFamilie(null)}>
+              {!blocat && (
+                <Button variant="ghost" onClick={schimba}>
                   Schimbă
                 </Button>
+              )}
+            </div>
+          ) : faraFamilie ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{numeClient(faraFamilie)}</span>
+                <Badge tone="warn">fără familie</Badge>
+                {!blocat && (
+                  <Button variant="ghost" onClick={schimba}>
+                    Schimbă
+                  </Button>
+                )}
+              </div>
+              {varsta === null ? (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  Fișa nu are data nașterii. Completeaz-o: doar un client major se poate
+                  reprezenta singur.{' '}
+                  <Link to={`/clienti/${faraFamilie.id}`} className="underline" onClick={close}>
+                    Deschide fișa
+                  </Link>
+                </p>
+              ) : varsta < 18 ? (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  E minor ({varsta} ani): contractul îl semnează un părinte. Adaugă familia
+                  cu părintele în fișa clientului.{' '}
+                  <Link to={`/clienti/${faraFamilie.id}`} className="underline" onClick={close}>
+                    Deschide fișa
+                  </Link>
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  <Checkbox
+                    id="contract-se-reprezinta-singur"
+                    label="Clientul e major și se reprezintă singur (semnează el contractul)"
+                    checked={seReprezintaSingur}
+                    onChange={(e) => setSeReprezintaSingur(e.target.checked)}
+                  />
+                  <p className="ml-6 text-xs text-muted-2">
+                    {!seReprezintaSingur
+                      ? 'Fără bifă, adaugă întâi familia din fișa clientului.'
+                      : faraFamilie.telefon
+                        ? `La trimitere se creează familia lui, iar linkul pleacă prin SMS la ${faraFamilie.telefon}.`
+                        : faraFamilie.email
+                          ? `La trimitere se creează familia lui, iar linkul pleacă pe email la ${faraFamilie.email}.`
+                          : 'Fișa nu are nici telefon, nici email: linkul n-ar avea unde să plece.'}
+                  </p>
+                </div>
               )}
             </div>
           ) : (
@@ -117,40 +250,85 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume }: 
               <TextInput
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Caută după nume, telefon, email…"
+                placeholder="Caută familie sau client — nume, telefon, email…"
               />
               {searching && <Spinner />}
-              {familii && familii.rows.length > 0 && (
-                <ul className="max-h-48 overflow-auto rounded border border-quasar-gray/30 divide-y divide-quasar-gray/20">
-                  {familii.rows.map((f) => (
-                    <li key={f.id}>
-                      <button
-                        type="button"
-                        className="w-full px-3 py-2 text-left hover:bg-quasar-yellow/10"
-                        onClick={() =>
-                          setSelFamilie({ id: f.id, nume: f.nume_familie ?? '' })
-                        }
-                      >
-                        <span className="font-medium">{f.nume_familie}</span>
-                        {f.telefon && (
-                          <span className="ml-2 text-sm text-quasar-gray">{f.telefon}</span>
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+              {cautare && !searching && !areRezultate && (
+                <p className="text-sm text-muted-2">Nimic găsit.</p>
+              )}
+              {areRezultate && (
+                <div className="max-h-64 overflow-auto rounded border border-quasar-gray/30">
+                  {(familii?.rows.length ?? 0) > 0 && (
+                    <>
+                      <p className="bg-surface px-3 py-1 text-xs font-medium uppercase text-muted-2">
+                        Familii
+                      </p>
+                      <ul className="divide-y divide-quasar-gray/20">
+                        {familii!.rows.map((f) => (
+                          <li key={f.id}>
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 text-left hover:bg-quasar-yellow/10"
+                              onClick={() =>
+                                setSelFamilie({ id: f.id, nume: f.nume_familie ?? '' })
+                              }
+                            >
+                              <span className="font-medium">{f.nume_familie}</span>
+                              {f.telefon && (
+                                <span className="ml-2 text-sm text-quasar-gray">{f.telefon}</span>
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {(clienti?.length ?? 0) > 0 && (
+                    <>
+                      <p className="bg-surface px-3 py-1 text-xs font-medium uppercase text-muted-2">
+                        Clienți
+                      </p>
+                      <ul className="divide-y divide-quasar-gray/20">
+                        {clienti!.map((c) => {
+                          const ani = calcAge(c.data_nasterii)
+                          return (
+                            <li key={c.id}>
+                              <button
+                                type="button"
+                                className="flex w-full flex-wrap items-center gap-x-2 px-3 py-2 text-left hover:bg-quasar-yellow/10"
+                                onClick={() => alegeClient(c)}
+                              >
+                                <span className="font-medium">{numeClient(c)}</span>
+                                {ani !== null && (
+                                  <span className="text-sm text-quasar-gray">{ani} ani</span>
+                                )}
+                                {c.familia ? (
+                                  <span className="text-sm text-muted-2">
+                                    fam. {c.familii?.nume_familie}
+                                  </span>
+                                ) : (
+                                  <Badge tone="warn">fără familie</Badge>
+                                )}
+                              </button>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           )}
         </Field>
 
         {selFamilie && (
-          <Field label="Copil vizat (opțional — implicit toți copiii familiei)">
+          <Field label="Cursant vizat (opțional — implicit toți membrii familiei)">
             <Select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
               options={[
-                { value: '', label: 'Toți copiii' },
+                { value: '', label: 'Toți membrii' },
                 ...(membri ?? []).map((m) => ({
                   value: m.id,
                   label: `${m.nume} ${m.prenume ?? ''}`.trim(),
@@ -161,12 +339,8 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume }: 
         )}
 
         {result && (
-          <p
-            className={
-              result.startsWith('Linkul') ? 'text-green-700 text-sm' : 'text-red-600 text-sm'
-            }
-          >
-            {result}
+          <p className={result.ok ? 'text-green-700 text-sm' : 'text-red-600 text-sm'}>
+            {result.text}
           </p>
         )}
 
@@ -176,7 +350,7 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume }: 
           </Button>
           <Button
             onClick={() => send.mutate()}
-            disabled={!templateId || !selFamilie || send.isPending}
+            disabled={!templateId || !(selFamilie || poateCreaFamilia) || send.isPending}
           >
             {send.isPending ? 'Se trimite…' : 'Trimite la semnat'}
           </Button>

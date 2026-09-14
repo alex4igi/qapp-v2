@@ -32,6 +32,7 @@ import {
 } from '@/lib/checklist/specs/client'
 import { waLink } from '@/lib/phone'
 import { ClientForm } from '../../ClientForm'
+import { TrimiteContractModal } from '@/features/contracte/TrimiteContractModal'
 import {
   getClient,
   getClientEnrollments,
@@ -60,6 +61,7 @@ export function ClientProfilePage() {
   const [focusSection, setFocusSection] = useState<SectiuneClient | undefined>()
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [plataOpen, setPlataOpen] = useState(false)
+  const [contractOpen, setContractOpen] = useState(false)
   const [confirmCursId, setConfirmCursId] = useState<string | null>(null)
   const [reintegrateAsLead, setReintegrateAsLead] = useState(false)
   const [recalcUltimaLuna, setRecalcUltimaLuna] = useState(false)
@@ -359,6 +361,11 @@ export function ClientProfilePage() {
                 WhatsApp
               </a>
             )}
+            {!teacherMode && isFrontDeskOrHigher(role) && (
+              <Button variant="secondary" onClick={() => setContractOpen(true)}>
+                Contract
+              </Button>
+            )}
             {/* Teacherul citește profilul dar nu-l modifică (RLS blochează oricum
                 UPDATE pe clienti) — butonul rămâne vizibil, dezactivat. */}
             <Button
@@ -483,6 +490,17 @@ export function ClientProfilePage() {
             setEditOpen(false)
             setFocusSection(undefined)
           }}
+        />
+      )}
+
+      {contractOpen && (
+        <TrimiteContractModal
+          open
+          client={{
+            ...client,
+            familii: familiaQuery.data ? { nume_familie: familiaQuery.data.nume_familie } : null,
+          }}
+          onClose={() => setContractOpen(false)}
         />
       )}
 

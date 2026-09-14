@@ -84,6 +84,27 @@ export async function listClienti({
   }
 }
 
+export type ClientPentruContract = Pick<
+  Client,
+  'id' | 'nume' | 'prenume' | 'familia' | 'data_nasterii' | 'telefon' | 'email'
+> & { familii: { nume_familie: string } | null }
+
+// Căutarea din „Trimite contract": clientul vine cu familia lui, ca fereastra să
+// știe dacă trimite direct sau întâi creează familia adultului.
+export async function searchClientiPentruContract(
+  search: string,
+): Promise<ClientPentruContract[]> {
+  let query = supabase
+    .from('clienti')
+    .select('id, nume, prenume, familia, data_nasterii, telefon, email, familii(nume_familie)')
+    .order('nume', { ascending: true })
+    .limit(8)
+  query = applyWordSearch(query, search, SEARCH_FIELDS)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []) as unknown as ClientPentruContract[]
+}
+
 export async function getClient(id: string): Promise<ClientCuDocumente> {
   const { data, error } = await supabase
     .from('clienti')

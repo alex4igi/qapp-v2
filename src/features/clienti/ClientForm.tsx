@@ -27,7 +27,8 @@ import { familiiOptions, unitatiInvatamantOptions } from '@/lib/lookups'
 import { recordAuditLog } from '@/lib/auditLog'
 import type { Client } from '@/types/db'
 import { createClient, updateClient } from './api'
-import { createFamilie } from '@/features/familii/api'
+import { createFamilie, creeazaFamilieProprie } from '@/features/familii/api'
+import { calcAge } from './pages/ClientProfilePage/helpers'
 
 // Câmpurile de client al căror schimb merită urmă în audit (date personale).
 const AUDITED_FIELDS = [
@@ -134,6 +135,17 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
   }, [open, focusSection])
   const [newFamilieOpen, setNewFamilieOpen] = useState(false)
   const [newFamilieName, setNewFamilieName] = useState('')
+  const [seReprezintaSingur, setSeReprezintaSingur] = useState(false)
+  // Clientul nou deja creat într-o încercare în care familia a eșuat: reîncercarea
+  // îl actualizează, nu mai creează o fișă dublă.
+  const createdIdRef = useRef<string | null>(null)
+
+  // Minorii nu văd bifa; fără dată de naștere bifa apare, dar blocată.
+  const varsta = calcAge(form.data_nasterii || null)
+  const bifaVizibila =
+    !form.familia && !newFamilieOpen && (varsta === null || varsta >= 18)
+  const creeazaFamilia = seReprezintaSingur && bifaVizibila && varsta !== null
+  const numeFamilieNoua = `${form.nume.trim()} ${form.prenume.trim()}`.trim()
 
   const set = (key: keyof FormState) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -182,7 +194,14 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
         unitate_invatamant: form.unitate_invatamant.trim() || null,
         fara_poze: form.fara_poze,
       }
-      if (!isEdit) return createClient(payload)
+      if (!isEdit) {
+        const created = createdIdRef.current
+          ? await updateClient(createdIdRef.current, payload)
+          : await createClient(payload)
+        createdIdRef.current = created.id
+        if (creeazaFamilia) await creeazaFamilieProprie(created.id)
+        return created
+      }
 
       const updated = await updateClient(client!.id, payload)
       // Audit pe modificarea datelor clientului (front_desk inclus). Non-blocant:
@@ -201,6 +220,7 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
           console.error('audit client_data_changed eșuat:', e)
         }
       }
+      if (creeazaFamilia) await creeazaFamilieProprie(client!.id)
       return updated
     },
     onSuccess: () => {
@@ -215,6 +235,10 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
       }
       // dacă mutăm un client între familii, refresh și familiile vizate
       void queryClient.invalidateQueries({ queryKey: ['familie'] })
+      if (creeazaFamilia) {
+        void queryClient.invalidateQueries({ queryKey: ['lookup', 'familii'] })
+        void queryClient.invalidateQueries({ queryKey: ['familii'] })
+      }
       onClose()
     },
     onError: (e: unknown) => {
@@ -361,9 +385,14 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
           </Field>
         </div>
 
-        <div data-sectiune="familie">
+        <div data-sectiune="familie" className="space-y-2">
         <Field label="Familie" htmlFor="familia">
-          {newFamilieOpen ? (
+          {creeazaFamilia ? (
+            <p className="rounded-md border border-line bg-quasar-yellow/10 px-3 py-2 text-sm text-ink">
+              La salvare se creează familia „{numeFamilieNoua || 'clientului'}”, cu
+              clientul ca reprezentant și cu telefonul și emailul din fișă.
+            </p>
+          ) : newFamilieOpen ? (
             <div className="flex gap-2">
               <TextInput
                 id="familia-noua"
@@ -415,6 +444,28 @@ export function ClientForm({ open, client, onClose, focusSection }: Props) {
             </div>
           )}
         </Field>
+        {bifaVizibila && (
+          <div>
+            <Checkbox
+              id="se_reprezinta_singur"
+              label="Clientul e major și se reprezintă singur (semnează el contractele)"
+              checked={creeazaFamilia}
+              disabled={varsta === null}
+              onChange={(e) => setSeReprezintaSingur(e.target.checked)}
+            />
+            {varsta === null && (
+              <p className="ml-6 text-xs text-muted-2">
+                Completează data nașterii ca să poți bifa.
+              </p>
+            )}
+          </div>
+        )}
+        {client?.reprezinta_familia && form.familia === client.familia && (
+          <p className="text-xs text-muted-2">
+            Se reprezintă singur: numele, telefonul și emailul se copiază automat
+            pe familie.
+          </p>
+        )}
         </div>
 
         {/* Catalog, nu text liber: altfel aceeași școală intră în zeci de forme

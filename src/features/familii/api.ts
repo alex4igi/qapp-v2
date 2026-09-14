@@ -122,6 +122,20 @@ export async function createFamilie(
   return data
 }
 
+// Adultul fără familie devine reprezentantul propriei familii. DB-ul verifică vârsta
+// și ține apoi numele, telefonul și emailul familiei sincron cu fișa clientului.
+export async function creeazaFamilieProprie(
+  clientId: string,
+): Promise<{ id: string; nume: string }> {
+  const { data, error } = await supabase.rpc('creeaza_familie_proprie', {
+    p_client_id: clientId,
+  })
+  if (error) throw error
+  const row = data?.[0]
+  if (!row) throw new Error('Familia nu a fost creată.')
+  return { id: row.familie_id, nume: row.familie_nume }
+}
+
 export async function updateFamilie(
   id: string,
   dto: UpdateDto<'familii'>,
