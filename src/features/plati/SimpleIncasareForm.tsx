@@ -14,7 +14,7 @@ import {
 import { clientiOptions } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { formatRON } from '@/lib/format'
-import { listAvailableVouchere } from '@/features/vouchere/api'
+import { listVouchereIncasareSimpla } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
 import type { Incasare, InsertDto, Voucher } from '@/types/db'
 import {
@@ -119,11 +119,9 @@ export function SimpleIncasareForm({
     enabled: tip === 'Merch',
   })
 
-  // Doar vouchere universale (nelegate de un curs anume) au sens pe plăți simple.
   const vouchereQ = useQuery({
-    queryKey: ['vouchere-disponibile', 'simple'],
-    queryFn: () => listAvailableVouchere({ activeOnly: true }),
-    select: (rows) => rows.filter((v) => !v.curs),
+    queryKey: ['vouchere-incasare-simpla'],
+    queryFn: listVouchereIncasareSimpla,
   })
 
   const selectedBilet = useMemo(
@@ -472,22 +470,24 @@ export function SimpleIncasareForm({
             </p>
           )}
         </Field>
-        <Field label="Voucher (opțional)">
-          <Select
-            placeholder="Fără voucher"
-            options={(vouchereQ.data ?? []).map((v) => ({
-              label: voucherLabel(v),
-              value: v.id,
-            }))}
-            value={voucherId}
-            onChange={(e) => setVoucherId(e.target.value)}
-          />
-          {voucherSelectat?.descriere && (
-            <p className="mt-1 text-xs text-quasar-gray">
-              {voucherSelectat.descriere}
-            </p>
-          )}
-        </Field>
+        {(vouchereQ.data?.length ?? 0) > 0 && (
+          <Field label="Voucher (opțional)">
+            <Select
+              placeholder="Fără voucher"
+              options={(vouchereQ.data ?? []).map((v) => ({
+                label: voucherLabel(v),
+                value: v.id,
+              }))}
+              value={voucherId}
+              onChange={(e) => setVoucherId(e.target.value)}
+            />
+            {voucherSelectat?.descriere && (
+              <p className="mt-1 text-xs text-quasar-gray">
+                {voucherSelectat.descriere}
+              </p>
+            )}
+          </Field>
+        )}
       </div>
 
       {collectedClamped > 0 && (

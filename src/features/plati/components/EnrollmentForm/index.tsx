@@ -1,5 +1,5 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Modal,
@@ -26,11 +26,13 @@ import { formatOrar } from '@/features/cursuri/program'
 import { listSezoane } from '@/features/setari/api'
 import { formatRON } from '@/lib/format'
 import type { Curs, Enrollment, Enums } from '@/types/db'
-import {
-  getClientEligibilityContext,
-  listAvailableVouchere,
-} from '@/features/vouchere/api'
+import { getClientEligibilityContext } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
+import {
+  VoucherField,
+  findVoucherValid,
+  useVouchereAplicabile,
+} from '@/features/vouchere/VoucherField'
 import { getCursOcupare } from '@/features/cursuri/api/profile'
 import { EligibilityAlerts } from '@/features/vouchere/EligibilityAlerts'
 import { ClientDebtAlert } from '../ClientDebtAlert'
@@ -385,19 +387,13 @@ export function EnrollmentForm({
       : null
   }, [cursSelectat, isFacultativ, tipPlata, aplicPromo])
 
-  const vouchereQ = useQuery({
-    queryKey: ['vouchere-disponibile', cursId, tipPlata],
-    queryFn: () =>
-      listAvailableVouchere({
-        forCurs: cursId || null,
-        forTipPlata: tipPlata,
-        activeOnly: true,
-      }),
-    enabled: Boolean(cursId),
-  })
-
+  const vouchereQ = useVouchereAplicabile({ clientId, cursId, tipPlata })
+  const handleVoucherChange = useCallback((id: string) => {
+    setVoucherId(id)
+    setIncasatTouched(false)
+  }, [])
   const voucherSelectat = useMemo(
-    () => vouchereQ.data?.find((v) => v.id === voucherId) ?? null,
+    () => findVoucherValid(vouchereQ.data, voucherId),
     [vouchereQ.data, voucherId],
   )
 
@@ -504,7 +500,7 @@ export function EnrollmentForm({
         if (!(pretSed > 0)) {
           throw new Error('Cursul nu are preț pe ședință configurat.')
         }
-        if (incasatNum > pretSed + 0.001) {
+        if (incasatNum > (finalPret ?? pretSed) + 0.001) {
           throw new Error('Suma încasată depășește prețul.')
         }
         // Încasare 0 → fără tenders (nicio metodă cerută); restul rămâne restanță.
@@ -524,6 +520,7 @@ export function EnrollmentForm({
           data: dataIncepere,
           instructorId: null,
           permiteOverbook: overbook,
+          voucherId: voucherId || null,
         })
       }
       return createInrolari({
@@ -918,38 +915,18 @@ export function EnrollmentForm({
             </div>
           )}
 
-          {/* Voucherul nu se aplică pe fluxul OPEN (rezervare per ședință). */}
-          {!isFacultativPerSedinta && (
-            <Field label="Voucher (opțional)" htmlFor="voucher">
-              <Select
-                id="voucher"
-                placeholder={
-                  cursId
-                    ? vouchereQ.data && vouchereQ.data.length === 0
-                      ? '— niciun voucher aplicabil —'
-                      : '— fără voucher —'
-                    : '— alege întâi cursul —'
-                }
-                options={(vouchereQ.data ?? []).map((v) => ({
-                  value: v.id,
-                  label:
-                    v.tip === 'Procent'
-                      ? `${v.cod_voucher} — ${v.valoare}%`
-                      : v.tip === 'Valoare'
-                        ? `${v.cod_voucher} — ${formatRON(v.valoare)}`
-                        : v.cod_voucher,
-                }))}
-                value={voucherId}
-                onChange={(e) => setVoucherId(e.target.value)}
-                disabled={!cursId || (vouchereQ.data?.length ?? 0) === 0}
-              />
-              {voucherSelectat?.descriere && (
-                <p className="mt-1 text-xs text-quasar-gray">
-                  {voucherSelectat.descriere}
-                </p>
-              )}
-            </Field>
-          )}
+          <VoucherField
+            clientId={clientId}
+            cursId={cursId}
+            tipPlata={tipPlata}
+            value={voucherId}
+            onChange={handleVoucherChange}
+            blockedReason={
+              aplicPromo
+                ? 'Nu se combină cu prețul de reînscriere — reducerile nu se cumulează.'
+                : null
+            }
+          />
 
           {cursSelectat && (
             <PriceSummary

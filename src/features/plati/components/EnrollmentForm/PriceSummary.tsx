@@ -5,7 +5,7 @@ export type MotivPolitica = 'frati' | 'cross-sell' | null
 
 type Props = {
   sumaSugerata: number | null
-  voucherSelectat: Voucher | null
+  voucherSelectat: Pick<Voucher, 'tip' | 'valoare'> | null
   tipPlata: Enums<'tip_plata'>
   isFacultativ: boolean
   policyPreview?: { politica_discount: number; suma_finala: number } | null
@@ -44,6 +44,9 @@ export function PriceSummary({
   const showPolicy =
     !preview && policyPreview != null && policyPreview.politica_discount > 0
 
+  // Pe abonamentul lunar voucherul manual acoperă o singură rată (prima creată).
+  const voucherPeORata = !isFacultativ && tipPlata === 'Per luna'
+
   const pretLabel =
     tipPlata === 'Per luna' && !isFacultativ
       ? 'lunar'
@@ -80,16 +83,20 @@ export function PriceSummary({
       {preview && (
         <>
           <div className="mt-1 flex items-baseline justify-between text-xs text-quasar-gray">
-            <span>Voucher</span>
+            <span>Voucher{voucherPeORata && ' (doar prima rată)'}</span>
             <span>− {preview.discount.toFixed(2)} RON</span>
           </div>
           <div className="mt-1 flex items-baseline justify-between border-t border-quasar-gray-light pt-1">
-            <span className="font-medium">Total</span>
+            <span className="font-medium">{voucherPeORata ? 'Prima rată' : 'Total'}</span>
             <span className="font-semibold text-quasar-black">
               {preview.sumaFinala.toFixed(2)} RON
-              {!isFacultativ && tipPlata === 'Per luna' && ' / lună'}
             </span>
           </div>
+          {voucherPeORata && (
+            <p className="mt-1 text-xs text-quasar-gray">
+              Restul ratelor rămân la {sumaSugerata} RON, cu reducerile automate (familie / al 2-lea curs) dacă e cazul.
+            </p>
+          )}
         </>
       )}
       {showPolicy && policyPreview && (

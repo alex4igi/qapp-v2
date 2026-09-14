@@ -1,5 +1,5 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Field, TextInput, DateInput, Select, Combobox, Button, Spinner } from '@/components/ui'
 import { clientiOptions, sezonActivId } from '@/lib/lookups'
@@ -8,6 +8,12 @@ import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { VacantaWarning } from '@/features/shared/VacantaWarning'
 import { formatRON } from '@/lib/format'
 import type { Curs } from '@/types/db'
+import { applyVoucher } from '@/features/vouchere/calc'
+import {
+  VoucherField,
+  findVoucherValid,
+  useVouchereAplicabile,
+} from '@/features/vouchere/VoucherField'
 import { MetodaPlataField, resolveTenders, type MetodaSel } from './MetodaPlataField'
 import {
   listCursuriFacultative,
@@ -40,6 +46,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
   const [overbook, setOverbook] = useState(false)
+  const [voucherId, setVoucherId] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const sezonActivQ = useQuery({
@@ -59,8 +66,16 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
     [cursuriQ.data, cursId],
   )
   const pret = cursSelectat?.pret_sedinta ?? null
+  const vouchereQ = useVouchereAplicabile({ clientId, cursId, tipPlata: 'Per sedinta' })
+  const voucherSelectat = findVoucherValid(vouchereQ.data, voucherId)
+  const datorat = pret != null ? applyVoucher(pret, voucherSelectat).sumaFinala : null
   const incasat = Number(suma) || 0
-  const rest = pret != null ? Math.max(0, pret - incasat) : 0
+  const rest = datorat != null ? Math.max(0, datorat - incasat) : 0
+
+  const handleVoucherChange = useCallback((id: string) => {
+    setVoucherId(id)
+    setSumaTouched(false)
+  }, [])
 
   // Ocuparea sesiunii (curs + dată), reîncărcată la schimbarea oricăruia.
   const sesiuneQ = useQuery({
@@ -77,11 +92,11 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
   const ocupare = sesiuneQ.data
   const plin = ocupare ? ocupare.ocupate >= ocupare.capacitate : false
 
-  // Preț sugerat din curs (pret_sedinta), doar dacă userul n-a editat.
+  // Preț sugerat = prețul ședinței după voucher, doar dacă userul n-a editat.
   useEffect(() => {
     if (sumaTouched) return
-    setSuma(cursSelectat?.pret_sedinta != null ? String(cursSelectat.pret_sedinta) : '')
-  }, [cursSelectat, sumaTouched])
+    setSuma(datorat != null ? String(datorat) : '')
+  }, [datorat, sumaTouched])
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -96,7 +111,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
       if (!isFinite(sumaNum) || sumaNum < 0) {
         throw new Error('Suma încasată este invalidă.')
       }
-      if (sumaNum > pret + 0.001) {
+      if (sumaNum > (datorat ?? pret) + 0.001) {
         throw new Error('Suma încasată depășește prețul.')
       }
       if (!locatieId) {
@@ -123,6 +138,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
         instructorId: isInvitat ? null : instructorId || null,
         instructorManual: isInvitat ? instructorManual.trim() : null,
         permiteOverbook: overbook,
+        voucherId: voucherId || null,
       })
     },
     onSuccess: () => {
@@ -223,6 +239,14 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
         />
       </Field>
 
+      <VoucherField
+        clientId={clientId}
+        cursId={cursId}
+        tipPlata="Per sedinta"
+        value={voucherId}
+        onChange={handleVoucherChange}
+      />
+
       <div className="grid grid-cols-3 gap-3">
         <Field label="Instructor sesiune (opțional)">
           <div className="space-y-2">
@@ -248,7 +272,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
           <TextInput
             type="number"
             min={0}
-            max={pret ?? undefined}
+            max={datorat ?? undefined}
             step="0.01"
             value={suma}
             onChange={(e) => {
@@ -256,9 +280,18 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
               setSumaTouched(true)
             }}
           />
-          {pret != null && (
+          {pret != null && datorat != null && (
             <p className="mt-1 text-xs text-quasar-gray">
-              Preț: <strong className="text-quasar-black">{formatRON(pret)}</strong>
+              Preț:{' '}
+              {voucherSelectat ? (
+                <>
+                  <s>{formatRON(pret)}</s>{' '}
+                  <strong className="text-quasar-black">{formatRON(datorat)}</strong>{' '}
+                  ({voucherSelectat.cod_voucher})
+                </>
+              ) : (
+                <strong className="text-quasar-black">{formatRON(pret)}</strong>
+              )}
               {rest > 0 && (
                 <> · rest <strong className="text-quasar-black">{formatRON(rest)}</strong> (restanță)</>
               )}

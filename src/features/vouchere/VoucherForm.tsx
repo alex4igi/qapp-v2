@@ -9,6 +9,7 @@ import {
   TextArea,
   Select,
   Combobox,
+  Checkbox,
   Button,
 } from '@/components/ui'
 import { tipVoucherOptions, tipPlataOptions } from '@/lib/enums'
@@ -40,7 +41,12 @@ type FormState = {
   client: string
   curs: string
   tip_enrollment: string
+  activ: boolean
+  cerinta_eligibilitate: string
 }
+
+// Condițiile pe care DB-ul le știe verifica (check pe vouchere.cerinta_eligibilitate).
+const CERINTA_OPTIONS = [{ value: 'trupa', label: 'Doar membrii trupelor' }]
 
 function initialState(v?: Voucher | null): FormState {
   return {
@@ -57,6 +63,8 @@ function initialState(v?: Voucher | null): FormState {
     client: v?.client ?? '',
     curs: v?.curs ?? '',
     tip_enrollment: v?.tip_enrollment ?? '',
+    activ: v?.activ ?? true,
+    cerinta_eligibilitate: v?.cerinta_eligibilitate ?? '',
   }
 }
 
@@ -96,6 +104,8 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
         curs: form.curs || null,
         tip_enrollment: (form.tip_enrollment ||
           null) as Voucher['tip_enrollment'],
+        activ: form.activ,
+        cerinta_eligibilitate: form.cerinta_eligibilitate || null,
       }
       return isEdit
         ? updateVoucher(voucher!.id, payload)
@@ -214,6 +224,13 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
       }
     >
       <form id="voucher-form" onSubmit={handleSubmit} className="space-y-3">
+        <Checkbox
+          id="activ"
+          label="Activ — se poate aplica la recepție și în portal"
+          checked={form.activ}
+          onChange={(e) => setForm((prev) => ({ ...prev, activ: e.target.checked }))}
+        />
+
         <Field label="Cod voucher" required htmlFor="cod_voucher">
           <TextInput
             id="cod_voucher"
@@ -310,15 +327,26 @@ export function VoucherForm({ open, voucher, onClose }: Props) {
           </Field>
         </div>
 
-        <Field label="Restricție tip plată (opțional)" htmlFor="tip_enrollment">
-          <Select
-            id="tip_enrollment"
-            placeholder="— oricare —"
-            options={tipPlataOptions}
-            value={form.tip_enrollment}
-            onChange={(e) => set('tip_enrollment')(e.target.value)}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Restricție tip plată (opțional)" htmlFor="tip_enrollment">
+            <Select
+              id="tip_enrollment"
+              placeholder="— oricare —"
+              options={tipPlataOptions}
+              value={form.tip_enrollment}
+              onChange={(e) => set('tip_enrollment')(e.target.value)}
+            />
+          </Field>
+          <Field label="Condiție (verificată automat)" htmlFor="cerinta_eligibilitate">
+            <Select
+              id="cerinta_eligibilitate"
+              placeholder="— oricine —"
+              options={CERINTA_OPTIONS}
+              value={form.cerinta_eligibilitate}
+              onChange={(e) => set('cerinta_eligibilitate')(e.target.value)}
+            />
+          </Field>
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>

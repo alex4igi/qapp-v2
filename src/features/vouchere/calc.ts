@@ -22,6 +22,9 @@ export function validateVoucher(
 ): ValidationResult {
   const todayIso = toIsoDate(ctx.today ?? new Date())
 
+  if (!v.activ) {
+    return { valid: false, reason: 'Voucherul nu este activ.' }
+  }
   if (v.data_inceperii && v.data_inceperii > todayIso) {
     return { valid: false, reason: `Voucherul devine valabil de la ${v.data_inceperii}.` }
   }
@@ -50,7 +53,7 @@ export type DiscountResult = {
 
 export function applyVoucher(
   suma: number,
-  v: Voucher | null | undefined,
+  v: Pick<Voucher, 'tip' | 'valoare'> | null | undefined,
 ): DiscountResult {
   if (!v || v.valoare == null || v.tip == null) {
     return { discount: 0, sumaFinala: suma }
@@ -62,7 +65,7 @@ export function applyVoucher(
   } else if (v.tip === 'Valoare') {
     discount = Math.min(suma, valoare)
   }
-  // 'Special' — rezervat pentru mecanisme cu calcul propriu (ex: LATESTART/prorata).
+  // 'Special' — rezervat pentru mecanisme cu calcul propriu; fără reducere aici.
   const sumaFinala = Math.max(0, suma - discount)
   return { discount, sumaFinala }
 }

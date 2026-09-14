@@ -24,12 +24,29 @@ const columns: Column<Voucher>[] = [
     cell: (v) => <span className="font-medium">{v.cod_voucher}</span>,
     sortValue: (v) => v.cod_voucher?.toLowerCase(),
   },
+  {
+    header: 'Stare',
+    cell: (v) =>
+      v.activ ? (
+        <span className="text-green-700">Activ</span>
+      ) : (
+        <span className="text-quasar-gray">Închis</span>
+      ),
+    className: 'w-24',
+    sortValue: (v) => (v.activ ? 0 : 1),
+  },
   { header: 'Tip', cell: (v) => v.tip ?? '—', className: 'w-24', sortValue: (v) => v.tip?.toLowerCase() },
   {
     header: 'Valoare',
     cell: (v) => (v.valoare != null ? String(v.valoare) : '—'),
     className: 'w-24',
     sortValue: (v) => v.valoare ?? 0,
+  },
+  { header: 'Tip plată', cell: (v) => v.tip_enrollment ?? '—', className: 'w-28', sortValue: (v) => v.tip_enrollment },
+  {
+    header: 'Condiție',
+    cell: (v) => (v.cerinta_eligibilitate === 'trupa' ? 'Doar membrii trupelor' : '—'),
+    sortValue: (v) => v.cerinta_eligibilitate,
   },
   { header: 'Valabilitate', cell: valabilitate, sortValue: (v) => v.data_inceperii },
   {

@@ -16,6 +16,8 @@ schimb-o și în cod — locurile sunt listate la final.
 > 5. **Plata întregului sezon dintr-o dată → −5%**, până la 30 septembrie și doar
 >    dacă nu s-a achitat încă nicio rată. Nu se adună cu −10% de familie.
 > 6. Termene: **20 sept** prima rată, **15** ale lunii restul, **7 iunie** ultima.
+> 7. **Voucherele nu se combină cu prețul de reînscriere.** TRUPA50 (−50% pe ședință)
+>    e doar pentru membrii trupelor — aplicația verifică singură.
 >
 > *Cifra o dă aplicația — recepția o citește din formular, n-o calculează.*
 
@@ -40,7 +42,7 @@ Reducerile posibile pe o rată:
 |---|---|---|
 | Preț de reînscriere | `pret_lunar_promo` în loc de `pret_anual`/10 | bifat manual la înrolare |
 | Politică cross-sell / family | −10% | al 2-lea abonament din pool (client + frați) |
-| Voucher manual | după voucher | ales explicit; **dezactivează politica** pe toată luna, în tot pool-ul |
+| Voucher manual | după voucher | ales explicit; **dezactivează politica** pe toată luna, în tot pool-ul; **nu se combină cu prețul de reînscriere** (vezi §6) |
 
 Pool-ul = clientul + toți membrii familiei. Pe fiecare lună, **cel mai scump
 abonament din pool rămâne integral**, restul primesc −10%. O a doua înrolare a
@@ -174,6 +176,39 @@ care au deja încasări, deci ordinea inversă ar rescrie prețul înapoi la în
 | ultima lună a sezonului | `sezoane.scadenta_ultima_rata` (7 iunie pt. 2026-2027) | pe sezon |
 | restul | ziua 15 | implicit |
 
+## 6. Vouchere
+
+Decizii Alex, 2026-09-14. Starea e pe voucher (`vouchere.activ`), nu în „0 utilizări".
+
+| Voucher | Ce dă | Pe ce | Stare |
+|---|---|---|---|
+| P50 / P100 | −50% / −100% | **o singură rată lunară** | activ |
+| RE10 / RE20 / RE50 | −10 / −20 / −50 lei | **o singură rată lunară** | activ |
+| RE10M | −10 lei | o ședință (OPEN) | activ |
+| TRUPA50 | −50% | o ședință (OPEN) | activ, **doar membrii trupelor** |
+| P10 | −10% al 2-lea abonament | — | **închis**: reducerea de familie e automată (§2) |
+
+A10 (plata integrală merge pe −5% din contract, §4) și LATESTART (prorata e automată) au fost
+**șterse**; cele 12 înrolări vechi cu LATESTART își păstrează sumele, fără etichetă.
+
+- **Voucherul lunar e o reducere pe O rată, nu pe sezon.** Pe tot sezonul se aplică automat
+  reducerile de campanie (preț de reînscriere, familie / al 2-lea curs). La înrolare voucherul
+  cade pe **prima rată creată**; restul ratelor rămân la preț normal, cu reducerile automate.
+  DB-ul refuză același voucher pe mai multe rate ale aceluiași client+curs într-o singură scriere.
+- **Nu se combină cu prețul de reînscriere.** Bifat promo ⇒ voucherul e blocat în formular,
+  iar DB-ul refuză orice rând cu `este_reinscriere` + `voucher`.
+- **Condițiile se verifică în DB**, nu în formular. Azi există una: `trupa` = clientul are o
+  înrolare activă, nereziliată și neîncheiată (`data_final` ≥ azi) într-un curs `nivelul='Trupa'`.
+  Rândurile din sezonul trecut nu mai contează.
+- **Recepția vede doar ce se poate aplica** clientului ales; pentru restul formularul spune
+  de ce nu (ex. „TRUPA50: Doar membrii trupelor pot folosi acest voucher.").
+- **Pe ședința OPEN** voucherul scade din prețul ședinței: `suma_baza` = preț, `suma` = datorat.
+  Încasat mai puțin decât datoratul ⇒ restul e restanță, ca înainte.
+- **Plățile simple** (bilet/merch/taxe) primesc doar vouchere fără tip de plată, curs, client
+  sau condiție. Azi nu există niciunul, deci câmpul nu apare.
+- Plata online (webhook) nu mai e reverificată la confirmare: codul e validat la crearea
+  comenzii, iar un refuz după ce banii au intrat ar lăsa plata fără înrolare.
+
 ## Unde trăiesc regulile în cod
 
 | Regulă | Locul |
@@ -190,6 +225,12 @@ care au deja încasări, deci ordinea inversă ar rescrie prețul înapoi la în
 | …intrarea portalului | `plan_plata_integrala_sezon` → `netopia-create-payment` → `confirm_netopia_payment` |
 | …intrarea recepției | `plan_plata_integrala_staff` + `incaseaza_plata_integrala_sezon` → `DatoriiUnificateTab.tsx` |
 | SMS reminder | `get_sms_recipients` (`are_reducere`) → `templates.ts` |
+| Voucher: verdictul unic (activ, date, client, curs, tip, condiție, limită) | `_voucher_motiv_invalid(uuid, uuid, uuid, tip_plata)` |
+| …portal | `validate_voucher_code` → `netopia-create-payment` |
+| …dropdown-ul recepției | `list_vouchere_aplicabile` → `VoucherField.tsx` (EnrollmentForm + OpenClassTab) |
+| …gardul pe orice insert | triggerele `trg_enrollment_voucher_valid` (+ regula cu reînscrierea) și `trg_incasare_voucher_valid` |
+| …o singură rată lunară | `buildRecurentPerLuna` (doar prima rată) + triggerele `trg_enrollments_voucher_o_rata_ins/_upd` |
+| …ședința OPEN la recepție | `rezerva_loc_open(..., p_voucher)` |
 
 **Capcană:** penalizarea trăiește în DOUĂ locuri (cron + motor) și trebuie ținute
 sincronizate. Fără condiția din motor, orice modificare în familie ar re-acorda

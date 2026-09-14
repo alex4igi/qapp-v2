@@ -388,7 +388,7 @@ function buildRecurentPerLuna(
 
   // Preț per ședință pentru prorata:
   //  - prima alegere: curs.pret_sedinta (setat explicit)
-  //  - fallback LATESTART: curs.pret_anual / sedinte_total_sezon
+  //  - fallback: curs.pret_anual / sedinte_total_sezon
   let pretPerSedintaProrata: number | null = null
   if (aplicProrata) {
     if (curs.pret_sedinta != null) {
@@ -410,6 +410,9 @@ function buildRecurentPerLuna(
     }
   }
 
+  // Voucherul manual e o reducere pe O rată (prima), nu pe tot sezonul — pe sezon se
+  // aplică automat reducerile de campanie. DB-ul refuză același voucher pe mai multe
+  // rate dintr-un insert (trg_enrollments_voucher_o_rata_ins).
   const inserts: InsertDto<'enrollments'>[] = []
   for (let i = 0; i < months.length; i++) {
     const m = months[i]
@@ -455,11 +458,11 @@ function buildRecurentPerLuna(
         cursul: params.cursId,
         tip_plata: 'Per luna',
         suma_baza: sumaLunara,
-        suma: sumaCuVoucher(sumaLunara, voucher),
+        suma: sumaCuVoucher(sumaLunara, isFirst ? voucher : null),
         data_incepere: m,
         data_final: endOfMonth(m),
         activ: true,
-        voucher: voucher?.id ?? null,
+        voucher: isFirst ? (voucher?.id ?? null) : null,
         este_reinscriere: esteReinscriere,
       })
     }

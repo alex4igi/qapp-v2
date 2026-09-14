@@ -9564,6 +9564,7 @@ export type Database = {
       }
       vouchere: {
         Row: {
+          activ: boolean
           cerinta_eligibilitate: string | null
           client: string | null
           cod_voucher: string
@@ -9581,6 +9582,7 @@ export type Database = {
           valoare: number | null
         }
         Insert: {
+          activ?: boolean
           cerinta_eligibilitate?: string | null
           client?: string | null
           cod_voucher: string
@@ -9598,6 +9600,7 @@ export type Database = {
           valoare?: number | null
         }
         Update: {
+          activ?: boolean
           cerinta_eligibilitate?: string | null
           client?: string | null
           cod_voucher?: string
@@ -11182,6 +11185,15 @@ export type Database = {
       _plan_plata_integrala: { Args: { p_client: string }; Returns: Json }
       _sezon_curs_inchis: { Args: { p_curs: string }; Returns: boolean }
       _try_activate_gate: { Args: { p_gate_id: string }; Returns: undefined }
+      _voucher_motiv_invalid: {
+        Args: {
+          p_client: string
+          p_curs?: string
+          p_tip?: Database["public"]["Enums"]["tip_plata"]
+          p_voucher: string
+        }
+        Returns: string
+      }
       activate_eligible_sezoane: { Args: never; Returns: number }
       activate_reinscriere: {
         Args: { p_client_id: string; p_curs_id: string }
@@ -13007,6 +13019,22 @@ export type Database = {
           telefon: string
         }[]
       }
+      list_vouchere_aplicabile: {
+        Args: {
+          p_client: string
+          p_curs?: string
+          p_tip?: Database["public"]["Enums"]["tip_plata"]
+        }
+        Returns: {
+          cod_voucher: string
+          descriere: string
+          id: string
+          motiv: string
+          tip: Database["public"]["Enums"]["tip_voucher"]
+          valid: boolean
+          valoare: number
+        }[]
+      }
       locuri_ocupate_eveniment: {
         Args: { p_eveniment: string }
         Returns: number
@@ -13104,6 +13132,16 @@ export type Database = {
         }[]
       }
       match_unitate: { Args: { p_text: string }; Returns: string }
+      muta_incasare_la_alt_client: {
+        Args: {
+          p_doar_verificare?: boolean
+          p_enrollment_sursa: string
+          p_enrollment_tinta: string
+          p_incasare: string
+          p_motiv?: string
+        }
+        Returns: Json
+      }
       muta_inrolare_curs: {
         Args: {
           p_aplica_tarif_nou?: boolean
@@ -13456,6 +13494,7 @@ export type Database = {
           p_sesiune?: string
           p_suma: number
           p_suma2?: number
+          p_voucher?: string
         }
         Returns: string
       }

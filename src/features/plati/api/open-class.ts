@@ -160,6 +160,8 @@ export type RezervaLocParams = {
   // Prețul cursului (cât datorează). Dacă lipsește → = suma încasată (comportament vechi).
   // Când e dat, enrollment.suma = pret, iar restul (pret − încasat) devine restanță.
   pret?: number | null
+  // Voucher verificat și aplicat în RPC: datoratul = pret − voucher.
+  voucherId?: string | null
 }
 
 // Rezervă un loc + încasează, atomic (blocare strictă la capacitate în RPC).
@@ -179,6 +181,7 @@ export async function rezervaLocOpen(params: RezervaLocParams): Promise<string> 
     p_metoda2: params.metoda2 ?? undefined,
     p_suma2: params.suma2 ?? undefined,
     p_pret: params.pret ?? undefined,
+    p_voucher: params.voucherId ?? undefined,
   })
   if (error) {
     if (error.code === '23505') {

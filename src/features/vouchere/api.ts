@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
 import type { Voucher, InsertDto, UpdateDto, Enums } from '@/types/db'
+import type { Database } from '@/types/database'
 import { validateVoucher } from './calc'
 
 type TipPlata = Enums<'tip_plata'>
@@ -170,47 +171,38 @@ export async function getClientEligibilityContext(
   return { altCursActivRecurent, fratiActivi }
 }
 
-export type AvailableVouchereParams = {
-  forCurs?: string | null
-  forTipPlata?: TipPlata | null
-  activeOnly?: boolean
-}
-
-// Întoarce vouchere aplicabile într-un context dat (curs, tip plată).
-// Filtrele forCurs / forTipPlata acceptă atât vouchere neutre (NULL pe coloană)
-// cât și pe cele cu valoare egală. `activeOnly` filtrează data validity +
-// numar_utilizari pe client.
-export async function listAvailableVouchere(
-  params: AvailableVouchereParams = {},
-): Promise<Voucher[]> {
-  let query = supabase
+// Plățile simple (bilet/merch/taxe) primesc doar vouchere fără legătură cu o înrolare,
+// fără client/curs și fără condiție — DB-ul (trg_incasare_voucher_valid) refuză restul.
+export async function listVouchereIncasareSimpla(): Promise<Voucher[]> {
+  const { data, error } = await supabase
     .from('vouchere')
     .select('*')
+    .eq('activ', true)
+    .is('tip_enrollment', null)
+    .is('curs', null)
+    .is('client', null)
+    .is('cerinta_eligibilitate', null)
     .order('cod_voucher', { ascending: true })
-
-  if (params.forCurs) {
-    query = query.or(`curs.is.null,curs.eq.${params.forCurs}`)
-  }
-  if (params.forTipPlata) {
-    query = query.or(
-      `tip_enrollment.is.null,tip_enrollment.eq.${params.forTipPlata}`,
-    )
-  }
-
-  const { data, error } = await query
   if (error) throw error
+  const today = new Date()
+  return (data ?? []).filter((v) => validateVoucher(v, { today }).valid)
+}
 
-  let rows = data ?? []
-  if (params.activeOnly) {
-    const today = new Date()
-    rows = rows.filter(
-      (v) =>
-        validateVoucher(v, {
-          today,
-          cursId: params.forCurs ?? null,
-          tipPlata: params.forTipPlata ?? null,
-        }).valid,
-    )
-  }
-  return rows
+export type VoucherAplicabil =
+  Database['public']['Functions']['list_vouchere_aplicabile']['Returns'][number]
+
+// Voucherele pe care recepția le poate aplica acestui client, pe acest curs și tip de
+// plată. Verdictul (condiții, valabilitate, limită) vine din DB; `valid=false` are `motiv`.
+export async function listVouchereAplicabile(params: {
+  clientId: string
+  cursId: string
+  tipPlata: TipPlata
+}): Promise<VoucherAplicabil[]> {
+  const { data, error } = await supabase.rpc('list_vouchere_aplicabile', {
+    p_client: params.clientId,
+    p_curs: params.cursId,
+    p_tip: params.tipPlata,
+  })
+  if (error) throw error
+  return data ?? []
 }

@@ -29,7 +29,7 @@ export function RecurentPreview({ preview, cursSelectat, blockantPretLipsa }: Pr
           )}
           {preview.prorata?.sursaPret === 'anual' && (
             <p className="mt-1">
-              Prima lună e prorata <em>(LATESTART)</em> — calculată din prețul
+              Prima lună e prorata — calculată din prețul
               anual împărțit la ședințele totale ale sezonului × ședințele
               rămase. Suma exactă apare după salvare.
             </p>
