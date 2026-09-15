@@ -40,9 +40,11 @@ import {
   getClientFamilia,
   getClientInrolariSezon,
   getClientPrezenteSezon,
+  getClientRestanteToate,
   type ClientInrolareSezon,
 } from '../../api'
 import { ClientSidebar } from './ClientSidebar'
+import { RestanteAlteSezoaneBanner } from './RestanteAlteSezoaneBanner'
 import { ConfirmReziliereModal } from './ConfirmReziliereModal'
 import { ConfirmDeleteInrolareModal } from './ConfirmDeleteInrolareModal'
 import { calcAge, getInitials } from './helpers'
@@ -143,6 +145,15 @@ export function ClientProfilePage() {
     queryKey: ['client-credit', id],
     queryFn: () => getClientCredit(id!),
     enabled: Boolean(id),
+  })
+
+  // Sub cheia listei pe sezon: toate modalele de bani o invalidează deja, iar datele
+  // vin din același view — bannerul se împrospătează odată cu lista, fără o cheie
+  // nouă de ținut minte în fiecare modal.
+  const restanteToateQuery = useQuery({
+    queryKey: ['client-inrolari-sezon', id, 'toate-restantele'],
+    queryFn: () => getClientRestanteToate(id!),
+    enabled: Boolean(id) && !teacherMode,
   })
 
   const prezenteQuery = useQuery({
@@ -383,6 +394,17 @@ export function ClientProfilePage() {
         mobileSidebarInTab
       >
         <div>
+          {!teacherMode && (
+            <RestanteAlteSezoaneBanner
+              rows={restanteToateQuery.data ?? []}
+              sezoane={sezoaneQuery.data ?? []}
+              sezonSelectat={sezonSelectat}
+              onVeziSezon={(sid) => {
+                setSezonId(sid)
+                setTab('inrolari')
+              }}
+            />
+          )}
           <Tabs
             tabs={[
               // Pe telefon cardul de identitate e un tab, nu o coloană repetată

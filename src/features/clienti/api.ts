@@ -281,3 +281,27 @@ export async function deleteDocumentClient(id: string): Promise<void> {
   const { error } = await supabase.from('documente_client').delete().eq('id', id)
   if (error) throw error
 }
+
+export type ClientRestantaRow = {
+  id_enrollment: string
+  data_incepere: string
+  rest: number
+  prescris: boolean
+}
+
+// Toate restanțele scadente ale clientului (rest > 0, fără lunile viitoare), indiferent
+// de sezon. Fișa arată un singur sezon, iar datoria din alte sezoane trebuie să rămână
+// vizibilă fără să schimbi selectorul.
+export async function getClientRestanteToate(
+  clientId: string,
+): Promise<ClientRestantaRow[]> {
+  const { data, error } = await supabase
+    .from('plati_inrolari')
+    .select('id_enrollment, data_incepere, rest, prescris')
+    .eq('id_cursant', clientId)
+    .gt('rest', 0)
+    .eq('viitor', false)
+    .order('data_incepere', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as unknown as ClientRestantaRow[]
+}
