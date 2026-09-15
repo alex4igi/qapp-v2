@@ -73,6 +73,10 @@ Buna {prenume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar aju
 ```
 
 ### 4. `followup` — la mutarea lead → **Nu a venit**
+> Marcat manual în timpul zilei → pleacă pe loc. Mutat automat noaptea (cron-evening)
+> sau marcat după 19:30 → **`cron-afternoon`, 16:00, luni–vineri** (din 2026-09-15),
+> ca să fie cineva la sală când omul sună. Weekendul se strânge pentru luni.
+> Fereastră de 4 zile pe `leads.updated`; dedup pe `sms_logs` (`tip='followup'`, pe viață).
 ```
 Buna {prenume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la {telefon locatie}!
 ```
@@ -83,9 +87,10 @@ Buna {prenume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adauga
 ```
 
 ### 6. `post_demo` — la 2 zile după ședința de probă, dacă NU s-a înscris — ✅ LIVRAT 2026-09-08
-> Trimis de **`cron-morning`** (10:00 local), nu la un delay de 48h: ora fixă ține
-> mesajul departe de seară. Practic 40–64h de la demo. **Duminica se sare** —
-> mesajele cad luni, în aceeași zi cu lista de sunat (SMS la 10:00, telefonul după).
+> Trimis de **`cron-afternoon`** (16:00 local, luni–vineri — din 2026-09-15; înainte
+> cron-morning la 10:00), nu la un delay de 48h: ora fixă ține mesajul departe de
+> seară și îl pune când e cineva la sală să răspundă. **Weekendul se sare** — un demo
+> de joi primește mesajul luni (D-4), odată cu apelurile de pe lista de sunat.
 > Fereastră de 2–4 zile pe interogare (rezistă la o rulare ratată), dedup pe
 > `sms_logs` (`tip='post_demo'`, pe viață): cine vine la două demo-uri ia un singur SMS.
 > **139 car. șablon + prenume → 1 SMS.** Numele e limitat la 21 car. de `numeSalut`
@@ -112,7 +117,8 @@ undo gratuită), `deja_client`, leadurile legate de un client încă Activ/Inact
 
 ### `confirmare_inrolare` — la crearea unei înrolări recurente (grupă/trupă)
 La înrolare se pune un rând în coada `confirmari_inrolare_sms` (`send_after` =
-mâine 00:00 local), iar **`cron-morning`** (10:00 local, a doua zi) îl trimite.
+mâine 00:00 local), iar **`cron-afternoon`** (16:00 local, luni–vineri) îl trimite
+a doua zi — înscrierile de vineri seara și din weekend primesc confirmarea luni.
 Asta lasă o **fereastră de undo de ore întregi**: dacă înrolarea e ștearsă în
 interval (greșeală), rândul dispare prin `ON DELETE CASCADE` și SMS-ul nu mai
 pleacă; dacă e reziliată/dezactivată, cronul îl marchează `anulat` fără SMS.

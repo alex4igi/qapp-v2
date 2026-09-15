@@ -403,6 +403,9 @@ verify_jwt = true
 [functions.cron-morning]
 verify_jwt = false
 
+[functions.cron-afternoon]
+verify_jwt = false
+
 [functions.cron-evening]
 verify_jwt = false
 

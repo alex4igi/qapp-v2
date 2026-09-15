@@ -1,10 +1,10 @@
-// Dry-run pentru pasul 5 din cron-morning (SMS la 2 zile după demo).
+// Dry-run pentru pasul 3 din cron-afternoon (SMS la 2 zile după demo, 16:00 luni–vineri).
 // Replică EXACT selecția din edge function, dar nu trimite nimic și nu scrie în
 // sms_logs — doar raportează cine ar primi mesajul azi și cine e exclus, cu motiv.
 //
 // Rulare:  node scripts/dry-run-post-demo-sms.mjs [YYYY-MM-DD]
 // Argumentul opțional simulează o altă zi de rulare (pentru verificarea regulii
-// de duminică / a recuperării de luni).
+// de weekend / a recuperării de luni).
 
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
@@ -22,16 +22,16 @@ const svc = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 })
 
-const now = process.argv[2] ? new Date(`${process.argv[2]}T10:00:00+03:00`) : new Date()
+const now = process.argv[2] ? new Date(`${process.argv[2]}T16:00:00+03:00`) : new Date()
 const localDate = (d) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
 const weekday = (d) =>
   new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Bucharest', weekday: 'short' }).format(d)
 const zi = (n) => localDate(new Date(now.getTime() - n * 86_400_000))
 
-console.log(`Rulare simulată: ${localDate(now)} (${weekday(now)}) 10:00\n`)
-if (weekday(now) === 'Sun') {
-  console.log('Duminică → pasul se sare cu totul. Mesajele cad luni.')
+console.log(`Rulare simulată: ${localDate(now)} (${weekday(now)}) 16:00\n`)
+if (weekday(now) === 'Sat' || weekday(now) === 'Sun') {
+  console.log('Weekend → cron-afternoon nu rulează. Mesajele cad luni.')
   process.exit(0)
 }
 

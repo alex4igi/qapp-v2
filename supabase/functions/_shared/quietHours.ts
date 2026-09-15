@@ -92,3 +92,23 @@ export function localDateBucharest(d: Date): string {
     day: '2-digit',
   }).format(d) // "YYYY-MM-DD"
 }
+
+// Ora locală (0..23) — gardă pentru cron-urile programate pe ambele ore UTC, ca să
+// ruleze o singură dată la ora țintă indiferent de ora de vară/iarnă.
+export function localHourBucharest(d: Date): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Bucharest',
+      hour: '2-digit',
+      hour12: false,
+    }).format(d),
+  )
+}
+
+// Ziua săptămânii locală, prescurtată în engleză (Mon..Sun).
+export function localWeekdayBucharest(d: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Bucharest',
+    weekday: 'short',
+  }).format(d)
+}

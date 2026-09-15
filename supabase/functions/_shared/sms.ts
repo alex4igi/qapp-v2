@@ -171,7 +171,7 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
     // grupa (capacitatea e reala), nu politetea — un „ne-a parut bine" nu misca
     // pe nimeni. Finalul e IMPERSONAL („rezervarea locului", nu „locul tau"):
     // acelasi mesaj ajunge si la parintele care citeste despre copil, si la
-    // studentul care citeste despre el. Trimis de cron-morning la 10:00 (blocul 5).
+    // studentul care citeste despre el. Trimis de cron-afternoon la 16:00, luni-vineri.
     case 'post_demo':
       return `${salut} Locurile pentru grupa de varsta de dans, se ocupa in ordinea inscrierilor. Pentru rezervarea locului, da-ne un mesaj la ${telefon}.`
     default:
@@ -179,7 +179,7 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
   }
 }
 
-// Confirmare inrolare recurenta — trimisa la cronul de a doua zi (cron-morning),
+// Confirmare inrolare recurenta — trimisa la cronul de a doua zi (cron-afternoon, 16:00),
 // nu imediat: lasa o fereastra de undo de ore intregi. Spre deosebire de lead-uri,
 // parametrii vin direct din curs/client, deci foloseste un builder propriu (nu
 // trece prin buildSms). Mesajul depaseste 160 caractere => ~2 segmente SMS

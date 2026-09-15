@@ -162,7 +162,8 @@ Restul = React Query (`useQuery` / `useMutation`) per feature, cu invalidare dup
 - View-uri și RPC-uri DB folosite pentru rapoarte (`/statistici`, `/financiar`, restanțe)
 - **pg_cron: TOATE joburile trăiesc în migrații** (din 2026-07-05; fostul `cron-setup.sql`
   manual a fost absorbit în `20260705110000_cron_qapp_jobs_formalize.sql`). Joburi:
-  SMS dimineața (morning-a/b cu gardă 10:00 local), mutări leads seara, sfârșit de sezon,
+  SMS dimineața (morning-a/b cu gardă 10:00 local: remindere ședință) și după-amiaza
+  (afternoon-a/b, gardă 16:00 local, luni–vineri: followup, confirmare înrolare, post_demo), mutări leads seara, sfârșit de sezon,
   statusuri client (Activ↔Inactiv↔EXclient), anulare promo reînscrieri, expirare holduri
   OPEN, pull Meta leads, drenări SMS (programare/review/amânate), remindere contracte,
   audit digest, pontaj auto-close. Verificare: `select jobname, schedule from cron.job`.

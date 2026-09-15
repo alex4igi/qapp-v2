@@ -83,6 +83,13 @@ Deno.serve(async (req) => {
     const now = new Date()
     const quietCfg = await getQuietHoursConfig(supabase)
     if (isQuiet(now, quietCfg)) {
+      // Followup-ul nu intră în coadă (care l-ar trimite la 10:00, când nu e nimeni
+      // la sală să răspundă): cron-afternoon ia la 16:00, în prima zi lucrătoare,
+      // leadurile încă „nu a venit" fără followup în sms_logs. Dacă între timp e
+      // reprogramat, nu mai primește deloc „nu ai ajuns".
+      if (tip === 'followup') {
+        return json({ deferred: true, via: 'cron-afternoon' })
+      }
       await supabase.from('sms_amanate').insert({
         telefon: lead.telefon,
         mesaj,
