@@ -5,37 +5,78 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   PageHeader,
   Button,
-  TextInput,
   DataTable,
+  KebabMenu,
   Spinner,
   type Column,
+  type MenuItem,
 } from '@/components/ui'
-import type { VPlatiInrolari } from '@/types/db'
-import { EnrollmentForm } from './EnrollmentForm'
-import { IncasareForm } from './IncasareForm'
-import { CorecteazaMetodaModal } from './modals/CorecteazaMetodaModal'
-import { PlatiInrolareModal } from './modals/PlatiInrolareModal'
-import {
-  listPlatiInrolari,
-  listMetodePerInrolare,
-  PAGE_SIZE,
-  type EnrollmentTender,
-} from './api'
+import { useAuth } from '@/hooks/useAuth'
+import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { isManagerOrHigher } from '@/lib/rolesMatrix'
+import { locatiiOptions } from '@/lib/lookups'
+import { downloadCsv } from '@/lib/csv'
 import { formatDate, formatMonth, formatRON } from '@/lib/format'
 import { metodaTone } from '@/lib/metodaPlata'
+import { categorieIncasareLabel } from '@/lib/enums'
+import { PlataNouaModal } from './PlataNouaModal'
+import { CorecteazaMetodaModal } from './modals/CorecteazaMetodaModal'
+import { IncasareEditModal } from './modals/IncasareEditModal'
+import { MutaIncasareModal } from './modals/MutaIncasareModal'
+import { todayIso } from './modals/PlataNouaModal/helpers'
+import { PlatiFiltreBar } from './components/PlatiFiltreBar'
+import { intervalPerioada, type Perioada } from './perioada'
+import { SumarPlatiBar } from './components/SumarPlatiBar'
+import {
+  listPlati,
+  exportPlati,
+  getSumarPlati,
+  PAGE_SIZE,
+  type PlataRow,
+  type PlatiFiltre,
+} from './api'
+
+// Pentru abonament: luna acoperită (Per luna) sau ziua ședinței.
+function pentruSecundar(r: PlataRow): string {
+  const parts: string[] = [r.categorie ? (categorieIncasareLabel[r.categorie] ?? r.categorie) : '—']
+  if (r.categorie === 'Abonament' && r.luna) {
+    parts.push(r.tip_plata === 'Per luna' ? formatMonth(r.luna) : formatDate(r.luna))
+  }
+  if (r.bucati && r.bucati > 1) parts.push(`${r.bucati} buc.`)
+  return parts.join(' · ')
+}
 
 export function PlatiListPage() {
+  const { role } = useAuth()
+  const canEdit = isManagerOrHigher(role)
+  const { locatieId: globalLocatieId } = useWorkingLocatie()
+
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  const [perioada, setPerioada] = useState<Perioada>('luna')
+  const [interval, setIntervalAles] = useState({ from: '', to: '' })
+  // null = neales încă: se folosește locația de lucru (care se poate încărca după
+  // primul render). „Toate locațiile" e '' — o alegere explicită, nu lipsă.
+  const [locatieAleasa, setLocatieAleasa] = useState<string | null>(null)
+  const [categorie, setCategorie] = useState('')
+  const [metoda, setMetoda] = useState('')
   const [page, setPage] = useState(0)
-  const [enrollOpen, setEnrollOpen] = useState(false)
-  const [payFor, setPayFor] = useState<VPlatiInrolari | null>(null)
-  const [correctIncasareId, setCorrectIncasareId] = useState<string | null>(null)
-  const [pickEnrollment, setPickEnrollment] = useState<{
-    tenders: EnrollmentTender[]
-    clientNume: string | null
-    cursNume: string | null
-  } | null>(null)
+
+  const [plataOpen, setPlataOpen] = useState(false)
+  const [corectId, setCorectId] = useState<string | null>(null)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [mutaRow, setMutaRow] = useState<PlataRow | null>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const locatieId = locatieAleasa ?? globalLocatieId ?? ''
+
+  // Orice filtru nou pornește de la prima pagină.
+  const cuReset =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      set(v)
+      setPage(0)
+    }
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -45,152 +86,166 @@ export function PlatiListPage() {
     return () => clearTimeout(t)
   }, [searchInput])
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['plati', { search, page }],
-    queryFn: () => listPlatiInrolari({ search, page }),
+  const filtre: PlatiFiltre = useMemo(() => {
+    const { from, to } = intervalPerioada(perioada, todayIso(), interval)
+    return { search, from, to, locatieId, categorie, metoda }
+  }, [search, perioada, interval, locatieId, categorie, metoda])
+
+  const listQ = useQuery({
+    queryKey: ['plati', filtre, page],
+    queryFn: () => listPlati({ filtre, page }),
     placeholderData: keepPreviousData,
   })
 
-  const totalPages = useMemo(
-    () => (data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1),
-    [data],
-  )
-
-  const enrollmentIds = useMemo(
-    () =>
-      (data?.rows ?? [])
-        .map((r) => r.id_enrollment)
-        .filter((id): id is string => Boolean(id)),
-    [data],
-  )
-
-  const metodeQ = useQuery({
-    queryKey: ['plati-metode', enrollmentIds],
-    queryFn: () => listMetodePerInrolare(enrollmentIds),
-    enabled: enrollmentIds.length > 0,
+  const sumarQ = useQuery({
+    queryKey: ['plati-sumar', filtre],
+    queryFn: () => getSumarPlati(filtre),
     placeholderData: keepPreviousData,
   })
-  const metodeMap = metodeQ.data
 
-  // Click pe badge-ul metodei: o singură plată → corectare directă; mai multe → selector.
-  const onMetodaClick = (r: VPlatiInrolari) => {
-    const tenders = metodeMap?.get(r.id_enrollment ?? '') ?? []
-    if (tenders.length === 0) return
-    if (tenders.length === 1) {
-      setCorrectIncasareId(tenders[0].id)
-    } else {
-      setPickEnrollment({
-        tenders,
-        clientNume: `${r.nume_client ?? ''} ${r.prenume_client ?? ''}`.trim() || null,
-        cursNume: r.nume_curs ?? null,
-      })
+  const locatiiQ = useQuery({
+    queryKey: ['lookup', 'locatii'],
+    queryFn: locatiiOptions,
+  })
+
+  const totalPages = Math.max(1, Math.ceil((listQ.data?.total ?? 0) / PAGE_SIZE))
+
+  const onExport = async () => {
+    setExporting(true)
+    try {
+      const rows = await exportPlati(filtre)
+      const body: (string | number)[][] = rows.map((r) => [
+        r.data ?? '',
+        r.client_nume ?? '',
+        r.categorie ?? '',
+        r.detalii ?? '',
+        r.categorie === 'Abonament' && r.luna ? r.luna.slice(0, 7) : '',
+        r.locatie_nume ?? '',
+        r.metoda ?? '',
+        r.suma,
+        r.observatii ?? '',
+      ])
+      body.push(['TOTAL', '', '', '', '', '', '', rows.reduce((a, r) => a + r.suma, 0), ''])
+      downloadCsv(
+        `plati_${filtre.from || 'inceput'}_${filtre.to || 'azi'}.csv`,
+        ['Data', 'Client', 'Categorie', 'Pentru', 'Luna', 'Locație', 'Metodă', 'Sumă (RON)', 'Observații'],
+        body,
+      )
+    } finally {
+      setExporting(false)
     }
   }
 
-  const columns: Column<VPlatiInrolari>[] = [
+  const actiuni = (r: PlataRow): MenuItem[] => {
+    const items: MenuItem[] = []
+    // Online = Netopia din portal: forma de plată nu e o alegere a recepției.
+    if (r.metoda !== 'Online')
+      items.push({
+        icon: '💳',
+        label: 'Corectează forma de plată',
+        onClick: () => setCorectId(r.id),
+      })
+    if (
+      r.categorie === 'Abonament' &&
+      r.suma > 0 &&
+      r.client &&
+      r.inregistrare &&
+      r.curs_id &&
+      r.luna
+    )
+      items.push({
+        icon: '💸',
+        label: 'Mută la alt client',
+        title: 'Plata dispare de la acest client și apare la clientul corect',
+        onClick: () => setMutaRow(r),
+      })
+    if (canEdit)
+      items.push({
+        icon: '✏️',
+        label: 'Editează sau șterge',
+        title: 'Sumă, dată, observații sau ștergere — cu motiv și audit',
+        separatorBefore: items.length > 0,
+        onClick: () => setEditId(r.id),
+      })
+    return items
+  }
+
+  const columns: Column<PlataRow>[] = [
+    {
+      header: 'Data',
+      cell: (r) => formatDate(r.data),
+      className: 'w-28',
+      sortValue: (r) => r.data,
+      defaultDir: 'desc',
+    },
     {
       header: 'Client',
-      sortValue: (r) =>
-        `${r.nume_client ?? ''} ${r.prenume_client ?? ''}`.trim().toLowerCase(),
       cell: (r) =>
-        r.id_cursant ? (
+        r.client ? (
           <Link
-            to={`/clienti/${r.id_cursant}`}
+            to={`/clienti/${r.client}`}
             className="font-medium text-quasar-black hover:underline"
           >
-            {r.nume_client} {r.prenume_client ?? ''}
+            {r.client_nume ?? '—'}
           </Link>
         ) : (
-          <span className="font-medium">
-            {r.nume_client} {r.prenume_client ?? ''}
-          </span>
+          <span className="text-quasar-gray">—</span>
         ),
+      sortValue: (r) => r.client_nume?.toLowerCase(),
     },
     {
-      header: 'Curs',
-      cell: (r) => r.nume_curs ?? '—',
-      sortValue: (r) => r.nume_curs,
-    },
-    {
-      // Ce acoperă plata: Per luna → luna facturată (data_incepere = ziua 1);
-      // Per sedinta / Per an → data concretă a ședinței / începutului.
       header: 'Pentru',
-      cell: (r) =>
-        r.tip_plata === 'Per luna'
-          ? formatMonth(r.data_incepere)
-          : formatDate(r.data_incepere),
-      className: 'w-32',
-      sortValue: (r) => r.data_incepere,
+      cell: (r) => (
+        <div className="min-w-0">
+          <p className="text-ink">
+            {r.detalii ?? (r.categorie ? categorieIncasareLabel[r.categorie] : null) ?? '—'}
+          </p>
+          <p className="text-xs text-quasar-gray">{pentruSecundar(r)}</p>
+          {r.observatii && (
+            <p className="max-w-xs truncate text-xs italic text-quasar-gray" title={r.observatii}>
+              {r.observatii}
+            </p>
+          )}
+        </div>
+      ),
+      sortValue: (r) => (r.detalii ?? r.categorie ?? '').toLowerCase(),
     },
     {
-      header: 'Data plății',
-      cell: (r) => formatDate(r.data_platii),
-      className: 'w-28',
-      sortValue: (r) => r.data_platii,
-    },
-    {
-      header: 'Tip plată',
-      cell: (r) => r.tip_plata ?? '—',
-      sortValue: (r) => r.tip_plata,
-    },
-    {
-      header: 'Total',
-      cell: (r) => formatRON(r.total_de_plata),
-      className: 'w-24',
-      sortValue: (r) => r.total_de_plata ?? 0,
-    },
-    {
-      header: 'Plătit',
-      cell: (r) => formatRON(r.platit),
-      className: 'w-24',
-      sortValue: (r) => r.platit ?? 0,
-    },
-    {
-      header: 'Rest',
-      cell: (r) => {
-        const rest = (r.total_de_plata ?? 0) - (r.platit ?? 0)
-        return (
-          <span className={rest > 0 ? 'font-semibold text-red-600' : ''}>
-            {rest} RON
-          </span>
-        )
-      },
-      className: 'w-24',
-      sortValue: (r) => (r.total_de_plata ?? 0) - (r.platit ?? 0),
+      header: 'Locație',
+      cell: (r) => r.locatie_nume ?? '—',
+      className: 'w-40',
+      sortValue: (r) => r.locatie_nume?.toLowerCase(),
     },
     {
       header: 'Metodă',
-      className: 'w-24',
-      cell: (r) => {
-        const tenders = metodeMap?.get(r.id_enrollment ?? '') ?? []
-        if (tenders.length === 0)
-          return <span className="text-quasar-gray">—</span>
-        const distinct = [
-          ...new Set(tenders.map((t) => t.metoda).filter(Boolean)),
-        ] as string[]
-        const label = distinct.length >= 2 ? 'Mixt' : (distinct[0] ?? '—')
-        return (
-          <button
-            type="button"
-            onClick={() => onMetodaClick(r)}
-            title="Corectează forma de plată"
-            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${metodaTone(
-              label,
-            )} hover:ring-2 hover:ring-quasar-yellow`}
+      cell: (r) =>
+        r.metoda ? (
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${metodaTone(r.metoda)}`}
           >
-            {label}
-          </button>
-        )
-      },
+            {r.metoda}
+          </span>
+        ) : (
+          '—'
+        ),
+      className: 'w-24',
+      sortValue: (r) => r.metoda,
+    },
+    {
+      header: 'Sumă',
+      cell: (r) => (
+        <span className={r.suma < 0 ? 'font-semibold text-red-600' : 'font-semibold text-ink'}>
+          {formatRON(r.suma)}
+        </span>
+      ),
+      className: 'w-28 text-right',
+      sortValue: (r) => r.suma,
+      defaultDir: 'desc',
     },
     {
       header: '',
-      cell: (r) => (
-        <Button variant="secondary" onClick={() => setPayFor(r)}>
-          + Plată
-        </Button>
-      ),
-      className: 'w-28',
+      cell: (r) => <KebabMenu items={actiuni(r)} ariaLabel="Acțiuni plată" />,
+      className: 'w-12 text-right',
     },
   ]
 
@@ -198,40 +253,68 @@ export function PlatiListPage() {
     <div>
       <PageHeader
         title="Plăți"
-        subtitle={data ? `${data.total} înrolări` : undefined}
+        subtitle="Toate încasările: abonamente, bilete, audiții, închirieri, merch"
         actions={
-          <Button onClick={() => setEnrollOpen(true)}>
-            + Înrolare nouă
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              onClick={onExport}
+              disabled={!listQ.data?.rows.length || exporting}
+            >
+              {exporting ? 'Se exportă…' : '⬇ Export CSV'}
+            </Button>
+            <Button onClick={() => setPlataOpen(true)}>＄ Plată</Button>
+          </>
         }
       />
 
-      <div className="mb-4 max-w-sm">
-        <TextInput
-          placeholder="Caută după client sau curs…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-      </div>
+      <PlatiFiltreBar
+        search={searchInput}
+        onSearch={setSearchInput}
+        perioada={perioada}
+        onPerioada={cuReset(setPerioada)}
+        interval={interval}
+        onInterval={cuReset(setIntervalAles)}
+        locatieId={locatieId}
+        onLocatie={cuReset(setLocatieAleasa)}
+        locatiiOptions={locatiiQ.data ?? []}
+        categorie={categorie}
+        onCategorie={cuReset(setCategorie)}
+        metoda={metoda}
+        onMetoda={cuReset(setMetoda)}
+      />
 
-      {isLoading ? (
+      {sumarQ.isError ? (
+        <p className="mb-4 text-sm text-red-600">
+          Totalurile nu s-au putut calcula: {humanizeError(sumarQ.error)}
+        </p>
+      ) : (
+        <SumarPlatiBar sumar={sumarQ.data} loading={sumarQ.isPlaceholderData} />
+      )}
+
+      {listQ.isLoading ? (
         <Spinner />
-      ) : isError ? (
+      ) : listQ.isError ? (
         <p className="text-sm text-red-600">
-          Eroare la încărcare: {humanizeError(error)}
+          Eroare la încărcare: {humanizeError(listQ.error)}
         </p>
       ) : (
         <>
-          <DataTable
-            columns={columns}
-            rows={data?.rows ?? []}
-            rowKey={(r) => r.id_enrollment ?? String(r.id)}
-            emptyMessage="Nicio înrolare."
-          />
+          <div
+            className={`transition-opacity ${listQ.isPlaceholderData ? 'opacity-50' : ''}`}
+            aria-busy={listQ.isPlaceholderData}
+          >
+            <DataTable
+              columns={columns}
+              rows={listQ.data?.rows ?? []}
+              rowKey={(r) => r.id}
+              emptyMessage="Nicio plată pentru filtrele alese."
+            />
+          </div>
 
           <div className="mt-4 flex items-center justify-between text-sm text-quasar-gray">
             <span>
-              Pagina {page + 1} din {totalPages}
+              {listQ.data?.total ?? 0} plăți · pagina {page + 1} din {totalPages}
             </span>
             <div className="flex gap-2">
               <Button
@@ -253,34 +336,26 @@ export function PlatiListPage() {
         </>
       )}
 
-      {enrollOpen && (
-        <EnrollmentForm open onClose={() => setEnrollOpen(false)} />
+      {plataOpen && <PlataNouaModal open onClose={() => setPlataOpen(false)} />}
+      {corectId && (
+        <CorecteazaMetodaModal open incasareId={corectId} onClose={() => setCorectId(null)} />
       )}
-      {payFor && (
-        <IncasareForm
-          open
-          enrollment={payFor}
-          onClose={() => setPayFor(null)}
-        />
+      {editId && (
+        <IncasareEditModal open incasareId={editId} onClose={() => setEditId(null)} />
       )}
-      {pickEnrollment && (
-        <PlatiInrolareModal
+      {mutaRow && (
+        <MutaIncasareModal
           open
-          tenders={pickEnrollment.tenders}
-          clientNume={pickEnrollment.clientNume}
-          cursNume={pickEnrollment.cursNume}
-          onClose={() => setPickEnrollment(null)}
-          onCorect={(id) => {
-            setPickEnrollment(null)
-            setCorrectIncasareId(id)
+          clientId={mutaRow.client!}
+          clientNume={mutaRow.client_nume ?? ''}
+          incasareId={mutaRow.id}
+          luna={{
+            id_enrollment: mutaRow.inregistrare!,
+            data_incepere: mutaRow.luna!,
+            id_curs: mutaRow.curs_id!,
+            nume_curs: mutaRow.curs_nume ?? '',
           }}
-        />
-      )}
-      {correctIncasareId && (
-        <CorecteazaMetodaModal
-          open
-          incasareId={correctIncasareId}
-          onClose={() => setCorrectIncasareId(null)}
+          onClose={() => setMutaRow(null)}
         />
       )}
     </div>

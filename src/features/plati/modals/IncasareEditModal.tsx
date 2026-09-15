@@ -15,7 +15,7 @@ import {
   getIncasareForEdit,
   updateIncasareWithAudit,
   deleteIncasareWithAudit,
-} from './api'
+} from '../api/incasare-edit'
 
 type Props = {
   incasareId: string

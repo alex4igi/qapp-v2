@@ -3,11 +3,15 @@
 // rezolvă aici și primesc același set de funcții ca în fostul api.ts flat.
 
 export { PAGE_SIZE } from './list'
-export type { PlatiListParams, PlatiListResult } from './list'
-export { listPlatiInrolari } from './list'
+export type { PlatiFiltre, PlataRow, SumarPlati } from './list'
+export { listPlati, exportPlati, getSumarPlati } from './list'
 
-export type { EnrollmentTender } from './metode'
-export { listMetodePerInrolare } from './metode'
+export type { IncasareEditable } from './incasare-edit'
+export {
+  getIncasareForEdit,
+  updateIncasareWithAudit,
+  deleteIncasareWithAudit,
+} from './incasare-edit'
 
 export type { SezonOption } from './sezoane'
 export { listSezoane, getSezonForDate } from './sezoane'

@@ -7,7 +7,7 @@ import { formatRON } from '@/lib/format'
 import {
   getIncasareForEdit,
   updateIncasareWithAudit,
-} from '@/features/financiar/api/incasari'
+} from '../api/incasare-edit'
 
 type Props = {
   incasareId: string

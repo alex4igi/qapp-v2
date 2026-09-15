@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { PageHeader, Tabs } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { isPrivileged } from '@/lib/rolesMatrix'
-import { IncasariTab } from './IncasariTab'
 import { RestanteTab } from './RestanteTab'
 import { RaportZileTab } from './RaportZileTab'
 import { CashTab } from './CashTab'
@@ -10,21 +9,19 @@ import { CheltuieliTab } from './CheltuieliTab'
 
 export function FinanciarPage() {
   const { role } = useAuth()
-  // Front_desk vede doar rapoartele operaționale (încasări, restanțe,
-  // reconciliere cash — munca lor). Tab-urile cu cheltuieli/profit
+  // Front_desk vede doar rapoartele operaționale (restanțe, reconciliere cash —
+  // munca lor). Lista încasărilor e în pagina Plăți. Tab-urile cu cheltuieli/profit
   // (Raport pe zile = net, Cheltuieli, Evoluție lunară) rămân manager+.
   const privileged = isPrivileged(role)
   const tabs = privileged
     ? [
         { id: 'raport',       label: 'Raport pe zile' },
-        { id: 'incasari',     label: 'Încasări' },
         { id: 'cheltuieli',   label: 'Cheltuieli' },
         { id: 'restante',     label: 'Restanțe' },
         { id: 'cash',         label: 'Cash' },
       ]
     : [
         { id: 'raport',       label: 'Raport pe zile' },
-        { id: 'incasari',     label: 'Încasări' },
         { id: 'restante',     label: 'Restanțe' },
         { id: 'cash',         label: 'Cash' },
       ]
@@ -35,7 +32,6 @@ export function FinanciarPage() {
       <PageHeader title="Financiar" />
       <Tabs tabs={tabs} active={active} onChange={setActive} />
       {active === 'raport' && <RaportZileTab privileged={privileged} />}
-      {active === 'incasari' && <IncasariTab />}
       {active === 'cheltuieli' && privileged && <CheltuieliTab />}
       {active === 'restante' && <RestanteTab />}
       {active === 'cash' && <CashTab />}

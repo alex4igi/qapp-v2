@@ -104,15 +104,20 @@ export const statusSmsOptions = opts(
   'Amanat',
 )
 
-export const categorieIncasareOptions = opts(
-  'Abonament',
-  'Bilet',
-  'Merch',
-  'Taxa',
-  'Workshop',
-  'Auditie',
-  'Inchiriere',
-)
+// Valorile enum-ului din DB n-au diacritice; eticheta e cea afișată.
+export const categorieIncasareLabel: Record<string, string> = {
+  Abonament: 'Abonament',
+  Bilet: 'Bilet',
+  Merch: 'Merch',
+  Taxa: 'Taxă',
+  Workshop: 'Workshop',
+  Auditie: 'Audiție',
+  Inchiriere: 'Închiriere',
+}
+
+export const categorieIncasareOptions: SelectOption[] = Object.entries(
+  categorieIncasareLabel,
+).map(([value, label]) => ({ value, label }))
 
 export const categorieCheltuialaOptions = opts(
   'Administrativa',

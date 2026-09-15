@@ -3,7 +3,8 @@ import { applyWordSearch } from '@/lib/search'
 import { fetchAllRows } from '@/lib/fetchAll'
 import type { Views } from '@/types/db'
 import { lunaToBounds } from '@/features/statistici/api/interval'
-import { PAGE_SIZE } from './incasari'
+
+export const PAGE_SIZE = 25
 
 export type RestantaRow = Views<'plati_inrolari'>
 

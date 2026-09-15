@@ -1,5 +1,5 @@
 import { humanizeError } from '@/lib/errorMessage'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Button, Field, Modal, Spinner, TextArea, TextInput } from '@/components/ui'
@@ -24,6 +24,8 @@ type Props = {
   onClose: () => void
   clientId: string
   clientNume: string
+  /** Plata deja aleasă (din lista Plăți); din fișă se alege în fereastră. */
+  incasareId?: string
   luna: {
     id_enrollment: string
     data_incepere: string
@@ -36,12 +38,19 @@ type ClientAles = { id: string; nume: string }
 
 const sameMonth = (a: string, b: string) => a.slice(0, 7) === b.slice(0, 7)
 
-export function MutaIncasareModal({ open, onClose, clientId, clientNume, luna }: Props) {
+export function MutaIncasareModal({
+  open,
+  onClose,
+  clientId,
+  clientNume,
+  incasareId: incasareInitiala,
+  luna,
+}: Props) {
   const navigate = useNavigate()
   const search = useClientSearch()
-  const [incasareId, setIncasareId] = useState<string | null>(null)
+  const [incasareAleasa, setIncasareId] = useState<string | null>(incasareInitiala ?? null)
   const [tinta, setTinta] = useState<ClientAles | null>(null)
-  const [tintaEnrollmentId, setTintaEnrollmentId] = useState<string | null>(null)
+  const [tintaAleasa, setTintaEnrollmentId] = useState<string | null>(null)
   const [motiv, setMotiv] = useState('')
   const [rezultat, setRezultat] = useState<MutareIncasareRezultat | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -73,20 +82,18 @@ export function MutaIncasareModal({ open, onClose, clientId, clientNume, luna }:
     () => (incasariQ.data ?? []).filter((i) => i.suma > 0),
     [incasariQ.data],
   )
-
-  useEffect(() => {
-    if (!incasareId && pozitive.length === 1) setIncasareId(pozitive[0].id)
-  }, [incasareId, pozitive])
+  const incasareId = incasareAleasa ?? (pozitive.length === 1 ? pozitive[0].id : null)
 
   // Luna echivalentă (același curs, aceeași lună) e aproape mereu cea corectă.
-  useEffect(() => {
-    if (tintaEnrollmentId || !luniQ.data) return
+  const lunaPotrivita = useMemo(() => {
     const luni = luniQ.data
+    if (!luni) return null
     const potrivita =
       luni.find((l) => l.id_curs === luna.id_curs && sameMonth(l.data_incepere, luna.data_incepere)) ??
       (luni.length === 1 ? luni[0] : null)
-    if (potrivita) setTintaEnrollmentId(potrivita.id_enrollment)
-  }, [luniQ.data, tintaEnrollmentId, luna.id_curs, luna.data_incepere])
+    return potrivita?.id_enrollment ?? null
+  }, [luniQ.data, luna.id_curs, luna.data_incepere])
+  const tintaEnrollmentId = tintaAleasa ?? lunaPotrivita
 
   // Fișele, rosterele și restanțele se reîmprospătează singure după mutare
   // (MutationCache din main.tsx invalidează tot).
