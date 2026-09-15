@@ -30,6 +30,49 @@ export async function getClientiInscrisiSezon(): Promise<ClientiInscrisiRow[]> {
   return (data ?? []) as ClientiInscrisiRow[]
 }
 
+export type OcupareLocatie = {
+  locatie_id: string | null
+  locatie_nume: string
+  ocupate: number
+  capacitate: number
+  procent: number
+}
+
+// Procentul se rotunjește la 2 zecimale, nu la întreg: pragurile de 40/60/80%
+// se citesc direct pe cifră, iar 59,8% afișat ca „60%" ar părea atins.
+function procentOcupare(ocupate: number, capacitate: number): number {
+  return capacitate > 0 ? Math.round((10000 * ocupate) / capacitate) / 100 : 0
+}
+
+// Locuri ocupate azi / capacitatea tuturor grupelor, pe locație. O ședință ține
+// locul 30 de zile — regula stă în RPC.
+export async function getOcuparePeLocatii(): Promise<{
+  total: OcupareLocatie
+  perLocatie: OcupareLocatie[]
+}> {
+  const { data, error } = await supabase.rpc('get_ocupare_locatii')
+  if (error) throw error
+  const perLocatie = (data ?? []).map((r) => ({
+    locatie_id: r.locatie_id,
+    locatie_nume: r.locatie_nume,
+    ocupate: r.ocupate,
+    capacitate: r.capacitate,
+    procent: procentOcupare(r.ocupate, r.capacitate),
+  }))
+  const ocupate = perLocatie.reduce((a, r) => a + r.ocupate, 0)
+  const capacitate = perLocatie.reduce((a, r) => a + r.capacitate, 0)
+  return {
+    total: {
+      locatie_id: null,
+      locatie_nume: 'Total club',
+      ocupate,
+      capacitate,
+      procent: procentOcupare(ocupate, capacitate),
+    },
+    perLocatie,
+  }
+}
+
 export type OcupareRow = {
   curs_id: string
   curs_nume: string

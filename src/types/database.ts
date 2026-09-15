@@ -12486,6 +12486,15 @@ export type Database = {
           mrr_recurent: number
         }[]
       }
+      get_ocupare_locatii: {
+        Args: never
+        Returns: {
+          capacitate: number
+          locatie_id: string
+          locatie_nume: string
+          ocupate: number
+        }[]
+      }
       get_ocupare_prime_time: {
         Args: { p_locatie?: string }
         Returns: {

@@ -10,11 +10,14 @@ import { KpiCard } from '@/features/statistici/KpiCard'
 import { OverviewDonut } from '@/features/statistici/OverviewDonut'
 import {
   getRataPrezentaLuna,
-  getOcupareTotala,
   getRetentieLuna,
   getVenitLunaCurenta,
 } from '@/features/statistici/api'
-import { getClientiActivi, getClientiInscrisiSezon } from './api'
+import {
+  getClientiActivi,
+  getClientiInscrisiSezon,
+  getOcuparePeLocatii,
+} from './api'
 import { CursantiPeLocatieChart } from './CursantiPeLocatieChart'
 
 export function AnsambluPage() {
@@ -40,9 +43,9 @@ export function AnsambluPage() {
     queryKey: ['ansamblu', 'rata-prezenta'],
     queryFn: getRataPrezentaLuna,
   })
-  const ocupareTotalaQ = useQuery({
-    queryKey: ['ansamblu', 'ocupare-totala'],
-    queryFn: getOcupareTotala,
+  const ocupareQ = useQuery({
+    queryKey: ['ansamblu', 'ocupare-locatii'],
+    queryFn: getOcuparePeLocatii,
   })
   const retentieQ = useQuery({
     queryKey: ['ansamblu', 'retentie'],
@@ -74,6 +77,9 @@ export function AnsambluPage() {
   const scopInscrisi = locatieId
     ? inscrisiPerLocatie.find((r) => r.locatie_id === locatieId)?.inscrisi ?? 0
     : inscrisiTotal
+  const scopOcupare = locatieId
+    ? ocupareQ.data?.perLocatie.find((r) => r.locatie_id === locatieId)
+    : ocupareQ.data?.total
 
   const venitCard = (
     <KpiCard
@@ -145,10 +151,10 @@ export function AnsambluPage() {
               />
               <KpiCard
                 label="Grad de ocupare grupe"
-                value={`${ocupareTotalaQ.data?.procent ?? 0}%`}
+                value={`${(scopOcupare?.procent ?? 0).toLocaleString('ro-RO')}%`}
                 hint={
-                  ocupareTotalaQ.data
-                    ? `${ocupareTotalaQ.data.activi} din ${ocupareTotalaQ.data.capacitate}`
+                  scopOcupare
+                    ? `${scopOcupare.ocupate} din ${scopOcupare.capacitate} locuri ${locatieId ? `la ${locatieNume ?? 'locația selectată'}` : 'pe tot clubul'}`
                     : undefined
                 }
               />
@@ -216,29 +222,82 @@ export function AnsambluPage() {
             </div>
 
             <div>
-              {ocupareTotalaQ.isLoading ? (
+              {ocupareQ.isLoading ? (
                 <Spinner />
               ) : (
                 <OverviewDonut
                   title="Grad de ocupare grupe"
-                  percent={ocupareTotalaQ.data?.procent ?? 0}
+                  percent={ocupareQ.data?.total.procent ?? 0}
                   centerSub={
-                    ocupareTotalaQ.data
-                      ? `${ocupareTotalaQ.data.activi} din ${ocupareTotalaQ.data.capacitate}`
+                    ocupareQ.data
+                      ? `${ocupareQ.data.total.ocupate} din ${ocupareQ.data.total.capacitate}`
                       : undefined
                   }
                   slices={[
-                    { name: 'Ocupat', value: ocupareTotalaQ.data?.activi ?? 0 },
+                    { name: 'Ocupat', value: ocupareQ.data?.total.ocupate ?? 0 },
                     {
                       name: 'Liber',
                       value: Math.max(
                         0,
-                        (ocupareTotalaQ.data?.capacitate ?? 0) -
-                          (ocupareTotalaQ.data?.activi ?? 0),
+                        (ocupareQ.data?.total.capacitate ?? 0) -
+                          (ocupareQ.data?.total.ocupate ?? 0),
                       ),
                     },
                   ]}
-                />
+                  emptyMessage="Nicio grupă cu capacitate în sezonul activ."
+                  info={
+                    <>
+                      <p className="font-semibold">Cum se calculează</p>
+                      <p className="mt-1">
+                        Locuri ocupate azi împărțit la capacitatea maximă a
+                        tuturor grupelor din sezonul activ.
+                      </p>
+                      <ul className="mt-1.5 list-disc space-y-1 pl-4">
+                        <li>
+                          Intră toate grupele: cursuri, trupe, facultative și
+                          Open Class. Grupele goale intră în capacitate.
+                        </li>
+                        <li>
+                          Un loc = un cursant cu plată la grupă. Un copil la 2
+                          grupe ocupă 2 locuri.
+                        </li>
+                        <li>
+                          Abonamentul ține locul cât e valabil. O ședință
+                          plătită îl ține 30 de zile.
+                        </li>
+                        <li>Rezilierile și rezervările anulate nu se numără.</li>
+                      </ul>
+                    </>
+                  }
+                >
+                  {ocupareQ.data && ocupareQ.data.perLocatie.length > 0 && (
+                    <div className="mt-3 border-t border-quasar-gray-light pt-3">
+                      <ul className="space-y-2.5 text-sm">
+                        {ocupareQ.data.perLocatie.map((l) => (
+                          <li key={l.locatie_id}>
+                            <div className="flex justify-between gap-2">
+                              <span className="truncate text-quasar-gray">
+                                {l.locatie_nume}
+                              </span>
+                              <span className="fnum whitespace-nowrap font-semibold text-quasar-black">
+                                {l.procent.toLocaleString('ro-RO')}%{' '}
+                                <span className="text-xs font-normal text-quasar-gray">
+                                  ({l.ocupate}/{l.capacitate})
+                                </span>
+                              </span>
+                            </div>
+                            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-quasar-gray-light">
+                              <div
+                                className="h-full rounded-full bg-quasar-yellow"
+                                style={{ width: `${Math.min(100, l.procent)}%` }}
+                              />
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </OverviewDonut>
               )}
             </div>
 

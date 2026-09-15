@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-import { getGradOcupare } from '@/features/ansamblu/api'
 import { type Interval, intervalToDateRange } from './interval'
 
 // ============================================================================
@@ -76,30 +75,6 @@ export async function getRataPrezentaLuna(): Promise<RataPrezentaLuna> {
     global: { prezenti, posibile, rata: rata(prezenti, posibile) },
     perLocatie: rows.sort((a, b) => b.posibile - a.posibile),
   }
-}
-
-export type OcupareTotala = {
-  activi: number
-  capacitate: number
-  procent: number
-}
-
-// Grad de ocupare total al grupelor (luna curentă) — sumă peste get_grad_ocupare.
-// Doar recurent + trupă (facultativ=false): la open class capacitatea e o limită
-// per ședință, nu locuri de grupă — ar amesteca unități diferite. Consistent cu
-// rata de prezență.
-export async function getOcupareTotala(): Promise<OcupareTotala> {
-  const rows = await getGradOcupare(null)
-  let activi = 0
-  let capacitate = 0
-  for (const r of rows) {
-    if (r.facultativ) continue
-    const cap = Number(r.capacitate ?? 0)
-    if (cap <= 0) continue
-    activi += Number(r.activi ?? 0)
-    capacitate += cap
-  }
-  return { activi, capacitate, procent: rata(activi, capacitate) }
 }
 
 export type RetentieLuna = {
