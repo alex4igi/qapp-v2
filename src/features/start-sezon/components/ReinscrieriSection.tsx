@@ -39,25 +39,35 @@ export function ReinscrieriSection({ rows }: { rows: StartSezonReinscriereRow[] 
   const [locatie, setLocatie] = useState<string>('toate')
   const [q, setQ] = useState('')
 
-  const inN = rows.filter((r) => r.inrolat).length
-  const outN = rows.length - inN
+  const matchLocatie = (r: StartSezonReinscriereRow, l: string) => l === 'toate' || r.locatie_excel === l
+  const matchStare = (r: StartSezonReinscriereRow, s: Stare) =>
+    s === 'toate' || (s === 'ok' ? r.inrolat : !r.inrolat)
+
+  // Fiecare grup de pill-uri numără pe subsetul filtrat de CELĂLALT pill — altfel,
+  // la schimbarea sălii, bara „intrate/lipsesc" rămâne înghețată pe cifrele globale.
+  const rowsPtStare = useMemo(() => rows.filter((r) => matchLocatie(r, locatie)), [rows, locatie])
+  const rowsPtLocatii = useMemo(() => rows.filter((r) => matchStare(r, stare)), [rows, stare])
+
+  const inN = rowsPtStare.filter((r) => r.inrolat).length
+  const outN = rowsPtStare.length - inN
 
   const locatii = useMemo(() => {
     const m = new Map<string, number>()
-    for (const r of rows) m.set(r.locatie_excel, (m.get(r.locatie_excel) ?? 0) + 1)
-    const opts: ChipOption<string>[] = [{ value: 'toate', label: 'Toate sălile', count: rows.length }]
+    for (const r of rowsPtLocatii) m.set(r.locatie_excel, (m.get(r.locatie_excel) ?? 0) + 1)
+    const opts: ChipOption<string>[] = [
+      { value: 'toate', label: 'Toate sălile', count: rowsPtLocatii.length },
+    ]
     for (const [k, n] of [...m].sort((a, b) => b[1] - a[1])) {
       opts.push({ value: k, label: k, count: n })
     }
     return opts
-  }, [rows])
+  }, [rowsPtLocatii])
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
     return rows.filter((r) => {
-      if (stare === 'lipsa' && r.inrolat) return false
-      if (stare === 'ok' && !r.inrolat) return false
-      if (locatie !== 'toate' && r.locatie_excel !== locatie) return false
+      if (!matchStare(r, stare)) return false
+      if (!matchLocatie(r, locatie)) return false
       if (!needle) return true
       return [r.nume, r.nume_excel, r.grupe_excel, r.cursuri_noi]
         .filter(Boolean)
@@ -155,7 +165,7 @@ export function ReinscrieriSection({ rows }: { rows: StartSezonReinscriereRow[] 
             options={[
               { value: 'lipsa', label: 'Lipsă din sezon', count: outN },
               { value: 'ok', label: 'Intrate în app', count: inN },
-              { value: 'toate', label: 'Toate', count: rows.length },
+              { value: 'toate', label: 'Toate', count: rowsPtStare.length },
             ]}
           />
           <FilterChips

@@ -27,34 +27,55 @@ export function NerevenitSection({ rows }: { rows: StartSezonNerevenitRow[] }) {
   const [semnat, setSemnat] = useState<Semnat>('toti')
   const [stat, setStat] = useState<Stat>('toate')
 
+  const matchLocatie = (r: StartSezonNerevenitRow, l: string) =>
+    l === 'toate' || (r.locatii ?? '').split(', ').includes(l)
+  const matchSemnat = (r: StartSezonNerevenitRow, s: Semnat) =>
+    s === 'toti' || (s === 'semnat' ? r.semnase : !r.semnase)
+  const matchStat = (r: StartSezonNerevenitRow, s: Stat) => s === 'toate' || r.status === s
+
+  // Fiecare grup de pill-uri numără pe subsetul filtrat de CELELALTE pill-uri
+  // (nu și de el însuși) — altfel, la schimbarea sălii, pill-urile de status rămân
+  // înghețate pe cifrele „toate sălile".
+  const rowsPtLocatii = useMemo(
+    () => rows.filter((r) => matchSemnat(r, semnat) && matchStat(r, stat)),
+    [rows, semnat, stat],
+  )
+  const rowsPtSemnat = useMemo(
+    () => rows.filter((r) => matchLocatie(r, locatie) && matchStat(r, stat)),
+    [rows, locatie, stat],
+  )
+  const rowsPtStat = useMemo(
+    () => rows.filter((r) => matchLocatie(r, locatie) && matchSemnat(r, semnat)),
+    [rows, locatie, semnat],
+  )
+
   // Un om poate avea grupe în două săli; îl număr la fiecare dintre ele.
   const locatii = useMemo(() => {
     const m = new Map<string, number>()
-    for (const r of rows) {
+    for (const r of rowsPtLocatii) {
       for (const l of (r.locatii ?? '').split(', ').filter(Boolean)) {
         m.set(l, (m.get(l) ?? 0) + 1)
       }
     }
     const opts: ChipOption<string>[] = [
-      { value: 'toate', label: 'Toate sălile', count: rows.length },
+      { value: 'toate', label: 'Toate sălile', count: rowsPtLocatii.length },
     ]
     for (const [k, n] of [...m].sort((a, b) => b[1] - a[1])) {
       opts.push({ value: k, label: k, count: n })
     }
     return opts
-  }, [rows])
+  }, [rowsPtLocatii])
 
-  const nrSemnat = rows.filter((r) => r.semnase).length
+  const nrSemnat = rowsPtSemnat.filter((r) => r.semnase).length
   const statCount = (s: Stat) =>
-    s === 'toate' ? rows.length : rows.filter((r) => r.status === s).length
+    s === 'toate' ? rowsPtStat.length : rowsPtStat.filter((r) => r.status === s).length
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
     return rows.filter((r) => {
-      if (locatie !== 'toate' && !(r.locatii ?? '').split(', ').includes(locatie)) return false
-      if (semnat === 'semnat' && !r.semnase) return false
-      if (semnat === 'nesemnat' && r.semnase) return false
-      if (stat !== 'toate' && r.status !== stat) return false
+      if (!matchLocatie(r, locatie)) return false
+      if (!matchSemnat(r, semnat)) return false
+      if (!matchStat(r, stat)) return false
       if (!needle) return true
       return [r.nume, r.prenume, r.telefon, r.grupe]
         .filter(Boolean)
@@ -152,7 +173,7 @@ export function NerevenitSection({ rows }: { rows: StartSezonNerevenitRow[] }) {
             options={[
               { value: 'toti', label: 'Toți' },
               { value: 'semnat', label: 'Semnaseră reînscrierea', count: nrSemnat },
-              { value: 'nesemnat', label: 'Fără semnătură', count: rows.length - nrSemnat },
+              { value: 'nesemnat', label: 'Fără semnătură', count: rowsPtSemnat.length - nrSemnat },
             ]}
           />
           <FilterChips
