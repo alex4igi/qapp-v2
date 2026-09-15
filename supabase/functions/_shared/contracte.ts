@@ -8,7 +8,7 @@ export function serviceClient(): SupabaseClient {
   )
 }
 
-// token opac aleator (base64url) + hash sha256 — stocăm DOAR hash-ul (ca portal-auth)
+// token opac aleator (base64url) + hash sha256 — căutarea se face pe hash
 export function randomToken(bytes = 32): string {
   const a = new Uint8Array(bytes)
   crypto.getRandomValues(a)
@@ -41,6 +41,32 @@ export async function logEvent(
 
 export function portalUrl(): string {
   return (Deno.env.get('PORTAL_URL') ?? 'https://membri.quasardance.ro').replace(/\/$/, '')
+}
+
+// Linkul de semnare e UNUL pe contract: trimitere, reminder și retrimitere trimit
+// același link. Contractele trimise înainte de 2026-09-15 au doar hash-ul linkului
+// (token NULL) — primesc aici un link nou, iar cel vechi rămâne valid.
+export async function linkSemnare(admin: SupabaseClient, contractId: string): Promise<string> {
+  const { data, error } = await admin
+    .from('contract_tokens')
+    .select('token')
+    .eq('contract_id', contractId)
+    .not('token', 'is', null)
+    .order('created', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw new Error(`contract_tokens: ${error.message}`)
+  const token = data?.token ?? (await emiteToken(admin, contractId))
+  return `${portalUrl()}/s/${token}`
+}
+
+async function emiteToken(admin: SupabaseClient, contractId: string): Promise<string> {
+  const token = randomToken()
+  const { error } = await admin
+    .from('contract_tokens')
+    .insert({ token_hash: await sha256Hex(token), contract_id: contractId, token })
+  if (error) throw new Error(`contract_tokens: ${error.message}`)
+  return token
 }
 
 // Validare CNP (checksum standard). CNP-ul e opțional în unele template-uri,

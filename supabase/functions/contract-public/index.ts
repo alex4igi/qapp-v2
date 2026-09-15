@@ -6,8 +6,9 @@
 //                   upsert profil semnare, loghează consimțământ + semnat (IP/UA),
 //                   declanșează contract-finalize (fire-and-forget).
 //
-// Securitate: clientul nu primește niciodată date fără token valid; stocăm doar
-// sha256(token); IP + user-agent intră în jurnalul probatoriu.
+// Securitate: clientul nu primește niciodată date fără token valid; căutarea se face
+// pe sha256(token) în `contract_tokens` (tabel doar service_role); IP + user-agent
+// intră în jurnalul probatoriu.
 import {
   clientIp,
   isValidCnp,
@@ -45,11 +46,11 @@ type ContractRow = {
 async function findByToken(admin: ReturnType<typeof serviceClient>, token: string) {
   const tokenHash = await sha256Hex(token)
   const { data } = await admin
-    .from('contracte')
-    .select('id, status, token_expira_la, familie_id, client_id, valori, template_id, deschis_prima_data_la')
+    .from('contract_tokens')
+    .select('contracte(id, status, token_expira_la, familie_id, client_id, valori, template_id, deschis_prima_data_la)')
     .eq('token_hash', tokenHash)
     .maybeSingle()
-  return data as ContractRow | null
+  return (data?.contracte ?? null) as ContractRow | null
 }
 
 // Precompletări din DB pentru câmpurile cu source != manual.
@@ -121,7 +122,12 @@ Deno.serve(async (req) => {
 
     const admin = serviceClient()
     const contract = await findByToken(admin, token)
-    if (!contract) return json({ error: 'Link invalid.' }, 404)
+    // Linkurile înlocuite de remindere până la 2026-09-15 nu mai pot fi recuperate.
+    if (!contract) {
+      return json({
+        error: 'Linkul nu mai este valid. Deschideți cel mai recent mesaj primit de la Quasar Dance sau cereți recepției să vi-l retrimită.',
+      }, 404)
+    }
 
     // expirare
     if (

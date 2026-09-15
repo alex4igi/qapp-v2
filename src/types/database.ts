@@ -11559,6 +11559,7 @@ export type Database = {
           functie: string
         }[]
       }
+      anuleaza_contract: { Args: { p_contract_id: string }; Returns: undefined }
       anuleaza_exceptie_evaluare: {
         Args: { p_client: string; p_curs: string; p_sesiune: string }
         Returns: undefined

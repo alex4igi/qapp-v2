@@ -13,7 +13,7 @@ import {
   type ClientPentruContract,
 } from '@/features/clienti/api'
 import { calcAge } from '@/features/clienti/pages/ClientProfilePage/helpers'
-import { listTemplates, sendContracte } from './api'
+import { listTemplates, mesajRetrimitere, retrimiteLink, sendContracte } from './api'
 import { CONTRACT_TIP_LABEL } from './constants'
 
 type Props = {
@@ -49,6 +49,11 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
   const [seReprezintaSingur, setSeReprezintaSingur] = useState(true)
   const [clientId, setClientId] = useState(client?.id ?? '')
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+  // contractul nesemnat care a blocat trimiterea ca dublură — i se poate retrimite
+  // linkul, cât timp selecția (șablon + familie + cursant) e tot cea refuzată
+  const [dublura, setDublura] = useState<{ contractId: string; cheie: string } | null>(null)
+  const cheieSelectie = `${templateId}|${selFamilie?.id ?? ''}|${clientId}`
+  const deRetrimis = dublura?.cheie === cheieSelectie ? dublura.contractId : null
 
   const cautare = open && !selFamilie && !faraFamilie && search.trim().length >= 2
 
@@ -115,12 +120,19 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
         templateId,
         targets: [{ familieId: familie!.id, clientId: vizat }],
       })
-      return { r: results[0], familieCreata }
+      return { r: results[0], familieCreata, cheie: `${templateId}|${familie!.id}|${vizat ?? ''}` }
     },
-    onSuccess: ({ r, familieCreata }) => {
+    onSuccess: ({ r, familieCreata, cheie }) => {
       const prefix = familieCreata ? `Familia „${familieCreata}” a fost creată. ` : ''
       if (!r?.ok) {
-        setResult({ ok: false, text: `${prefix}Nu s-a putut trimite: ${r?.error ?? 'eroare necunoscută'}` })
+        const nesemnat = ['trimis', 'deschis'].includes(r?.statusExistent ?? '')
+        setDublura(nesemnat && r?.contractId ? { contractId: r.contractId, cheie } : null)
+        setResult({
+          ok: false,
+          text: nesemnat
+            ? `${prefix}Familia are deja acest contract trimis și nesemnat. Retrimite-i același link — valabilitatea pornește de azi.`
+            : `${prefix}Nu s-a putut trimite: ${r?.error ?? 'eroare necunoscută'}`,
+        })
         return
       }
       queryClient.invalidateQueries({ queryKey: ['contracte'] })
@@ -140,6 +152,16 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
           }. Trimite-l manual.`,
         })
       }
+    },
+    onError: (e) => setResult({ ok: false, text: humanizeError(e) }),
+  })
+
+  const retrimite = useMutation({
+    mutationFn: retrimiteLink,
+    onSuccess: (r) => {
+      setDublura(null)
+      setResult(mesajRetrimitere(r))
+      queryClient.invalidateQueries({ queryKey: ['contracte'] })
     },
     onError: (e) => setResult({ ok: false, text: humanizeError(e) }),
   })
@@ -348,12 +370,18 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
           <Button variant="ghost" onClick={close}>
             Închide
           </Button>
-          <Button
-            onClick={() => send.mutate()}
-            disabled={!templateId || !(selFamilie || poateCreaFamilia) || send.isPending}
-          >
-            {send.isPending ? 'Se trimite…' : 'Trimite la semnat'}
-          </Button>
+          {deRetrimis ? (
+            <Button onClick={() => retrimite.mutate(deRetrimis)} disabled={retrimite.isPending}>
+              {retrimite.isPending ? 'Se retrimite…' : 'Retrimite link'}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => send.mutate()}
+              disabled={!templateId || !(selFamilie || poateCreaFamilia) || send.isPending}
+            >
+              {send.isPending ? 'Se trimite…' : 'Trimite la semnat'}
+            </Button>
+          )}
         </div>
       </div>
     </Modal>

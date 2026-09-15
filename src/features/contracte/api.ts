@@ -61,6 +61,8 @@ export type SendResult = {
   ok: boolean
   error?: string
   contractId?: string
+  // la refuzul pe dublură: statusul contractului care există deja
+  statusExistent?: string
   canal?: 'sms' | 'email' | 'niciunul'
   notificat?: boolean
   amanat?: boolean
@@ -156,12 +158,39 @@ export async function listContracteActivePeTemplate(templateId: string): Promise
   return data ?? []
 }
 
+export type RetrimitereResult = {
+  canal: 'sms' | 'email' | 'niciunul'
+  notificat: boolean
+  amanat: boolean
+  notificareEroare?: string
+  expiraLa: string
+}
+
+// Același link de semnare, valabilitate repornită de azi. Merge și pe contractele
+// expirate — cu gardul de dublură în funcție.
+export async function retrimiteLink(contractId: string): Promise<RetrimitereResult> {
+  return invokeEdge<RetrimitereResult>('contract-resend', { contractId })
+}
+
+export function mesajRetrimitere(r: RetrimitereResult): { ok: boolean; text: string } {
+  const canal = r.canal === 'email' ? 'email' : 'SMS'
+  const pana = new Date(r.expiraLa).toLocaleDateString('ro-RO')
+  if (r.amanat) {
+    return { ok: true, text: `Link retrimis, valabil până pe ${pana}. SMS-ul a prins zona interzisă — pleacă automat dimineață.` }
+  }
+  if (r.notificat) return { ok: true, text: `Linkul a fost retrimis prin ${canal}, valabil până pe ${pana}.` }
+  return {
+    ok: false,
+    text: `Valabilitatea e prelungită până pe ${pana}, dar linkul NU a plecat (${canal}): ${
+      r.notificareEroare ?? 'eroare necunoscută'
+    }.`,
+  }
+}
+
+// Prin RPC (owner/admin/manager): scrierea directă pe `contracte` e doar is_admin(),
+// iar pentru manager ar fi trecut fără eroare fără să anuleze nimic.
 export async function anuleazaContract(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('contracte')
-    .update({ status: 'anulat' })
-    .eq('id', id)
-    .in('status', ['draft', 'trimis', 'deschis'])
+  const { error } = await supabase.rpc('anuleaza_contract', { p_contract_id: id })
   if (error) throw error
 }
 

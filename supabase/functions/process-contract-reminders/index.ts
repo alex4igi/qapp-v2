@@ -1,8 +1,8 @@
 // Edge Function (cron zilnic): remindere pentru contracte nesemnate + expirare.
 //
 // - Reminder la 3 zile și la 7 zile de la trimitere (max 2, `reminder_count`).
-//   Tokenul e ROTIT la fiecare reminder (stocăm doar hash-ul, nu putem reconstrui
-//   linkul vechi) — linkul vechi devine invalid, cel nou are aceeași expirare.
+//   Reminderul trimite ACELAȘI link ca prima trimitere (`linkSemnare`), deci
+//   linkul din primul SMS rămâne bun până la expirare.
 // - Peste `token_expira_la` → status 'expirat' + event. Gate-ul (dacă există)
 //   rămâne 'trimis' — bulk send-ul îl poate retrimite (contractul expirat nu mai
 //   contează ca activ în list_targets_campanie).
@@ -10,7 +10,7 @@
 // Idempotent: praguri pe zile + reminder_count; apeluri repetate în aceeași zi
 // nu dublează SMS-uri.
 import { notificaContract } from '../_shared/contractNotify.ts'
-import { logEvent, portalUrl, randomToken, serviceClient, sha256Hex } from '../_shared/contracte.ts'
+import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
 import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 function json(body: unknown, status = 200): Response {
@@ -63,7 +63,6 @@ Deno.serve(async (req) => {
         .select('telefon, email')
         .eq('id', c.familie_id)
         .single()
-      // Fără canal nu rotim tokenul degeaba (rotirea ar omorî linkul deja trimis).
       if (!familie?.telefon && !familie?.email) continue
 
       let prenume: string | null = null
@@ -76,12 +75,16 @@ Deno.serve(async (req) => {
         prenume = copil?.prenume ?? copil?.nume ?? null
       }
 
-      // rotire token: linkul vechi moare, cel nou păstrează expirarea
-      const token = randomToken()
+      let link: string
+      try {
+        link = await linkSemnare(admin, c.id)
+      } catch (e) {
+        await logEvent(admin, c.id, 'eroare', { pas: 'reminder_link', mesaj_eroare: String(e) })
+        continue
+      }
       await admin
         .from('contracte')
         .update({
-          token_hash: await sha256Hex(token),
           reminder_count: (c.reminder_count ?? 0) + 1,
           last_reminder_la: new Date().toISOString(),
         })
@@ -91,7 +94,6 @@ Deno.serve(async (req) => {
       const zileRamase = c.token_expira_la
         ? Math.max(1, Math.ceil((new Date(c.token_expira_la).getTime() - now) / 86400_000))
         : 7
-      const link = `${portalUrl()}/s/${token}`
       const mesaj =
         `Quasar Dance: reminder - contractul${cine} asteapta semnatura ta: ${link} (mai e valabil ${zileRamase} zile)`
 

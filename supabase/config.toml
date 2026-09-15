@@ -465,6 +465,10 @@ verify_jwt = true
 [functions.contract-public]
 verify_jwt = false
 
+# „Retrimite link" din lista de contracte (roluri verificate în funcție, ca la contract-send).
+[functions.contract-resend]
+verify_jwt = true
+
 # Finalizare internă (protejată prin header x-contract-secret = CONTRACT_INTERNAL_SECRET).
 # static_files: fontul TTF cu diacritice românești pentru overlay-ul pdf-lib.
 [functions.contract-finalize]

@@ -1,9 +1,8 @@
 // Notificarea familiei despre un contract de semnat — UN SINGUR CANAL per familie:
 // SMS dacă are telefon, email doar ca rezervă. (Decis 2026-09-10.)
 //
-// De ce un singur canal: linkul de semnare e unic și de unică folosință, iar
-// reminderul ROTEȘTE tokenul. Trimis pe două căi, familia semnează dintr-un mesaj
-// și rămâne cu un link mort în celălalt — plus dublu cost pe mesaj.
+// De ce un singur canal: familia semnează dintr-un mesaj și primește degeaba
+// celălalt — dublu cost pe mesaj, fără câștig.
 //
 // De ce SMS-ul pleacă DIRECT și nu prin coada `situatie_sms_uri`: coada aia se
 // golește doar când apasă cineva „Trimite cele de trimis" în /notificari-sms, iar
@@ -38,6 +37,26 @@ export type RezultatNotificare = {
   ok: boolean
   amanat?: boolean
   error?: string
+}
+
+// Mesajul „contract de semnat" — prima trimitere și „Retrimite link".
+// SMS fără diacritice (regulă casă).
+export function mesajContract(
+  prenumeCopil: string | null,
+  link: string,
+  zile: number,
+): Pick<NotificareContract, 'smsText' | 'emailSubject' | 'emailHtml'> {
+  const cine = prenumeCopil ? ` pentru ${prenumeCopil}` : ''
+  return {
+    smsText:
+      `Quasar Dance: contractul${cine} este pregatit de semnare. Deschide linkul, verifica datele si semneaza: ${link} (valabil ${zile} zile)`,
+    emailSubject: `Quasar Dance — contract de semnat${cine}`,
+    emailHtml:
+      `<p>Bună ziua,</p><p>Contractul${cine} este pregătit pentru semnare. ` +
+      `Deschideți linkul de mai jos, verificați datele și semnați:</p>` +
+      `<p><a href="${link}">${link}</a></p>` +
+      `<p>Linkul este valabil ${zile} zile.</p><p>Quasar Dance</p>`,
+  }
 }
 
 export async function notificaContract(

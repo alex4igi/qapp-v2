@@ -1,8 +1,8 @@
 // Edge Function: creează contracte din template și trimite linkurile de semnare.
 // Apelată din staff app (JWT staff). Notificarea merge pe UN SINGUR canal —
 // SMS dacă familia are telefon, altfel email — vezi ../_shared/contractNotify.ts.
-import { notificaContract } from '../_shared/contractNotify.ts'
-import { logEvent, portalUrl, randomToken, serviceClient, sha256Hex } from '../_shared/contracte.ts'
+import { mesajContract, notificaContract } from '../_shared/contractNotify.ts'
+import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
 
 // Aceleași roluri ca ROUTE_ACCESS['/contracte'] (ALL_STAFF, recepția inclusă) și
 // ca contract-template-storage: recepția trimite contractele la ghișeu.
@@ -18,12 +18,6 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
-}
-
-// SMS fără diacritice, ≤160 caractere (regulă casă).
-function buildSmsText(prenumeCopil: string | null, link: string, zile: number): string {
-  const cine = prenumeCopil ? ` pentru ${prenumeCopil}` : ''
-  return `Quasar Dance: contractul${cine} este pregatit de semnare. Deschide linkul, verifica datele si semneaza: ${link} (valabil ${zile} zile)`
 }
 
 type Target = {
@@ -114,6 +108,7 @@ Deno.serve(async (req) => {
           familieId: t.familieId, ok: false,
           error: `există deja un contract ${dup[0].status} pe acest template`,
           contractId: dup[0].id,
+          statusExistent: dup[0].status,
         })
         continue
       }
@@ -155,8 +150,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      const token = randomToken()
-      const tokenHash = await sha256Hex(token)
       const expiraLa = new Date(Date.now() + tpl.valabilitate_zile * 86400_000).toISOString()
 
       const { data: contract, error: insErr } = await admin
@@ -168,7 +161,6 @@ Deno.serve(async (req) => {
           gate_id: gateId,
           campanie_id: t.campanieId ?? null,
           status: 'trimis',
-          token_hash: tokenHash,
           token_expira_la: expiraLa,
           trimis_la: new Date().toISOString(),
           created_by: userRes.user.id,
@@ -180,28 +172,29 @@ Deno.serve(async (req) => {
         continue
       }
 
+      let link: string
+      try {
+        link = await linkSemnare(admin, contract.id)
+      } catch (e) {
+        // fără link contractul n-ar putea fi semnat, dar ar bloca retrimiterea ca dublură
+        await admin.from('contracte').delete().eq('id', contract.id)
+        results.push({ familieId: t.familieId, ok: false, error: String(e) })
+        continue
+      }
+
       await logEvent(admin, contract.id, 'creat', { template: tpl.nume, de: userRes.user.email })
       await logEvent(admin, contract.id, 'trimis', {
         telefon_mascat: familie.telefon ? `…${familie.telefon.slice(-4)}` : null,
         email: familie.email ?? null,
       })
 
-      const link = `${portalUrl()}/s/${token}`
-
-      const cine = prenumeCopil ? ` pentru ${prenumeCopil}` : ''
       const notif = await notificaContract(admin, {
         contractId: contract.id,
         telefon: familie.telefon,
         email: familie.email,
         clientId: t.clientId ?? null,
         codMesaj: 'contract',
-        smsText: buildSmsText(prenumeCopil, link, tpl.valabilitate_zile),
-        emailSubject: `Quasar Dance — contract de semnat${cine}`,
-        emailHtml:
-          `<p>Bună ziua,</p><p>Contractul${cine} este pregătit pentru semnare. ` +
-          `Deschideți linkul de mai jos, verificați datele și semnați:</p>` +
-          `<p><a href="${link}">${link}</a></p>` +
-          `<p>Linkul este valabil ${tpl.valabilitate_zile} zile.</p><p>Quasar Dance</p>`,
+        ...mesajContract(prenumeCopil, link, tpl.valabilitate_zile),
       })
 
       results.push({

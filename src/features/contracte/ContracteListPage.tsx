@@ -14,7 +14,7 @@ import {
 } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
 import { useAuth } from '@/hooks/useAuth'
-import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
+import { isFrontDeskOrHigher, isManagerOrHigher } from '@/lib/rolesMatrix'
 import {
   anuleazaContract,
   getContractEvents,
@@ -22,6 +22,8 @@ import {
   listCampaniiDeschise,
   listContracte,
   listDistinctTipuri,
+  mesajRetrimitere,
+  retrimiteLink,
   type ContractRow,
 } from './api'
 import { CONTRACT_STATUS_LABEL, CONTRACT_TIP_LABEL } from './constants'
@@ -34,6 +36,7 @@ import { formatDateTime } from '@/lib/format'
 const EVENT_LABEL: Record<string, string> = {
   creat: 'Creat',
   trimis: 'Trimis',
+  retrimis: 'Link retrimis',
   sms_pus_in_coada: 'SMS pus în coadă',
   sms_trimis: 'SMS trimis',
   sms_amanat: 'SMS amânat (zonă interzisă)',
@@ -86,6 +89,8 @@ export function ContracteListPage() {
   // Întreținerea șabloanelor e deschisă întregului staff; imutabilitatea
   // legală a unui șablon deja trimis o ține `locked_at` în DB, nu rolul.
   const canEditSabloane = isFrontDeskOrHigher(role)
+  // Oglinda gardului de rol din RPC-ul anuleaza_contract.
+  const canAnula = isManagerOrHigher(role)
   const location = useLocation()
   const [activeTab, setActiveTab] = useState<'contracte' | 'sabloane'>(
     location.pathname.startsWith('/contracte/sabloane') ? 'sabloane' : 'contracte',
@@ -98,7 +103,7 @@ export function ContracteListPage() {
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkClientiOpen, setBulkClientiOpen] = useState(false)
   const [eventsFor, setEventsFor] = useState<ContractRow | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const [mesaj, setMesaj] = useState<{ ok: boolean; text: string } | null>(null)
 
   const { data: tipuriExistente = [] } = useQuery({
     queryKey: ['contract-templates-tipuri'],
@@ -122,7 +127,18 @@ export function ContracteListPage() {
   const anuleaza = useMutation({
     mutationFn: anuleazaContract,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contracte'] }),
-    onError: (e) => setErr(humanizeError(e)),
+    onError: (e) => setMesaj({ ok: false, text: humanizeError(e) }),
+  })
+
+  const retrimite = useMutation({
+    mutationFn: (r: ContractRow) => retrimiteLink(r.id),
+    onSuccess: (res, r) => {
+      const m = mesajRetrimitere(res)
+      setMesaj({ ...m, text: `${r.familii?.nume_familie ?? 'Familia'}: ${m.text}` })
+      queryClient.invalidateQueries({ queryKey: ['contracte'] })
+    },
+    onError: (e, r) =>
+      setMesaj({ ok: false, text: `${r.familii?.nume_familie ?? 'Familia'}: ${humanizeError(e)}` }),
   })
 
   async function openPdf(row: ContractRow) {
@@ -188,12 +204,25 @@ export function ContracteListPage() {
           <Button variant="ghost" onClick={() => setEventsFor(r)}>
             Istoric
           </Button>
-          {(r.pdf_drive_link || r.pdf_storage_path) && (
-            <Button variant="ghost" onClick={() => void openPdf(r)}>
-              PDF
+          {['trimis', 'deschis', 'expirat'].includes(r.status) && (
+            <Button
+              variant="ghost"
+              className="whitespace-nowrap"
+              disabled={retrimite.isPending}
+              onClick={() => {
+                if (
+                  confirm(
+                    'Retrimiți linkul de semnare? Familia primește din nou același link, iar valabilitatea pornește de azi.',
+                  )
+                ) {
+                  retrimite.mutate(r)
+                }
+              }}
+            >
+              Retrimite link
             </Button>
           )}
-          {['trimis', 'deschis'].includes(r.status) && (
+          {canAnula && ['trimis', 'deschis'].includes(r.status) && (
             <Button
               variant="ghost"
               onClick={() => {
@@ -203,6 +232,11 @@ export function ContracteListPage() {
               }}
             >
               Anulează
+            </Button>
+          )}
+          {(r.pdf_drive_link || r.pdf_storage_path) && (
+            <Button variant="ghost" onClick={() => void openPdf(r)}>
+              PDF
             </Button>
           )}
         </div>
@@ -266,7 +300,11 @@ export function ContracteListPage() {
             </div>
           </div>
 
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {mesaj && (
+            <p className={mesaj.ok ? 'text-sm text-green-700' : 'text-sm text-red-600'}>
+              {mesaj.text}
+            </p>
+          )}
 
           {isLoading ? (
             <Spinner />
