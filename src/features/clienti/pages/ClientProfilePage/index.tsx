@@ -12,6 +12,7 @@ import {
   endOfMonth,
 } from '@/features/plati/api'
 import { reintegrateClientAsLead } from '@/features/leads/api'
+import { listDatoriiClient } from '@/features/plati/api/datorii'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
@@ -153,6 +154,14 @@ export function ClientProfilePage() {
   const restanteToateQuery = useQuery({
     queryKey: ['client-inrolari-sezon', id, 'toate-restantele'],
     queryFn: () => getClientRestanteToate(id!),
+    enabled: Boolean(id) && !teacherMode,
+  })
+
+  // Bilete/merch/taxe neachitate: nu apar în niciun tab al fișei, doar în „Plată".
+  // Prefixul `datorii` e invalidat de Plată nouă / credit după orice încasare.
+  const datoriiOneOffQuery = useQuery({
+    queryKey: ['datorii', id, 'fisa'],
+    queryFn: () => listDatoriiClient(id!),
     enabled: Boolean(id) && !teacherMode,
   })
 
@@ -403,6 +412,8 @@ export function ClientProfilePage() {
                 setSezonId(sid)
                 setTab('inrolari')
               }}
+              datoriiOneOff={datoriiOneOffQuery.data ?? []}
+              onIncaseaza={() => setPlataOpen(true)}
             />
           )}
           <Tabs

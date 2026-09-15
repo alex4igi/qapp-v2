@@ -1,5 +1,6 @@
-import { formatRON } from '@/lib/format'
+import { formatDate, formatRON } from '@/lib/format'
 import type { SezonOption } from '@/features/plati/api/sezoane'
+import type { VDatoriiRest } from '@/types/db'
 import type { ClientRestantaRow } from '../../api'
 
 type Props = {
@@ -7,7 +8,19 @@ type Props = {
   sezoane: SezonOption[]
   sezonSelectat?: SezonOption
   onVeziSezon: (sezonId: string) => void
+  /** Datorii one-off (bilete/merch/taxe) neachitate — nu apar în niciun tab al fișei. */
+  datoriiOneOff?: VDatoriiRest[]
+  onIncaseaza?: () => void
 }
+
+const CATEGORIE_LABEL: Record<string, string> = {
+  Taxa: 'Taxă',
+  Auditie: 'Audiție',
+  Inchiriere: 'Închiriere',
+}
+
+const pillClass =
+  'inline-flex items-center rounded-lg border border-red-300 bg-card px-2.5 py-1 text-xs font-semibold text-ink transition-colors hover:border-quasar-yellow hover:bg-quasar-yellow'
 
 type Grup = {
   id: string | null
@@ -34,6 +47,8 @@ export function RestanteAlteSezoaneBanner({
   sezoane,
   sezonSelectat,
   onVeziSezon,
+  datoriiOneOff = [],
+  onIncaseaza,
 }: Props) {
   const grupuri = new Map<string, Grup>()
   let prescris = 0
@@ -59,10 +74,14 @@ export function RestanteAlteSezoaneBanner({
 
   const lista = [...grupuri.values()].sort((a, b) => (a.start < b.start ? 1 : -1))
   const total = lista.reduce((a, g) => a + g.suma, 0)
-  if (total <= 0.004) return null
+  const oneOff = datoriiOneOff.filter((d) => Number(d.rest) > 0.004)
+  const totalOneOff = oneOff.reduce((a, d) => a + Number(d.rest), 0)
+  if (total <= 0.004 && totalOneOff <= 0.004) return null
 
   return (
-    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+    <div className="mb-4 space-y-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+      {total > 0.004 && (
+      <div>
       <p className="flex items-start gap-2">
         <span aria-hidden>⚠️</span>
         <span>
@@ -88,7 +107,7 @@ export function RestanteAlteSezoaneBanner({
               <button
                 type="button"
                 onClick={() => onVeziSezon(g.id!)}
-                className="inline-flex items-center rounded-lg border border-red-300 bg-card px-2.5 py-1 text-xs font-semibold text-ink transition-colors hover:border-quasar-yellow hover:bg-quasar-yellow"
+                className={pillClass}
               >
                 Vezi sezonul →
               </button>
@@ -101,6 +120,36 @@ export function RestanteAlteSezoaneBanner({
           + {formatRON(prescris)} prescrise (mai vechi de 2 ani) — nu se mai
           recuperează.
         </p>
+      )}
+      </div>
+      )}
+
+      {totalOneOff > 0.004 && (
+        <div>
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+            <p className="flex items-start gap-2">
+              <span aria-hidden>⚠️</span>
+              <span>
+                <strong>Bilete, merch sau taxe neachitate: {formatRON(totalOneOff)}</strong>{' '}
+                — se încasează din „Plată".
+              </span>
+            </p>
+            {onIncaseaza && (
+              <button type="button" onClick={onIncaseaza} className={pillClass}>
+                Încasează →
+              </button>
+            )}
+          </div>
+          <ul className="mt-2 space-y-1.5 pl-6">
+            {oneOff.map((d) => (
+              <li key={d.id}>
+                {CATEGORIE_LABEL[d.categorie ?? ''] ?? d.categorie ?? 'Datorie'}
+                {d.descriere ? ` · ${d.descriere}` : ''}: <strong>{formatRON(d.rest)}</strong>
+                <span className="text-red-700/80"> · {formatDate(d.created)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )
