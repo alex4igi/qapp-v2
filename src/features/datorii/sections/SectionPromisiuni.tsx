@@ -27,7 +27,7 @@ export function SectionPromisiuni({
 }) {
   const q = useQuery({
     queryKey: ['restante-worklist', locatieId ?? '', '', ''],
-    queryFn: () => getRestanteWorklist(locatieId, null, null),
+    queryFn: () => getRestanteWorklist({ locatieId }),
     ...DATORII_QO,
   })
 

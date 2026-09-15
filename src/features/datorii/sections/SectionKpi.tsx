@@ -67,7 +67,7 @@ export function SectionKpi({ locatieId }: { locatieId: string | null }) {
         istoric: {formatRON(restTotal(total))} restant pe toate lunile (din care{' '}
         {formatRON(total.rest_prescris)} prescris, peste 2 ani — nu se mai
         urmărește). Definiție: net — fără rezilieri și luni facturate în viitor;
-        include datoriile one-off. Aceeași bază în /financiar, worklist și SMS.
+        include datoriile one-off. Aceeași bază în lista de mai jos, în fișa clientului și în SMS-uri.
       </p>
     </div>
   )

@@ -1,30 +1,55 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Field, Select, MonthPicker, Spinner, TextInput } from '@/components/ui'
+import {
+  Button,
+  Checkbox,
+  Field,
+  MonthPicker,
+  Pills,
+  Select,
+  Spinner,
+  TextInput,
+} from '@/components/ui'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { formatRON } from '@/lib/format'
+import { useCursuriOptions } from '@/hooks/useCursuriOptions'
+import { formatDate, formatMonth, formatRON } from '@/lib/format'
 import { humanizeError } from '@/lib/errorMessage'
 import { downloadCsv } from '@/lib/csv'
 import { sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import {
+  getRestanteRate,
   getRestanteWorklist,
   queueSmsRestanta,
   setSuspendareDatornic,
   statusColectare,
   STATUS_COLECTARE_LABEL,
+  type RateRow,
   type StatusColectare,
+  type WorklistFilters,
   type WorklistRow,
 } from '../api'
+import type { RecuperareTarget } from '../LogRecuperareModal'
 import { WorklistTable } from '../WorklistTable'
+import { RateTable } from '../RateTable'
 
 const STATUS_OPTIONS = (
   Object.entries(STATUS_COLECTARE_LABEL) as [StatusColectare, string][]
 ).map(([value, label]) => ({ value, label }))
 
-// Worklist-ul de sunat (fostul /recuperare) + top datornici. Locația vine din
-// scopul global al paginii (📍) sau din click-ul pe o locație în comparativ;
-// sezonul e presetat pe cel activ.
+type Vedere = 'client' | 'rate'
+const VEDERE_OPTIONS: { value: Vedere; label: string }[] = [
+  { value: 'client', label: 'Pe client' },
+  { value: 'rate', label: 'Pe rate' },
+]
+
+const azi = () => new Date().toISOString().slice(0, 10)
+
+// Lista de datornici, în două vederi pe ACEEAȘI bază și aceleași filtre:
+// „Pe client" = worklist-ul de sunat (un rând = un client, cu toate ratele lui);
+// „Pe rate" = un rând = o rată (lună × curs), fostul tab Restanțe din /financiar.
+// Locația vine din scopul global al paginii (📍) sau din click-ul pe o locație în
+// comparativ; sezonul e presetat pe cel activ.
 export function SectionWorklist({
   locatieId,
   filterLocatieNume,
@@ -37,17 +62,23 @@ export function SectionWorklist({
   filterLocatieNume?: string | null
   onClearLocatie?: () => void
   canSuspend: boolean
-  onLog: (row: WorklistRow) => void
+  onLog: (target: RecuperareTarget) => void
   /** Lipsește pe telefon: încasarea trece prin modalul de la recepție. */
-  onPlata?: (row: WorklistRow) => void
+  onPlata?: (clientId: string) => void
 }) {
   const queryClient = useQueryClient()
   const isMobile = useIsMobile()
-  // Pe telefon cele patru filtre ocupă un ecran întreg înaintea listei — le
-  // ținem pliate până le cere cineva.
+  // Pe telefon filtrele ocupă un ecran întreg înaintea listei — le ținem
+  // pliate până le cere cineva.
   const [filtreDeschise, setFiltreDeschise] = useState(false)
+  const [vedere, setVedere] = useState<Vedere>('client')
   const [sezonId, setSezonId] = useState('')
   const [luna, setLuna] = useState('')
+  const [cursId, setCursId] = useState('')
+  // Implicit doar ratele chiar depășite (lista de sunat). Bifat: și ratele cu rest
+  // neajunse la scadență — ex. luna curentă înainte de 15, pentru reminderul
+  // dinaintea termenului.
+  const [toateRatele, setToateRatele] = useState(false)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [smsQueuedIds, setSmsQueuedIds] = useState<Set<string>>(new Set())
@@ -61,6 +92,7 @@ export function SectionWorklist({
     queryKey: ['lookup', 'sezon-activ'],
     queryFn: sezonActivId,
   })
+  const cursuriQ = useCursuriOptions({ locatieId, sezonId: sezonId || null })
 
   // Presetează sezonul activ (o singură dată) — aliniat cu compozitorul SMS:
   // nu chemăm/sunăm oameni din sezoane vechi. Operatorul poate trece pe „Toate".
@@ -72,10 +104,31 @@ export function SectionWorklist({
     }
   }, [sezonInit, sezonActivQ.data])
 
+  // Cursul ales poate să nu mai existe în alt sezon / altă locație.
+  useEffect(() => {
+    if (cursId && cursuriQ.data && !cursuriQ.data.some((c) => c.value === cursId)) setCursId('')
+  }, [cursId, cursuriQ.data])
+
+  const filters: WorklistFilters = {
+    locatieId,
+    sezonId: sezonId || null,
+    luna: luna || null,
+    cursId: cursId || null,
+    doarDepasite: !toateRatele,
+  }
+  const filterKey = [locatieId ?? '', sezonId, luna, cursId, toateRatele]
+
   const worklistQ = useQuery({
-    queryKey: ['restante-worklist', locatieId ?? '', sezonId, luna],
-    queryFn: () => getRestanteWorklist(locatieId, sezonId || null, luna || null),
+    queryKey: ['restante-worklist', ...filterKey],
+    queryFn: () => getRestanteWorklist(filters),
     placeholderData: keepPreviousData,
+    enabled: vedere === 'client',
+  })
+  const rateQ = useQuery({
+    queryKey: ['restante-rate', ...filterKey],
+    queryFn: () => getRestanteRate(filters),
+    placeholderData: keepPreviousData,
+    enabled: vedere === 'rate',
   })
 
   const smsM = useMutation({
@@ -91,6 +144,7 @@ export function SectionWorklist({
     onSuccess: () => {
       setActionError(null)
       void queryClient.invalidateQueries({ queryKey: ['restante-worklist'] })
+      void queryClient.invalidateQueries({ queryKey: ['restante-rate'] })
     },
     onError: (e: unknown) => setActionError(humanizeError(e, 'Eroare la suspendare.')),
   })
@@ -102,10 +156,20 @@ export function SectionWorklist({
     if (window.confirm(msg)) suspendM.mutate(r)
   }
 
-  const allRows = worklistQ.data ?? []
-  const rows = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return allRows.filter((r) => {
+  const logClient = (r: WorklistRow) =>
+    onLog({ clientId: r.client_id, nume: `${r.nume} ${r.prenume ?? ''}`.trim(), rest: r.rest_total })
+  const logRata = (r: RateRow) =>
+    onLog({
+      clientId: r.client_id,
+      nume: `${r.nume} ${r.prenume ?? ''}`.trim(),
+      rest: r.rest,
+      curs: r.nume_curs,
+    })
+
+  const q = search.trim().toLowerCase()
+  const clientRows = useMemo(() => {
+    const all = worklistQ.data ?? []
+    return all.filter((r) => {
       if (status && statusColectare(r) !== status) return false
       if (q) {
         const haystack = `${r.nume} ${r.prenume ?? ''} ${r.telefon ?? ''} ${r.cursuri ?? ''}`.toLowerCase()
@@ -113,47 +177,91 @@ export function SectionWorklist({
       }
       return true
     })
-  }, [allRows, search, status])
+  }, [worklistQ.data, q, status])
+  const rateRows = useMemo(() => {
+    const all = rateQ.data ?? []
+    if (!q) return all
+    return all.filter((r) =>
+      `${r.nume} ${r.prenume ?? ''} ${r.telefon ?? ''} ${r.nume_curs ?? ''}`.toLowerCase().includes(q),
+    )
+  }, [rateQ.data, q])
 
-  const totalRest = useMemo(
-    () => rows.reduce((a, r) => a + Number(r.rest_total ?? 0), 0),
-    [rows],
+  const totalRestClienti = useMemo(
+    () => clientRows.reduce((a, r) => a + Number(r.rest_total ?? 0), 0),
+    [clientRows],
   )
+  const totalRestRate = useMemo(() => rateRows.reduce((a, r) => a + r.rest, 0), [rateRows])
+  const nrClientiRate = useMemo(() => new Set(rateRows.map((r) => r.client_id)).size, [rateRows])
   const top = useMemo(
-    () => [...rows].sort((a, b) => b.rest_total - a.rest_total).slice(0, 5),
-    [rows],
+    () => [...clientRows].sort((a, b) => b.rest_total - a.rest_total).slice(0, 5),
+    [clientRows],
   )
 
   const exportCsv = () =>
-    downloadCsv(
-      `datornici-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Client', 'Status client', 'Telefon', 'Locatie', 'Ce datoreaza', 'Rate', 'Rest RON', 'Zile intarziere', 'Status', 'Promisiune'],
-      rows.map((r) => [
-        `${r.nume} ${r.prenume ?? ''}`.trim(),
-        r.status_client ?? '',
-        r.telefon ?? '',
-        r.nume_locatie ?? '',
-        r.cursuri ?? '',
-        r.nr_rate_neachitate,
-        Math.round(r.rest_total),
-        r.zile_depasire ?? '',
-        STATUS_COLECTARE_LABEL[statusColectare(r)],
-        r.promisiune_data ?? '',
-      ]),
-    )
+    vedere === 'client'
+      ? downloadCsv(
+          `datornici-${azi()}.csv`,
+          ['Client', 'Status client', 'Telefon', 'Locatie', 'Ce datoreaza', 'Rate', 'Rest RON', 'Zile intarziere', 'Status', 'Promisiune'],
+          clientRows.map((r) => [
+            `${r.nume} ${r.prenume ?? ''}`.trim(),
+            r.status_client ?? '',
+            r.telefon ?? '',
+            r.nume_locatie ?? '',
+            r.cursuri ?? '',
+            r.nr_rate_neachitate,
+            Math.round(r.rest_total),
+            r.zile_depasire ?? '',
+            STATUS_COLECTARE_LABEL[statusColectare(r)],
+            r.promisiune_data ?? '',
+          ]),
+        )
+      : downloadCsv(
+          `restante-rate-${azi()}.csv`,
+          ['Client', 'Status client', 'Telefon', 'Locatie', 'Curs', 'Luna', 'Scadenta', 'Zile intarziere', 'Total RON', 'Platit RON', 'Rest RON'],
+          rateRows.map((r) => [
+            `${r.nume} ${r.prenume ?? ''}`.trim(),
+            r.status_client ?? '',
+            r.telefon ?? '',
+            r.nume_locatie ?? '',
+            r.nume_curs ?? '',
+            formatMonth(r.data_incepere),
+            formatDate(r.scadenta),
+            r.zile_depasire,
+            Math.round(r.total_de_plata),
+            Math.round(r.platit),
+            Math.round(r.rest),
+          ]),
+        )
+
+  const activeQ = vedere === 'client' ? worklistQ : rateQ
+  const nrRanduri = vedere === 'client' ? clientRows.length : rateRows.length
+  const vederePills = (
+    <Pills
+      aria-label="Vedere"
+      options={VEDERE_OPTIONS}
+      value={vedere}
+      onChange={(v) => setVedere((v || 'client') as Vedere)}
+      clearable={false}
+    />
+  )
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="m-0 text-sm font-semibold text-quasar-black">Datornici de sunat</h3>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="m-0 text-sm font-semibold text-quasar-black">
+          {vedere === 'client' ? 'Datornici de sunat' : 'Restanțe pe rate'}
+        </h3>
         {isMobile ? (
           <Button variant="secondary" onClick={() => setFiltreDeschise((v) => !v)}>
             {filtreDeschise ? 'Ascunde filtrele' : '⚙ Filtre'}
           </Button>
         ) : (
-          <Button variant="secondary" onClick={exportCsv} disabled={rows.length === 0}>
-            ⬇ Export CSV
-          </Button>
+          <div className="flex items-center gap-3">
+            {vederePills}
+            <Button variant="secondary" onClick={exportCsv} disabled={nrRanduri === 0}>
+              ⬇ Export CSV
+            </Button>
+          </div>
         )}
       </div>
 
@@ -161,6 +269,7 @@ export function SectionWorklist({
         className="mb-4 flex flex-wrap items-end gap-3"
         hidden={isMobile && !filtreDeschise}
       >
+        {isMobile && <div className="w-full">{vederePills}</div>}
         <div className="w-52 max-md:w-full">
           <Field label="Caută" htmlFor="dat-cauta">
             <TextInput
@@ -171,7 +280,7 @@ export function SectionWorklist({
             />
           </Field>
         </div>
-        <div className="w-48 max-md:w-full">
+        <div className="w-44 max-md:w-full">
           <Field label="Sezon" htmlFor="dat-sez">
             <Select
               id="dat-sez"
@@ -182,19 +291,32 @@ export function SectionWorklist({
             />
           </Field>
         </div>
-        <div className="w-44 max-md:w-full">
-          <Field label="Status" htmlFor="dat-status">
+        <div className="w-56 max-md:w-full">
+          <Field label="Curs" htmlFor="dat-curs">
             <Select
-              id="dat-status"
-              placeholder="Toate"
-              options={STATUS_OPTIONS}
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              id="dat-curs"
+              placeholder="Toate cursurile"
+              options={cursuriQ.data ?? []}
+              value={cursId}
+              onChange={(e) => setCursId(e.target.value)}
             />
           </Field>
         </div>
+        {vedere === 'client' && (
+          <div className="w-44 max-md:w-full">
+            <Field label="Status" htmlFor="dat-status">
+              <Select
+                id="dat-status"
+                placeholder="Toate"
+                options={STATUS_OPTIONS}
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              />
+            </Field>
+          </div>
+        )}
         <div className="w-44 max-md:w-full">
-          <Field label="Are rată din luna" htmlFor="dat-luna">
+          <Field label={vedere === 'client' ? 'Are rată din luna' : 'Luna'} htmlFor="dat-luna">
             <div className="flex items-center gap-1">
               <MonthPicker id="dat-luna" value={luna} onChange={setLuna} />
               {luna && (
@@ -210,6 +332,14 @@ export function SectionWorklist({
             </div>
           </Field>
         </div>
+        <div className="pb-2.5 max-md:w-full">
+          <Checkbox
+            id="dat-toate"
+            label="și ratele neajunse la scadență"
+            checked={toateRatele}
+            onChange={(e) => setToateRatele(e.target.checked)}
+          />
+        </div>
         {filterLocatieNume && (
           <div className="flex items-center gap-2 pb-1">
             <button
@@ -223,20 +353,30 @@ export function SectionWorklist({
         )}
       </div>
 
-      {worklistQ.isLoading ? (
+      {activeQ.isLoading ? (
         <Spinner />
-      ) : worklistQ.isError ? (
-        <p className="text-sm text-red-600">Eroare: {humanizeError(worklistQ.error)}</p>
+      ) : activeQ.isError ? (
+        <p className="text-sm text-red-600">Eroare: {humanizeError(activeQ.error)}</p>
       ) : (
         <>
-          <p className="mb-3 text-sm">
-            <strong>{rows.length}</strong> datornici de sunat · rest total{' '}
-            <span className="font-semibold text-red-600">{formatRON(totalRest)}</span>
-          </p>
+          {vedere === 'client' ? (
+            <p className="mb-3 text-sm">
+              <strong>{clientRows.length}</strong>{' '}
+              {toateRatele ? 'clienți cu rest' : 'datornici de sunat'} · rest total{' '}
+              <span className="font-semibold text-red-600">{formatRON(totalRestClienti)}</span>
+              <span className="text-quasar-gray"> (toate ratele lor restante)</span>
+            </p>
+          ) : (
+            <p className="mb-3 text-sm">
+              <strong>{rateRows.length}</strong> rate {toateRatele ? 'cu rest' : 'depășite'} ·{' '}
+              <strong>{nrClientiRate}</strong> clienți · de recuperat{' '}
+              <span className="font-semibold text-red-600">{formatRON(totalRestRate)}</span>
+            </p>
+          )}
 
           {actionError && <p className="mb-3 text-sm text-red-600">{actionError}</p>}
 
-          {top.length > 1 && (
+          {vedere === 'client' && top.length > 1 && (
             <div className="mb-4 flex flex-wrap gap-2">
               {top.map((r, i) => (
                 <Link
@@ -251,7 +391,7 @@ export function SectionWorklist({
                   <span className="font-semibold text-red-600">
                     {formatRON(r.rest_total)}
                   </span>
-                  {r.zile_depasire != null && (
+                  {r.zile_depasire != null && r.zile_depasire > 0 && (
                     <span className="text-quasar-gray"> · {r.zile_depasire}z</span>
                   )}
                 </Link>
@@ -259,15 +399,28 @@ export function SectionWorklist({
             </div>
           )}
 
-          <WorklistTable
-            rows={rows}
-            onLog={onLog}
-            onPlata={onPlata}
-            onSms={(r) => smsM.mutate(r)}
-            smsQueuedIds={smsQueuedIds}
-            canSuspend={canSuspend}
-            onSuspend={onSuspend}
-          />
+          {vedere === 'client' ? (
+            <WorklistTable
+              rows={clientRows}
+              onLog={logClient}
+              onPlata={onPlata ? (r) => onPlata(r.client_id) : undefined}
+              onSms={(r) => smsM.mutate(r)}
+              smsQueuedIds={smsQueuedIds}
+              canSuspend={canSuspend}
+              onSuspend={onSuspend}
+              emptyMessage={
+                toateRatele ? 'Niciun client cu rest. 🎉' : 'Niciun datornic cu rate depășite. 🎉'
+              }
+            />
+          ) : (
+            <RateTable
+              rows={rateRows}
+              showLocatie={locatieId === null}
+              onLog={logRata}
+              onPlata={onPlata ? (r) => onPlata(r.client_id) : undefined}
+              emptyMessage={toateRatele ? 'Nicio rată cu rest. 🎉' : 'Nicio rată depășită. 🎉'}
+            />
+          )}
         </>
       )}
     </div>

@@ -34,7 +34,7 @@ export function DatorniciWorklistCard({
 
   const worklistQ = useQuery({
     queryKey: ['restante-worklist', locatieId ?? 'all', sezonId ?? 'all'],
-    queryFn: () => getRestanteWorklist(locatieId, sezonId),
+    queryFn: () => getRestanteWorklist({ locatieId, sezonId }),
     enabled: sezonActivQ.isSuccess && locatieReady,
   })
 

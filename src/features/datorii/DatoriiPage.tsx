@@ -17,7 +17,8 @@ import { SectionPromisiuni } from './sections/SectionPromisiuni'
 import { SectionWorklist } from './sections/SectionWorklist'
 
 // Hub-ul de datorii: KPI + semafor pe definiția canonică, grafice de colectare,
-// promisiuni de plată și worklist-ul de sunat (fostul /recuperare, absorbit).
+// promisiuni de plată și lista de datornici (fostul /recuperare + fostul tab
+// Restanțe din /financiar, absorbite — vederile „Pe client" / „Pe rate").
 // Scopul de locație vine EXCLUSIV din selectorul 📍 global (front_desk cu
 // locație fixă e blocat pe ea; manager+ poate comuta pe „Toate locațiile").
 // Pagina e un shell: fiecare secțiune își deține query-urile; sub fold totul e
@@ -32,13 +33,12 @@ export function DatoriiPage() {
   // Click-to-filter: rândul din comparativ filtrează worklist-ul pe locație.
   const [filterLoc, setFilterLoc] = useState<{ id: string; nume: string } | null>(null)
 
-  const onLog = (r: WorklistRow) =>
+  const onLogRow = (r: WorklistRow) =>
     setTarget({
       clientId: r.client_id,
       nume: `${r.nume} ${r.prenume ?? ''}`.trim(),
       rest: r.rest_total,
     })
-  const onPlata = (r: WorklistRow) => setPlataClientId(r.client_id)
   const onPickLocatie = (r: DatoriiLocatieRow) => {
     if (!r.id_locatie) return
     setFilterLoc((prev) =>
@@ -85,7 +85,7 @@ export function DatoriiPage() {
             )}
 
             <LazySection minHeight={180}>
-              <SectionPromisiuni locatieId={locatieId} onLog={onLog} />
+              <SectionPromisiuni locatieId={locatieId} onLog={onLogRow} />
             </LazySection>
           </>
         )}
@@ -95,8 +95,8 @@ export function DatoriiPage() {
           filterLocatieNume={filterLoc?.nume}
           onClearLocatie={() => setFilterLoc(null)}
           canSuspend={isPrivileged(role)}
-          onLog={onLog}
-          onPlata={isMobile ? undefined : onPlata}
+          onLog={setTarget}
+          onPlata={isMobile ? undefined : setPlataClientId}
         />
       </div>
 

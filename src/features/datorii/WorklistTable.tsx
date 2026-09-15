@@ -17,6 +17,7 @@ type Props = {
   smsQueuedIds?: Set<string>
   canSuspend?: boolean
   onSuspend?: (row: WorklistRow) => void
+  emptyMessage?: string
 }
 
 const MONTHS = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -49,6 +50,7 @@ export function WorklistTable({
   smsQueuedIds,
   canSuspend,
   onSuspend,
+  emptyMessage = 'Niciun datornic cu rate depășite. 🎉',
 }: Props) {
   const columns: Column<WorklistRow>[] = [
     {
@@ -109,6 +111,11 @@ export function WorklistTable({
       cell: (r) =>
         r.zile_depasire == null ? (
           '—'
+        ) : r.zile_depasire < 1 ? (
+          // Doar rate neajunse la scadență (filtrul „și ratele neajunse la scadență").
+          <span className="text-xs text-quasar-gray">
+            {r.zile_depasire === 0 ? 'scadentă azi' : `în ${-r.zile_depasire}z`}
+          </span>
         ) : (
           <span
             className={
@@ -243,7 +250,7 @@ export function WorklistTable({
       rowClassName={(r) =>
         r.suspendat ? 'bg-neutral-bg/60' : promisiuneIncalcata(r) ? 'bg-red-50/60' : undefined
       }
-      emptyMessage="Niciun datornic activ cu rate depășite. 🎉"
+      emptyMessage={emptyMessage}
     />
   )
 }

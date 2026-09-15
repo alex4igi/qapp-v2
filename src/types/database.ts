@@ -1426,6 +1426,35 @@ export type Database = {
           },
         ]
       }
+      contract_tokens: {
+        Row: {
+          contract_id: string
+          created: string
+          token: string | null
+          token_hash: string
+        }
+        Insert: {
+          contract_id: string
+          created?: string
+          token?: string | null
+          token_hash: string
+        }
+        Update: {
+          contract_id?: string
+          created?: string
+          token?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_tokens_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracte"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracte: {
         Row: {
           campanie_id: string | null
@@ -12751,7 +12780,13 @@ export type Database = {
         }[]
       }
       get_restante_worklist: {
-        Args: { p_locatie?: string; p_luna?: string; p_sezon?: string }
+        Args: {
+          p_curs?: string
+          p_doar_depasite?: boolean
+          p_locatie?: string
+          p_luna?: string
+          p_sezon?: string
+        }
         Returns: {
           client_id: string
           cursuri: string
@@ -12772,6 +12807,34 @@ export type Database = {
           ultim_apel_rezultat: string
           ultim_sms_at: string
           ultima_prezenta: string
+          zile_depasire: number
+        }[]
+      }
+      get_restante_worklist_rate: {
+        Args: {
+          p_curs?: string
+          p_doar_depasite?: boolean
+          p_locatie?: string
+          p_luna?: string
+          p_sezon?: string
+        }
+        Returns: {
+          client_id: string
+          data_incepere: string
+          id_curs: string
+          id_enrollment: string
+          id_locatie: string
+          nume: string
+          nume_curs: string
+          nume_locatie: string
+          platit: number
+          prenume: string
+          rest: number
+          scadenta: string
+          status_client: string
+          suspendat: boolean
+          telefon: string
+          total_de_plata: number
           zile_depasire: number
         }[]
       }

@@ -32,22 +32,69 @@ export type WorklistRow = {
 
 // Worklist de recuperare: TOȚI clienții (indiferent de status — datoria se
 // stinge doar la prescriere) cu cel puțin o rată chiar depășită (nu doar luna
-// curentă, neajunsă încă la scadență), sortați după zile de întârziere. p_locatie/p_sezon = uuid sau null = toate (sezonul e aliniat cu
-// get_sms_recipients — UI presetează sezonul activ). luna (opțional, 'YYYY-MM')
-// = țintește doar clienții care au o rată neachitată facturată în luna
-// respectivă, dar totalul afișat rămâne cel complet (toate lunile lor restante).
-export async function getRestanteWorklist(
-  locatieId: string | null,
-  sezonId: string | null = null,
-  luna: string | null = null,
-): Promise<WorklistRow[]> {
-  const { data, error } = await supabase.rpc('get_restante_worklist', {
-    ...(locatieId ? { p_locatie: locatieId } : {}),
-    ...(sezonId ? { p_sezon: sezonId } : {}),
-    ...(luna ? { p_luna: `${luna}-01` } : {}),
-  })
+// curentă, neajunsă încă la scadență), sortați după zile de întârziere.
+// locatieId/sezonId = uuid sau null = toate (sezonul e aliniat cu
+// get_sms_recipients — UI presetează sezonul activ). luna ('YYYY-MM') și cursId
+// ȚINTESC clienții (au o rată depășită în luna / pe cursul respectiv), dar
+// totalul afișat rămâne cel complet (toate lunile lor restante).
+// doarDepasite=false: și clienții cu rest doar pe rate neajunse la scadență
+// (atunci și ținta pe lună/curs acceptă rate neajunse la scadență).
+export type WorklistFilters = {
+  locatieId: string | null
+  sezonId?: string | null
+  luna?: string | null
+  cursId?: string | null
+  doarDepasite?: boolean
+}
+
+function worklistParams(f: WorklistFilters) {
+  return {
+    ...(f.locatieId ? { p_locatie: f.locatieId } : {}),
+    ...(f.sezonId ? { p_sezon: f.sezonId } : {}),
+    ...(f.luna ? { p_luna: `${f.luna}-01` } : {}),
+    ...(f.cursId ? { p_curs: f.cursId } : {}),
+    ...(f.doarDepasite === false ? { p_doar_depasite: false } : {}),
+  }
+}
+
+export async function getRestanteWorklist(f: WorklistFilters): Promise<WorklistRow[]> {
+  const { data, error } = await supabase.rpc('get_restante_worklist', worklistParams(f))
   if (error) throw error
   return (data ?? []) as unknown as WorklistRow[]
+}
+
+// Vederea „Pe rate" (fostul tab Restanțe din /financiar): un rând = o rată
+// (lună × curs) a unui client, aceeași bază ca worklist-ul. Aici filtrele de
+// lună / curs / depășire se aplică PE RÂND, nu pe client.
+export type RateRow = {
+  id_enrollment: string
+  client_id: string
+  nume: string
+  prenume: string | null
+  telefon: string | null
+  id_locatie: string | null
+  nume_locatie: string | null
+  id_curs: string | null
+  nume_curs: string | null
+  data_incepere: string
+  scadenta: string
+  zile_depasire: number
+  total_de_plata: number
+  platit: number
+  rest: number
+  status_client: 'Activ' | 'Inactiv' | 'EXclient' | null
+  suspendat: boolean
+}
+
+export async function getRestanteRate(f: WorklistFilters): Promise<RateRow[]> {
+  const { data, error } = await supabase.rpc('get_restante_worklist_rate', worklistParams(f))
+  if (error) throw error
+  return ((data ?? []) as unknown as RateRow[]).map((r) => ({
+    ...r,
+    total_de_plata: Number(r.total_de_plata ?? 0),
+    platit: Number(r.platit ?? 0),
+    rest: Number(r.rest ?? 0),
+  }))
 }
 
 // O promisiune e „încălcată" dacă data promisă a trecut și clientul e încă în
