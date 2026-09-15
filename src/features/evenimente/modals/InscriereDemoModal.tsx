@@ -55,9 +55,9 @@ export function InscriereDemoModal({
 
   const [term, setTerm] = useState('')
   const [leadId, setLeadId] = useState('')
-  // Leadul ales are deja altă programare activă: recepția decide explicit dacă o
-  // înlocuiește sau le păstrează pe amândouă (altfel primește reminder pentru ambele).
-  const [alegere, setAlegere] = useState<'inlocuieste' | 'ambele' | null>(null)
+  // Leadul ales are deja altă programare activă: recepția confirmă înlocuirea
+  // (un lead are o singură programare).
+  const [inlocuireConfirmata, setInlocuireConfirmata] = useState(false)
   const [clientId, setClientId] = useState('')
   const [adusDe, setAdusDe] = useState('')
   const [walkIn, setWalkIn] = useState({
@@ -91,7 +91,7 @@ export function InscriereDemoModal({
   const asteaptaAlegere =
     mode === 'lead' &&
     Boolean(leadId) &&
-    (programariActive.isLoading || (alteProgramari.length > 0 && !alegere))
+    (programariActive.isLoading || (alteProgramari.length > 0 && !inlocuireConfirmata))
 
   // „Adus de" e provenienta reala a inscrierii: un cursant si-a adus prietenul.
   const sursa = (): SursaInscriere =>
@@ -126,9 +126,7 @@ export function InscriereDemoModal({
           adusDe: adusDe || null,
           permiteOverbook,
         })
-        if (alteProgramari.length > 0 && alegere === 'inlocuieste') {
-          await inlocuiesteProgramarileLead(leadId, programareId)
-        }
+        await inlocuiesteProgramarileLead(leadId, programareId)
         await enqueueConfirmareProgramare(leadId, programareId)
         return
       }
@@ -232,7 +230,7 @@ export function InscriereDemoModal({
                   type="button"
                   onClick={() => {
                     setLeadId(l.id)
-                    setAlegere(null)
+                    setInlocuireConfirmata(false)
                   }}
                   className={[
                     'flex w-full items-center justify-between px-3 py-2 text-left text-sm',
@@ -257,18 +255,15 @@ export function InscriereDemoModal({
                   )
                   .join('; ')}
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <p className="mt-1">
+                Un lead are o singură programare: clasa asta o înlocuiește pe cea veche.
+              </p>
+              <div className="mt-2">
                 <Button
-                  variant={alegere === 'inlocuieste' ? 'primary' : 'secondary'}
-                  onClick={() => setAlegere('inlocuieste')}
+                  variant={inlocuireConfirmata ? 'primary' : 'secondary'}
+                  onClick={() => setInlocuireConfirmata(true)}
                 >
-                  Înlocuiește cu clasa asta
-                </Button>
-                <Button
-                  variant={alegere === 'ambele' ? 'primary' : 'secondary'}
-                  onClick={() => setAlegere('ambele')}
-                >
-                  Păstrează ambele
+                  {inlocuireConfirmata ? '✓ Se înlocuiește cu clasa asta' : 'Înlocuiește cu clasa asta'}
                 </Button>
               </div>
             </div>

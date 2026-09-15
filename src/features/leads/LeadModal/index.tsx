@@ -38,6 +38,7 @@ import {
   listEvenimenteProgramabile,
   createProgramareLead,
   getLatestProgramare,
+  listProgramariActive,
   inlocuiesteProgramarileLead,
   enqueueConfirmareProgramare,
   markLeadConvertit,
@@ -103,6 +104,9 @@ export function LeadModal({
   // Cursa pe ultimul loc: clasa se poate umple între randarea dropdown-ului și
   // salvare. Steagul vine atunci din eroarea serverului, nu din listă.
   const [plinDinServer, setPlinDinServer] = useState(false)
+  // Reprogramare peste o programare încă activă: recepția confirmă înlocuirea,
+  // altfel nu află că exista una (un lead are o singură programare).
+  const [inlocuireConfirmata, setInlocuireConfirmata] = useState(false)
   // Valorile programării la deschidere — ca să nu re-creăm o programare la edituri
   // care nu schimbă data/cursul.
   const [initial, setInitial] = useState<{ data: string; selectie: string }>({
@@ -156,6 +160,7 @@ export function LeadModal({
     setSelectie('')
     setIgnoreVarsta(false)
     setPlinDinServer(false)
+    setInlocuireConfirmata(false)
     setInitial({ data: lead?.data_programare?.slice(0, 10) ?? '', selectie: '' })
   }, [open, lead, defaultStatus, startScheduling])
 
@@ -190,6 +195,12 @@ export function LeadModal({
       cancelled = true
     }
   }, [open, lead])
+
+  const programariActiveQ = useQuery({
+    queryKey: ['leads', 'programari-active', lead?.id ?? null],
+    queryFn: () => listProgramariActive(lead!.id),
+    enabled: open && Boolean(lead) && form.status === 'programat',
+  })
 
   const evenimenteQ = useQuery({
     queryKey: ['evenimente', 'programabile', form.data_programare],
@@ -366,6 +377,16 @@ export function LeadModal({
       selectie !== initial.selectie ||
       lead?.status !== 'programat')
 
+  // Aceeași clasă în aceeași zi nu e altă programare — n-are ce să confirme.
+  const programareIdentica = (p: { cursId: string | null; evenimentId: string | null; data: string }) =>
+    (selectie.startsWith('ev:') && p.evenimentId === selectie.slice(3)) ||
+    (selectie.startsWith('curs:') &&
+      p.cursId === selectie.slice(5) &&
+      p.data === form.data_programare.slice(0, 10))
+  const programariExistente = scheduleChanged
+    ? (programariActiveQ.data ?? []).filter((p) => !programareIdentica(p))
+    : []
+
   const save = useMutation({
     mutationFn: async () => {
       // Date-driven: dacă programăm (dată + curs), leadul devine 'programat'.
@@ -480,6 +501,14 @@ export function LeadModal({
       }
       if (!selectie) {
         setError('Alege cursul sau evenimentul pentru programare.')
+        return
+      }
+      if (scheduleChanged && programariActiveQ.isLoading) {
+        setError('Se verifică programările existente ale leadului — încearcă din nou.')
+        return
+      }
+      if (programariExistente.length > 0 && !inlocuireConfirmata) {
+        setError('Leadul are deja o programare — confirmă că o înlocuiești cu cea nouă.')
         return
       }
     }
@@ -691,6 +720,9 @@ export function LeadModal({
                       intreSezoane={intreSezoane}
                       locuri={locuriSelectie}
                       plin={selectiePlina}
+                      existente={programariExistente}
+                      inlocuireConfirmata={inlocuireConfirmata}
+                      onConfirmaInlocuire={() => setInlocuireConfirmata(true)}
                     />
                   )}
 

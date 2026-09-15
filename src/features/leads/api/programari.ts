@@ -59,12 +59,14 @@ export type ProgramareActiva = {
   id: string
   data: string
   ora: string | null
+  cursId: string | null
   evenimentId: string | null
   unde: string | null
 }
 
 // Programările neconsumate ale leadului (azi sau în viitor) — ca înscrierea din
-// rosterul clasei demo să întrebe înainte să lase leadul cu două programări.
+// rosterul clasei demo și reprogramarea din LeadModal să întrebe înainte să lase
+// leadul cu două programări.
 export async function listProgramariActive(
   leadId: string,
 ): Promise<ProgramareActiva[]> {
@@ -73,7 +75,7 @@ export async function listProgramariActive(
   const { data, error } = await supabase
     .from('programari_leads')
     .select(
-      'id, data_programarii, ora, eveniment_programat, curs_rel:cursuri!fk_progr_curs(numele), eveniment_rel:evenimente(nume_eveniment)',
+      'id, data_programarii, ora, cursul_programat, eveniment_programat, curs_rel:cursuri!fk_progr_curs(numele), eveniment_rel:evenimente(nume_eveniment)',
     )
     .eq('lead', leadId)
     .eq('prezenta', 'programat')
@@ -84,6 +86,7 @@ export async function listProgramariActive(
     id: p.id,
     data: p.data_programarii as string,
     ora: p.ora ?? null,
+    cursId: p.cursul_programat ?? null,
     evenimentId: p.eveniment_programat ?? null,
     unde:
       (p.curs_rel as { numele: string | null } | null)?.numele ??
