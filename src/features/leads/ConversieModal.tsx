@@ -12,13 +12,8 @@ import {
 } from '@/components/ui'
 import { sexOptions } from '@/lib/enums'
 import type { Lead, InsertDto } from '@/types/db'
-import {
-  createClient,
-  updateClient,
-  getClientFamilia,
-  createDocumentClient,
-} from '@/features/clienti/api'
-import { createFamilie } from '@/features/familii/api'
+import { createClient, createDocumentClient } from '@/features/clienti/api'
+import { asiguraFamilieClient } from '@/features/familii/api'
 import { TrimiteContractModal } from '@/features/contracte/TrimiteContractModal'
 import {
   findMatchingClient,
@@ -68,6 +63,8 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
   const [contractFamilie, setContractFamilie] = useState<{ id: string; nume: string } | null>(
     null,
   )
+  // Familia clientului, făcută odată cu fișa (nu doar dacă se trimite contractul pe loc).
+  const [familieClient, setFamilieClient] = useState<{ id: string; nume: string } | null>(null)
 
   useEffect(() => {
     if (!open || !lead) return
@@ -87,6 +84,7 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     setManualLink('')
     setPreparingContract(false)
     setContractFamilie(null)
+    setFamilieClient(null)
     setConfirmExit(false)
     // detecție duplicat + grupa sugerată de programare
     void findMatchingClient(lead).then((m) => {
@@ -97,7 +95,9 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
   }, [open, lead])
 
   const mutation = useMutation({
-    mutationFn: async (): Promise<ConversieResult> => {
+    mutationFn: async (): Promise<
+      ConversieResult & { familie: { id: string; nume: string } | null }
+    > => {
       let clientId: string
       if (useMerge && matched) {
         clientId = matched.id
@@ -127,9 +127,21 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
         })
       }
       await attachClientToLead(lead!.id, clientId)
-      return { clientId, sugestie, leadId: lead!.id }
+      // Familia se face acum, nu doar la „Trimite contract": fără ea clientul nu putea
+      // primi contract mai târziu. Leadul e deja legat, deci numele părintelui e găsit.
+      let familie: { id: string; nume: string } | null = null
+      try {
+        const f = await asiguraFamilieClient(clientId)
+        if (f.id) familie = { id: f.id, nume: f.nume ?? '' }
+      } catch {
+        // conversia nu pică din cauza familiei; se reîncearcă la „Trimite contract"
+      }
+      return { clientId, sugestie, leadId: lead!.id, familie }
     },
     onSuccess: (result) => {
+      setFamilieClient(result.familie)
+      void queryClient.invalidateQueries({ queryKey: ['familii'] })
+      void queryClient.invalidateQueries({ queryKey: ['lookup', 'familii'] })
       void queryClient.invalidateQueries({ queryKey: ['leads'] })
       void queryClient.invalidateQueries({ queryKey: ['lookup', 'clienti'] })
       void queryClient.invalidateQueries({ queryKey: ['clienti'] })
@@ -186,25 +198,18 @@ export function ConversieModal({ open, lead, onClose, onConverted }: Props) {
     setError(null)
     setPreparingContract(true)
     try {
-      let familie: { id: string; nume: string }
-      if (useMerge && matched?.familia) {
-        const fam = await getClientFamilia(matched.familia)
-        if (!fam) throw new Error('Familia clientului nu a putut fi găsită.')
-        familie = { id: fam.id, nume: fam.nume_familie }
-      } else {
-        const displayNume = useMerge && matched ? matched.nume : nume.trim()
-        const displayPrenume = useMerge && matched ? (matched.prenume ?? '') : prenume.trim()
-        const fam = await createFamilie({
-          nume_familie: `${displayPrenume} ${displayNume}`.trim(),
-          nume_reprezentant: displayNume || null,
-          prenume_reprezentant: displayPrenume || null,
-          telefon: telefon.trim() || null,
-          email: email.trim() || null,
-        })
-        await updateClient(conversionResult.clientId, { familia: fam.id })
+      let familie = familieClient
+      if (!familie) {
+        const f = await asiguraFamilieClient(conversionResult.clientId)
+        if (!f.id) {
+          throw new Error(
+            f.motiv ?? 'Clientul nu are telefon sau email: linkul n-ar avea unde să plece.',
+          )
+        }
+        familie = { id: f.id, nume: f.nume ?? '' }
+        setFamilieClient(familie)
         void queryClient.invalidateQueries({ queryKey: ['lookup', 'familii'] })
         void queryClient.invalidateQueries({ queryKey: ['familii'] })
-        familie = { id: fam.id, nume: fam.nume_familie }
       }
       setContractFamilie(familie)
     } catch (e) {

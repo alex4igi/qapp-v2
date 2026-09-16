@@ -181,3 +181,73 @@ export async function getFamilieInrolariSezon(params: {
   if (error) throw error
   return (data ?? []) as unknown as FamilieInrolareSezon[]
 }
+
+export type FamilieLipsaActiune =
+  | 'are_familie'
+  | 'ataseaza'
+  | 'familie_proprie'
+  | 'familie_noua'
+  | 'frate'
+  | 'sare'
+  | 'eroare'
+
+export type FamilieLipsaPreview = {
+  client_id: string
+  client_nume: string
+  data_nasterii: string | null
+  categorie: 'adult' | 'minor' | 'fara_data'
+  telefon: string | null
+  email: string | null
+  grupe: string[]
+  actiune: FamilieLipsaActiune
+  familie_id: string | null
+  familie_nume: string | null
+  reprezentant: string | null
+  sursa_reprezentant: 'lead' | 'client' | null
+  motiv: string | null
+}
+
+// Clienții cu înrolare în curs și fără familie, cu ce ar face generarea pentru fiecare.
+export async function previewFamiliiLipsa(): Promise<FamilieLipsaPreview[]> {
+  const { data, error } = await supabase.rpc('familii_lipsa_preview')
+  if (error) throw error
+  return (data ?? []) as FamilieLipsaPreview[]
+}
+
+export type FamilieLipsaRezultat = {
+  client_id: string
+  actiune: FamilieLipsaActiune
+  familie_id: string | null
+  familie_nume: string | null
+  motiv: string | null
+}
+
+// Ordinea contează: frații se grupează pentru că al doilea găsește familia primului.
+export async function genereazaFamiliiLipsa(clientIds: string[]): Promise<FamilieLipsaRezultat[]> {
+  if (clientIds.length === 0) return []
+  const { data, error } = await supabase.rpc('genereaza_familii_lipsa', { p_client_ids: clientIds })
+  if (error) throw error
+  return (data ?? []) as FamilieLipsaRezultat[]
+}
+
+export type FamilieAsigurata = {
+  actiune: FamilieLipsaActiune
+  id: string | null
+  nume: string | null
+  motiv: string | null
+}
+
+// Familia clientului, creată sau găsită după regula din DB (adult → proprie; minor →
+// familia copilului; telefon deja pe o familie → se adaugă acolo). `id` null = n-a mers.
+export async function asiguraFamilieClient(clientId: string): Promise<FamilieAsigurata> {
+  const { data, error } = await supabase.rpc('asigura_familie_client', { p_client_id: clientId })
+  if (error) throw error
+  const row = data?.[0]
+  if (!row) throw new Error('Familia nu a putut fi pregătită.')
+  return {
+    actiune: row.actiune as FamilieLipsaActiune,
+    id: row.familie_id,
+    nume: row.familie_nume,
+    motiv: row.motiv,
+  }
+}

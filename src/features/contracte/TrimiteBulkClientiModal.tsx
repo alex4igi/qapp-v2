@@ -14,6 +14,7 @@ import { humanizeError } from '@/lib/errorMessage'
 import { locatiiOptions, sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import { useCursuriOptions } from '@/hooks/useCursuriOptions'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { asiguraFamilieClient } from '@/features/familii/api'
 import {
   listContracteActivePeTemplate,
   listTargetsContracte,
@@ -33,7 +34,16 @@ type Mod = 'familie' | 'copil'
 type Row = ContractTarget & {
   canal: 'sms' | 'email' | null
   existent: string | null
+  // fără familie, dar cu telefon/email pe fișă: familia i se creează la trimitere
+  familieAuto: boolean
   eligibil: boolean
+}
+
+type Tinta = {
+  familieId: string | null
+  clientId: string
+  clientNume: string
+  canal: 'sms' | 'email'
 }
 
 type Rezultat = {
@@ -41,6 +51,7 @@ type Rezultat = {
   sms: number
   email: number
   netrimise: number
+  familiiCreate: number
   errors: string[]
 }
 
@@ -114,7 +125,10 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
       if (!peFamilie.has(c.familie_id)) peFamilie.set(c.familie_id, c.status)
     }
     return (targetsQ.data ?? []).map((t) => {
-      const canal = t.telefon ? 'sms' : t.email ? 'email' : null
+      const familieAuto = !t.familie_id && !!(t.client_telefon || t.client_email)
+      const telefon = t.familie_id ? t.telefon : t.client_telefon
+      const email = t.familie_id ? t.email : t.client_email
+      const canal = telefon ? 'sms' : email ? 'email' : null
       // Aceeași regulă ca gardul din contract-send: pe familie blochează orice
       // contract viu al familiei; pe copil doar contractul acelui copil.
       const existent =
@@ -127,7 +141,8 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
         ...t,
         canal,
         existent,
-        eligibil: !!t.familie_id && !!canal && !existent && !!templateId,
+        familieAuto,
+        eligibil: (!!t.familie_id || familieAuto) && !!canal && !existent && !!templateId,
       }
     })
   }, [targetsQ.data, activeQ.data, mod, templateId])
@@ -146,24 +161,30 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
   )
 
   // Un contract per familie deduplică copiii aceleiași familii; per copil, unu la unu.
+  // Clientul fără familie e o țintă separată: familia lui apare abia la trimitere.
   const deTrimis = useMemo(() => {
-    const out: Array<SendTarget & { canal: 'sms' | 'email' }> = []
+    const out: Tinta[] = []
     const familiiVazute = new Set<string>()
     for (const r of selectate) {
-      const familieId = r.familie_id!
-      const canal = r.canal!
-      if (mod === 'copil') {
-        out.push({ familieId, clientId: r.client_id, canal })
+      const tinta: Tinta = {
+        familieId: r.familie_id,
+        clientId: r.client_id,
+        clientNume: r.client_nume,
+        canal: r.canal!,
+      }
+      if (mod === 'copil' || !r.familie_id) {
+        out.push(tinta)
         continue
       }
-      if (familiiVazute.has(familieId)) continue
-      familiiVazute.add(familieId)
-      out.push({ familieId, clientId: null, canal })
+      if (familiiVazute.has(r.familie_id)) continue
+      familiiVazute.add(r.familie_id)
+      out.push(tinta)
     }
     return out
   }, [selectate, mod])
 
-  const faraFamilie = vizibile.filter((r) => !r.familie_id)
+  const faraFamilie = vizibile.filter((r) => !r.familie_id && !r.familieAuto)
+  const familieAuto = vizibile.filter((r) => r.familieAuto)
   const faraContact = vizibile.filter((r) => r.familie_id && !r.canal)
   const cuContract = vizibile.filter((r) => r.existent).length
   const eligibileVizibile = vizibile.filter((r) => r.eligibil)
@@ -197,10 +218,39 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
       let sms = 0
       let email = 0
       let netrimise = 0
+      let familiiCreate = 0
       const errors: string[] = []
-      for (let i = 0; i < deTrimis.length; i += BATCH_SIZE) {
-        const batch = deTrimis.slice(i, i + BATCH_SIZE)
-        setProgress(`Se trimite… ${Math.min(i + BATCH_SIZE, deTrimis.length)}/${deTrimis.length}`)
+
+      // Întâi familiile lipsă, apoi dedup pe familia reală: doi frați fără familie
+      // ajung în aceeași familie (al doilea o găsește după telefon).
+      const tinte: Array<SendTarget & { canal: 'sms' | 'email' }> = []
+      const familiiVazute = new Set<string>()
+      const nrAuto = deTrimis.filter((t) => !t.familieId).length
+      let pregatite = 0
+      for (const t of deTrimis) {
+        let familieId = t.familieId
+        if (!familieId) {
+          setProgress(`Se pregătesc familiile… ${++pregatite}/${nrAuto}`)
+          const f = await asiguraFamilieClient(t.clientId)
+          if (!f.id) {
+            errors.push(`${t.clientNume}: ${f.motiv ?? 'familia nu a putut fi creată'}`)
+            continue
+          }
+          if (f.actiune !== 'are_familie') familiiCreate++
+          familieId = f.id
+        }
+        if (mod === 'copil') {
+          tinte.push({ familieId, clientId: t.clientId, canal: t.canal })
+          continue
+        }
+        if (familiiVazute.has(familieId)) continue
+        familiiVazute.add(familieId)
+        tinte.push({ familieId, clientId: null, canal: t.canal })
+      }
+
+      for (let i = 0; i < tinte.length; i += BATCH_SIZE) {
+        const batch = tinte.slice(i, i + BATCH_SIZE)
+        setProgress(`Se trimite… ${Math.min(i + BATCH_SIZE, tinte.length)}/${tinte.length}`)
         const results = await sendContracte({
           templateId,
           targets: batch.map(({ familieId, clientId }) => ({ familieId, clientId })),
@@ -218,7 +268,7 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
           else sms++
         }
       }
-      return { ok, sms, email, netrimise, errors: errors.slice(0, 5) }
+      return { ok, sms, email, netrimise, familiiCreate, errors: errors.slice(0, 5) }
     },
     onSuccess: (r) => {
       setProgress(null)
@@ -226,10 +276,23 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
       setSelected(new Set())
       queryClient.invalidateQueries({ queryKey: ['contracte'] })
       queryClient.invalidateQueries({ queryKey: ['contracte-active-template', templateId] })
+      if (r.familiiCreate > 0) {
+        queryClient.invalidateQueries({ queryKey: ['contract-targets'] })
+        queryClient.invalidateQueries({ queryKey: ['familii'] })
+        queryClient.invalidateQueries({ queryKey: ['clienti'] })
+        queryClient.invalidateQueries({ queryKey: ['lookup', 'familii'] })
+      }
     },
     onError: (e) => {
       setProgress(null)
-      setResult({ ok: 0, sms: 0, email: 0, netrimise: 0, errors: [humanizeError(e)] })
+      setResult({
+        ok: 0,
+        sms: 0,
+        email: 0,
+        netrimise: 0,
+        familiiCreate: 0,
+        errors: [humanizeError(e)],
+      })
     },
   })
 
@@ -414,7 +477,8 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
                         />
                         <span className="flex shrink-0 items-center gap-1">
                           {existent && <Badge tone={existent.tone}>{existent.label}</Badge>}
-                          {!r.familie_id ? (
+                          {r.familieAuto && <Badge tone="warn">familie la trimitere</Badge>}
+                          {!r.familie_id && !r.familieAuto ? (
                             <Badge tone="danger">fără familie</Badge>
                           ) : r.canal === 'sms' ? (
                             <Badge tone="neutral">SMS</Badge>
@@ -431,13 +495,21 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
               )}
             </div>
 
+            {familieAuto.length > 0 && (
+              <p className="text-sm text-muted-2">
+                {familieAuto.length} fără familie în fișă: familia li se creează automat la
+                trimitere, din telefonul sau emailul de pe fișă. Adultul se reprezintă singur;
+                minorul primește familia lui, iar părintele își completează numele la semnare.
+              </p>
+            )}
             {(faraFamilie.length > 0 || faraContact.length > 0) && (
               <p className="text-sm text-amber-700">
                 ⚠️ Nu pot primi link:{' '}
-                {faraFamilie.length > 0 && `${faraFamilie.length} fără familie în fișă`}
+                {faraFamilie.length > 0 &&
+                  `${faraFamilie.length} fără familie și fără telefon/email pe fișă`}
                 {faraFamilie.length > 0 && faraContact.length > 0 && ', '}
                 {faraContact.length > 0 && `${faraContact.length} cu familie fără telefon și email`}
-                . Completează fișa familiei și revino.
+                . Completează fișa și revino.
               </p>
             )}
           </>
@@ -448,6 +520,7 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
           <div className="space-y-1 text-sm">
             <p className="font-medium text-green-700">
               ✓ {result.ok} contracte create — {result.sms} pe SMS, {result.email} pe email
+              {result.familiiCreate > 0 && ` · ${result.familiiCreate} familii pregătite`}
             </p>
             {result.netrimise > 0 && (
               <p className="text-red-600">

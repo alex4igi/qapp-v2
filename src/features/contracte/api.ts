@@ -125,6 +125,9 @@ export type ContractTarget = {
   familie_nume: string | null
   telefon: string | null
   email: string | null
+  // contactul de pe fișa clientului: pentru cel fără familie, de aici pleacă linkul
+  client_telefon: string | null
+  client_email: string | null
   locatie_nume: string | null
   cursuri: string[]
 }

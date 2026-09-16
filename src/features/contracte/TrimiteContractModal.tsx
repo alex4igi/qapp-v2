@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Checkbox, Field, Modal, Select, Spinner, TextInput } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
 import {
-  creeazaFamilieProprie,
+  asiguraFamilieClient,
   getFamilieMembers,
   listFamilii,
 } from '@/features/familii/api'
@@ -91,12 +91,17 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
   )
 
   const varsta = faraFamilie ? calcAge(faraFamilie.data_nasterii) : null
+  const contactFaraFamilie = faraFamilie
+    ? faraFamilie.telefon
+      ? `prin SMS la ${faraFamilie.telefon}`
+      : faraFamilie.email
+        ? `pe email la ${faraFamilie.email}`
+        : null
+    : null
+  // Minorul și cel fără dată de naștere primesc familia lor la trimitere (părintele își
+  // completează numele la semnare); adultul doar dacă se reprezintă singur.
   const poateCreaFamilia =
-    !!faraFamilie &&
-    varsta !== null &&
-    varsta >= 18 &&
-    seReprezintaSingur &&
-    !!(faraFamilie.telefon || faraFamilie.email)
+    !!faraFamilie && !!contactFaraFamilie && (varsta === null || varsta < 18 || seReprezintaSingur)
 
   const send = useMutation({
     mutationFn: async () => {
@@ -104,9 +109,16 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
       let vizat = clientId || null
       let familieCreata: string | null = null
       if (!familie && faraFamilie) {
-        familie = await creeazaFamilieProprie(faraFamilie.id)
+        const f = await asiguraFamilieClient(faraFamilie.id)
+        if (!f.id) throw new Error(f.motiv ?? 'Familia nu a putut fi pregătită.')
+        familie = { id: f.id, nume: f.nume ?? '' }
         vizat = faraFamilie.id
-        familieCreata = familie.nume
+        familieCreata =
+          f.actiune === 'ataseaza'
+            ? `Adăugat în familia „${familie.nume}”. `
+            : f.actiune === 'are_familie'
+              ? ''
+              : `Familia „${familie.nume}” a fost creată. `
         // de-acum clientul are familie: o retrimitere după o eroare nu o mai creează
         setSelFamilie(familie)
         setClientId(faraFamilie.id)
@@ -123,7 +135,7 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
       return { r: results[0], familieCreata, cheie: `${templateId}|${familie!.id}|${vizat ?? ''}` }
     },
     onSuccess: ({ r, familieCreata, cheie }) => {
-      const prefix = familieCreata ? `Familia „${familieCreata}” a fost creată. ` : ''
+      const prefix = familieCreata ?? ''
       if (!r?.ok) {
         const nesemnat = ['trimis', 'deschis'].includes(r?.statusExistent ?? '')
         setDublura(nesemnat && r?.contractId ? { contractId: r.contractId, cheie } : null)
@@ -231,18 +243,12 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
                   </Button>
                 )}
               </div>
-              {varsta === null ? (
+              {varsta === null || varsta < 18 ? (
                 <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                  Fișa nu are data nașterii. Completeaz-o: doar un client major se poate
-                  reprezenta singur.{' '}
-                  <Link to={`/clienti/${faraFamilie.id}`} className="underline" onClick={close}>
-                    Deschide fișa
-                  </Link>
-                </p>
-              ) : varsta < 18 ? (
-                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                  E minor ({varsta} ani): contractul îl semnează un părinte. Adaugă familia
-                  cu părintele în fișa clientului.{' '}
+                  {varsta === null ? 'Fișa nu are data nașterii' : `E minor (${varsta} ani)`}:{' '}
+                  {contactFaraFamilie
+                    ? `la trimitere i se creează familia „${faraFamilie.nume}” din contactul de pe fișă, iar linkul pleacă ${contactFaraFamilie}. Părintele își completează numele la semnare.`
+                    : 'fișa nu are nici telefon, nici email, linkul n-ar avea unde să plece.'}{' '}
                   <Link to={`/clienti/${faraFamilie.id}`} className="underline" onClick={close}>
                     Deschide fișa
                   </Link>

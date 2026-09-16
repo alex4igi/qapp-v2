@@ -11605,6 +11605,17 @@ export type Database = {
         Returns: Json
       }
       archive_expired_sezoane: { Args: never; Returns: number }
+      asigura_familie_client: {
+        Args: { p_client_id: string; p_dry_run?: boolean }
+        Returns: {
+          actiune: string
+          familie_id: string
+          familie_nume: string
+          motiv: string
+          reprezentant: string
+          sursa_reprezentant: string
+        }[]
+      }
       audit_digest_dispatch_weekly: { Args: never; Returns: number }
       audit_log_record: {
         Args: {
@@ -11901,6 +11912,28 @@ export type Database = {
         Returns: undefined
       }
       expire_open_holds: { Args: never; Returns: number }
+      familie_reprezentant_din_text: {
+        Args: { p_nume_copil: string; p_text: string }
+        Returns: Record<string, unknown>
+      }
+      familii_lipsa_preview: {
+        Args: never
+        Returns: {
+          actiune: string
+          categorie: string
+          client_id: string
+          client_nume: string
+          data_nasterii: string
+          email: string
+          familie_id: string
+          familie_nume: string
+          grupe: string[]
+          motiv: string
+          reprezentant: string
+          sursa_reprezentant: string
+          telefon: string
+        }[]
+      }
       fgo_line_for_datorie: {
         Args: { p_datorie: string; p_suma: number }
         Returns: Json
@@ -11912,6 +11945,16 @@ export type Database = {
       fgo_line_for_eveniment: {
         Args: { p_bucati?: number; p_eveniment: string; p_suma: number }
         Returns: Json
+      }
+      genereaza_familii_lipsa: {
+        Args: { p_client_ids: string[] }
+        Returns: {
+          actiune: string
+          client_id: string
+          familie_id: string
+          familie_nume: string
+          motiv: string
+        }[]
       }
       genereaza_runde_sezon: { Args: { p_sezon: string }; Returns: number }
       get_absente_21z_worklist: {
@@ -13397,8 +13440,10 @@ export type Database = {
       list_targets_contracte: {
         Args: { p_curs?: string; p_locatie?: string; p_sezon?: string }
         Returns: {
+          client_email: string
           client_id: string
           client_nume: string
+          client_telefon: string
           cursuri: string[]
           email: string
           familie_id: string
@@ -13560,6 +13605,7 @@ export type Database = {
         Args: { p_eveniment: string }
         Returns: number
       }
+      notifica_grupe_peste_capacitate: { Args: never; Returns: number }
       notifica_grupe_sub_minim: {
         Args: { p_la?: string; p_sezon?: string }
         Returns: number
@@ -14042,6 +14088,7 @@ export type Database = {
       }
       sync_cursuri_suspendat: { Args: never; Returns: number }
       teacher_can_access_curs: { Args: { p_curs: string }; Returns: boolean }
+      tel9: { Args: { p_telefon: string }; Returns: string }
       trimite_aprobate: { Args: { p_sesiune: string }; Returns: number }
       update_profil_client: {
         Args: {

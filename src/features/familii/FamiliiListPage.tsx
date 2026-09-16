@@ -14,7 +14,10 @@ import type { Familie } from '@/types/db'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist } from '@/lib/checklist'
 import { FAMILIE_CHECKLIST } from '@/lib/checklist/specs/familie'
+import { useAuth } from '@/hooks/useAuth'
+import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { FamilieForm } from './FamilieForm'
+import { GenereazaFamiliiModal } from './GenereazaFamiliiModal'
 import { listFamilii, PAGE_SIZE } from './api'
 
 const columns: Column<Familie>[] = [
@@ -56,6 +59,8 @@ export function FamiliiListPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
+  const [genOpen, setGenOpen] = useState(false)
+  const { role } = useAuth()
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -82,7 +87,14 @@ export function FamiliiListPage() {
         title="Familii"
         subtitle={data ? `${data.total} familii` : undefined}
         actions={
-          <Button onClick={() => setFormOpen(true)}>+ Familie nouă</Button>
+          <div className="flex flex-wrap gap-2">
+            {isManagerOrHigher(role) && (
+              <Button variant="secondary" onClick={() => setGenOpen(true)}>
+                Generează familiile lipsă
+              </Button>
+            )}
+            <Button onClick={() => setFormOpen(true)}>+ Familie nouă</Button>
+          </div>
         }
       />
 
@@ -137,6 +149,7 @@ export function FamiliiListPage() {
       {formOpen && (
         <FamilieForm open onClose={() => setFormOpen(false)} />
       )}
+      {genOpen && <GenereazaFamiliiModal open onClose={() => setGenOpen(false)} />}
     </div>
   )
 }
