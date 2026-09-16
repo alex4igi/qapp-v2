@@ -13,18 +13,8 @@ export async function triggerLeadSms(
   // fun" → scos din fluxul rece, niciun SMS automat.
   if (lead.deja_client) return
 
-  // review = la conversie (lead → client), NU după prezența la demo. NU se trimite
-  // imediat: trece prin coada `confirmari_review_sms` cu delay de 5 min (fereastră
-  // de undo — dacă revii din conversie, SMS-ul nu mai pleacă), drenată de edge fn
-  // `process-review-sms`. La fel ca programarea (coada `confirmari_programare_sms`).
-  if (lead.status === 'convertit' && prev !== 'convertit') {
-    try {
-      await supabase.rpc('enqueue_confirmare_review', { p_lead: lead.id })
-    } catch (e) {
-      console.error('[triggerLeadSms] review enqueue', e)
-    }
-  }
-
+  // Conversia nu mai trimite SMS de review (scos 2026-09-16); coada
+  // `confirmari_review_sms` rămâne goală.
   const tips: string[] = []
   // followup DOAR la 1-a neprezentare; a 2-a e rutată în nurture (fără SMS).
   if (

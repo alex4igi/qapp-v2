@@ -129,7 +129,10 @@ export async function attachClientToLead(
 }
 
 // Marchează lead-ul convertit — se apelează DOAR după ce înrolarea s-a creat cu
-// succes. Setează data_conversie și declanșează SMS-ul de review.
+// succes. Triggerul DB `enrollment_marcheaza_lead_convertit` face același lucru
+// la orice înrolare (fișă client, card grupă), dar doar când leadul e mai vechi
+// decât fișa; leadul legat de un client existent („Leagă și continuă") rămâne
+// pe seama apelului de aici. Fără SMS de review (scos 2026-09-16).
 export async function markLeadConvertit(leadId: string): Promise<void> {
   const { error } = await supabase
     .from('leads')
@@ -139,15 +142,6 @@ export async function markLeadConvertit(leadId: string): Promise<void> {
     })
     .eq('id', leadId)
   if (error) throw error
-
-  // SMS review la conversie (dedup pe sms_logs tip='review' în edge function).
-  try {
-    await supabase.functions.invoke('send-lead-sms', {
-      body: { leadId, tip: 'review' },
-    })
-  } catch (e) {
-    console.error('[markLeadConvertit] review sms', e)
-  }
 }
 
 // Dintr-o listă de clienți, cei care au cel puțin o înrolare activă (ne-reziliată).
