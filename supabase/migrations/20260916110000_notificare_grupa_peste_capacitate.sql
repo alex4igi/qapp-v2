@@ -108,7 +108,7 @@ revoke execute on function notifica_grupe_peste_capacitate() from anon, public, 
 select cron.unschedule('grupe-peste-capacitate-zilnic')
 where exists (select 1 from cron.job where jobname = 'grupe-peste-capacitate-zilnic');
 
--- 06:30 UTC = 09:30 la Iași, înainte de primele ore.
+-- 06:30 UTC = 09:30 la Iași. ⚠️ Reprogramat săptămânal în 20260916120000.
 select cron.schedule(
   'grupe-peste-capacitate-zilnic',
   '30 6 * * *',
