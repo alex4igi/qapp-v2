@@ -269,13 +269,6 @@ export type Database = {
             foreignKeyName: "absente_21z_locatie_fkey"
             columns: ["locatie"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "absente_21z_locatie_fkey"
-            columns: ["locatie"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -610,13 +603,6 @@ export type Database = {
             columns: ["locatie_id"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "audit_log_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -2061,13 +2047,6 @@ export type Database = {
             foreignKeyName: "fk_cursuri_locatie"
             columns: ["locatie"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_cursuri_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -2558,13 +2537,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "datorii_locatie_fkey"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -3843,13 +3815,6 @@ export type Database = {
             foreignKeyName: "evenimente_locatie_id_fkey"
             columns: ["locatie_id"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "evenimente_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -4848,13 +4813,6 @@ export type Database = {
             foreignKeyName: "fk_incasari_locatie"
             columns: ["locatie"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_incasari_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -5069,13 +5027,6 @@ export type Database = {
             foreignKeyName: "inchirieri_locatie_fkey"
             columns: ["locatie"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "inchirieri_locatie_fkey"
-            columns: ["locatie"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -5238,13 +5189,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_inventar_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -5489,13 +5433,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "kpi_grila_locatii_locatie_fkey"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -7536,13 +7473,6 @@ export type Database = {
             foreignKeyName: "fk_progr_locatie"
             columns: ["locatie"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_progr_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -7833,13 +7763,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "reconcilieri_cash_locatie_fkey"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -8340,13 +8263,6 @@ export type Database = {
             foreignKeyName: "fk_sali_locatie"
             columns: ["locatie"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_sali_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -8730,13 +8646,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_sms_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -9231,13 +9140,6 @@ export type Database = {
             columns: ["locatie_id"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "staff_pontaj_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -9974,13 +9876,6 @@ export type Database = {
             foreignKeyName: "datorii_locatie_fkey"
             columns: ["locatie"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "datorii_locatie_fkey"
-            columns: ["locatie"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -10184,13 +10079,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_sali_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -10439,13 +10327,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_incasari_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -10712,13 +10593,6 @@ export type Database = {
             foreignKeyName: "fk_sali_locatie"
             columns: ["locatie"]
             isOneToOne: false
-            referencedRelation: "raport_incasari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_sali_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
           },
@@ -10851,13 +10725,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_sali_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {
@@ -11154,6 +11021,67 @@ export type Database = {
         }
         Relationships: []
       }
+      reconcilieri_cash_live: {
+        Row: {
+          created: string | null
+          created_by: string | null
+          data: string | null
+          denominatii: Json | null
+          id: string | null
+          locatie: string | null
+          locatie_nume: string | null
+          notite: string | null
+          total_cheltuieli: number | null
+          total_numarat: number | null
+          total_sistem: number | null
+          total_sistem_live: number | null
+          updated: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconcilieri_cash_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "reconcilieri_cash_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reconcilieri_cash_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "reconcilieri_cash_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "reconcilieri_cash_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "reconcilieri_cash_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+        ]
+      }
       restante_curs_luna: {
         Row: {
           id: string | null
@@ -11364,13 +11292,6 @@ export type Database = {
             columns: ["locatie"]
             isOneToOne: false
             referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "fk_sali_locatie"
-            columns: ["locatie"]
-            isOneToOne: false
-            referencedRelation: "raport_incasari"
             referencedColumns: ["id_locatie"]
           },
           {

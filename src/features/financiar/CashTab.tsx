@@ -28,12 +28,21 @@ import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { locatiiOptions } from '@/lib/lookups'
 import { difReconciliere } from '@/features/situatie-zilnica/api'
 import { KpiCard } from '@/features/statistici/KpiCard'
-import type { ReconciliereCash } from '@/types/db'
+import type { Views } from '@/types/db'
 
-export type ReconciliereRow = ReconciliereCash & {
-  locatii?: { nume: string | null } | null
-}
+// View-ul recalculează încasările cash ale zilei din `incasari` (vezi migrația
+// 20260916150000): coloana `total_sistem` din tabel e doar snapshotul de la
+// numărare și rămâne în urmă dacă o încasare e corectată după salvare.
+export type ReconciliereRow = Views<'reconcilieri_cash_live'>
 type Row = ReconciliereRow
+
+function difLive(r: Row): number {
+  return difReconciliere({
+    total_numarat: r.total_numarat,
+    total_sistem: r.total_sistem_live,
+    total_cheltuieli: r.total_cheltuieli,
+  })
+}
 
 export async function listReconcilieri(params: {
   from: string
@@ -41,8 +50,8 @@ export async function listReconcilieri(params: {
   locatieId: string | null
 }): Promise<Row[]> {
   let q = supabase
-    .from('reconcilieri_cash')
-    .select(`*, locatii(nume)`)
+    .from('reconcilieri_cash_live')
+    .select('*')
     .order('data', { ascending: false })
   if (params.from) q = q.gte('data', params.from)
   if (params.to) q = q.lte('data', params.to)
@@ -79,15 +88,15 @@ const columns: Column<Row>[] = [
   },
   {
     header: 'Locație',
-    cell: (r) => r.locatii?.nume ?? '—',
+    cell: (r) => r.locatie_nume ?? '—',
     className: 'w-44',
-    sortValue: (r) => r.locatii?.nume?.toLowerCase(),
+    sortValue: (r) => r.locatie_nume?.toLowerCase(),
   },
   {
     header: 'Încasări cash',
-    cell: (r) => formatRON(Number(r.total_sistem ?? 0)),
+    cell: (r) => formatRON(Number(r.total_sistem_live ?? 0)),
     className: 'w-32 text-right',
-    sortValue: (r) => Number(r.total_sistem ?? 0),
+    sortValue: (r) => Number(r.total_sistem_live ?? 0),
   },
   {
     header: 'Cheltuieli cash',
@@ -104,7 +113,7 @@ const columns: Column<Row>[] = [
   {
     header: 'Dif.',
     cell: (r) => {
-      const d = difReconciliere(r)
+      const d = difLive(r)
       return (
         <span className={`font-semibold ${difTone(d)}`}>
           {d > 0 ? '+' : ''}
@@ -113,7 +122,7 @@ const columns: Column<Row>[] = [
       )
     },
     className: 'w-32 text-right',
-    sortValue: (r) => difReconciliere(r),
+    sortValue: (r) => difLive(r),
   },
   {
     header: 'Notițe',
@@ -148,13 +157,13 @@ export function CashTab() {
     const sum = (pick: (r: Row) => number) => rows.reduce((a, r) => a + pick(r), 0)
     return {
       zile: rows.length,
-      sistem: sum((r) => Number(r.total_sistem ?? 0)),
+      sistem: sum((r) => Number(r.total_sistem_live ?? 0)),
       cheltuieli: sum((r) => Number(r.total_cheltuieli ?? 0)),
       // Fără fond reportat, Numărat = net-ul zilei → însumabil = cash rămas.
       numarat: sum((r) => Number(r.total_numarat ?? 0)),
-      difTotal: sum((r) => difReconciliere(r)),
-      zileLipsa: rows.filter((r) => difReconciliere(r) < 0).length,
-      zileSurplus: rows.filter((r) => difReconciliere(r) > 0).length,
+      difTotal: sum((r) => difLive(r)),
+      zileLipsa: rows.filter((r) => difLive(r) < 0).length,
+      zileSurplus: rows.filter((r) => difLive(r) > 0).length,
     }
   }, [data])
 
@@ -163,7 +172,7 @@ export function CashTab() {
     () =>
       [...(data ?? [])]
         .sort((a, b) => (a.data ?? '').localeCompare(b.data ?? ''))
-        .map((r) => ({ data: (r.data ?? '').slice(5), dif: difReconciliere(r) })),
+        .map((r) => ({ data: (r.data ?? '').slice(5), dif: difLive(r) })),
     [data],
   )
 
@@ -171,18 +180,18 @@ export function CashTab() {
     const rows = data ?? []
     const body: (string | number)[][] = rows.map((r) => [
       r.data ?? '',
-      r.locatii?.nume ?? '',
-      Number(r.total_sistem ?? 0),
+      r.locatie_nume ?? '',
+      Number(r.total_sistem_live ?? 0),
       Number(r.total_cheltuieli ?? 0),
       Number(r.total_numarat ?? 0),
-      difReconciliere(r),
+      difLive(r),
       r.notite ?? '',
     ])
     const sum = (pick: (r: Row) => number) => rows.reduce((a, r) => a + pick(r), 0)
     body.push([
       'TOTAL',
       '',
-      sum((r) => Number(r.total_sistem ?? 0)),
+      sum((r) => Number(r.total_sistem_live ?? 0)),
       sum((r) => Number(r.total_cheltuieli ?? 0)),
       sumar.numarat,
       sumar.difTotal,
@@ -339,7 +348,7 @@ export function CashTab() {
           <DataTable
             columns={columns}
             rows={data ?? []}
-            rowKey={(r) => r.id}
+            rowKey={(r) => r.id ?? `${r.data}-${r.locatie}`}
             emptyMessage="Nicio reconciliere în intervalul ales."
           />
         </div>
