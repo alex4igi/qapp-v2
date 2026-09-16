@@ -50,7 +50,7 @@ function targetFor(n: Notification): string | null {
     const cid = (n.payload as { client?: string } | null)?.client
     return cid ? `/clienti/${cid}` : null
   }
-  if (n.kind === 'grupa_sub_minim') {
+  if (n.kind === 'grupa_sub_minim' || n.kind === 'grupa_peste_capacitate') {
     const cid = (n.payload as { curs_id?: string } | null)?.curs_id
     return cid ? `/cursuri/${cid}` : '/cursuri'
   }
