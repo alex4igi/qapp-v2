@@ -73,14 +73,6 @@ export function OcupareList({ rows }: { rows: OcupareRow[] }) {
                     {r.procent}%
                   </span>
                 )}
-                {r.facultativ && (
-                  <div className="text-[10px] leading-tight text-quasar-gray">
-                    vârf ședință
-                    {r.media != null && (
-                      <span> · media {r.media}/{r.capacitate}</span>
-                    )}
-                  </div>
-                )}
               </td>
             </tr>
           ))}

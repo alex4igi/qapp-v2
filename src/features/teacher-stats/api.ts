@@ -35,7 +35,6 @@ export type GradOcupare = {
   curs_nume: string
   facultativ: boolean
   activi: number
-  media: number | null
   capacitate: number | null
   procent: number | null
 }

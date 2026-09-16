@@ -108,14 +108,14 @@ function GroupBarCard({
   to: string
   isToday: boolean
 }) {
-  const { numele, ora, sala, teacher, enrolled, prezenti, capacitate, leads, leadsPrezenti } =
+  const { numele, ora, sala, teacher, enrolled, prezenti, capacitate, ocupate, leads, leadsPrezenti } =
     course
   // Inel = rata de prezență a zilei (prezenți / înscriși).
   const attPct = enrolled > 0 ? Math.min(100, Math.round((prezenti / enrolled) * 100)) : 0
-  // Bară = rata de ocupare (înscriși / capacitate).
+  // Bară = rata de ocupare (locuri ocupate / capacitate, o ședință ține locul 30 de zile).
   const occPct =
     capacitate && capacitate > 0
-      ? Math.min(100, Math.round((enrolled / capacitate) * 100))
+      ? Math.min(100, Math.round((ocupate / capacitate) * 100))
       : null
   const meta = [teacher, sala].filter(Boolean).join(' · ') || '—'
   const pill = statusPill(ora, isToday)

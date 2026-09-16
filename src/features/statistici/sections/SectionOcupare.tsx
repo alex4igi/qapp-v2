@@ -20,7 +20,7 @@ export function SectionOcupare() {
         Grad de ocupare cursuri
       </h2>
       <p className="mb-3 text-xs text-quasar-gray">
-        Înscriși activi luna asta / capacitate.{' '}
+        Locuri ocupate azi / capacitate. O ședință ține locul 30 de zile.{' '}
         <span className="text-green-700">verde</span> bine ocupat ·{' '}
         <span className="text-amber-600">galben</span> loc disponibil ·{' '}
         <span className="text-red-600">roșu</span> peste capacitate.

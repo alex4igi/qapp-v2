@@ -6915,6 +6915,7 @@ export type Database = {
           id: string
           last_login_at: string | null
           locked_until: string | null
+          must_change_password: boolean
           password_hash: string
           status: string
         }
@@ -6925,6 +6926,7 @@ export type Database = {
           id?: string
           last_login_at?: string | null
           locked_until?: string | null
+          must_change_password?: boolean
           password_hash: string
           status?: string
         }
@@ -6935,6 +6937,7 @@ export type Database = {
           id?: string
           last_login_at?: string | null
           locked_until?: string | null
+          must_change_password?: boolean
           password_hash?: string
           status?: string
         }
@@ -12282,7 +12285,6 @@ export type Database = {
           curs_nume: string
           facultativ: boolean
           locatie_nume: string
-          media: number
           procent: number
           teacher_nume: string
         }[]
@@ -13409,6 +13411,13 @@ export type Database = {
           valoare: number
         }[]
       }
+      locuri_ocupate: {
+        Args: { p_cursuri: string[]; p_de: string; p_pana: string }
+        Returns: {
+          curs_id: string
+          ocupate: number
+        }[]
+      }
       locuri_ocupate_eveniment: {
         Args: { p_eveniment: string }
         Returns: number
@@ -13743,6 +13752,15 @@ export type Database = {
       }
       portal_create_account: {
         Args: { p_email: string; p_password: string }
+        Returns: string
+      }
+      portal_create_account_temp: {
+        Args: {
+          p_client_id?: string
+          p_email: string
+          p_familie_id?: string
+          p_password: string
+        }
         Returns: string
       }
       portal_login: {

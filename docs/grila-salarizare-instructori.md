@@ -315,7 +315,8 @@ S SD Varsity Avanasati).
 Un client se numără la grupa C în luna X dacă are în `enrollments` un rând cu:
 - `cursul = C`
 - `suma > 0`
-- fereastra `[data_incepere, data_final]` acoperă luna X
+- fereastra acoperă cel puțin o zi din luna X — la abonament `[data_incepere, data_final]`, la
+  ședință `[data_incepere, data_incepere + 29]`
 - **NU** are `data_reziliere <= prima zi a lunii X`
 
 > ⚠️⚠️ **`reziliat` NU înseamnă că omul a plecat.** Modelul „Per lună" creează un rând pe lună, iar
@@ -324,10 +325,11 @@ Un client se numără la grupa C în luna X dacă are în `enrollments` un rând
 > Filtrarea pe `reziliat` a dat vârfuri de 2–4× mai mici decât realitatea.
 > Detalii: memoria `project_reziliat_flag_falsifica_istoricul`.
 >
-> **În SQL definiția există o singură dată:** `cursanti_platitori_luna(curs, luna)` (migrația
-> `20260914110000`). Excepție de formă: din sezonul 2026-2027 înrolările „Per ședință" au `data_final`
-> NULL — ședința se numără doar în luna în care a fost ținută, altfel un om cu o ședință în septembrie
-> s-ar număra până în iunie.
+> **În SQL definiția există o singură dată:** `locuri_ocupate(de, până, cursuri)`, iar
+> `cursanti_platitori_luna(curs, luna)` o citește pe lună (migrația `20260915230000`). **Ședința ține
+> locul 30 de zile** de la data ei (regula lui Alex din 15 sept. 2026, generală pentru orice ocupare):
+> o ședință pe 25 septembrie se numără și în octombrie. `data_final` nu contează la ședințe — din
+> 2026-2027 e NULL și ar ține omul până în iunie. Rezervarea OPEN anulată nu se numără.
 >
 > ⚠️ `.in()` din supabase-js **taie tăcut la 1000 de rânduri**. `enrollments` are 42.798 rânduri —
 > numărătoarea se face paginat cu `.range()`, per curs.

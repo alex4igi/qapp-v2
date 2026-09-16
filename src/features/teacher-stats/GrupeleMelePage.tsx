@@ -226,7 +226,8 @@ function GrupeTable({ rows }: { rows: GrupaProgres[] }) {
         emptyMessage="Nicio grupă activă în sezonul curent."
       />
       <p className="mt-2 text-xs text-muted">
-        „Ocupare" = cursanți activi / capacitate. „Prezență" = rata medie pe
+        „Ocupare" = locuri ocupate azi / capacitate (o ședință ține locul 30 de
+        zile). „Prezență" = rata medie pe
         ultimele săptămâni. „Reînscriere" apare doar la grupele cu sursă în
         sezonul anterior.
       </p>

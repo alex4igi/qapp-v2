@@ -12,6 +12,10 @@ export type DashboardCourse = {
   enrolled: number
   prezenti: number
   capacitate: number | null
+  // Locuri ocupate în ziua afișată, după regula de 30 de zile (locuri_ocupate) —
+  // numărătorul barei de ocupare. Diferit de `enrolled` (rosterul zilei, cu tot
+  // cu cine vine fără plată), care rămâne numitorul inelului de prezență.
+  ocupate: number
   // Leads programați la grupă în ziua afișată. Stau în afara lui `enrolled`/`prezenti`
   // (aceia sunt cursanți înrolați), dar sunt oameni în sală — vezi cardul din agendă.
   leads: number
@@ -80,11 +84,20 @@ export async function getDashboardCourses(params: {
 
   // Cele trei surse de mai jos nu depind una de alta — rulează în paralel (înainte
   // erau 5-6 cereri strict secvențiale, ~1,3 s doar din așteptare).
-  const [clientsByCurs, prezByCurs, programariRows] = await Promise.all([
+  const [clientsByCurs, prezByCurs, programariRows, locuriRes] = await Promise.all([
     loadClientsByCurs(cursIds, params.date),
     loadPrezentiByCurs(params.date),
     loadProgramari(cursIds, params.date),
+    supabase.rpc('locuri_ocupate', {
+      p_de: params.date,
+      p_pana: params.date,
+      p_cursuri: cursIds,
+    }),
   ])
+  if (locuriRes.error) throw locuriRes.error
+  const ocupateByCurs = new Map(
+    (locuriRes.data ?? []).map((r) => [r.curs_id, r.ocupate]),
+  )
 
   const enrolledByCurs = new Map<string, number>()
   for (const [c, set] of clientsByCurs) enrolledByCurs.set(c, set.size)
@@ -127,6 +140,7 @@ export async function getDashboardCourses(params: {
       enrolled: enrolledByCurs.get(c.id) ?? 0,
       prezenti: prezByCurs.get(c.id) ?? 0,
       capacitate: c.capacitate_maxima,
+      ocupate: ocupateByCurs.get(c.id) ?? 0,
       leads: leadsByCurs.get(c.id)?.total ?? 0,
       leadsPrezenti: leadsByCurs.get(c.id)?.prezenti ?? 0,
     }))

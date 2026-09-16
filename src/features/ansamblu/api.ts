@@ -79,9 +79,8 @@ export type OcupareRow = {
   locatie_nume: string | null
   teacher_nume: string | null
   facultativ: boolean
+  // Locuri ocupate azi — o ședință ține locul 30 de zile (locuri_ocupate).
   activi: number
-  // Doar facultativ: media prezenților/ședință în luna curentă (informativă).
-  media: number | null
   capacitate: number | null
   procent: number | null
 }

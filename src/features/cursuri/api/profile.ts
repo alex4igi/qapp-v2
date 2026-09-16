@@ -141,64 +141,32 @@ async function fetchUltimaPrezentaByClient(
 export type CursOcupare = {
   activi: number
   capacitate: number | null
-  facultativ: boolean
-  // Doar facultativ: media prezenților/ședință în luna curentă (informativă).
-  media: number | null
 }
 
+// Locuri ocupate / capacitate, după regula de 30 de zile (RPC locuri_ocupate) —
+// aceeași cifră ca listele din /statistici și Overview. Luna curentă se citește
+// pe azi; o lună încheiată sau viitoare, pe toată luna.
 export async function getCursOcupare(
   cursId: string,
   luna?: string | null,
 ): Promise<CursOcupare> {
-  const { data: curs, error: cErr } = await supabase
-    .from('cursuri')
-    .select('capacitate_maxima, facultativ')
-    .eq('id', cursId)
-    .single()
-  if (cErr) throw cErr
-  const capacitate = curs.capacitate_maxima
-  const facultativ = curs.facultativ ?? false
-
-  // Recurent: roster distinct activ în luna curentă (oamenii din sală).
-  if (!facultativ) {
-    const enrRows = await fetchEnrollmentsForMonth(cursId, luna)
-    const unici = new Set<string>()
-    for (const e of enrRows) if (e.client) unici.add(e.client.id)
-    return { activi: unici.size, capacitate, facultativ, media: null }
-  }
-
-  // Facultativ: capacitate_maxima e o limită PER ȘEDINȚĂ. Ocuparea = vârful ședinței
-  // (cei mai mulți prezenți distincți într-o ședință din luna curentă), nu suma unicilor.
-  // Filtrăm prin JOIN pe curs — un `.in(enrollmentIds)` ar exploda URL-ul: cursurile
-  // facultative au sute de înrolări „Per ședință" (data_final null = active la infinit).
   const { start, end } = lunaBounds(luna)
-  const { data: prez, error: pErr } = await supabase
-    .from('prezente')
-    .select('client, data, enr:enrollments!inner(cursul)')
-    .eq('enr.cursul', cursId)
-    .eq('status', 'Prezent')
-    .gte('data', start)
-    .lte('data', end)
-  if (pErr) throw pErr
-
-  // Per dată: clienți distincți prezenți.
-  const byData = new Map<string, Set<string>>()
-  for (const p of prez ?? []) {
-    if (!p.data || !p.client) continue
-    let set = byData.get(p.data)
-    if (!set) {
-      set = new Set<string>()
-      byData.set(p.data, set)
-    }
-    set.add(p.client)
+  const azi = todayIso()
+  const peAzi = start.slice(0, 7) === lunaCurenta()
+  const [cursRes, locuriRes] = await Promise.all([
+    supabase.from('cursuri').select('capacitate_maxima').eq('id', cursId).single(),
+    supabase.rpc('locuri_ocupate', {
+      p_de: peAzi ? azi : start,
+      p_pana: peAzi ? azi : end,
+      p_cursuri: [cursId],
+    }),
+  ])
+  if (cursRes.error) throw cursRes.error
+  if (locuriRes.error) throw locuriRes.error
+  return {
+    activi: locuriRes.data?.[0]?.ocupate ?? 0,
+    capacitate: cursRes.data.capacitate_maxima,
   }
-  const counts = Array.from(byData.values()).map((s) => s.size)
-  if (counts.length === 0) {
-    return { activi: 0, capacitate, facultativ, media: null }
-  }
-  const peak = Math.max(...counts)
-  const media = Math.round(counts.reduce((a, b) => a + b, 0) / counts.length)
-  return { activi: peak, capacitate, facultativ, media }
 }
 
 // ============================================================
