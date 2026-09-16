@@ -62,14 +62,16 @@ suma cuprinde tot ce a intrat. Dacă și rata s-ar calcula pe tot ce a intrat, a
 - **Clienți = locuri ocupate:** se adună locurile ocupate ale fiecărei grupe în luna M — un copil
   înscris la 2 grupe se numără **de 2 ori**. Definiția e una singură în SQL: `locuri_ocupate`
   (lunar: `cursanti_platitori_luna`).
-- **Regula de 30 de zile** (Alex, 15 sept. 2026, generală pentru orice ocupare): abonamentul ține
-  locul cât îi acoperă fereastra, **o ședință plătită ține locul 30 de zile** de la data ei. O ședință
-  pe 25 septembrie ocupă locul și în octombrie. Rezervările anulate și rezilierile nu se numără.
+- **Ședința se numără o singură dată, în luna în care a fost ținută** (Alex, 16 sept. 2026: „nu vreau
+  să plătesc 2 luni pentru 1 ședință facultativă"). Regula de 30 de zile — ședința ține locul 30 de
+  zile de la data ei — rămâne doar la ocuparea de AZI, de pe Overview și din liste; bonusul se
+  calculează pe lună. Abonamentul intră în fiecare lună pe care o acoperă fereastra lui. Rezervările
+  anulate și rezilierile nu se numără.
 - **Capacitatea totală** = suma `cursuri.capacitate_maxima` a grupelor care există în luna M la
   locație (`curs_activ_in_luna`). Grupele goale intră și ele în capacitate.
-- **Open Class** intră ca orice curs facultativ: fiecare rezervare plătită ține locul 30 de zile, iar
-  capacitatea lui (30) intră la capacitate. Regula veche — media participanților pe ședință — a fost
-  înlocuită pe 15 sept.
+- **Open Class** intră ca orice curs facultativ: fiecare rezervare plătită se numără în luna ședinței,
+  iar capacitatea lui (30) intră la capacitate. Regula veche — media participanților pe ședință — a
+  fost înlocuită pe 15 sept.
 - Intră trupele și cursurile facultative. Cursurile one-time nu intră.
 - Același număr de clienți se folosește și la ocupare, și la înmulțirea cu leii din treaptă.
 

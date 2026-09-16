@@ -143,23 +143,26 @@ export type CursOcupare = {
   capacitate: number | null
 }
 
-// Locuri ocupate / capacitate, după regula de 30 de zile (RPC locuri_ocupate) —
-// aceeași cifră ca listele din /statistici și Overview. Luna curentă se citește
-// pe azi; o lună încheiată sau viitoare, pe toată luna.
+// Locuri ocupate / capacitate. Luna curentă se citește pe AZI (ședința ține locul
+// 30 de zile) — aceeași cifră ca listele din /statistici și Overview. O lună
+// încheiată se citește pe toată luna, unde ședința se numără o singură dată, în
+// luna ei — aceeași cifră ca pragul minim și bonusurile.
 export async function getCursOcupare(
   cursId: string,
   luna?: string | null,
 ): Promise<CursOcupare> {
-  const { start, end } = lunaBounds(luna)
+  const { start } = lunaBounds(luna)
   const azi = todayIso()
   const peAzi = start.slice(0, 7) === lunaCurenta()
   const [cursRes, locuriRes] = await Promise.all([
     supabase.from('cursuri').select('capacitate_maxima').eq('id', cursId).single(),
-    supabase.rpc('locuri_ocupate', {
-      p_de: peAzi ? azi : start,
-      p_pana: peAzi ? azi : end,
-      p_cursuri: [cursId],
-    }),
+    peAzi
+      ? supabase.rpc('locuri_ocupate', {
+          p_de: azi,
+          p_pana: azi,
+          p_cursuri: [cursId],
+        })
+      : supabase.rpc('locuri_ocupate_luna', { p_luna: start, p_cursuri: [cursId] }),
   ])
   if (cursRes.error) throw cursRes.error
   if (locuriRes.error) throw locuriRes.error

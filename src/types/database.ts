@@ -11507,6 +11507,18 @@ export type Database = {
       }
       _is_anunt_expeditor: { Args: { p_anunt: string }; Returns: boolean }
       _is_anunt_recipient: { Args: { p_anunt: string }; Returns: boolean }
+      _locuri_ocupate: {
+        Args: {
+          p_cursuri: string[]
+          p_de: string
+          p_pana: string
+          p_sedinta_30_zile: boolean
+        }
+        Returns: {
+          curs_id: string
+          ocupate: number
+        }[]
+      }
       _luni_achitate_curs: {
         Args: { p_client: string; p_curs: string }
         Returns: number
@@ -13421,6 +13433,13 @@ export type Database = {
       locuri_ocupate_eveniment: {
         Args: { p_eveniment: string }
         Returns: number
+      }
+      locuri_ocupate_luna: {
+        Args: { p_cursuri: string[]; p_luna: string }
+        Returns: {
+          curs_id: string
+          ocupate: number
+        }[]
       }
       marcheaza_contact_absenta: {
         Args: {
