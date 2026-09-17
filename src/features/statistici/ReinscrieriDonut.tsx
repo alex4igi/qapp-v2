@@ -8,32 +8,38 @@ import {
 } from 'recharts'
 
 type Props = {
-  reinscrisi: number
-  potential: number
+  title: string
+  parte: number
+  total: number
+  parteLabel: string
+  restLabel: string
   emptyMessage?: string
 }
 
 const COLORS = ['#ffd600', '#e5e5e5']
 
-// Donut: câți s-au reînscris din potențialul de eligibili al sezonului țintă.
+// Donut „parte din total" pentru campania de reînscrieri. Numitorul vine de la
+// apelant, fiindcă se schimbă după sursă: semnăturile din registre pentru
+// campaniile ținute în Excel, pool-ul sezonului trecut pentru restul.
 export function ReinscrieriDonut({
-  reinscrisi,
-  potential,
-  emptyMessage = 'Niciun client eligibil în sezonul țintă.',
+  title,
+  parte,
+  total,
+  parteLabel,
+  restLabel,
+  emptyMessage = 'Nicio reînscriere înregistrată pe sezonul ales.',
 }: Props) {
-  const ramasi = Math.max(0, potential - reinscrisi)
-  const procent = potential > 0 ? Math.round((reinscrisi / potential) * 100) : 0
+  const rest = Math.max(0, total - parte)
+  const procent = total > 0 ? Math.round((parte / total) * 100) : 0
   const data = [
-    { name: 'Reînscriși', value: reinscrisi },
-    { name: 'Rămași', value: ramasi },
+    { name: parteLabel, value: parte },
+    { name: restLabel, value: rest },
   ]
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="mb-3 text-sm font-semibold text-quasar-black">
-        Reînscriși din potențial
-      </h3>
-      {potential === 0 ? (
+      <h3 className="mb-3 text-sm font-semibold text-quasar-black">{title}</h3>
+      {total === 0 ? (
         <p className="py-8 text-center text-sm text-quasar-gray">
           {emptyMessage}
         </p>
@@ -44,7 +50,7 @@ export function ReinscrieriDonut({
               {procent}%
             </span>
             <span className="text-xs text-quasar-gray">
-              {reinscrisi} din {potential}
+              {parte} din {total}
             </span>
           </div>
           <ResponsiveContainer width="100%" height="100%">
