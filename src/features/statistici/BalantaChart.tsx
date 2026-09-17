@@ -17,6 +17,8 @@ type Props = {
   baseColor?: string
   topColor?: string
   emptyMessage?: string
+  // Arată în tooltip și ponderea fiecărei serii din totalul lunii.
+  showPercent?: boolean
 }
 
 export function BalantaChart({
@@ -25,6 +27,7 @@ export function BalantaChart({
   baseColor = '#ca8a04',
   topColor = '#fde68a',
   emptyMessage = 'Nicio dată în intervalul ales.',
+  showPercent = false,
 }: Props) {
   const hasData = rows.some((r) => r.incasat > 0 || r.datorie > 0)
 
@@ -49,7 +52,19 @@ export function BalantaChart({
                 tickFormatter={(v) => `${Number(v).toLocaleString('ro-RO')}`}
               />
               <Tooltip
-                formatter={(v, name) => [formatRON(Number(v)), String(name)]}
+                formatter={(v, name, item) => {
+                  const value = Number(v)
+                  if (!showPercent) return [formatRON(value), String(name)]
+                  const row = item?.payload as LunaBalanta | undefined
+                  const total = (row?.incasat ?? 0) + (row?.datorie ?? 0)
+                  const pct = total > 0 ? Math.round((value / total) * 100) : null
+                  return [
+                    pct === null
+                      ? formatRON(value)
+                      : `${formatRON(value)} · ${pct}%`,
+                    String(name),
+                  ]
+                }}
                 cursor={{ fill: '#f3f3f3' }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />

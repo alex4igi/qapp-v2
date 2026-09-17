@@ -51,6 +51,7 @@ export function SectionBalantaLocatie({ interval }: { interval: Interval }) {
           rows={balLocQ.data ?? []}
           baseColor="#ca8a04"
           topColor="#fde68a"
+          showPercent
         />
       )}
     </div>
