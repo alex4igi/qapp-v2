@@ -82,6 +82,7 @@ const DatoriiPage = lazy(() =>
 const Absente21zPage = lazy(() => import('@/features/absente21z/Absente21zPage'))
 const GrileKpiPage = lazy(() => import('@/features/grile-kpi/GrileKpiPage'))
 const GrilaEditorPage = lazy(() => import('@/features/grile-kpi/GrilaEditorPage'))
+const RaportKpiPage = lazy(() => import('@/features/raport-kpi/RaportKpiPage'))
 const AnalyticsPage = lazy(() =>
   import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
 )
@@ -410,6 +411,15 @@ function App() {
                 <Route path="grile-kpi" element={<GrileKpiPage />} />
                 <Route path="grile-kpi/:grilaId" element={<GrilaEditorPage />} />
               </Route>
+            </Route>
+          </Route>
+
+          {/* Raportul lunar de bonus. Bloc propriu: nu stă în hub-ul
+              Administrare (acolo se configurează grilele, admin/owner), ci în
+              Rapoarte, unde managerul PL îl lucrează lunar. */}
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/raport-kpi']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="raport-kpi" element={<RaportKpiPage />} />
             </Route>
           </Route>
 

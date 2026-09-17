@@ -112,6 +112,9 @@ export const ROUTE_ACCESS = {
   // PRIVILEGED: managerul PL folosește raportul lunar, dar nu setează numerele
   // după care e plătit omul lui.
   '/grile-kpi': ADMIN_OR_OWNER,
+  // Raportul lunar de bonus: managerul PL îl completează și îl închide pentru
+  // oamenii lui, dar nu poate atinge numerele grilei (vezi /grile-kpi).
+  '/raport-kpi': PRIVILEGED,
 } as const satisfies Record<string, readonly AppRole[]>
 
 export type AppRoute = keyof typeof ROUTE_ACCESS
