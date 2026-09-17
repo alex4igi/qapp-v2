@@ -15,7 +15,7 @@ import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist } from '@/lib/checklist'
 import { FAMILIE_CHECKLIST } from '@/lib/checklist/specs/familie'
 import { useAuth } from '@/hooks/useAuth'
-import { isManagerOrHigher } from '@/lib/rolesMatrix'
+import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import { FamilieForm } from './FamilieForm'
 import { GenereazaFamiliiModal } from './GenereazaFamiliiModal'
 import { listFamilii, PAGE_SIZE } from './api'
@@ -88,7 +88,7 @@ export function FamiliiListPage() {
         subtitle={data ? `${data.total} familii` : undefined}
         actions={
           <div className="flex flex-wrap gap-2">
-            {isManagerOrHigher(role) && (
+            {isFrontDeskOrHigher(role) && (
               <Button variant="secondary" onClick={() => setGenOpen(true)}>
                 Generează familiile lipsă
               </Button>
