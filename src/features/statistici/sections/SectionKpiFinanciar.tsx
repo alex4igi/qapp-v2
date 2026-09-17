@@ -19,42 +19,37 @@ export function SectionKpiFinanciar({ interval }: { interval: Interval }) {
   })
 
   return (
-    <>
-      <h2 className="mb-3 text-base font-bold text-quasar-black">
-        Financiar — interval ales
-      </h2>
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiCard
+        label="Încasări"
+        value={kpisQ.data ? formatRON(kpisQ.data.incasari) : '—'}
+        tone="positive"
+        hint="în intervalul ales"
+      />
+      {privileged && (
         <KpiCard
-          label="Încasări"
-          value={kpisQ.data ? formatRON(kpisQ.data.incasari) : '—'}
-          tone="positive"
-          hint="în intervalul ales"
+          label="Cheltuieli"
+          value={kpisQ.data ? formatRON(kpisQ.data.cheltuieli) : '—'}
+          tone="negative"
+          hint="făcute în interval"
         />
-        {privileged && (
-          <KpiCard
-            label="Cheltuieli"
-            value={kpisQ.data ? formatRON(kpisQ.data.cheltuieli) : '—'}
-            tone="negative"
-            hint="făcute în interval"
-          />
-        )}
-        {isAdminOrHigher(role) && (
-          <KpiCard
-            label="Profit"
-            value={kpisQ.data ? formatRON(kpisQ.data.profit) : '—'}
-            tone={
-              kpisQ.data && kpisQ.data.profit < 0 ? 'negative' : 'positive'
-            }
-            hint="încasări − cheltuieli"
-          />
-        )}
+      )}
+      {isAdminOrHigher(role) && (
         <KpiCard
-          label="Restanțe"
-          value={kpisQ.data ? formatRON(kpisQ.data.restanteTotal) : '—'}
-          tone="warning"
-          hint="de recuperat (înrolări din interval, fără prescrise)"
+          label="Profit"
+          value={kpisQ.data ? formatRON(kpisQ.data.profit) : '—'}
+          tone={
+            kpisQ.data && kpisQ.data.profit < 0 ? 'negative' : 'positive'
+          }
+          hint="încasări − cheltuieli"
         />
-      </div>
-    </>
+      )}
+      <KpiCard
+        label="Restanțe"
+        value={kpisQ.data ? formatRON(kpisQ.data.restanteTotal) : '—'}
+        tone="warning"
+        hint="de recuperat (înrolări din interval, fără prescrise)"
+      />
+    </div>
   )
 }
