@@ -5687,6 +5687,7 @@ export type Database = {
         Row: {
           canal: Database["public"]["Enums"]["canal_contact"]
           created: string
+          dedus: boolean
           id: string
           lead_id: string
           observatii: string | null
@@ -5696,6 +5697,7 @@ export type Database = {
         Insert: {
           canal: Database["public"]["Enums"]["canal_contact"]
           created?: string
+          dedus?: boolean
           id?: string
           lead_id: string
           observatii?: string | null
@@ -5705,6 +5707,7 @@ export type Database = {
         Update: {
           canal?: Database["public"]["Enums"]["canal_contact"]
           created?: string
+          dedus?: boolean
           id?: string
           lead_id?: string
           observatii?: string | null
@@ -5791,6 +5794,7 @@ export type Database = {
           interes: Database["public"]["Enums"]["interes_lead"] | null
           locatia: string | null
           locatie_id: string | null
+          motiv_categorie: string | null
           motiv_pierdut: string | null
           nr_contactari: number
           nr_neprezentari: number
@@ -5843,6 +5847,7 @@ export type Database = {
           interes?: Database["public"]["Enums"]["interes_lead"] | null
           locatia?: string | null
           locatie_id?: string | null
+          motiv_categorie?: string | null
           motiv_pierdut?: string | null
           nr_contactari?: number
           nr_neprezentari?: number
@@ -5895,6 +5900,7 @@ export type Database = {
           interes?: Database["public"]["Enums"]["interes_lead"] | null
           locatia?: string | null
           locatie_id?: string | null
+          motiv_categorie?: string | null
           motiv_pierdut?: string | null
           nr_contactari?: number
           nr_neprezentari?: number
@@ -13056,8 +13062,10 @@ export type Database = {
         Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {
           clasa_generala: string
+          contacte_deduse: number
           contacte_dm: number
           contacte_email: number
+          contacte_logate: number
           contacte_sms: number
           contacte_telefon: number
           contacte_total: number
@@ -14305,7 +14313,7 @@ export type Database = {
       app_feedback_sursa: "staff" | "portal"
       app_feedback_tip: "Bug" | "Idee" | "Intrebare"
       canal_comunicare: "Online" | "Offline"
-      canal_contact: "telefon" | "sms" | "email" | "dm"
+      canal_contact: "telefon" | "sms" | "email" | "dm" | "necunoscut"
       canale_online: "Meta ADS" | "Google ADS" | "TikTok Ads" | "Organic"
       categorie_cheltuiala: "Administrativa" | "Salariala" | "Alta"
       categorie_incasare:
@@ -14576,7 +14584,7 @@ export const Constants = {
       app_feedback_sursa: ["staff", "portal"],
       app_feedback_tip: ["Bug", "Idee", "Intrebare"],
       canal_comunicare: ["Online", "Offline"],
-      canal_contact: ["telefon", "sms", "email", "dm"],
+      canal_contact: ["telefon", "sms", "email", "dm", "necunoscut"],
       canale_online: ["Meta ADS", "Google ADS", "TikTok Ads", "Organic"],
       categorie_cheltuiala: ["Administrativa", "Salariala", "Alta"],
       categorie_incasare: [

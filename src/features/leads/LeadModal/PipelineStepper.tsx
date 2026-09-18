@@ -3,6 +3,7 @@ import type { StatusLead } from '@/types/db'
 import { STATUS_CONFIG } from '../constants'
 import { STATUS_TONE, sectionLabel } from './styles'
 import { STEP_ORDER, EXIT_KEYS } from './helpers'
+import { StatusTooltip } from '../StatusTooltip'
 
 type Props = {
   status: StatusLead
@@ -34,8 +35,8 @@ export function PipelineStepper({
           const done = activeIdx > i
           const isActive = activeIdx === i
           return (
+            <StatusTooltip key={key} status={key} className="flex flex-1">
             <button
-              key={key}
               type="button"
               className="qstep"
               disabled={readOnly}
@@ -58,6 +59,7 @@ export function PipelineStepper({
                 {STATUS_CONFIG[key].label}
               </span>
             </button>
+            </StatusTooltip>
           )
         })}
       </div>
@@ -66,8 +68,8 @@ export function PipelineStepper({
           const on = status === key
           const t = STATUS_TONE[key]
           return (
+            <StatusTooltip key={key} status={key}>
             <button
-              key={key}
               type="button"
               className="qexit"
               disabled={readOnly}
@@ -92,6 +94,7 @@ export function PipelineStepper({
             >
               {STATUS_CONFIG[key].label}
             </button>
+            </StatusTooltip>
           )
         })}
       </div>

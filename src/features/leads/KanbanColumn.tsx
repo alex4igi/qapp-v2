@@ -8,6 +8,8 @@ import type { Lead } from '@/types/db'
 import type { PipelineColumn } from './constants'
 import { isToday } from './constants'
 import { LeadCard } from './LeadCard'
+import { ProceduraModal } from './ProceduraModal'
+import { StatusTooltip } from './StatusTooltip'
 import { exportLeadsCsv } from './leadExport'
 
 const PAGE_SIZE = 30
@@ -100,11 +102,13 @@ export function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: column.status })
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [showArchived, setShowArchived] = useState(false)
+  const [showProcedura, setShowProcedura] = useState(false)
 
   // Pliată: bandă îngustă, dar TOT droppable — altfel „trage în Convertit" ar
   // înceta să funcționeze exact pentru coloanele pe care le pliem.
   if (collapsed) {
     return (
+      <StatusTooltip status={column.status}>
       <button
         type="button"
         ref={setNodeRef}
@@ -124,6 +128,7 @@ export function KanbanColumn({
           {column.label}
         </span>
       </button>
+      </StatusTooltip>
     )
   }
 
@@ -155,14 +160,33 @@ export function KanbanColumn({
         className={`flex items-center justify-between rounded-t-xl px-3 py-2.5 ${column.header}`}
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-white">
-            {column.label}
-          </span>
+          <StatusTooltip status={column.status}>
+            <span className="cursor-help text-sm font-semibold text-white">
+              {column.label}
+            </span>
+          </StatusTooltip>
           <span className="rounded-full bg-white/25 px-1.5 py-0.5 text-xs font-medium text-white">
             {leads.length}
           </span>
         </div>
         <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => setShowProcedura(true)}
+            className="rounded p-1 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+            title={`Procedura pentru ${column.label}`}
+          >
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 11v5m0-8h.01" />
+            </svg>
+          </button>
           {onToggleCollapse && (
             <button
               type="button"
@@ -301,6 +325,11 @@ export function KanbanColumn({
           </button>
         )}
       </div>
+
+      <ProceduraModal
+        status={showProcedura ? column.status : null}
+        onClose={() => setShowProcedura(false)}
+      />
     </div>
   )
 }

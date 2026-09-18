@@ -34,6 +34,7 @@ export const EMPTY: LeadForm = {
   status: 'nou',
   sub_status: '',
   motiv_pierdut: '',
+  motiv_categorie: '',
   locatia: '',
   data_programare: '',
   data_callback_dorit: '',
@@ -54,6 +55,7 @@ export function fromLead(lead: Lead): LeadForm {
     status: lead.status,
     sub_status: lead.sub_status ?? '',
     motiv_pierdut: lead.motiv_pierdut ?? '',
+    motiv_categorie: lead.motiv_categorie ?? '',
     locatia: lead.locatia ?? '',
     data_programare: lead.data_programare
       ? lead.data_programare.slice(0, 10)

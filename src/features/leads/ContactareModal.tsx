@@ -3,7 +3,7 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, DateInput, TextArea, Button } from '@/components/ui'
 import type { Lead } from '@/types/db'
-import { SUB_STATUS_OPTIONS, prependObservatie, dataPesteZile } from './constants'
+import { SUB_STATUS_OPTIONS, prependObservatie, dataUrmatoareiIncercari } from './constants'
 import {
   insertLeadContact,
   updateLead,
@@ -168,7 +168,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
                   // „Nu răspunde" → follow-up implicit peste o săptămână
                   // (editabil). Operatorul nu trebuie să aleagă manual o dată.
                   if (o.value === 'nu_raspunde' && !dataCallback)
-                    setDataCallback(dataPesteZile(7))
+                    setDataCallback(dataUrmatoareiIncercari(lead?.nr_contactari ?? 0))
                   setError(null)
                 }}
                 className={`rounded-full border px-3 py-1 text-xs transition-colors ${

@@ -1,12 +1,19 @@
 import type { StatusLead, SubStatusLead, GrupaLead } from '@/types/db'
 import { STATUS_CONFIG, SUB_STATUS_OPTIONS, GRUPA_LABELS } from './constants'
+import { StatusTooltip } from './StatusTooltip'
 
 const base =
   'inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border'
 
 export function StatusBadge({ status }: { status: StatusLead }) {
   const c = STATUS_CONFIG[status]
-  return <span className={`${base} ${c.bg} ${c.text} ${c.border}`}>{c.label}</span>
+  return (
+    <StatusTooltip status={status}>
+      <span className={`${base} ${c.bg} ${c.text} ${c.border} cursor-help`}>
+        {c.label}
+      </span>
+    </StatusTooltip>
+  )
 }
 
 const INTERES_COLORS: Record<string, string> = {

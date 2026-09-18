@@ -4,6 +4,7 @@ import { GRUPA_LABELS } from '../constants'
 import type { LeadForm } from '../api'
 import { actBtn } from './styles'
 import { ageFromDob, initialsOf } from './helpers'
+import { StatusTooltip } from '../StatusTooltip'
 
 type Props = {
   form: LeadForm
@@ -88,9 +89,11 @@ export function IdentityRail({
             {[age != null ? `${age} ani` : null, grupaLabel].filter(Boolean).join(' · ')}
           </div>
         )}
-        <span style={{ marginTop: '9px', fontSize: '11.5px', fontWeight: 700, color: tone.fg, background: tone.bg, padding: '4px 12px', borderRadius: '20px' }}>
-          ● {statusLabel}
-        </span>
+        <StatusTooltip status={form.status}>
+          <span style={{ marginTop: '9px', fontSize: '11.5px', fontWeight: 700, color: tone.fg, background: tone.bg, padding: '4px 12px', borderRadius: '20px', cursor: 'help' }}>
+            ● {statusLabel}
+          </span>
+        </StatusTooltip>
       </div>
 
       {/* datele leadului, la citire */}

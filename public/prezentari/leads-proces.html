@@ -141,6 +141,8 @@
         <li><span class="b">🟨</span><span>Board-ul are <b>8 coloane</b>. A 9-a zonă, <b>Nurture</b>, NU e pe board — e un tab separat (vezi <a class="inl" href="#nurture">Zona Nurture</a>).</span></li>
         <li><span class="b">🤖</span><span>Unele mutări fac lucruri <b>automat</b>: cer o dată, cer un motiv, sau trimit un <b>SMS</b> clientului. Le vezi la fiecare coloană.</span></li>
         <li><span class="b">❤️</span><span>Lead-urile uitate urcă singure în capul coloanei cu un <b>steguleț de prioritate</b>, ca să nu-ți scape nimeni.</span></li>
+        <li><span class="b">🖱️</span><span><b>Nu ții minte ce ai de făcut? Nu trebuie.</b> Treci cu mausul peste un card și aplicația îți spune exact ce ai de făcut cu el — calculat pentru cardul acela, nu în general. Peste numele coloanei îți arată procedura coloanei, iar butonul <span class="btnlbl">ℹ︎</span> din capul ei o deschide pe toată.</span></li>
+        <li><span class="b">📚</span><span>Coloanele pe care nu le lucrezi zilnic — <b>Waiting List</b>, <b>Convertit</b>, <b>Pierdut</b> — sunt <b>pliate</b> (o bandă îngustă, verticală). Click pe ele le desface. Rămân active: poți trage un card peste bandă ca s-o muți acolo.</span></li>
       </ul>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
@@ -189,7 +191,7 @@
       <h2><span class="ic">📥</span>De unde vin lead-urile</h2>
       <p class="intro">Un lead poate intra în patru feluri. Indiferent de sursă, ajunge în coloana <b>Nou</b>.</p>
       <ul class="big">
-        <li><span class="b">📱</span><span><b>Meta Ads</b> (Facebook/Instagram) — intră singure printr-un Google Sheet legat de aplicație.</span></li>
+        <li><span class="b">📱</span><span><b>Meta Ads</b> (Facebook/Instagram) — formularele completate pe Facebook/Instagram intră singure, la fiecare 15 minute.</span></li>
         <li><span class="b">🌐</span><span><b>Site / formular</b> — formularul de pe site trimite lead-ul direct în aplicație.</span></li>
         <li><span class="b">✍️</span><span><b>Manual</b> — apeși <span class="btnlbl">+ Lead nou</span> și completezi (nume + telefon obligatorii, plus sursă).</span></li>
         <li><span class="b">🚶</span><span><b>Walk-in</b> — cineva care vine direct la sală; îl adaugi tot manual.</span></li>
@@ -220,147 +222,215 @@
       </div>
       <div class="story">
         <span class="lbl">4 · Vine la probă</span>
-        <p>În dimineața ședinței, Diana primește automat un <b>SMS de reamintire</b>. Maria vine — la sală, instructorul/recepția o bifează <b>Prezent</b>, iar cardul trece singur în <b>A venit</b>.</p>
+        <p>În dimineața ședinței (ora 10), Diana primește automat un <b>SMS de reamintire</b>. Maria vine — la sală, <b>recepția o bifează Prezent</b> în rosterul grupei, iar cardul trece în <b>A venit</b>. Bifa e importantă: dacă nu o pui, peste noapte aplicația presupune că n-a venit și a doua zi Dianei îi pleacă mesajul „ne pare rău că nu ai ajuns".</p>
       </div>
       <div class="story">
         <span class="lbl">5 · Se înscrie</span>
-        <p>Mariei i-a plăcut. Tragi cardul în <b>Convertit</b>: aplicația creează clientul din datele lead-ului și deschide pe loc <b>înrolarea</b>. Diana primește un <b>SMS prin care o rugăm un review pe Google</b>. Maria e acum cursant. 🎉</p>
+        <p>Imediat după clasă, recepția vorbește cu Diana: cum a fost, ce grupă i se potrivește Mariei, cât costă. <b>Discuția asta e pasul care aduce înscrierea</b> — nu SMS-ul. Diana se hotărăște, iar recepția pornește <b>Convertește în client</b>: aplicația creează clientul din datele lead-ului și deschide pe loc <b>înrolarea</b>. Maria e acum cursant. 🎉</p>
+        <p>Dacă Diana ar fi zis „mă mai gândesc", cardul rămânea în <b>A venit</b>, iar la 2 zile pleca singur SMS-ul despre locurile care se ocupă în ordinea înscrierilor.</p>
       </div>
       <div class="story">
         <span class="lbl">Varianta „nu vine"</span>
-        <p>Dacă Maria nu s-ar fi prezentat, cardul ar fi ajuns în <b>Nu a venit</b> (manual sau automat seara) și Diana ar fi primit un <b>SMS de revenire</b>. De acolo: ori reprogramăm, ori — dacă nu mai e interesată — <b>Pierdut</b> (cu motiv), ori o lăsăm în <b>Nurture</b> pentru mai târziu.</p>
+        <p>Dacă Maria nu s-ar fi prezentat, cardul ar fi ajuns în <b>Nu a venit</b> (manual sau automat, peste noapte) și Diana ar fi primit <b>SMS-ul de revenire</b> a doua zi la 16:00. De acolo <b>nu se mai sună</b>: dacă scrie sau sună ea, o reprogramezi; dacă nu, cardul trece singur în <b>Nurture</b> după 10 zile. <b>Pierdut</b> îl folosim doar dacă a spus clar că nu mai vrea.</p>
       </div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
-    <!-- ===== COLOANE ===== -->
+    <!-- gen:statusuri -->
+
+    <!-- Generat din src/features/leads/procedura.ts — `npm run gen:ghid`. NU edita între marcaje. -->
+
     <section class="block" id="nou">
       <div class="eyebrow">Coloană cu coloană · 1</div>
       <h2><span class="ic">🆕</span>Nou</h2>
-      <p class="intro">Punctul de intrare. Aici aterizează orice lead nou, indiferent de sursă.</p>
+      <p class="intro">A cerut o ședință gratuită și nu l-a sunat încă nimeni.</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">📋</span><span><b>Ce conține:</b> nume, telefon, eventual email, sursă, interes și grupă de vârstă (dacă le știm).</span></li>
-        <li><span class="b">🤖</span><span><b>La mutare aici:</b> nimic special, fără SMS.</span></li>
-        <li><span class="b">🎯</span><span><b>Ce faci:</b> îl suni cât mai repede și îl muți în <b>Contactat</b>.</span></li>
+        <li><span class="b">👉</span><span>Sună-l în aceeași zi. Intrat până la 18:00 → azi. Intrat seara → a doua zi, până la 12:00.</span></li>
+        <li><span class="b">👉</span><span>Dacă ai vorbit cu el, mută cardul — mutarea se numără singură ca discuție. Butonul 📞 e pentru apelurile care NU mută cardul: „am sunat și n-a răspuns" și notițele.</span></li>
+        <li><span class="b">👉</span><span>Ținta convorbirii: o dată de ședință gratuită → „Programat".</span></li>
+        <li><span class="b">👉</span><span>Eticheta „⭐ DEJA CLIENT" = e deja clientul nostru. Deschide-i fișa înainte să suni: de obicei vrea un al doilea curs sau are o întrebare.</span></li>
       </ul>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>Pune stegulețul ⚑ pe leadul nesunat și îl urcă în „De lucrat azi".</span></li>
+        <li><span class="b">🤖</span><span>Înregistrează singură discuția când muți cardul într-un status care presupune că ai vorbit cu omul.</span></li>
+        <li><span class="b">🤖</span><span>Nu îl mută niciodată singură: un lead nou nesunat rămâne aici până îl sună cineva.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>Programat · Contactat (nu răspunde / de revenit) · Waiting List · Pierdut · Nurture</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
     <section class="block" id="contactat">
       <div class="eyebrow">Coloană cu coloană · 2</div>
       <h2><span class="ic">📞</span>Contactat</h2>
-      <p class="intro">L-ai sunat. Când muți cardul aici, aplicația deschide un mic formular ca să notezi rezultatul apelului.</p>
+      <p class="intro">L-am sunat cel puțin o dată, dar nu are încă o programare.</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">🔘</span><span><b>Sub-status obligatoriu:</b> <span class="field">De revenit</span> (interesat, dar îl mai cauți) sau <span class="field">Nu răspunde</span> (n-a răspuns).</span></li>
-        <li><span class="b">📅</span><span><b>Dată de recontactare:</b> când să-l suni înapoi (sau când te contactează el).</span></li>
-        <li><span class="b">🔢</span><span><b>Contor încercări:</b> de fiecare dată când reloghezi un contact fără răspuns, crește <b>numărul de contactări</b>.</span></li>
-        <li><span class="b">📝</span><span><b>Notă cu dată:</b> ce ați discutat se salvează în observații, cu data în față.</span></li>
+        <li><span class="b">👉</span><span>Nu răspunde: 3 încercări în 5 zile — azi, mâine la altă oră, apoi peste 2–3 zile. Încearcă și pe WhatsApp.</span></li>
+        <li><span class="b">👉</span><span>De revenit: a răspuns și a cerut să-l sunăm la o dată. Sună-l ÎN ziua aceea — omul așteaptă apelul.</span></li>
+        <li><span class="b">👉</span><span>Un lead „Contactat" are mereu un sub-status și o dată. Dacă ați vorbit și nu s-a stabilit nimic, alege: Programat, De revenit cu dată, Waiting List, Pierdut sau Nurture.</span></li>
       </ul>
-      <div class="note"><span class="lbl">Atenție</span>După <b>4 încercări</b> fără răspuns, aplicația mută singură lead-ul în <b>Nurture</b> (vezi <a class="inl" href="#nurture">Zona Nurture</a>) — ca să nu pierzi timp pe numere care nu răspund.</div>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>Urcă în capul coloanei leadurile cu data de revenire ajunsă la zi și le pune ⚑.</span></li>
+        <li><span class="b">🤖</span><span>După mai multe încercări la rând fără răspuns, leadul trece singur în Nurture. Un apel la care a răspuns repornește numărătoarea.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>Programat · Waiting List · Pierdut · Nurture</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
     <section class="block" id="waiting">
       <div class="eyebrow">Coloană cu coloană · 3</div>
       <h2><span class="ic">⏳</span>Waiting List</h2>
-      <p class="intro">Ramură laterală: persoana e interesată, dar <b>nu avem loc acum</b> la ce vrea (grupa e plină, ziua nu coincide etc.).</p>
+      <p class="intro">Vrea să vină, dar NU avem loc în grupa potrivită (sau grupa nu există încă).</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">🎟️</span><span><b>La mutare aici</b> îți cere <b>interesul</b> (Street Dance, K-pop, Acrobatică, Zumba, Nu știu încă) și <b>grupa de vârstă</b>, ca s-o grupăm corect pe listă.</span></li>
-        <li><span class="b">💬</span><span><b>SMS automat:</b> o anunțăm că e pe lista de așteptare și o contactăm când se eliberează un loc.</span></li>
+        <li><span class="b">👉</span><span>Pune aici doar pe cine nu are loc. „Vreau, dar nu acum" NU e waiting list → „Contactat / De revenit", cu dată.</span></li>
+        <li><span class="b">👉</span><span>Notează în observații grupa pe care o așteaptă.</span></li>
+        <li><span class="b">👉</span><span>Când se eliberează un loc, sună-i în ordine: cei mai vechi sunt sus.</span></li>
       </ul>
-      <div class="sms"><span class="lbl">SMS „waiting list"</span><span class="txt">„Buna {nume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!"</span><div class="meta">Pleacă imediat ce muți cardul în Waiting List.</div></div>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>La intrare pleacă singur SMS-ul „te-am adăugat pe lista de așteptare — te contactăm imediat ce îți putem oferi un loc".</span></li>
+        <li><span class="b">🤖</span><span>Ține lista în ordinea sosirii (primul venit, primul sunat).</span></li>
+        <li><span class="b">🤖</span><span>La finalul sezonului, cine a rămas pe listă trece în Nurture.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>Programat · Nurture</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
     <section class="block" id="programat">
       <div class="eyebrow">Coloană cu coloană · 4</div>
       <h2><span class="ic">📅</span>Programat</h2>
-      <p class="intro">Cel mai important pas: am stabilit o <b>ședință gratuită de probă</b>.</p>
+      <p class="intro">Are o dată și o grupă pentru ședința gratuită.</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">📆</span><span><b>Alegi data</b>, apoi un <b>curs sau eveniment</b> dintr-un dropdown filtrat automat pe: grupa de vârstă a lead-ului, ziua aleasă și locație.</span></li>
-        <li><span class="b">🕒</span><span><b>Ora nu se scrie de mână</b> — vine din cursul/evenimentul ales.</span></li>
-        <li><span class="b">🧑‍🤝‍🧑</span><span>Lead-ul apare în <b>rosterul grupei</b> din ziua aceea cu eticheta <b>LEAD</b>. La sală îl bifezi prezent/absent — și cardul se mută singur în „A venit" / „Nu a venit".</span></li>
-        <li><span class="b">💬</span><span><b>SMS de confirmare</b> (cu o mică întârziere de ~2 minute, ca să poți corecta dacă ai greșit data).</span></li>
+        <li><span class="b">👉</span><span>Recepția bifează prezența leadului în rosterul grupei, în ziua demo-ului, până la finalul programului.</span></li>
+        <li><span class="b">👉</span><span>A venit → bifă. Nu a venit → lasă nebifat; aplicația îl mută singură peste noapte.</span></li>
+        <li><span class="b">👉</span><span>Un lead are o singură programare: reprogramarea o înlocuiește pe cea veche.</span></li>
       </ul>
-      <div class="sms"><span class="lbl">SMS „confirmare"</span><span class="txt">„Buna {nume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}, ora {ora}. Va asteptam cu drag la {adresa}!"</span><div class="meta">Data + ora + adresa scurtă a locației.</div></div>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>Trimite SMS de confirmare la câteva minute după programare și reminder la 10:00 în ziua ședinței (pentru weekend, cu o zi înainte).</span></li>
+        <li><span class="b">🤖</span><span>Pune leadul în rosterul grupei din ziua respectivă.</span></li>
+        <li><span class="b">🤖</span><span>Dacă rămâne nebifat, peste noapte devine „Nu a venit", iar în următoarea zi lucrătoare la 16:00 primește SMS-ul „ne pare rău că nu ai ajuns". Dacă de fapt a venit, mută-l pe „A venit" înainte de ora aceea.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>A venit · Nu a venit</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
     <section class="block" id="a-venit">
       <div class="eyebrow">Coloană cu coloană · 5</div>
       <h2><span class="ic">✅</span>A venit</h2>
-      <p class="intro">S-a prezentat la probă. De obicei se întâmplă singur, când bifezi prezența la sală.</p>
+      <p class="intro">A fost la ședința gratuită și nu s-a înscris încă.</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">🔄</span><span><b>La mutare aici</b> se marchează prezența „prezent" pe programare.</span></li>
-        <li><span class="b">🚫</span><span><b>Fără SMS aici.</b> Mesajul de review pleacă <b>la conversie</b>, nu acum (ca să nu cerem review înainte să devină client).</span></li>
-        <li><span class="b">➡️</span><span><b>Ce urmează:</b> dacă vrea să continue → <b>Convertit</b>; dacă nu → Pierdut / Nurture.</span></li>
+        <li><span class="b">👉</span><span>Vorbește cu părintele / cursantul imediat după clasă: cum a fost, grupa potrivită, preț, înscriere pe loc.</span></li>
+        <li><span class="b">👉</span><span>Se înscrie → „Convertește în client" (client + înrolare, dintr-un singur flux).</span></li>
+        <li><span class="b">👉</span><span>Se gândește sau refuză → notează cu 📞 ce a spus, ca să știi data viitoare. Refuz clar → Pierdut; „nu acum" → Nurture.</span></li>
       </ul>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>La 2 zile după demo trimite SMS-ul cu rezervarea locului (la 16:00, luni–vineri).</span></li>
+        <li><span class="b">🤖</span><span>Lunea pune ⚑ pe cei neînscriși — lista de sunat de luni.</span></li>
+        <li><span class="b">🤖</span><span>A doua luni la rând fără niciun contact logat → Nurture.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>Convertit · Pierdut · Nurture</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
     <section class="block" id="nu-a-venit">
       <div class="eyebrow">Coloană cu coloană · 6</div>
       <h2><span class="ic">❌</span>Nu a venit</h2>
-      <p class="intro">Era programat, dar nu s-a prezentat (no-show).</p>
+      <p class="intro">A avut programare și nu a ajuns.</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">🌙</span><span><b>Automat:</b> dacă rămâne în „Programat" cu data trecută, aplicația îl mută singură aici peste noapte.</span></li>
-        <li><span class="b">💬</span><span><b>SMS de revenire</b>, ca să-i mai dăm o șansă.</span></li>
-        <li><span class="b">🔁</span><span><b>Ce urmează:</b> reprogramare, sau Pierdut / Nurture.</span></li>
+        <li><span class="b">👉</span><span>Nimic din oficiu: nu se sună.</span></li>
+        <li><span class="b">👉</span><span>Dacă scrie sau sună el, reprogramează-l (trage-l pe „Programat").</span></li>
       </ul>
-      <div class="sms"><span class="lbl">SMS „follow-up"</span><span class="txt">„Buna {nume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la {telefon locatie}!"</span><div class="meta">Pleacă când cardul ajunge în „Nu a venit".</div></div>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>La prima neprezentare trimite SMS-ul „ne pare rău că nu ai ajuns", la 16:00 în zi lucrătoare.</span></li>
+        <li><span class="b">🤖</span><span>După 10 zile fără reprogramare → Nurture.</span></li>
+        <li><span class="b">🤖</span><span>A doua neprezentare → direct în Nurture, fără SMS.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>Programat · Nurture</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
     <section class="block" id="convertit">
       <div class="eyebrow">Coloană cu coloană · 7</div>
       <h2><span class="ic">🤝</span>Convertit <span class="tag">cap de drum</span></h2>
-      <p class="intro">Reușita: lead-ul devine <b>client</b>.</p>
+      <p class="intro">E client cu înrolare activă. Treaba pe lead s-a încheiat.</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">👤</span><span><b>La mutare aici</b> se deschide un pas care <b>creează clientul</b> din datele lead-ului (sau îl leagă de un client existent dacă telefonul/emailul se potrivește).</span></li>
-        <li><span class="b">📝</span><span>Imediat se deschide <b>înrolarea</b> (alegi cursul, tipul de abonament etc.). Vezi ghidul <a class="inl" href="reguli-plati.html">Cum funcționează plățile</a>.</span></li>
-        <li><span class="b">💬</span><span><b>SMS de review pe Google</b> — acum, când a devenit parte din comunitate.</span></li>
-        <li><span class="b">🔒</span><span>E <b>terminal</b>: cardul rămâne în Convertit.</span></li>
+        <li><span class="b">👉</span><span>Nimic. De aici încolo se lucrează din fișa clientului (contract, plăți).</span></li>
+        <li><span class="b">👉</span><span>„▸ Finalizează înscrierea" pe un cartonaș = conversie rămasă la jumătate: clientul există, dar fără înrolare. Termin-o.</span></li>
       </ul>
-      <div class="sms"><span class="lbl">SMS „review"</span><span class="txt">„Buna {nume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: {link} Multumim!"</span><div class="meta">Linkul de review e cel al locației.</div></div>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>Marchează singură leadul „Convertit" în clipa în care clientul primește o înrolare.</span></li>
+        <li><span class="b">🤖</span><span>Șterge programările de probă viitoare ale leadului.</span></li>
+        <li><span class="b">🤖</span><span>Ascunde din coloană conversiile mai vechi de 30 de zile („Arată arhivate").</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>— (final)</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
     <section class="block" id="pierdut">
       <div class="eyebrow">Coloană cu coloană · 8</div>
       <h2><span class="ic">🛑</span>Pierdut <span class="tag">cap de drum</span></h2>
-      <p class="intro">Nu se mai întâmplă nimic cu acest lead — dar notăm <b>de ce</b>, ca să învățăm.</p>
+      <p class="intro">Nu îl mai contactăm NICIODATĂ.</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">❓</span><span><b>Motiv obligatoriu</b> la mutare. Motive rapide: <span class="field">Programul nu coincide</span> <span class="field">Copilul nu vrea</span> <span class="field">A găsit altă școală</span> <span class="field">Prea scump</span> <span class="field">Număr greșit</span> <span class="field">Prea multe activități</span> <span class="field">Opt-out</span> — sau text liber.</span></li>
-        <li><span class="b">🚫</span><span><b>Fără SMS.</b></span></li>
+        <li><span class="b">👉</span><span>Pune aici doar: număr greșit, „nu mă mai contactați" (opt-out), refuz explicit, în afara țintei (vârstă, alt oraș).</span></li>
+        <li><span class="b">👉</span><span>„Nu acum" NU e pierdut — program nepotrivit, altă activitate, preț, distanță, alt studio, „pas anul acesta" merg în Nurture, ca să-i prindem la reînscrieri.</span></li>
+        <li><span class="b">👉</span><span>Motivul e obligatoriu. Scrie-l cât mai concret.</span></li>
       </ul>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>Un lead pierdut nu mai poate fi mutat din coloană.</span></li>
+        <li><span class="b">🤖</span><span>Motivul „opt-out" îl marchează automat ca „nu mai dorește să fie contactat".</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>— (final)</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
-    <!-- NURTURE -->
     <section class="block" id="nurture">
       <div class="eyebrow">Restul</div>
-      <h2><span class="ic">🌱</span>Zona Nurture</h2>
-      <p class="intro">Nurture e <b>cămara de reactivare</b>: oameni pe care nu-i urmărim activ acum, dar pe care îi putem recontacta mai târziu. NU e o coloană pe board — e un <b>tab separat, o listă căutabilă</b> (poate crește la mii de persoane).</p>
-      <h3>Cine ajunge în Nurture</h3>
+      <h2><span class="ic">🌱</span>Nurture</h2>
+      <p class="intro">Nu acum, dar poate mai târziu: bazinul din care recuperăm la campanii și reînscrieri.</p>
+      <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">📦</span><span><b>Ex-clienți istorici</b> — foștii cursanți importați și cei deveniți EXclient ajung aici automat.</span></li>
-        <li><span class="b">🔁</span><span><b>Lead-uri „reci"</b> — după 4 încercări fără răspuns, sau un steguleț de prioritate ignorat prea mult, aplicația le mută singură aici.</span></li>
-        <li><span class="b">🌱</span><span><b>Manual</b> — butonul <span class="btnlbl">🌱 Mută în Nurture</span> din fișa lead-ului.</span></li>
+        <li><span class="b">👉</span><span>Mută aici manual pe oricine spune „nu acum" — și notează motivul în observații.</span></li>
+        <li><span class="b">👉</span><span>Când cineva revine, caută-l și apasă „Reactivează": intră din nou în „Nou", cu contoarele de la zero.</span></li>
       </ul>
-      <div class="note"><span class="lbl">Bun de știut</span>Deschizi pe oricine din listă, îl recontactezi și, dacă redevine interesat, îl <b>muți înapoi</b> în pâlnia activă schimbându-i statusul. Lead-urile din Nurture <b>nu poluează statisticile</b> pâlniei.</div>
+      <h3>Ce face aplicația singură</h3>
+      <ul class="big">
+        <li><span class="b">🤖</span><span>Aduce singură aici leadurile la care omul n-a răspuns, n-a venit sau nu s-a înscris după demo.</span></li>
+        <li><span class="b">🤖</span><span>Adaugă automat foștii clienți (45 de zile fără prezență) — cei cu eticheta „ex-client".</span></li>
+        <li><span class="b">🤖</span><span>Nu trimite niciun SMS automat din Nurture.</span></li>
+      </ul>
+      <div class="note"><span class="lbl">Pe unde iese</span>Nou (reactivare) · Programat</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
+
+<!-- /gen:statusuri -->
 
     <!-- AUTOMAT -->
     <section class="block" id="automat">
       <div class="eyebrow">Restul</div>
       <h2><span class="ic">⏰</span>Ce face aplicația singură</h2>
-      <p class="intro">Două „ture" automate pe zi se ocupă de leads ca să găsești dimineața totul pus la punct. <b>Orele sunt ora României.</b></p>
+      <p class="intro">Aplicația are patru momente fixe în care se ocupă singură de leads, ca să găsești dimineața totul pus la punct. <b>Orele sunt ora României.</b></p>
       <table class="t">
         <tr><th>Când</th><th>Ce face cu leads</th></tr>
-        <tr><td><b>Dimineața, ~ora 10</b></td><td>Trimite <b>SMS-ul de reamintire</b> pentru ședințele de probă de <b>azi</b> (Luni–Vineri) sau de <b>mâine</b> (când urmează weekend).</td></tr>
-        <tr><td><b>Noaptea (după închidere)</b></td><td>Cele rămase în „Programat" cu data trecută → trec pe <b>„Nu a venit"</b>. Lead-urilor uitate li se pune <b>steguleț de prioritate</b>. Cele „reci" (multe încercări / flag ignorat) trec singure în <b>Nurture</b>.</td></tr>
+        <tr><td><b>Dimineața, ora 10</b></td><td>Trimite <b>SMS-ul de reamintire</b> pentru ședințele de probă de <b>azi</b> (Luni–Vineri) sau de <b>mâine</b> (când urmează weekend). <b>Lunea</b>, pune steguleț pe cei din „A venit" care încă nu s-au înscris — lista de sunat a săptămânii.</td></tr>
+        <tr><td><b>După-amiaza, ora 16</b><br><span style="color:var(--gri2);font-size:12px">Luni–Vineri</span></td><td>Pleacă mesajele la care omul <b>poate răspunde</b>, când e cineva la sală să-i răspundă: „ne pare rău că nu ai ajuns", mesajul de la <b>2 zile după probă</b> și confirmarea înrolării.</td></tr>
+        <tr><td><b>Noaptea, după închidere</b></td><td>Cele rămase în „Programat" cu data trecută → trec pe <b>„Nu a venit"</b>. Lead-urilor uitate li se pune <b>steguleț</b>. Cele „reci" (multe încercări fără răspuns, neprezentări, steguleț ignorat) trec în <b>Nurture</b>.</td></tr>
+        <tr><td><b>La finalul sezonului</b></td><td>Cine a rămas pe <b>Waiting List</b> trece în <b>Nurture</b> — lista nu se reportează de la un sezon la altul.</td></tr>
       </table>
+      <div class="note"><span class="lbl">Liniște noaptea</span>Niciun SMS nu pleacă între <b>19:30 și 10:00</b>. Ce s-ar trimite în intervalul ăsta se amână automat.</div>
       <div class="sms"><span class="lbl">SMS „reminder" (dimineața)</span><span class="txt">„Buna {nume}! Va reamintim de sedinta gratuita la Quasar Dance {AZI/MAINE}, {data}, ora {ora}, la {adresa}. Te asteptam!"</span><div class="meta">Un singur reminder per lead pe zi.</div></div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
@@ -373,16 +443,17 @@
       <table class="t">
         <tr><th>Trigger</th><th>SMS</th><th>Conține</th></tr>
         <tr><td>→ <b>Waiting List</b></td><td>waiting list</td><td>confirmare că e pe listă</td></tr>
-        <tr><td>→ <b>Programat</b></td><td>confirmare</td><td>data + ora + adresa</td></tr>
-        <tr><td><b>Dimineața</b>, ziua probei</td><td>reminder</td><td>azi/mâine + data + ora + adresa</td></tr>
-        <tr><td>→ <b>Nu a venit</b></td><td>follow-up</td><td>telefonul locației</td></tr>
-        <tr><td>→ <b>Convertit</b></td><td>review</td><td>link review Google</td></tr>
+        <tr><td>→ <b>Programat</b> <span style="color:var(--gri2)">(după ~2 min)</span></td><td>confirmare</td><td>data + ora + adresa</td></tr>
+        <tr><td><b>Ora 10</b>, ziua probei</td><td>reminder</td><td>azi/mâine + data + ora + adresa</td></tr>
+        <tr><td>→ <b>Nu a venit</b> <span style="color:var(--gri2)">(ora 16, doar prima dată)</span></td><td>follow-up</td><td>telefonul locației</td></tr>
+        <tr><td><b>La 2 zile după probă</b> <span style="color:var(--gri2)">(ora 16, dacă nu s-a înscris)</span></td><td>post-demo</td><td>locurile se ocupă în ordinea înscrierilor</td></tr>
       </table>
+      <div class="note"><span class="lbl">Nu mai există</span>SMS-ul prin care ceream un <b>review pe Google la conversie</b> a fost <b>scos</b> (septembrie 2026). Dacă îți amintești de el: nu mai pleacă. La fel, a doua neprezentare nu mai primește niciun mesaj — cardul trece direct în Nurture.</div>
       <div class="note"><span class="lbl">Regulă</span>Recepția și vânzările trimit <b>doar șabloane gata făcute</b>, niciodată text liber. Mesajele sunt scurte, fără diacritice și fără emoji. Nu se trimite același SMS de două ori (deduplicare).</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
-    <footer>Procesul de leads · beta · <b>Quasar Dance</b> · Material viu — îl actualizăm când se schimbă fluxul.</footer>
+    <footer>Procesul de leads · beta · <b>Quasar Dance</b> · Material viu — revizuit 18 septembrie 2026. Secțiunile pe coloane se generează din aplicație, deci nu pot rămâne în urmă.</footer>
   </main>
 </div>
 </body>

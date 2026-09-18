@@ -4,20 +4,26 @@ import { InteresBadge } from './Badges'
 import { FOLLOWUP_DAYS, INACTIVE_DAYS } from './constants'
 import { timpRelativ } from './LeadHistory'
 import type { LeadAgenda } from './api'
+import { actiuneCard, termenPrimulApel } from './procedura'
 
 type Props = {
   leads: Lead[]
   onLeadClick: (lead: Lead) => void
   onLogContact?: (lead: Lead) => void
+  /** Leadurile bifate prezente la o ședință de azi (vezi listLeadIdsPrezentiAzi). */
+  prezentiAzi?: Set<string>
   /** Pe telefon panoul E pagina, deci pornește deschis. */
   defaultExpanded?: boolean
 }
 
 type TodayGroups<T> = {
+  auVenitAzi: T[]
   reminders: T[]
   programatiAzi: T[]
   callbacks: T[]
-  staleNew: T[]
+  deSunatAzi: T[]
+  faraPasUrmator: T[]
+  dejaClient: T[]
   noFollowup: T[]
   inactive: T[]
 }
@@ -39,22 +45,36 @@ function isSameDay(a: Date, b: Date): boolean {
 export function groupTodayLeads<T extends LeadAgenda>(
   leads: T[],
   now = new Date(),
+  prezentiAzi?: Set<string>,
 ): TodayGroups<T> {
   const endOfToday = new Date(now)
   endOfToday.setHours(23, 59, 59, 999)
-  const cutoff24h = now.getTime() - DAY
   const cutoffFollowup = now.getTime() - FOLLOWUP_DAYS * DAY
   const cutoffInactive = now.getTime() - INACTIVE_DAYS * DAY
+  const auVenitAzi: T[] = []
   const reminders: T[] = []
   const programatiAzi: T[] = []
   const callbacks: T[] = []
-  const staleNew: T[] = []
+  const deSunatAzi: T[] = []
+  const faraPasUrmator: T[] = []
+  const dejaClient: T[] = []
   const noFollowup: T[] = []
   const inactive: T[] = []
   for (const l of leads) {
     if (TERMINAL.includes(l.status)) continue
-    // Lead marcat „deja client" nu intră în call-list-ul de lucru.
-    if (l.deja_client) continue
+    // „Deja client" nu e un lead rece: nu primește SMS-uri automate și era scos
+    // din toate listele, deci zăcea în „Nou" fără ca cineva să-l vadă. Are grup
+    // propriu — se rezolvă din fișa clientului, nu cu un apel de vânzare.
+    if (l.deja_client) {
+      if (l.status === 'nou' || l.status === 'contactat') dejaClient.push(l)
+      continue
+    }
+    // Cei care AU FOST azi în sală: discuția de după clasă e pasul care aduce
+    // înscrierea, deci stau în capul listei.
+    if (l.status === 'a_venit' && prezentiAzi?.has(l.id)) {
+      auVenitAzi.push(l)
+      continue
+    }
     if (l.flag_reminder) {
       reminders.push(l)
       continue
@@ -71,13 +91,15 @@ export function groupTodayLeads<T extends LeadAgenda>(
       callbacks.push(l)
       continue
     }
-    if (
-      l.status === 'nou' &&
-      new Date(l.created).getTime() < cutoff24h &&
-      !l.nr_contactari &&
-      !l.ultima_contactare_la
-    ) {
-      staleNew.push(l)
+    // Termenul e „aceeași zi lucrătoare", nu 24h: un lead intrat azi dimineață
+    // trebuie sunat AZI, nu mâine (decis 2026-09-17).
+    if (l.status === 'nou' && !l.ultima_contactare_la) {
+      deSunatAzi.push(l)
+      continue
+    }
+    // „Contactat" fără sub-status = limbo: nicio regulă nu-l mai atinge.
+    if (l.status === 'contactat' && !l.sub_status) {
+      faraPasUrmator.push(l)
       continue
     }
     // Listele de neglijență: doar pipeline activ, fără callback viitor programat
@@ -100,14 +122,31 @@ export function groupTodayLeads<T extends LeadAgenda>(
   callbacks.sort((a, b) =>
     (a.data_callback_dorit ?? '').localeCompare(b.data_callback_dorit ?? ''),
   )
-  staleNew.sort((a, b) => a.created.localeCompare(b.created))
+  deSunatAzi.sort((a, b) => a.created.localeCompare(b.created))
+  faraPasUrmator.sort((a, b) =>
+    (a.ultima_contactare_la ?? a.created).localeCompare(
+      b.ultima_contactare_la ?? b.created,
+    ),
+  )
+  dejaClient.sort((a, b) => b.created.localeCompare(a.created))
+  auVenitAzi.sort((a, b) => a.created.localeCompare(b.created))
   const byLastActivity = (a: T, b: T) =>
     (a.ultima_contactare_la ?? a.created).localeCompare(
       b.ultima_contactare_la ?? b.created,
     )
   noFollowup.sort(byLastActivity)
   inactive.sort(byLastActivity)
-  return { reminders, programatiAzi, callbacks, staleNew, noFollowup, inactive }
+  return {
+    auVenitAzi,
+    reminders,
+    programatiAzi,
+    callbacks,
+    deSunatAzi,
+    faraPasUrmator,
+    dejaClient,
+    noFollowup,
+    inactive,
+  }
 }
 
 function formatOra(iso: string): string {
@@ -140,6 +179,9 @@ function Row({
 }) {
   const fullName =
     [lead.prenume, lead.nume].filter(Boolean).join(' ') || lead.nume
+  // Pe telefon nu există hover, iar panoul ăsta E toată aplicația de leads de pe
+  // mobil: acțiunea se scrie pe rând, nu se ascunde într-un tooltip.
+  const actiune = actiuneCard(lead)
   return (
     <div
       className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-quasar-gray-light/50 max-md:min-h-11 max-md:flex-wrap max-md:gap-x-2 max-md:gap-y-0.5 max-md:py-2"
@@ -147,6 +189,13 @@ function Row({
     >
       <span className="min-w-0 flex-1 truncate font-medium text-quasar-black max-md:basis-full">
         {fullName}
+        <span
+          className={`ml-2 text-xs font-normal ${
+            actiune.ton === 'urgent' ? 'text-red-600' : 'text-quasar-gray'
+          }`}
+        >
+          → {actiune.text}
+        </span>
       </span>
       {lead.telefon && (
         <span className="shrink-0 text-xs text-quasar-gray">
@@ -229,15 +278,22 @@ export function TodayPanel({
   leads,
   onLeadClick,
   onLogContact,
+  prezentiAzi,
   defaultExpanded = false,
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded)
-  const groups = useMemo(() => groupTodayLeads(leads), [leads])
+  const groups = useMemo(
+    () => groupTodayLeads(leads, new Date(), prezentiAzi),
+    [leads, prezentiAzi],
+  )
   const total =
+    groups.auVenitAzi.length +
     groups.reminders.length +
     groups.programatiAzi.length +
     groups.callbacks.length +
-    groups.staleNew.length +
+    groups.deSunatAzi.length +
+    groups.faraPasUrmator.length +
+    groups.dejaClient.length +
     groups.noFollowup.length +
     groups.inactive.length
 
@@ -269,9 +325,24 @@ export function TodayPanel({
               📞 {groups.callbacks.length}
             </span>
           )}
-          {groups.staleNew.length > 0 && (
+          {groups.auVenitAzi.length > 0 && (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">
+              ✅ {groups.auVenitAzi.length}
+            </span>
+          )}
+          {groups.faraPasUrmator.length > 0 && (
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">
+              ⁉️ {groups.faraPasUrmator.length}
+            </span>
+          )}
+          {groups.dejaClient.length > 0 && (
+            <span className="rounded-full bg-quasar-yellow/40 px-2 py-0.5 text-quasar-black">
+              ⭐ {groups.dejaClient.length}
+            </span>
+          )}
+          {groups.deSunatAzi.length > 0 && (
             <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-zinc-700">
-              🕐 {groups.staleNew.length}
+              🕐 {groups.deSunatAzi.length}
             </span>
           )}
           {groups.noFollowup.length > 0 && (
@@ -292,6 +363,15 @@ export function TodayPanel({
 
       {expanded && (
         <div className="space-y-3 border-t border-amber-200 px-1 py-2">
+          <Group
+            title="Au venit azi la demo"
+            leads={groups.auVenitAzi}
+            extraOf={() => (
+              <span className="text-emerald-700">vorbește cu el</span>
+            )}
+            onLeadClick={onLeadClick}
+            onLogContact={onLogContact}
+          />
           <Group
             title="Marcate pentru revenire"
             leads={groups.reminders}
@@ -327,12 +407,35 @@ export function TodayPanel({
             onLogContact={onLogContact}
           />
           <Group
-            title="Noi, necontactate >24h"
-            leads={groups.staleNew}
+            title="Noi, de sunat azi"
+            leads={groups.deSunatAzi}
+            extraOf={(l) => {
+              const intarziat = Date.now() > termenPrimulApel(l.created).getTime()
+              return (
+                <span className={intarziat ? 'text-red-600' : 'text-quasar-gray'}>
+                  {intarziat ? 'termen depășit' : `intrat ${timpRelativ(l.created)}`}
+                </span>
+              )
+            }}
+            onLeadClick={onLeadClick}
+            onLogContact={onLogContact}
+          />
+          <Group
+            title="Contactate, fără pas următor"
+            leads={groups.faraPasUrmator}
             extraOf={(l) => (
-              <span className="text-quasar-gray">
-                intrat {timpRelativ(l.created)}
+              <span className="text-red-600">
+                {timpRelativ(l.ultima_contactare_la ?? l.created)}
               </span>
+            )}
+            onLeadClick={onLeadClick}
+            onLogContact={onLogContact}
+          />
+          <Group
+            title="Clienți care au cerut ceva"
+            leads={groups.dejaClient}
+            extraOf={() => (
+              <span className="text-quasar-gray">deschide fișa clientului</span>
             )}
             onLeadClick={onLeadClick}
             onLogContact={onLogContact}

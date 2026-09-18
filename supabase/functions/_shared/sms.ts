@@ -15,7 +15,7 @@
 // (1 SMS GSM-7). Păstrăm reperul (SYNEVO / intrarea) dar tăiem umplutura.
 const ADRESE: Record<string, string> = {
   'Ștefan cel Mare': 'Galeriile Stefan cel Mare, et. 1 (langa SYNEVO)',
-  Nicolina: 'Str. Izvor 14',
+  Nicolina: 'Str. Izvor 14 (intrarea din spate)',
   'Quasar 4 Kids': 'Str. Clopotari 24 (intrarea din spate, usa mov)',
 }
 

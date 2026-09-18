@@ -29,6 +29,25 @@ export async function lastPrezentaByLead(): Promise<Map<string, string>> {
   return out
 }
 
+// Leadurile bifate prezente la o ședință de AZI.
+//
+// Alimentează grupul „Au venit azi la demo" din „De lucrat azi": discuția de
+// după clasă e pasul care aduce înscrierea, dar nu exista nicăieri un loc din
+// care recepția să știe cu cine are de vorbit azi (95 de leaduri în „A venit",
+// zero apeluri logate după demo).
+export async function listLeadIdsPrezentiAzi(): Promise<Set<string>> {
+  const azi = new Date()
+  const zi = `${azi.getFullYear()}-${String(azi.getMonth() + 1).padStart(2, '0')}-${String(azi.getDate()).padStart(2, '0')}`
+  const { data, error } = await supabase
+    .from('programari_leads')
+    .select('lead')
+    .eq('data_programarii', zi)
+    .eq('prezenta', 'prezent')
+    .not('lead', 'is', null)
+  if (error) throw error
+  return new Set((data ?? []).map((r) => r.lead as string))
+}
+
 // Marcarea prezenței de către un TEACHER, prin RPC security definer.
 //
 // RLS-ul nu-i permite teacherului să scrie direct în `programari_leads`/`leads`

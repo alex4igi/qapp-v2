@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom'
 import type { Lead } from '@/types/db'
 import { waLink } from '@/lib/phone'
 import { InteresBadge, SubStatusBadge } from './Badges'
-import { GRUPA_LABELS, isToday, waLeadMessage } from './constants'
+import { CardTooltip } from './StatusTooltip'
+import { GRUPA_LABELS, isToday, waLeadMessage, ziScurta } from './constants'
 
 type Props = {
   lead: Lead
@@ -27,15 +28,6 @@ function calcAge(dataNasterii: string | null): number | null {
   )
     age--
   return age
-}
-
-const MONTHS = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec']
-
-function formatDate(iso: string | null) {
-  if (!iso) return null
-  const d = new Date(iso)
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${day} ${MONTHS[d.getMonth()]}`
 }
 
 export function LeadCard({
@@ -89,6 +81,7 @@ export function LeadCard({
     new Date(lead.data_callback_dorit!).getTime() < Date.now()
 
   return (
+    <CardTooltip lead={lead} areInrolare={isEnrolled} className="block">
     <div
       ref={setNodeRef}
       style={style}
@@ -248,7 +241,7 @@ export function LeadCard({
                 }`}
                 suppressHydrationWarning
               >
-                📞 {formatDate(lead.data_callback_dorit)}
+                📞 {ziScurta(lead.data_callback_dorit)}
                 {followupOverdue && ' (scadent)'}
               </span>
             </div>
@@ -259,7 +252,7 @@ export function LeadCard({
                 className="text-xs font-medium text-amber-700"
                 suppressHydrationWarning
               >
-                🗓 {formatDate(lead.data_programare)}
+                🗓 {ziScurta(lead.data_programare)}
               </span>
             </div>
           )}
@@ -294,5 +287,6 @@ export function LeadCard({
           rândului, nu un contact real, iar vederea Listă are coloana „Ultim
           contact" care chiar înseamnă ceva. Rămâne în tooltipul numelui. */}
     </div>
+    </CardTooltip>
   )
 }

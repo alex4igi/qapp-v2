@@ -4,9 +4,12 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, PageHeader, Spinner, TextInput } from '@/components/ui'
 import { matchesWords } from '@/lib/search'
 import type { Lead } from '@/types/db'
-import { getLeadById, listLeads, pruneExpiredLeads } from './api'
+import { getLeadById, listLeads, listLeadIdsPrezentiAzi, pruneExpiredLeads } from './api'
 import { LeadModal } from './LeadModal'
 import { LogContactModal } from './LogContactModal'
+import { MotivModal } from './MotivModal'
+import { WaitingListModal } from './WaitingListModal'
+import type { ModMotiv } from './constants'
 import { TodayPanel } from './TodayPanel'
 import { InteresBadge } from './Badges'
 
@@ -23,6 +26,11 @@ export function LeadsMobileView({ poateEdita }: { poateEdita: boolean }) {
   const [addOpen, setAddOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
   const [logLead, setLogLead] = useState<Lead | null>(null)
+  // Pașii care continuă după „am vorbit cu el" — aceleași ca pe desktop, ca
+  // recepția să poată închide un apel de pe telefon, nu doar să-l noteze.
+  const [motivLead, setMotivLead] = useState<{ lead: Lead; mod: ModMotiv } | null>(null)
+  const [waitingLead, setWaitingLead] = useState<Lead | null>(null)
+  const [schedulingLead, setSchedulingLead] = useState<Lead | null>(null)
   const [cauta, setCauta] = useState('')
 
   // Aceeași cheie ca board-ul de desktop și ca `AgendaAziCard` — cache comun.
@@ -34,6 +42,10 @@ export function LeadsMobileView({ poateEdita }: { poateEdita: boolean }) {
     },
   })
   const leads = useMemo(() => leadsQuery.data ?? [], [leadsQuery.data])
+  const prezentiAziQ = useQuery({
+    queryKey: ['leads', 'prezenti-azi'],
+    queryFn: listLeadIdsPrezentiAzi,
+  })
 
   // Deep-link ?lead=<id> (rosterul grupei / al unui eveniment trimite aici).
   const leadParam = searchParams.get('lead')
@@ -126,6 +138,7 @@ export function LeadsMobileView({ poateEdita }: { poateEdita: boolean }) {
         <>
           <TodayPanel
             leads={leads}
+            prezentiAzi={prezentiAziQ.data}
             defaultExpanded
             onLeadClick={(l) => setEditingLead(l)}
             onLogContact={poateEdita ? (l) => setLogLead(l) : undefined}
@@ -141,7 +154,37 @@ export function LeadsMobileView({ poateEdita }: { poateEdita: boolean }) {
         <LeadModal open lead={editingLead} onClose={() => setEditingLead(null)} />
       )}
       {logLead && (
-        <LogContactModal open lead={logLead} onClose={() => setLogLead(null)} />
+        <LogContactModal
+          open
+          lead={logLead}
+          onClose={() => setLogLead(null)}
+          onSchedule={setSchedulingLead}
+          onWaitingList={setWaitingLead}
+          onMotiv={(lead, mod) => setMotivLead({ lead, mod })}
+        />
+      )}
+      {schedulingLead && (
+        <LeadModal
+          open
+          lead={schedulingLead}
+          startScheduling
+          onClose={() => setSchedulingLead(null)}
+        />
+      )}
+      {waitingLead && (
+        <WaitingListModal
+          open
+          lead={waitingLead}
+          onClose={() => setWaitingLead(null)}
+        />
+      )}
+      {motivLead && (
+        <MotivModal
+          open
+          mod={motivLead.mod}
+          lead={motivLead.lead}
+          onClose={() => setMotivLead(null)}
+        />
       )}
     </div>
   )

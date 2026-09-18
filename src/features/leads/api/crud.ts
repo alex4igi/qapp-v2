@@ -25,6 +25,7 @@ export type LeadForm = {
   status: StatusLead
   sub_status: string
   motiv_pierdut: string
+  motiv_categorie: string
   locatia: string
   data_programare: string
   data_callback_dorit: string
@@ -49,6 +50,7 @@ export function normalize(form: Partial<LeadForm>): UpdateDto<'leads'> {
   if ('sub_status' in form)
     out.sub_status = (form.sub_status || null) as SubStatusLead | null
   if ('motiv_pierdut' in form) out.motiv_pierdut = form.motiv_pierdut?.trim() || null
+  if ('motiv_categorie' in form) out.motiv_categorie = form.motiv_categorie || null
   if ('locatia' in form) out.locatia = form.locatia?.trim() || null
   if ('data_programare' in form)
     out.data_programare = form.data_programare || null
@@ -109,6 +111,7 @@ export type LeadAgenda = Pick<
   Lead,
   | 'id'
   | 'status'
+  | 'sub_status'
   | 'deja_client'
   | 'flag_reminder'
   | 'data_programare'
@@ -126,7 +129,7 @@ export async function listLeadsAgendaAzi(): Promise<LeadAgenda[]> {
     supabase
       .from('leads')
       .select(
-        'id, status, deja_client, flag_reminder, data_programare, data_callback_dorit, created, nr_contactari, ultima_contactare_la',
+        'id, status, sub_status, deja_client, flag_reminder, data_programare, data_callback_dorit, created, nr_contactari, ultima_contactare_la',
       )
       .not('status', 'in', '(nurture,convertit,pierdut)')
       .order('created', { ascending: false })

@@ -185,7 +185,7 @@ Buna ziua! Pentru a pastra {locul lui X / locurile lui X si Y} la Quasar Dance, 
 | Locație | Adresă SMS |
 |---|---|
 | Ștefan cel Mare | Galeriile Stefan cel Mare, et. 1 (langa SYNEVO) |
-| Nicolina | Str. Izvor 14 |
+| Nicolina | Str. Izvor 14 (intrarea din spate) |
 | Quasar 4 Kids | Str. Clopotari 24 (intrarea din spate, usa mov) |
 
 > Regulă: Nicolina + grupă Tiny (sau necunoscută) → folosește adresa/linkul Quasar 4 Kids.

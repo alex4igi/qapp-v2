@@ -25,7 +25,8 @@ import { KanbanColumn } from './KanbanColumn'
 import { LeadCard } from './LeadCard'
 import { LeadModal } from './LeadModal'
 import { LogContactModal } from './LogContactModal'
-import { PierdutModal } from './PierdutModal'
+import { MotivModal } from './MotivModal'
+import type { ModMotiv } from './constants'
 import { ContactareModal } from './ContactareModal'
 import { WaitingListModal } from './WaitingListModal'
 import { ConversieModal, type ConversieResult } from './ConversieModal'
@@ -48,6 +49,7 @@ import {
   getLatestProgramareCurs,
   getLeadById,
   lastPrezentaByLead,
+  listLeadIdsPrezentiAzi,
   listLeadIdsContactedToday,
   listLeads,
   listNurtureLeads,
@@ -58,9 +60,11 @@ import {
 
 type PipelineMode = 'kanban' | 'lista'
 
-// Coloanele terminale sunt arhive, nu lucru zilnic — pliate implicit, ca cele
-// șase coloane lucrate să încapă fără scroll orizontal.
-const PLIATE_IMPLICIT: StatusLead[] = ['convertit', 'pierdut']
+// Coloanele pe care recepția nu le lucrează zilnic — pliate implicit, ca cele
+// cinci coloane de lucru să încapă fără scroll orizontal. Waiting List e aici
+// fiindcă în ea intri când NU e loc: recepția e chemată înapoi de eliberarea
+// unui loc, nu de privitul coloanei.
+const PLIATE_IMPLICIT: StatusLead[] = ['waiting_list', 'convertit', 'pierdut']
 
 export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   const queryClient = useQueryClient()
@@ -101,7 +105,8 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
   const [addingToStatus, setAddingToStatus] = useState<string | null>(null)
   const [schedulingLead, setSchedulingLead] = useState<Lead | null>(null)
-  const [pierdutLead, setPierdutLead] = useState<Lead | null>(null)
+  // Motivul plecării (Pierdut sau Nurture) — același modal, grup diferit sus.
+  const [motivLead, setMotivLead] = useState<{ lead: Lead; mod: ModMotiv } | null>(null)
   const [contactareLead, setContactareLead] = useState<Lead | null>(null)
   const [waitingLead, setWaitingLead] = useState<Lead | null>(null)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
@@ -154,6 +159,12 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
     queryKey: ['leads', 'prezente'],
     queryFn: lastPrezentaByLead,
     enabled: mode === 'lista',
+  })
+  // Cine a fost azi în sală — alimentează grupul „Au venit azi la demo".
+  const prezentiAziQ = useQuery({
+    queryKey: ['leads', 'prezenti-azi'],
+    queryFn: listLeadIdsPrezentiAzi,
+    enabled: mode === 'kanban',
   })
 
 
@@ -316,7 +327,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
 
     if (newStatus === dragged.status) return
     if (newStatus === 'pierdut') {
-      setPierdutLead(dragged)
+      setMotivLead({ lead: dragged, mod: 'pierdut' })
       return
     }
     if (newStatus === 'contactat') {
@@ -374,6 +385,7 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
       {mode === 'kanban' && (
         <TodayPanel
           leads={leads}
+          prezentiAzi={prezentiAziQ.data}
           onLeadClick={setEditingLead}
           onLogContact={poateEdita ? setLogContactLead : undefined}
         />
@@ -463,11 +475,12 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
           onClose={() => setSchedulingLead(null)}
         />
       )}
-      {pierdutLead && (
-        <PierdutModal
+      {motivLead && (
+        <MotivModal
           open
-          lead={pierdutLead}
-          onClose={() => setPierdutLead(null)}
+          mod={motivLead.mod}
+          lead={motivLead.lead}
+          onClose={() => setMotivLead(null)}
         />
       )}
       {contactareLead && (
@@ -525,6 +538,9 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
           open
           lead={logContactLead}
           onClose={() => setLogContactLead(null)}
+          onSchedule={setSchedulingLead}
+          onWaitingList={setWaitingLead}
+          onMotiv={(lead, mod) => setMotivLead({ lead, mod })}
         />
       )}
 

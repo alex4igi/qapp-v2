@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Lead, StatusLead, SubStatusLead, UpdateDto, Enums } from '@/types/db'
-import { prependObservatie } from '../constants'
+import { MAX_INCERCARI_FARA_RASPUNS, prependObservatie } from '../constants'
 import { triggerLeadSms } from '../sms'
 import { normalize, type LeadForm } from './crud'
 
@@ -104,6 +104,31 @@ export async function reactivateFromNurture(id: string): Promise<void> {
       sub_status: null,
       nr_contactari: 0,
       flag_reminder: false,
+      motiv_categorie: null,
+      data_callback_dorit: null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// Mutarea deliberată în Nurture — „nu acum". Cere o categorie: fără ea, bazinul
+// de recuperare n-ar avea după ce să se ordoneze, iar în /leads ar reapărea
+// exact problema de dinainte (6.200 de rânduri fără niciun motiv scris).
+export async function moveToNurture(
+  id: string,
+  categorie: string,
+  motivLiber?: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('leads')
+    .update({
+      status: 'nurture',
+      sub_status: null,
+      flag_reminder: false,
+      flag_reminder_at: null,
+      flag_streak: 0,
+      motiv_categorie: categorie,
+      motiv_pierdut: motivLiber?.trim() || null,
     })
     .eq('id', id)
   if (error) throw error
@@ -151,10 +176,11 @@ export async function updateLead(
     } else {
       const newNr = (current.nr_contactari ?? 0) + 1
       payload.nr_contactari = newNr
-      // După 4 încercări consecutive fără răspuns → Nurture
-      if (newNr >= 4) {
+      // Cadența decisă 2026-09-17: 3 încercări în 5 zile, apoi Nurture.
+      if (newNr >= MAX_INCERCARI_FARA_RASPUNS) {
         payload.status = 'nurture'
         payload.sub_status = null
+        payload.motiv_categorie = 'nu_a_raspuns'
       }
     }
   }
@@ -174,6 +200,7 @@ export async function updateLead(
       payload.flag_reminder = false
       payload.flag_streak = 0
       payload.flag_reminder_at = null
+      payload.motiv_categorie = 'nu_a_venit'
     }
   }
 
@@ -234,6 +261,11 @@ export async function updateLeadStatus(
     updates.flag_reminder = false
     updates.flag_reminder_at = null
     updates.flag_streak = 0
+  }
+  // Nurture-ul ajuns aici pe calea asta e mereu „a 2-a neprezentare": mutările
+  // deliberate trec prin `moveToNurture`, care cere o categorie de la om.
+  if (effective === 'nurture' && status === 'nu_a_venit') {
+    updates.motiv_categorie = 'nu_a_venit'
   }
   // sub_status are sens doar în 'contactat' — se golește la ieșire.
   if (effective !== 'contactat') {

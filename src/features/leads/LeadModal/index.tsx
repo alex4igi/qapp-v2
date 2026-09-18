@@ -30,7 +30,6 @@ import {
 import {
   createLead,
   updateLead,
-  updateLeadStatus,
   deleteLead,
   checkDuplicateTelefon,
   reactivateFromNurture,
@@ -49,6 +48,7 @@ import { inscrieLaDemo } from '@/lib/inscrieriDemo'
 import { waLink } from '@/lib/phone'
 import { LeadHistory } from '../LeadHistory'
 import { LogContactModal } from '../LogContactModal'
+import { MotivModal } from '../MotivModal'
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
 import { STATUS_TONE, sectionLabel } from './styles'
 import { EMPTY, fromLead } from './helpers'
@@ -458,17 +458,10 @@ export function LeadModal({
       setError(humanizeError(e, 'Eroare la ștergere.')),
   })
 
-  // Mutare rapidă în Nurture (pool de reactivare). Folosește updateLeadStatus —
-  // calea ușoară, fără a cere formularul complet valid (ex: lead fără sursă).
-  const moveToNurture = useMutation({
-    mutationFn: () => updateLeadStatus(lead!.id, 'nurture'),
-    onSuccess: () => {
-      void invalidate()
-      onClose()
-    },
-    onError: (e: unknown) =>
-      setError(humanizeError(e, 'Eroare la mutare.')),
-  })
+  // Mutarea în Nurture trece prin MotivModal: fără o categorie, bazinul de
+  // recuperare n-ar avea după ce să se ordoneze. Modalul scrie singur statusul,
+  // deci nu mai cere formularul complet valid (ex: lead fără sursă).
+  const [motivDeschis, setMotivDeschis] = useState(false)
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -512,8 +505,18 @@ export function LeadModal({
         return
       }
     }
-    // Contactat cu sub-status (de_revenit / nu_raspunde) → data de follow-up e
-    // obligatorie (paritate cu ContactareModal).
+    // „Contactat" fără sub-status = limbo: nicio regulă nu-l mai atinge și
+    // cardul putrezește în coloană (6 astfel de leaduri, cel mai vechi de 70 de
+    // zile). Sub-statusul și data de revenire sunt obligatorii împreună.
+    if (form.status === 'contactat' && !form.sub_status) {
+      setError('Alege sub-statusul: a răspuns („De revenit") sau nu („Nu răspunde").')
+      setEditMode(true)
+      return
+    }
+    if (form.status === 'pierdut' && !form.motiv_categorie) {
+      setError('Alege de ce nu-l mai contactăm. Dacă a zis „nu acum", mută-l în Nurture.')
+      return
+    }
     if (form.status === 'contactat' && form.sub_status && !form.data_callback_dorit) {
       setError('Setează data de follow-up.')
       return
@@ -669,8 +672,8 @@ export function LeadModal({
               statusLabel={statusLabel}
               waHref={waHref}
               onLogContact={() => setShowLogContact(true)}
-              onMoveToNurture={() => moveToNurture.mutate()}
-              movePending={moveToNurture.isPending}
+              onMoveToNurture={() => setMotivDeschis(true)}
+              movePending={false}
               logContactInRail={!formInWorkArea}
               onEditToggle={formInWorkArea ? null : () => setEditMode((v) => !v)}
               editing={editMode}
@@ -730,20 +733,23 @@ export function LeadModal({
                     <ContactatSection
                       subStatus={form.sub_status}
                       dataCallback={form.data_callback_dorit}
+                      nrContactari={lead?.nr_contactari ?? 0}
                       onPatch={patch}
                     />
                   )}
 
                   {form.status === 'pierdut' && (
                     <PierdutSection
+                      categorie={form.motiv_categorie}
                       motiv={form.motiv_pierdut}
+                      onCategorieChange={(v) => set('motiv_categorie', v)}
                       onChange={(v) => set('motiv_pierdut', v)}
                     />
                   )}
 
                   <PasUrmatorSection
                     status={form.status}
-                    canConvert={isEdit && Boolean(lead)}
+                    leadExistent={isEdit && Boolean(lead)}
                     onStartConvert={() => setConvertFlow(true)}
                   />
 
@@ -833,6 +839,18 @@ export function LeadModal({
       </div>
       {isEdit && lead && (
         <LogContactModal open={showLogContact} lead={lead} onClose={() => setShowLogContact(false)} />
+      )}
+      {motivDeschis && lead && (
+        <MotivModal
+          open
+          mod="nurture"
+          lead={lead}
+          onClose={() => {
+            setMotivDeschis(false)
+            void invalidate()
+            onClose()
+          }}
+        />
       )}
       {/* Conversie atomică: Finalizare înscriere → înrolare → abia apoi convertit. */}
       {convertFlow && lead && (

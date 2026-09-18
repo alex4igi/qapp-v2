@@ -20,9 +20,11 @@ export function AgendaAziCard() {
 
   const items: Array<{ label: string; n: number; cls: string }> = [
     { label: '⚑ Marcate pentru revenire', n: groups.reminders.length, cls: 'text-red-700' },
+    { label: '⁉️ Contactate, fără pas următor', n: groups.faraPasUrmator.length, cls: 'text-red-700' },
+    { label: '⭐ Clienți care au cerut ceva', n: groups.dejaClient.length, cls: 'text-quasar-black' },
     { label: '📅 Programați azi la demo', n: groups.programatiAzi.length, cls: 'text-blue-700' },
     { label: '📞 Callback scadent', n: groups.callbacks.length, cls: 'text-orange-700' },
-    { label: '🕐 Noi, necontactate >24h', n: groups.staleNew.length, cls: 'text-zinc-700' },
+    { label: '🕐 Noi, de sunat azi', n: groups.deSunatAzi.length, cls: 'text-zinc-700' },
     { label: '⏳ Fără follow-up >7 zile', n: groups.noFollowup.length, cls: 'text-amber-700' },
     { label: '💤 Inactive >30 zile', n: groups.inactive.length, cls: 'text-slate-600' },
   ]

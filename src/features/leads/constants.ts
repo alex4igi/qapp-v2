@@ -98,15 +98,61 @@ export const GRUPA_LABELS: Record<GrupaLead, string> = {
 // Locațiile relevante pentru lead-uri (folosite și de logica SMS — adresă/review link).
 export const LOCATII = ['Ștefan cel Mare', 'Nicolina', 'Quasar 4 Kids'] as const
 
-export const MOTIVE_PIERDUT_RAPIDE = [
-  'Programul nu coincide',
-  'Copilul nu vrea',
-  'A găsit altă școală',
-  'Prea scump',
-  'Număr greșit / nereachabil',
-  'Prea multe activități',
-  'Nu mai dorește să fie contactat (opt-out)',
+// Motivele plecării, pe categorii închise (vezi CHECK-ul din
+// 20260918100000_leads_motiv_categorie.sql). Granița, decisă 2026-09-17:
+// „Pierdut" = nu mai contactăm niciodată; orice „nu acum" = Nurture, ca să-l
+// prindem la campanii. Textul liber rămâne opțional, peste categorie.
+export type ModMotiv = 'pierdut' | 'nurture'
+
+export type CategorieMotiv = {
+  value: string
+  label: string
+  /** Când eticheta singură n-ar fi de-ajuns ca să alegi corect. */
+  ajutor?: string
+}
+
+export const MOTIVE_PIERDUT: CategorieMotiv[] = [
+  { value: 'numar_gresit', label: 'Număr greșit / nu răspunde nimeni la el' },
+  { value: 'refuz_explicit', label: 'A refuzat clar' },
+  {
+    value: 'opt_out',
+    label: 'A cerut să nu-l mai contactăm',
+    ajutor: 'Îl marchează automat ca opt-out: nu-i mai pleacă niciun mesaj.',
+  },
+  { value: 'in_afara_tintei', label: 'În afara țintei', ajutor: 'Vârstă, alt oraș, altceva decât predăm.' },
+  { value: 'deja_client', label: 'Deja client — rezolvat', ajutor: 'Era clientul nostru; ce a cerut s-a rezolvat din fișă.' },
 ]
+
+export const MOTIVE_NURTURE: CategorieMotiv[] = [
+  { value: 'program', label: 'Programul nu coincide' },
+  { value: 'alta_activitate', label: 'Are deja altă activitate' },
+  { value: 'pret', label: 'Prea scump' },
+  { value: 'distanta', label: 'Prea departe' },
+  { value: 'alt_studio', label: 'A ales alt studio' },
+  { value: 'sare_anul', label: 'Sare anul acesta' },
+  { value: 'altul', label: 'Altul (scrie mai jos)' },
+]
+
+// Categoriile puse de aplicație. Nu se aleg din UI — doar se afișează.
+const MOTIVE_AUTO: Record<string, string> = {
+  nu_a_raspuns: 'N-a răspuns la telefon',
+  nu_a_venit: 'N-a venit la ședință',
+  a_venit_neinscris: 'A venit la ședință, nu s-a înscris',
+  waiting_list_final_sezon: 'Era pe waiting list la finalul sezonului',
+  ex_client: 'Fost cursant',
+  import: 'Venit din import',
+  istoric: 'Istoric',
+}
+
+export function motivLabel(categorie: string | null): string | null {
+  if (!categorie) return null
+  const din = [...MOTIVE_PIERDUT, ...MOTIVE_NURTURE].find((m) => m.value === categorie)
+  return din?.label ?? MOTIVE_AUTO[categorie] ?? categorie
+}
+
+export function categoriiPentru(mod: ModMotiv): CategorieMotiv[] {
+  return mod === 'pierdut' ? MOTIVE_PIERDUT : MOTIVE_NURTURE
+}
 
 // Mesaj precompletat pentru butonul WhatsApp de pe lead.
 export function waLeadMessage(lead: {
@@ -121,6 +167,14 @@ const LUNI_SCURT = [
   'ian', 'feb', 'mar', 'apr', 'mai', 'iun',
   'iul', 'aug', 'sep', 'oct', 'nov', 'dec',
 ]
+
+// Data scurtă, în forma folosită peste tot pe carduri: „04 sep".
+export function ziScurta(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return `${String(d.getDate()).padStart(2, '0')} ${LUNI_SCURT[d.getMonth()]}`
+}
 
 // True dacă timestamp-ul ISO cade în ziua curentă (ora locală).
 // „Umbră de ex-client" = rândul pe care cronul de 02:00 îl creează pentru
@@ -145,8 +199,16 @@ export function isToday(iso: string | null): boolean {
   )
 }
 
-// Data (YYYY-MM-DD, fus local) la `zile` zile distanță de azi. Folosit pentru
-// follow-up-ul implicit: când un lead „nu răspunde", revenim peste o săptămână.
+// Cadența la „nu răspunde", decisă 2026-09-17: 3 încercări în 5 zile — azi,
+// mâine la altă oră, apoi peste 2–3 zile. Înainte propuneam +7 zile, ceea ce
+// bătea cap în cap cu stegulețul pus de cron după 2 zile.
+export const MAX_INCERCARI_FARA_RASPUNS = 3
+
+export function dataUrmatoareiIncercari(incercariFacute: number): string {
+  return dataPesteZile(incercariFacute <= 1 ? 1 : 2)
+}
+
+// Data (YYYY-MM-DD, fus local) la `zile` zile distanță de azi.
 export function dataPesteZile(zile: number): string {
   const d = new Date()
   d.setDate(d.getDate() + zile)

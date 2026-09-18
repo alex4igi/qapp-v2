@@ -9,6 +9,7 @@ import { LeadModal } from './LeadModal'
 import { LeadImportModal } from './LeadImportModal'
 import { KanbanBoard } from './KanbanBoard'
 import { LeadReports } from './LeadReports'
+import { ProceduraModal } from './ProceduraModal'
 
 // Un singur rând de navigare. „Listă" și „Kanban" sunt două randări ale
 // aceluiași set, nu domenii diferite — de aceea stau lângă Rapoarte, nu sub el.
@@ -34,6 +35,8 @@ export function LeadsPage() {
   const isMobile = useIsMobile()
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  // Nurture nu e coloană în kanban, deci n-are butonul „ℹ︎" din capul coloanei.
+  const [proceduraNurture, setProceduraNurture] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Vederea stă în URL ca lista de sunat să poată fi pusă la favorite.
@@ -83,6 +86,14 @@ export function LeadsPage() {
                 </button>
               ))}
             </div>
+            {view === 'nurture' && (
+              <Button
+                variant="secondary"
+                onClick={() => setProceduraNurture(true)}
+              >
+                ℹ︎ Procedura
+              </Button>
+            )}
             {view !== 'rapoarte' && poateEdita && (
               <>
                 <Button variant="secondary" onClick={() => setImportOpen(true)}>
@@ -103,6 +114,10 @@ export function LeadsPage() {
       {importOpen && (
         <LeadImportModal open onClose={() => setImportOpen(false)} />
       )}
+      <ProceduraModal
+        status={proceduraNurture ? 'nurture' : null}
+        onClose={() => setProceduraNurture(false)}
+      />
     </div>
   )
 }

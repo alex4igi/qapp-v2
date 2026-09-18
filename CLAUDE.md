@@ -55,6 +55,13 @@ Pentru fiecare modul nou sau refactor:
 
 ## Context business
 
+**Procedura pe statusurile de leads** (ce face recepția, ce face aplicația, toate drumurile către
+Nurture) stă în **[docs/procedura-leads-kanban.md](./docs/procedura-leads-kanban.md)**. Textele pe care
+le vede recepția au o singură sursă: `src/features/leads/procedura.ts` — tooltipurile din aplicație ȘI
+secțiunile pe coloane din ghidul public. **După orice modificare în `procedura.ts` rulează
+`npm run gen:ghid`** (`-- --check` verifică). Citește documentul înainte să atingi `cron-evening`,
+`cron-morning`, `prune_expired_leads` sau pragurile de nurture.
+
 **Regulile de preț și reduceri** (promo reînscriere, −10% family/cross-sell,
 penalizarea pe scadență) stau în **[docs/reguli-preturi-reduceri.md](./docs/reguli-preturi-reduceri.md)** —
 sursa de adevăr, cu maparea regulă → loc în cod. Citește-o înainte să atingi
