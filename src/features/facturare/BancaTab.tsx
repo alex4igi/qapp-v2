@@ -19,13 +19,16 @@ import {
   saveAlocari,
   searchClienti,
 } from './api'
-import { platitLegacy, restNealocat } from './alocari'
+import { estePlatita, platitLegacy, restNealocat } from './alocari'
 import type { Alocare, FacturaLinie, FacturaRow } from './types'
 
 const fmt = (n: number) =>
   n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const isFacturat = (r: FacturaRow) => r.status === 'Emisa' || r.status === 'Marcata'
+
+// Clienții sunt „Nume Prenume [Prenume2]" (uneori cu spații duble din import).
+const prenume = (nume: string) => nume.trim().split(/\s+/)[1] ?? nume
 
 // Secțiunile goale se ascund: „De facturat (0)" cu tabel gol e zgomot, nu informație.
 function Sectiune({
@@ -175,12 +178,16 @@ export function BancaTab() {
   // `undefined` (nu 0) când nu mai e rest: DatoriiUnificateTab tratează 0 ca „plătește tot".
   // Audiția/workshopul nu sunt datorii, ci bilet pe eveniment — tabul „Datorii" n-are ce
   // arăta, deci deschidem direct tabul unde se poate încasa (evenimentul îl alege omul).
+  // Cât mai sunt 2+ frați neplătiți, restul e al tuturor, nu al celui deschis: pre-completat,
+  // ar depăși rata bifată („Suma parțială depășește totalul"). Suma vine doar la ultimul.
   const openPlata = (r: FacturaRow, clientId: string) => {
     const rest = restNealocat(r)
+    const neplatiti = (r.alocari ?? []).filter((a) => !estePlatita(r, a.client_id))
     const tip: TipPlata | undefined = /audi[tțţ]i|workshop/i.test(r.descriere ?? '')
       ? 'Bilet'
       : undefined
-    setPlataFor({ ref: r.ref, clientId, suma: rest > 0.004 ? rest : undefined, tip })
+    const suma = neplatiti.length <= 1 && rest > 0.004 ? rest : undefined
+    setPlataFor({ ref: r.ref, clientId, suma, tip })
   }
 
   const ignoraOne = useMutation({
@@ -247,23 +254,31 @@ export function BancaTab() {
         cell: (r) => {
           const alocari = r.alocari ?? []
           const facturat = isFacturat(r)
-          // Un singur beneficiar → butonul rămâne aici, unde a fost dintotdeauna. Cu mai
-          // mulți, fiecare își are butonul lângă chip (în coloana „Client în CRM").
-          const unSingur = alocari.length <= 1 && !platitLegacy(r) && !r.platit_la
+          // Butonul stă aici cât timp mai e cineva de plătit, oricâți beneficiari ar fi
+          // (ascuns doar per chip, recepția nu-l mai găsea). Cu frați, ia primul neplătit;
+          // un anume frate se alege din 💳-ul de lângă numele lui.
+          const neplatiti = alocari.filter((a) => !estePlatita(r, a.client_id))
+          const arataPlata = !platitLegacy(r) && !r.platit_la && neplatiti.length > 0
+          const urmator = neplatiti[0]
           return (
             <div className="flex flex-wrap items-center gap-2">
-              {unSingur && (
+              {(arataPlata || alocari.length === 0) && (
                 <Button
                   variant="secondary"
-                  disabled={alocari.length === 0}
+                  disabled={!urmator}
                   title={
-                    alocari.length
-                      ? 'Plată nouă (Transfer) pre-completată cu clientul și suma'
-                      : 'Alege întâi clientul din CRM'
+                    !urmator
+                      ? 'Alege întâi clientul din CRM'
+                      : alocari.length > 1
+                        ? `Plată nouă (Transfer) pentru ${urmator.nume}, cu restul nealocat — pentru alt frate apasă 💳 de lângă numele lui`
+                        : 'Plată nouă (Transfer) pre-completată cu clientul și suma'
                   }
-                  onClick={() => alocari[0] && openPlata(r, alocari[0].client_id)}
+                  onClick={() => urmator && openPlata(r, urmator.client_id)}
                 >
                   💳 Plată
+                  {alocari.length > 1 && urmator && (
+                    <span className="ml-1 font-normal text-muted">· {prenume(urmator.nume)}</span>
+                  )}
                 </Button>
               )}
               {!facturat && (

@@ -78,7 +78,7 @@ export function ClientiAlocati({ row, onChange, onPlata, showPlata }: Props) {
                     type="button"
                     onClick={() => onPlata(a)}
                     title={`Plată nouă (Transfer) pentru ${a.nume}`}
-                    className="rounded-full px-0.5 hover:bg-green-200"
+                    className="rounded-full border border-green-300 bg-white/70 px-1 hover:bg-quasar-yellow"
                   >
                     💳
                   </button>
