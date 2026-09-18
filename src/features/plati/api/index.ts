@@ -20,6 +20,7 @@ export {
   countSessionsBetween,
   enumerateMonths,
   endOfMonth,
+  nextSessionDate,
 } from './calendar'
 
 export type { WorkshopGuestResult, PlanIntegral, PlanIntegralRata } from './incasari'

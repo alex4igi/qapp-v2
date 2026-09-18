@@ -60,3 +60,27 @@ export function endOfMonth(monthFirstDay: string): string {
   const lastDay = new Date(y, m, 0).getDate()
   return `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 }
+
+// Prima zi de curs la sau după `fromIso`, pe baza zilelor săptămânii în care se
+// ține cursul. Ziua curentă contează (walk-in la sală în ziua ședinței), deci o
+// plată luată vineri seara, după OPEN, cere schimbarea manuală a datei.
+// Null dacă nu știm zilele cursului.
+export function nextSessionDate(
+  zile: string[] | null,
+  fromIso: string,
+): string | null {
+  if (!zile?.length) return null
+  const weekdays = new Set(
+    zile.map((z) => ZI_TO_WEEKDAY[z]).filter((n) => n !== undefined),
+  )
+  if (weekdays.size === 0) return null
+  const [y, m, d] = fromIso.split('-').map(Number)
+  const day = new Date(y, m - 1, d)
+  for (let i = 0; i < 7; i++) {
+    if (weekdays.has(day.getDay())) {
+      return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+    }
+    day.setDate(day.getDate() + 1)
+  }
+  return null
+}

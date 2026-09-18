@@ -19,9 +19,10 @@ import {
   listCursuriFacultative,
   getOpenSesiuneByDate,
   listRezervariSesiune,
+  nextSessionDate,
   rezervaLocOpen,
 } from '../../api'
-import { todayIso } from './helpers'
+import { fmtDate, todayIso } from './helpers'
 
 type Props = {
   onClose: () => void
@@ -76,6 +77,24 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
     setVoucherId(id)
     setSumaTouched(false)
   }, [])
+
+  // Recepția încasează în avans pentru URMĂTOAREA ședință, dar completa ziua
+  // încasării → sesiuni-fantomă pe zile fără curs. Precompletăm data cu prima zi
+  // de curs de azi încolo; rămâne editabilă.
+  // Cheie stabilă: un refetch al listei de cursuri dă obiecte noi, dar aceleași
+  // zile — altfel efectul ar rescrie data aleasă manual de recepție.
+  const zileKey = (cursSelectat?.zile ?? []).join(',')
+  useEffect(() => {
+    if (!cursId) return
+    setData(nextSessionDate(zileKey ? zileKey.split(',') : null, todayIso()) ?? '')
+  }, [cursId, zileKey])
+
+  // Ziua aleasă e chiar una în care se ține cursul? (avertisment, nu blocaj —
+  // pot exista ședințe reprogramate.)
+  const ziDiferita = useMemo(() => {
+    if (!data || !cursSelectat?.zile?.length) return false
+    return data !== nextSessionDate(cursSelectat.zile, data)
+  }, [data, cursSelectat])
 
   // Ocuparea sesiunii (curs + dată), reîncărcată la schimbarea oricăruia.
   const sesiuneQ = useQuery({
@@ -183,6 +202,18 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
             value={data}
             onChange={(e) => setData(e.target.value)}
           />
+          {data && (
+            <p
+              className={[
+                'mt-1 text-xs',
+                ziDiferita ? 'font-medium text-danger' : 'text-quasar-gray',
+              ].join(' ')}
+            >
+              {ziDiferita
+                ? `⚠ ${fmtDate(data)} nu e zi de curs (${(cursSelectat?.zile ?? []).join(', ')}) — se creează o sesiune nouă.`
+                : `Ședința din ${fmtDate(data)}`}
+            </p>
+          )}
         </Field>
       </div>
 
