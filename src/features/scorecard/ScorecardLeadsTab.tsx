@@ -36,13 +36,14 @@ export function ScorecardLeadsTab({ luna }: { luna: string }) {
 
   const onExport = () => {
     const headers = [
-      'Operator', 'Contacte verificate', 'Contacte total', 'Telefon', 'SMS',
+      'Operator', 'Contacte verificate', 'Contacte total', 'Logate', 'Deduse', 'Telefon', 'SMS',
       'Email', 'DM', 'Leaduri lucrate', 'Viteză (h)', 'Persistență', 'Igienă %',
       'Follow-up %', 'Conversie %', 'Show-rate %', 'Scor %', 'Clasă',
     ]
     const body = rows.map((r) => [
       usersById.get(r.user_id) ?? r.user_id,
-      r.contacte_verificate, r.contacte_total, r.contacte_telefon, r.contacte_sms,
+      r.contacte_verificate, r.contacte_total, r.contacte_logate, r.contacte_deduse,
+      r.contacte_telefon, r.contacte_sms,
       r.contacte_email, r.contacte_dm, r.leaduri_lucrate, r.viteza_med_ore ?? '',
       r.persistenta_med ?? '', r.igiena_crm_pct ?? '', r.followup_onorat_pct ?? '',
       r.conversie_pct ?? '', r.show_rate_pct ?? '', r.scor_pct ?? '',
@@ -79,6 +80,12 @@ export function ScorecardLeadsTab({ luna }: { luna: string }) {
         contactele de pe lead-uri cu o urmă externă (SMS prin gateway, prezență
         la demo sau conversie) — pe care operatorul nu le poate fabrica. Baza
         fixă din salariu se evaluează pe coloana verificată, nu pe click-uri.
+        <br />
+        <strong>Logate vs deduse:</strong> din 18 septembrie 2026, mutarea unui
+        card într-un status care presupune o discuție se numără singură ca
+        și contact. Totalul arată deci munca reală; în paranteză vezi câte au
+        fost logate explicit cu butonul 📞 — igiena notelor se măsoară doar pe
+        acelea.
         {inainteDeLansare && (
           <span className="font-medium">
             {' '}Atenție: logul de contacte începe din {LANSARE_LUNA}. Pentru

@@ -38,15 +38,22 @@ export function ScorecardTable({ rows, usersById }: Props) {
     {
       header: 'Contacte (verif. / total)',
       cell: (r) => (
-        <span>
+        <span
+          title={`${r.contacte_logate} logate cu butonul 📞 · ${r.contacte_deduse} deduse din mutarea cardului`}
+        >
           <span className="font-semibold text-quasar-black">
             {r.contacte_verificate}
           </span>
           <span className="text-quasar-gray"> / {r.contacte_total}</span>
+          {r.contacte_deduse > 0 && (
+            <span className="ml-1 text-xs text-quasar-gray">
+              ({r.contacte_logate} logate)
+            </span>
+          )}
           <ScorecardBadge clasa={r.volum_clasa} />
         </span>
       ),
-      className: 'w-44',
+      className: 'w-52',
       sortValue: (r) => r.contacte_verificate ?? 0,
     },
     {

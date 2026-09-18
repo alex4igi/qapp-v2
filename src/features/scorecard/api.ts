@@ -5,6 +5,10 @@ import type { Clasa } from './constants'
 export type ScorecardRow = {
   user_id: string
   contacte_total: number
+  /** Apăsate explicit pe butonul 📞 — disciplina de CRM. */
+  contacte_logate: number
+  /** Deduse din mutarea cardului — munca pe care butonul n-o prindea. */
+  contacte_deduse: number
   contacte_verificate: number
   contacte_telefon: number
   contacte_sms: number
