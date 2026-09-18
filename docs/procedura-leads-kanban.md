@@ -137,6 +137,26 @@ Plan complet: `~/.claude/plans/fiecare-coloana-din-kanban-lexical-biscuit.md`.
 - **Faza 4** — ecranul `/recuperare`: 584 de leaduri reale din Nurture (373 din reclame plătite,
   niciodată atinse), ordonate după cât de cald e leadul.
 
+## De unde se continuă
+
+**Stare la 18 septembrie 2026:** fazele 0 și 1 sunt livrate și live — commit-urile `613ae62`
+(procedura + tooltipuri + ghid generat) și `6d7fc05` (mutarea = contact + scorecard), plus migrațiile
+`20260918100000` … `20260918130000`, toate aplicate pe producție.
+
+Următorul pas e **Faza 2a**, în ordinea din lista de mai sus. Trei lucruri de ținut minte la reluare:
+
+1. **Backfill-ul categoriilor se deduce din `lead_history`** (ultimul `status_change` către `nurture`
+   → `old_value`), nu „tot ce nu e ex-client devine `istoric`". Altfel se pierde distincția care
+   ordonează ecranul de recuperare din Faza 4: cine a fost la o ședință vs. cine n-a fost atins deloc.
+2. **Regula scrisă și codul se contrazic într-un punct**, până la Faza 2a: stegulețul ignorat (pe
+   `nu_raspunde` și pe `de_revenit`) e decis să NU mai ducă în Nurture, dar `cron-evening` încă o face.
+   E singurul loc unde documentul descrie viitorul, și e marcat ca atare în tabelul de mai sus (rândul 4).
+3. **Decizie deschisă:** backfill-ul contactelor deduse din istoric. Neluat intenționat — ar rescrie
+   retroactiv cifre legate de evaluarea oamenilor.
+
+Planul complet, cu fișierele de atins și rețeta de verificare pe fiecare fază:
+`~/.claude/plans/fiecare-coloana-din-kanban-lexical-biscuit.md`.
+
 ## Capcane găsite la analiză (nereparate)
 
 - **Bifa instructorului nu mută leadul.** `marcheaza_prezenta_lead_*` scriu doar în `programari_leads`;
