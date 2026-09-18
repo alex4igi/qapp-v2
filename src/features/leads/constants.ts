@@ -138,6 +138,7 @@ const MOTIVE_AUTO: Record<string, string> = {
   nu_a_raspuns: 'N-a răspuns la telefon',
   nu_a_venit: 'N-a venit la ședință',
   a_venit_neinscris: 'A venit la ședință, nu s-a înscris',
+  neatins: 'N-a fost sunat de nimeni',
   waiting_list_final_sezon: 'Era pe waiting list la finalul sezonului',
   ex_client: 'Fost cursant',
   import: 'Venit din import',

@@ -11889,6 +11889,10 @@ export type Database = {
           rest_oneoff: number
         }[]
       }
+      deduce_motiv_categorie: {
+        Args: { p_lead: string; p_status_vechi: string }
+        Returns: string
+      }
       delete_curs_safe: {
         Args: { p_force?: boolean; p_id: string }
         Returns: undefined
@@ -12530,6 +12534,15 @@ export type Database = {
           retentie_eligibili: number
           sursa_id: string
           sursa_nume: string
+        }[]
+      }
+      get_lead_motive: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          categorie: string
+          in_palnie: boolean
+          nr: number
+          status: string
         }[]
       }
       get_leads_pe_luna: {
@@ -13507,6 +13520,26 @@ export type Database = {
           p_user: string
         }
         Returns: Json
+      }
+      lead_data_neprezentarii: { Args: { p_lead: string }; Returns: string }
+      lead_intra_in_palnie: {
+        Args: { p_motiv_categorie: string }
+        Returns: boolean
+      }
+      lead_termen_primul_apel: { Args: { p_created: string }; Returns: string }
+      leads_de_flagat_seara: {
+        Args: never
+        Returns: {
+          actiune: string
+          bucket: string
+          categorie: string
+          flag_reminder: boolean
+          flag_reminder_at: string
+          flag_streak: number
+          id_client: string
+          lead_id: string
+          referinta: string
+        }[]
       }
       list_bilete_evenimente: {
         Args: never

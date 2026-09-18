@@ -69,10 +69,14 @@ Butonul 📞 rămâne necesar pentru ce nu se vede dintr-o mutare: **„am sunat
 | Termenul primului apel (18:00 / a doua zi 12:00) | `termenPrimulApel()`, `src/features/leads/procedura.ts` |
 | „Ce fac cu cardul ăsta" | `actiuneCard()`, același fișier |
 | Textele pe status | `STATUS_PROCEDURA`, același fișier |
-| Steguleț ⚑ pe leaduri neglijate | `processStale()`, `supabase/functions/cron-evening/index.ts` |
+| Ce are de lucru cronul de seară (praguri + politică) | `leads_de_flagat_seara()`, `20260918150000_leads_seara_si_prune.sql` |
+| Categoria motivului, la orice intrare în Nurture | trigger `leads_motiv_categorie` + `deduce_motiv_categorie()`, `20260918140000` |
+| Cine intră în numitorul conversiei | `lead_intra_in_palnie()`, `20260918160000` |
+| Termenul primului apel, în DB | `lead_termen_primul_apel()`, `20260918150000` |
+| Ziua neprezentării (cele 10 zile) | `lead_data_neprezentarii()`, `20260918150000` |
 | Mutarea cardului = contact | trigger `lead_contact_dedus`, `20260918120000_contact_dedus_din_mutare.sql` |
 | Categoriile de motiv | `MOTIVE_PIERDUT` / `MOTIVE_NURTURE`, `src/features/leads/constants.ts` + CHECK în `20260918100000` |
-| Prag încercări fără răspuns | `updateLead()`, `src/features/leads/api/transitions.ts` + plasa din `cron-evening` |
+| Prag încercări fără răspuns (3) | `updateLead()`, `src/features/leads/api/transitions.ts` + bucket-ul `plasa_3_incercari` |
 | A 2-a neprezentare → Nurture | `resolveNoShow()`, `transitions.ts` + `prune_expired_leads()` |
 | Programare expirată → Nu a venit | `prune_expired_leads()`, `supabase/migrations/20260909110000_prune_expired_leads_sursa_unica.sql` |
 | Lista de sunat de luni | pasul 2 din `supabase/functions/cron-morning/index.ts` |
@@ -93,7 +97,7 @@ central, într-un trigger (Faza 2a), nu la fiecare apelant.
 | 1 | N încercări consecutive fără răspuns | `api/transitions.ts` · `updateLead` | da |
 | 2 | A 2-a neprezentare | `api/transitions.ts` · `resolveNoShow` | da |
 | 3 | A 2-a neprezentare, la curățenia de seară | `prune_expired_leads()` | da |
-| 4 | Steguleț ignorat (nou / contactat) | `cron-evening` · `processStale` | da ⚠️ **se scoate** |
+| 4 | ~~Steguleț ignorat (nou / contactat)~~ | — | ❌ **scos pe 18 sept.** |
 | 5 | „Nu a venit" mai vechi de 10 zile | `cron-evening` | da |
 | 6 | Plasa de siguranță pe nr. de încercări | `cron-evening` | da |
 | 7 | A 2-a luni după demo, neconvertit | `cron-morning` | da |
@@ -104,10 +108,13 @@ central, într-un trigger (Faza 2a), nu la fiecare apelant.
 | 12 | Butonul „🌱 Mută în Nurture" | `LeadModal/IdentityRail.tsx` | nu |
 | 13 | Pastila „Nurture" din stepper | `LeadModal/PipelineStepper.tsx` | nu |
 
-**Decis pe 09-17:** rămân doar drumurile în care OMUL n-a răspuns / n-a venit / nu s-a înscris.
-Rândul 4 se scoate (⚑ ignorat pe `nu_raspunde` și pe `de_revenit` înseamnă că **noi** n-am sunat),
-iar pragul de la rândurile 1 și 6 scade de la 4 la 3. Asta închide TODO-ul „revizuim toate
-definițiile nurture" din 1 septembrie.
+**Livrat pe 18 septembrie (Faza 2a):** au rămas doar drumurile în care OMUL n-a răspuns / n-a
+venit / nu s-a înscris. Rândul 4 e scos (⚑ ignorat pe `nu_raspunde` și pe `de_revenit` înseamnă că
+**noi** n-am sunat — vina noastră nu scoate omul din pipeline), iar pragul de la rândurile 1 și 6 e
+3, nu 4. Asta închide TODO-ul „revizuim toate definițiile nurture" din 1 septembrie.
+
+Fiecare dintre drumurile rămase își pune singur categoria motivului — nu fiindcă și-o scrie fiecare
+apelant, ci fiindcă triggerul `leads_motiv_categorie` o deduce din statusul de plecare.
 
 ## Livrat pe 18 septembrie 2026
 
@@ -123,15 +130,91 @@ definițiile nurture" din 1 septembrie.
   Contactate fără pas următor · Clienți care au cerut ceva.
 - **Mutarea cardului = contact** (secțiunea de mai sus) + scorecard cu logate/deduse separat.
 
+## Livrat pe 18 septembrie 2026 — Faza 2a
+
+**Categoria motivului se ștampilează central.** 13 locuri scriu `status = 'nurture'`; niciunul nu
+mai are voie să uite motivul. Triggerul `leads_motiv_categorie` deduce categoria din statusul de
+plecare (`deduce_motiv_categorie()`), iar categoria aleasă de un om bate întotdeauna deducția. La
+ieșirea din pool (reactivare, conversie târzie) categoria se curăță singură.
+
+Backfill pe cele 6.200 de rânduri din Nurture, dedus din `lead_history`, nu din „tot ce nu e
+ex-client devine istoric":
+
+| Categorie | Rânduri | Cine sunt | În numitorul conversiei? |
+|---|---:|---|---|
+| `ex_client` | 5.604 | umbre de foști cursanți | nu |
+| `import` | 373 | Meta Ads turnate direct în Nurture de importul din Sheet, zero contactări | nu |
+| `nu_a_raspuns` | 72 | plecați din „Contactat" | da |
+| `a_venit_neinscris` | 70 | au fost fizic la o clasă | da |
+| `nu_a_venit` | 47 | neprezentări | da |
+| `neatins` | 29 | au căzut din „Nou" — **nu i-a sunat nimeni** | da |
+| `altul` | 4 | mutați manual din „Pierdut" | da |
+| `waiting_list_final_sezon` | 1 | măturarea de final de sezon | da |
+
+`neatins` e o categorie nouă, adăugată aici: niciuna din cele existente nu descria „a căzut fără
+să-l atingă cineva", iar distincția e exact ce ordonează lista de recuperare din Faza 4.
+
+**Cele 24 de rânduri din „Pierdut" au rămas fără categorie, intenționat** — vezi
+[Decizii deschise](#decizii-deschise).
+
+**Cronul de seară citește o singură funcție SQL.** `leads_de_flagat_seara()` întoarce, pe fiecare
+lead, bucket-ul, acțiunea (`flag` / `nurture`) și categoria. Pragurile nu mai trăiesc în TypeScript,
+deci se pot vedea într-un dry-run înainte de a fi schimbate:
+
+```sql
+select bucket, actiune, count(*) from leads_de_flagat_seara() group by 1,2;
+```
+
+Trei reguli s-au schimbat cu ocazia asta:
+
+- **Termenul coloanei „Nou"** se compara cu `created + 24h`; acum e termenul din procedură
+  (`lead_termen_primul_apel()`, oglinda lui `termenPrimulApel()` din `procedura.ts`).
+- **Cele 10 zile de la „Nu a venit"** se numărau din `leads.updated` — orice editare a fișei
+  resetează ceasul. Măsurată pe 18 sept., regula veche prindea **0 leaduri**, cea nouă
+  (`lead_data_neprezentarii()`) prinde **11**. Regula exista pe hârtie și nu se aplica de fapt.
+- **Plasa de siguranță** e la 3 încercări, ca `MAX_INCERCARI_FARA_RASPUNS` din frontend.
+
+**Bifa instructorului mută leadul.** `prune_expired_leads()` are un pas nou: `programat` cu ultima
+programare consumată `prezent` → `a_venit`. Până acum omul care fusese în sală primea a doua zi
+SMS-ul „ne pare rău că n-ai ajuns". Latent (0 cazuri în 30 de zile), reparat înainte să se vadă.
+Tot acolo, `current_date` (ziua serverului, UTC) a devenit data locală București — funcția rulează
+la 23:30/00:30, fix în fereastra în care UTC e încă „ieri".
+
+**K5 și pâlnia nu mai exclud Nurture în bloc.** `status <> 'nurture'` era o poartă din care se putea
+ieși: orice lead mutat în Nurture dispărea din numitor, deci conversia creștea exact când munca nu se
+făcea. Acum iese doar ce n-a fost niciodată lead de vânzare — `ex_client`, `import`, `istoric`
+(`lead_intra_in_palnie()`). Efectul pe cohorta august 2026:
+
+| Locație | Înainte | După |
+|---|---|---|
+| Ștefan cel Mare | 24/45 = **53,3%** | 24/55 = **43,6%** |
+| Nicolina | 2/13 = **15,4%** | 2/20 = **10,0%** |
+| Quasar 4 Kids | 3/27 = **11,1%** | 3/32 = **9,4%** |
+
+Scăderea e diferența dintre ce s-a raportat și ce s-a întâmplat. Aceeași corecție în
+`get_lead_funnel` și `get_conversie_leads`.
+
+**„De ce au plecat"** — tabel nou în `/leads` → Rapoarte, din `get_lead_motive(from, to)`, cu
+rândurile din afara pâlniei marcate ca atare.
+
+## Decizii deschise
+
+- **Cele 24 de leaduri din „Pierdut" n-au categorie.** Citite pe 18 sept., ~20 dintre ele au motive
+  care, sub procedura decisă pe 09-17, înseamnă **Nurture**, nu Pierdut: „e prea departe locația",
+  „are un alt opțional miercurea", „va reîncerca anul viitor", „a ales alt studio". Doar 2–3 sunt
+  Pierdut adevărat (număr greșit, refuz explicit). A le pune o categorie din lista „Pierdut" ar fi o
+  minciună; a le muta în Nurture înseamnă a reclasifica judecata unor oameni pe baza textului liber.
+  **De decis cu Alex** — sunt 20 de leaduri care s-ar întoarce în bazinul de recuperare.
+- **Backfill-ul contactelor deduse din istoric.** Neluat intenționat — ar rescrie retroactiv cifre
+  legate de evaluarea oamenilor.
+
 ## Decis, încă nelivrat
 
 Plan complet: `~/.claude/plans/fiecare-coloana-din-kanban-lexical-biscuit.md`.
 
-- **Faza 2** — trigger care ștampilează categoria la orice intrare în Nurture + backfill din
-  `lead_history` · scoaterea drumului 4 din tabelul de mai sus · cele 10 zile numărate de la
-  neprezentare · SMS `apel_ratat` după prima încercare fără răspuns · verificarea opt-out la trimitere ·
-  alerta de 21:30 pentru prezențele nebifate · Nurture rămâne în numitorul K5 și al pâlniei (ies doar
-  `ex_client` / `import` / `istoric`).
+- **Faza 2b** — SMS `apel_ratat` după prima încercare fără răspuns · verificarea `opt_out_marketing`
+  la trimitere (azi nu se face nicăieri, deși ghidul promite că se face).
+- **Faza 2c** — alerta de 21:30 pentru prezențele nebifate (`notifica_leaduri_nebifate()`).
 - **Faza 3** — Waiting List legat de o grupă concretă + alertă când se eliberează un loc ·
   re-aplicarea readuce leadul pe lista de sunat, cu badge „🔁 a aplicat din nou".
 - **Faza 4** — ecranul `/recuperare`: 584 de leaduri reale din Nurture (373 din reclame plătite,
@@ -139,29 +222,28 @@ Plan complet: `~/.claude/plans/fiecare-coloana-din-kanban-lexical-biscuit.md`.
 
 ## De unde se continuă
 
-**Stare la 18 septembrie 2026:** fazele 0 și 1 sunt livrate și live — commit-urile `613ae62`
-(procedura + tooltipuri + ghid generat) și `6d7fc05` (mutarea = contact + scorecard), plus migrațiile
-`20260918100000` … `20260918130000`, toate aplicate pe producție.
+**Stare la 18 septembrie 2026:** fazele 0, 1 și 2a sunt livrate — migrațiile `20260918100000` …
+`20260918160000` sunt aplicate pe producție.
 
-Următorul pas e **Faza 2a**, în ordinea din lista de mai sus. Trei lucruri de ținut minte la reluare:
+⚠️ **Edge functions:** `cron-evening` și `cron-morning` sunt rescrise în arbore. Până la
+`npx supabase functions deploy`, producția rulează versiunile vechi peste schema nouă: RPC-urile
+sunt compatibile (`prune_expired_leads` întoarce aceleași chei, plus `a_venit`), dar drumul 4 spre
+Nurture e încă activ în cronul de seară deployat. **Verifică cu `npx supabase functions list`
+înainte să declari faza închisă.**
 
-1. **Backfill-ul categoriilor se deduce din `lead_history`** (ultimul `status_change` către `nurture`
-   → `old_value`), nu „tot ce nu e ex-client devine `istoric`". Altfel se pierde distincția care
-   ordonează ecranul de recuperare din Faza 4: cine a fost la o ședință vs. cine n-a fost atins deloc.
-2. **Regula scrisă și codul se contrazic într-un punct**, până la Faza 2a: stegulețul ignorat (pe
-   `nu_raspunde` și pe `de_revenit`) e decis să NU mai ducă în Nurture, dar `cron-evening` încă o face.
-   E singurul loc unde documentul descrie viitorul, și e marcat ca atare în tabelul de mai sus (rândul 4).
-3. **Decizie deschisă:** backfill-ul contactelor deduse din istoric. Neluat intenționat — ar rescrie
-   retroactiv cifre legate de evaluarea oamenilor.
+Următorul pas e **Faza 2b** (SMS `apel_ratat` + verificarea opt-out). Două lucruri de ținut minte:
+
+1. **Regula scrisă și codul nu se mai contrazic** — documentul descrie exclusiv ce face codul, cu
+   excepția notată mai sus despre deploy.
+2. **Decizii deschise:** cele 24 de rânduri din „Pierdut" fără categorie și backfill-ul contactelor
+   deduse din istoric — vezi [Decizii deschise](#decizii-deschise).
 
 Planul complet, cu fișierele de atins și rețeta de verificare pe fiecare fază:
 `~/.claude/plans/fiecare-coloana-din-kanban-lexical-biscuit.md`.
 
 ## Capcane găsite la analiză (nereparate)
 
-- **Bifa instructorului nu mută leadul.** `marcheaza_prezenta_lead_*` scriu doar în `programari_leads`;
-  leadul rămâne `programat`, iar noaptea devine `nu_a_venit` ⇒ SMS greșit. Latent (0 cazuri în 30 de zile),
-  se repară în Faza 2a.
+- ✅ **Bifa instructorului nu mută leadul** — reparat în Faza 2a (pasul 2 din `prune_expired_leads`).
 - **`cron-season-end` alege sezonul după `data_incepere desc`**, deci câștigă sezonul viitor și
   măturarea waiting list probabil n-a rulat niciodată. Faza 3a.
 - **`trg_leads_auto_opt_out` caută textul „opt-out" în `motiv_pierdut`** — moare tăcut dacă trecem pe

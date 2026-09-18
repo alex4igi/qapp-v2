@@ -43,7 +43,7 @@ export const STATUS_PROCEDURA: Record<StatusLead, ProceduraStatus> = {
     inseamna: 'L-am sunat cel puțin o dată, dar nu are încă o programare.',
     peScurt: {
       ceFaci: 'Nu răspunde: 3 încercări în 5 zile. De revenit: sună-l fix în ziua cerută.',
-      aplicatia: 'Urcă sus cardurile ajunse la scadență. După mai multe încercări la rând fără răspuns → Nurture.',
+      aplicatia: 'Urcă sus cardurile ajunse la scadență. După 3 încercări fără răspuns → Nurture. Cât timp NOI n-am sunat, nu-l mută nicăieri.',
     },
     ceFaci: [
       'Nu răspunde: 3 încercări în 5 zile — azi, mâine la altă oră, apoi peste 2–3 zile. Încearcă și pe WhatsApp.',
@@ -52,7 +52,8 @@ export const STATUS_PROCEDURA: Record<StatusLead, ProceduraStatus> = {
     ],
     aplicatia: [
       'Urcă în capul coloanei leadurile cu data de revenire ajunsă la zi și le pune ⚑.',
-      'După mai multe încercări la rând fără răspuns, leadul trece singur în Nurture. Un apel la care a răspuns repornește numărătoarea.',
+      'După 3 încercări la rând fără răspuns, leadul trece singur în Nurture. Un apel la care a răspuns repornește numărătoarea.',
+      'Cât timp stegulețul e ignorat, leadul NU pleacă nicăieri: stegulețul crește, cardul rămâne în coloană. Vina noastră nu scoate omul din pipeline.',
     ],
     iesiri: 'Programat · Waiting List · Pierdut · Nurture',
     pasUrmator: 'Alege sub-statusul și data următoarei contactări. La „nu răspunde": 3 încercări în 5 zile.',
@@ -90,6 +91,7 @@ export const STATUS_PROCEDURA: Record<StatusLead, ProceduraStatus> = {
     aplicatia: [
       'Trimite SMS de confirmare la câteva minute după programare și reminder la 10:00 în ziua ședinței (pentru weekend, cu o zi înainte).',
       'Pune leadul în rosterul grupei din ziua respectivă.',
+      'Bifa din rosterul grupei îl mută singură pe „A venit" — și cea a instructorului, și cea a recepției.',
       'Dacă rămâne nebifat, peste noapte devine „Nu a venit", iar în următoarea zi lucrătoare la 16:00 primește SMS-ul „ne pare rău că nu ai ajuns". Dacă de fapt a venit, mută-l pe „A venit" înainte de ora aceea.',
     ],
     iesiri: 'A venit · Nu a venit',
@@ -109,7 +111,7 @@ export const STATUS_PROCEDURA: Record<StatusLead, ProceduraStatus> = {
     aplicatia: [
       'La 2 zile după demo trimite SMS-ul cu rezervarea locului (la 16:00, luni–vineri).',
       'Lunea pune ⚑ pe cei neînscriși — lista de sunat de luni.',
-      'A doua luni la rând fără niciun contact logat → Nurture.',
+      'A doua luni la rând fără niciun contact logat → Nurture. Sare peste cei care au cerut să fie sunați la o dată din viitor.',
     ],
     iesiri: 'Convertit · Pierdut · Nurture',
     pasUrmator: 'Discuția de după clasă e pasul care contează. Dacă se înscrie, convertește-l în client.',
@@ -118,7 +120,7 @@ export const STATUS_PROCEDURA: Record<StatusLead, ProceduraStatus> = {
     inseamna: 'A avut programare și nu a ajuns.',
     peScurt: {
       ceFaci: 'Nimic. Dacă revine el, reprogramează-l.',
-      aplicatia: 'A trimis SMS-ul „ne pare rău”. După 10 zile → Nurture.',
+      aplicatia: 'A trimis SMS-ul „ne pare rău”. La 10 zile de la neprezentare → Nurture.',
     },
     ceFaci: [
       'Nimic din oficiu: nu se sună.',
@@ -126,7 +128,7 @@ export const STATUS_PROCEDURA: Record<StatusLead, ProceduraStatus> = {
     ],
     aplicatia: [
       'La prima neprezentare trimite SMS-ul „ne pare rău că nu ai ajuns", la 16:00 în zi lucrătoare.',
-      'După 10 zile fără reprogramare → Nurture.',
+      'La 10 zile de la ZIUA în care n-a venit, fără reprogramare → Nurture.',
       'A doua neprezentare → direct în Nurture, fără SMS.',
     ],
     iesiri: 'Programat · Nurture',

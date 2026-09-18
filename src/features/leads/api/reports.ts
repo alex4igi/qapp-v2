@@ -57,3 +57,31 @@ export async function getLeadFunnelGlobal(
     },
   )
 }
+
+// De ce pleacă leadurile, pe categorie închisă. Până la 18 sept. 2026 răspunsul
+// nu exista: motivul era text liber, completat doar la „Pierdut" (24 de rânduri,
+// 24 de formulări), iar mutările în Nurture n-aveau niciunul.
+export type LeadMotiv = {
+  status: string
+  categorie: string
+  /** Intră în numitorul conversiei? Umbrele de foști cursanți și importurile nu. */
+  inPalnie: boolean
+  nr: number
+}
+
+export async function getLeadMotive(
+  from: string,
+  to: string,
+): Promise<LeadMotiv[]> {
+  const { data, error } = await supabase.rpc('get_lead_motive', {
+    p_from: from,
+    p_to: to,
+  })
+  if (error) throw error
+  return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+    status: String(r.status ?? ''),
+    categorie: String(r.categorie ?? ''),
+    inPalnie: Boolean(r.in_palnie),
+    nr: Number(r.nr ?? 0),
+  }))
+}

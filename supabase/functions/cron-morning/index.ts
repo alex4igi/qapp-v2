@@ -303,17 +303,27 @@ Deno.serve(async (req) => {
     // ~7 zile distanță, deci pragul de 2 zile separă clar un flag proaspăt de
     // unul vechi (parcurge regula existentă din cron-evening).
     const twoDaysAgo = new Date(now.getTime() - 2 * 86_400_000).toISOString()
-    const { data: aVenit } = await supabase
+    const { data: aVenitToti } = await supabase
       .from('leads')
-      .select('id, id_client, flag_reminder, flag_streak, flag_reminder_at')
+      .select('id, id_client, flag_reminder, flag_streak, flag_reminder_at, data_callback_dorit')
       .eq('status', 'a_venit')
       .eq('deja_client', false)
 
+    // Cine a spus „revin pe data X" și X n-a venit încă nu se sună și nu se
+    // escaladează: lista de luni e plasa pentru demo-urile fără niciun pas
+    // următor, nu un memento peste cuvântul dat omului.
+    const aziLocal = localDateBucharest(now)
+    const aVenit = (aVenitToti ?? []).filter(
+      (l) =>
+        !l.data_callback_dorit ||
+        String(l.data_callback_dorit).slice(0, 10) <= aziLocal,
+    )
+
     // Cine a venit la demo ȘI e deja client activ rămâne flagat, dar nu iese
     // din pipeline: e o conversie neînregistrată, nu un lead de abandonat.
-    const protejate = await leaduriProtejate(supabase, aVenit ?? [])
+    const protejate = await leaduriProtejate(supabase, aVenit)
 
-    for (const l of aVenit ?? []) {
+    for (const l of aVenit) {
       if (!l.flag_reminder) {
         // Primul flag (prima luni după demo).
         const { error } = await supabase
@@ -335,6 +345,7 @@ Deno.serve(async (req) => {
             .update({
               status: 'nurture',
               sub_status: null,
+              motiv_categorie: 'a_venit_neinscris',
               flag_reminder: false,
               flag_streak: 0,
               flag_reminder_at: null,

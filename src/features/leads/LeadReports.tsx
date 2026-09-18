@@ -4,8 +4,8 @@ import { Button, DateInput, Select, Spinner } from '@/components/ui'
 import { campaniiOptions, sezonActiv } from '@/lib/lookups'
 import { listUsers } from '@/features/setari/utilizatoriApi'
 import type { Lead } from '@/types/db'
-import { listLeads, getLeadFunnelGlobal } from './api'
-import { GRUPA_LABELS, GRUPE, LOCATII } from './constants'
+import { listLeads, getLeadFunnelGlobal, getLeadMotive, type LeadMotiv } from './api'
+import { GRUPA_LABELS, GRUPE, LOCATII, motivLabel } from './constants'
 
 // Perioada cohortei de funnel (data intrării lead-ului). Presetul „personalizat"
 // deschide două date libere — cohortele cerute de owner (o campanie, o lună de
@@ -118,6 +118,75 @@ function BreakdownTable({
   )
 }
 
+// De ce pleacă leadurile. Rândurile marcate „în afara pâlniei" nu intră în
+// numitorul conversiei: umbrele de foști cursanți, importurile turnate direct în
+// Nurture și rândurile istorice n-au fost niciodată leaduri de vânzare. Restul —
+// inclusiv Nurture — rămâne în numitor (decizie 2026-09-17).
+function MotiveTable({
+  randuri,
+  seIncarca,
+}: {
+  randuri: LeadMotiv[]
+  seIncarca: boolean
+}) {
+  const total = randuri.reduce((s, r) => s + r.nr, 0)
+  return (
+    <section className="rounded-lg border border-quasar-gray-light bg-white">
+      <h3 className="border-b border-quasar-gray-light px-3 py-2 text-sm font-semibold text-quasar-black">
+        De ce au plecat
+        <span className="ml-2 font-normal text-quasar-gray">
+          lead-urile ajunse în Nurture sau Pierdut, pe motiv
+        </span>
+      </h3>
+      {seIncarca ? (
+        <div className="p-3">
+          <Spinner />
+        </div>
+      ) : randuri.length === 0 ? (
+        <p className="px-3 py-3 text-sm text-quasar-gray">Fără date.</p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-quasar-gray">
+              <th className="px-3 py-1.5 font-medium">Motiv</th>
+              <th className="px-3 py-1.5 font-medium">Unde a ajuns</th>
+              <th className="px-3 py-1.5 text-right font-medium">Nr.</th>
+              <th className="px-3 py-1.5 text-right font-medium">Din total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {randuri.map((r) => (
+              <tr
+                key={`${r.status}-${r.categorie}`}
+                className="border-t border-quasar-gray-light/60"
+              >
+                <td className="px-3 py-1.5 text-quasar-black">
+                  {motivLabel(r.categorie) ?? r.categorie}
+                  {!r.inPalnie && (
+                    <span
+                      className="ml-2 rounded bg-quasar-gray-light/70 px-1.5 py-0.5 text-xs text-quasar-gray"
+                      title="Nu intră în numitorul conversiei — n-a fost un lead de vânzare."
+                    >
+                      în afara pâlniei
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-1.5 text-quasar-gray">
+                  {r.status === 'nurture' ? 'Nurture' : 'Pierdut'}
+                </td>
+                <td className="px-3 py-1.5 text-right">{r.nr}</td>
+                <td className="px-3 py-1.5 text-right text-quasar-gray">
+                  {total ? `${Math.round((r.nr / total) * 100)}%` : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  )
+}
+
 export function LeadReports() {
   const [locatie, setLocatie] = useState('')
   const [grupa, setGrupa] = useState('')
@@ -201,6 +270,11 @@ export function LeadReports() {
   const funnelQ = useQuery({
     queryKey: ['lead-funnel', range.from, range.to, locatie, grupa],
     queryFn: () => getLeadFunnelGlobal(range.from, range.to, locatie || null, grupa || null),
+  })
+
+  const motiveQ = useQuery({
+    queryKey: ['lead-motive', range.from, range.to],
+    queryFn: () => getLeadMotive(range.from, range.to),
   })
 
   const funnel = funnelQ.data
@@ -410,6 +484,11 @@ export function LeadReports() {
           </div>
         )}
       </section>
+
+      <MotiveTable
+        randuri={motiveQ.data ?? []}
+        seIncarca={motiveQ.isLoading}
+      />
 
       <BreakdownTable
         titlu="Conversie pe sursă"

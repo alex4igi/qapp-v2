@@ -1,18 +1,24 @@
 // Edge Function cron — seară (programată ~23:30 ora României / 21:30 UTC).
 // 0. tranziții sezoane: arhivează sezoane active expirate + activează sezoane planificate eligibile
-// 1. programat → neprezentare pentru programări expirate (+ marcaj absent în roster).
-//    Delegat lui `prune_expired_leads` (sursa unică, se uită la PROGRAMĂRI, nu la
-//    cartonaș): a 1-a neprezentare → nu_a_venit; a 2-a → direct nurture.
-// 1b. nu_a_venit rămâne în listă 10 zile, apoi → nurture.
-// 2. flaguri de prioritate recurente, cu flag_streak:
-//    - nou > 24h                                        (flag DOAR, fără nurture)
-//    - contactat/nu_raspunde fără contactare de > 2 zile → auto-Nurture la streak 2
-//    - contactat/de_revenit cu data_callback_dorit trecută → idem
-//    Un contact logat în `lead_contacte` stinge steagul (trigger
-//    bump_lead_ultima_contactare), deci escaladarea cere tăcere reală.
-//    NB: a_venit NU se flaghează aici — are cadență săptămânală (lunea), în
-//    cron-morning (lista de sunat de luni pentru demo-uri neconvertite).
-// 3. auto-Nurture plasă de siguranță: nr_contactari >= 4
+// 1. programări expirate, prin `prune_expired_leads` (sursa unică, se uită la
+//    PROGRAMĂRI, nu la cartonaș): bifat prezent → a_venit; a 1-a neprezentare →
+//    nu_a_venit; a 2-a → direct nurture.
+// 2. restul deciziilor vin din `leads_de_flagat_seara()` — o singură funcție SQL
+//    care spune pe fiecare lead bucket-ul, acțiunea ('flag' sau 'nurture') și
+//    categoria motivului. Pragurile nu mai trăiesc în TypeScript: pot fi văzute
+//    într-un dry-run înainte de a fi schimbate.
+//      nou_termen_depasit    → flag  (termenul procedurii, nu „24h de la intrare")
+//      nu_raspunde_scadent   → flag
+//      de_revenit_scadent    → flag
+//      nu_a_venit_10z        → nurture  (10 zile de la NEPREZENTARE)
+//      plasa_3_incercari     → nurture  (efort dovedit, prag 3)
+//
+// DRUMUL 4 E ÎNCHIS (decizie Alex, 09-17): un steguleț ignorat pe `nu_raspunde`
+// sau pe `de_revenit` înseamnă că NOI n-am sunat. Vina noastră nu scoate omul
+// din pipeline — stegulețul crește la nesfârșit, leadul rămâne pe „De lucrat
+// azi" până îl atinge cineva. Ies automat doar cei care n-au răspuns de 3 ori
+// sau n-au venit.
+//
 // GARDĂ transversală: niciun pas nu trimite în Nurture un lead al cărui client e
 // încă Activ/Inactiv (`leaduriProtejate`) — nurture e pool de reactivare, iar
 // acolo ajungeau conversii neînregistrate. Flagurile rămân.
@@ -22,6 +28,17 @@ import { leaduriProtejate } from '../_shared/leadNurture.ts'
 import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 const DAY = 86_400_000
+
+type RandDeLucru = {
+  lead_id: string
+  bucket: string
+  actiune: 'flag' | 'nurture'
+  categorie: string | null
+  id_client: string | null
+  flag_reminder: boolean
+  flag_streak: number | null
+  flag_reminder_at: string | null
+}
 
 Deno.serve(async (req) => {
   const refuz = refuzaApelStrain(req)
@@ -45,181 +62,114 @@ Deno.serve(async (req) => {
     activate: typeof activated === 'number' ? activated : 0,
   }
 
-  // 1. Programări expirate → absent + statusul leadului, prin `prune_expired_leads`.
+  // 1. Programări expirate → prezență + statusul leadului.
   //
-  // Logica NU mai trăiește aici. Pasul ăsta se uita la `leads.status='programat'`
+  // Logica NU trăiește aici. Pasul ăsta se uita la `leads.status='programat'`
   // + `leads.data_programare`, adică la cartonașul din kanban — aceeași citire
   // greșită reparată pe 09-08 la remindere: cine e înscris la o clasă demo din
   // rosterul evenimentului nu primește mereu data pe cartonaș, deci programarea
   // lui expira fără să fie închisă. RPC-ul se uită la PROGRAMĂRI, are gardul de
-  // programare viitoare (nu scoate din pipeline pe cine mai are o ședință) și
-  // marchează absente DOAR rândurile expirate — varianta de aici le stingea pe
-  // toate ale leadului, inclusiv cele viitoare.
+  // programare viitoare și marchează absente DOAR rândurile expirate.
   //
   // Rulează și la deschiderea /leads; aici e plasa pentru zilele în care nu intră
   // nimeni în aplicație. Fiind idempotent, a doua rulare nu are ce strica.
   const { data: prune } = await supabase.rpc('prune_expired_leads')
   const pruneRes = (prune ?? {}) as {
     absente?: number
+    a_venit?: number
     nurture?: number
     nu_a_venit?: number
   }
-  const autoNeprezenti = pruneRes.nu_a_venit ?? 0
-  const autoNurtureNoShow = pruneRes.nurture ?? 0
 
-  // Helper — aplică flag / escaladare streak / auto-Nurture pe o listă.
-  type FlagLead = {
-    id: string
-    id_client: string | null
-    flag_reminder: boolean
-    flag_streak: number | null
-    flag_reminder_at: string | null
+  // 2. Lista de lucru, cu politica deja decisă în SQL.
+  const { data: deLucru, error: errLucru } = await supabase.rpc(
+    'leads_de_flagat_seara',
+  )
+  if (errLucru) {
+    console.error('[cron/evening] leads_de_flagat_seara:', errLucru.message)
+    return Response.json({ ...report, eroare: errLucru.message }, { status: 500 })
   }
-  const twoDaysAgo = new Date(now.getTime() - 2 * DAY).toISOString()
+  const randuri = (deLucru ?? []) as RandDeLucru[]
 
-  // `autoNurture: false` = leadul se flaghează la nesfârșit, dar nu părăsește
-  // niciodată coloana singur. Folosit pentru 'nou': un lead pe care nimeni nu
-  // l-a sunat NU trebuie să dispară din pipeline după 4 zile doar pentru că a
-  // trecut timpul — rămâne roșu în „De lucrat azi", cu streak-ul crescând, până
-  // îl atinge cineva. Ieșirea automată rămâne pe efort dovedit
-  // (`nr_contactari >= 4`, pasul 3), nu pe vechime.
-  async function processStale(
-    leads: FlagLead[],
-    opts: { autoNurture: boolean } = { autoNurture: true },
-  ) {
-    let flagged = 0
-    let nurtured = 0
-    // Lead-urile cu client activ se flaghează, dar nu escaladează niciodată.
-    const protejate = opts.autoNurture
-      ? await leaduriProtejate(supabase, leads)
-      : new Set<string>()
-    for (const l of leads) {
-      if (!l.flag_reminder) {
-        // Primul flag.
-        await supabase
-          .from('leads')
-          .update({
-            flag_reminder: true,
-            flag_streak: 1,
-            flag_reminder_at: nowIso,
-          })
-          .eq('id', l.id)
-        flagged++
-      } else if ((l.flag_reminder_at ?? '') < twoDaysAgo) {
-        // Flag ignorat un ciclu întreg → escaladează.
-        const streak = (l.flag_streak ?? 1) + 1
-        if (streak >= 2 && opts.autoNurture && !protejate.has(l.id)) {
-          await supabase
-            .from('leads')
-            .update({
-              status: 'nurture',
-              sub_status: null,
-              flag_reminder: false,
-              flag_streak: 0,
-              flag_reminder_at: null,
-            })
-            .eq('id', l.id)
-          nurtured++
-        } else {
-          await supabase
-            .from('leads')
-            .update({ flag_streak: streak, flag_reminder_at: nowIso })
-            .eq('id', l.id)
-          flagged++
-        }
-      }
+  // Un lead poate apărea în două bucket-uri (ex. „nu răspunde scadent" + plasa
+  // celor 3 încercări). Nurture bate flagul: e decizia mai tare.
+  const primulPeLead = new Map<string, RandDeLucru>()
+  for (const r of randuri) {
+    const existent = primulPeLead.get(r.lead_id)
+    if (!existent || (existent.actiune === 'flag' && r.actiune === 'nurture')) {
+      primulPeLead.set(r.lead_id, r)
     }
-    return { flagged, nurtured }
   }
+  const deLucrat = [...primulPeLead.values()]
 
-  const SEL = 'id, id_client, flag_reminder, flag_streak, flag_reminder_at'
-  const cutoff24 = new Date(now.getTime() - DAY).toISOString()
-  const cutoff10d = new Date(now.getTime() - 10 * DAY).toISOString()
+  const deNurturat = deLucrat.filter((r) => r.actiune === 'nurture')
+  const protejate = await leaduriProtejate(supabase, deNurturat)
 
-  const { data: nouVechi } = await supabase
-    .from('leads')
-    .select(SEL)
-    .eq('status', 'nou')
-    .eq('deja_client', false)
-    .lt('created', cutoff24)
+  const sumar: Record<string, { flagged: number; nurtured: number; protejate: number }> = {}
+  const bump = (bucket: string) =>
+    (sumar[bucket] ??= { flagged: 0, nurtured: 0, protejate: 0 })
 
-  const { data: cNuRasp } = await supabase
-    .from('leads')
-    .select(SEL)
-    .eq('status', 'contactat')
-    .eq('sub_status', 'nu_raspunde')
-    .eq('deja_client', false)
-    .lt('ultima_contactare_la', twoDaysAgo)
+  // Flagul escaladează doar ca număr (streak), niciodată în ieșire din pipeline:
+  // de aici s-a scos drumul 4. Streak-ul rămâne fiindcă „De lucrat azi" îl
+  // folosește ca să urce leadurile neglijate în capul listei.
+  const douaZile = new Date(now.getTime() - 2 * DAY).toISOString()
 
-  const { data: cDeRev } = await supabase
-    .from('leads')
-    .select(SEL)
-    .eq('status', 'contactat')
-    .eq('sub_status', 'de_revenit')
-    .eq('deja_client', false)
-    .lte('data_callback_dorit', nowIso)
+  for (const r of deLucrat) {
+    const s = bump(r.bucket)
 
-  // nu_a_venit rămâne în listă 10 zile, apoi trece automat în nurture
-  // (decizie 2026-07-01). Nu mai folosim flag/escaladare pentru această coloană.
-  const { data: navVechi } = await supabase
-    .from('leads')
-    .select('id, id_client')
-    .eq('status', 'nu_a_venit')
-    .lt('updated', cutoff10d)
+    if (r.actiune === 'nurture') {
+      if (protejate.has(r.lead_id)) {
+        s.protejate++
+        continue
+      }
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          status: 'nurture',
+          sub_status: null,
+          motiv_categorie: r.categorie,
+          flag_reminder: false,
+          flag_streak: 0,
+          flag_reminder_at: null,
+        })
+        .eq('id', r.lead_id)
+      if (!error) s.nurtured++
+      continue
+    }
 
-  const protejatiNav = await leaduriProtejate(supabase, navVechi ?? [])
-  const navVechiIds = (navVechi ?? [])
-    .filter((l) => !protejatiNav.has(l.id))
-    .map((l) => l.id)
-  let nuAVenitNurtured = 0
-  if (navVechiIds.length) {
-    await supabase
-      .from('leads')
-      .update({
-        status: 'nurture',
-        sub_status: null,
-        flag_reminder: false,
-        flag_streak: 0,
-        flag_reminder_at: null,
-      })
-      .in('id', navVechiIds)
-    nuAVenitNurtured = navVechiIds.length
-  }
-
-  const rNou = await processStale(nouVechi ?? [], { autoNurture: false })
-  const rNuRasp = await processStale(cNuRasp ?? [])
-  const rDeRev = await processStale(cDeRev ?? [])
-
-  // 3. auto-Nurture plasă de siguranță — nr_contactari >= 4
-  const { data: deNurture } = await supabase
-    .from('leads')
-    .select('id, id_client')
-    .in('status', ['nou', 'contactat'])
-    .eq('deja_client', false)
-    .gte('nr_contactari', 4)
-
-  const protejatiPlasa = await leaduriProtejate(supabase, deNurture ?? [])
-  const nurtureIds = (deNurture ?? [])
-    .filter((l) => !protejatiPlasa.has(l.id))
-    .map((l) => l.id)
-  let autoNurture = 0
-  if (nurtureIds.length) {
-    const { error } = await supabase
-      .from('leads')
-      .update({ status: 'nurture', sub_status: null })
-      .in('id', nurtureIds)
-    if (!error) autoNurture = nurtureIds.length
+    if (!r.flag_reminder) {
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          flag_reminder: true,
+          flag_streak: 1,
+          flag_reminder_at: nowIso,
+        })
+        .eq('id', r.lead_id)
+      if (!error) s.flagged++
+    } else if ((r.flag_reminder_at ?? '') < douaZile) {
+      // Flag ignorat un ciclu întreg → crește streak-ul. Nu mai există prag de
+      // ieșire: nimeni nu pleacă din pipeline fiindcă noi n-am sunat.
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          flag_streak: (r.flag_streak ?? 1) + 1,
+          flag_reminder_at: nowIso,
+        })
+        .eq('id', r.lead_id)
+      if (!error) s.flagged++
+    }
   }
 
   report.sumar = {
     sezoane: sezoneSumar,
-    autoNeprezenti,
-    autoNurtureNoShow,
-    nuAVenitNurtured,
-    nou: rNou,
-    contactatNuRaspunde: rNuRasp,
-    contactatDeRevenit: rDeRev,
-    autoNurture,
+    programari: {
+      absente: pruneRes.absente ?? 0,
+      aVenit: pruneRes.a_venit ?? 0,
+      nuAVenit: pruneRes.nu_a_venit ?? 0,
+      nurture: pruneRes.nurture ?? 0,
+    },
+    bucketuri: sumar,
   }
   console.log('[cron/evening]', JSON.stringify(report.sumar))
   return Response.json(report)

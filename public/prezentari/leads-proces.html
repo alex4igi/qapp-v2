@@ -274,7 +274,8 @@
       <h3>Ce face aplicația singură</h3>
       <ul class="big">
         <li><span class="b">🤖</span><span>Urcă în capul coloanei leadurile cu data de revenire ajunsă la zi și le pune ⚑.</span></li>
-        <li><span class="b">🤖</span><span>După mai multe încercări la rând fără răspuns, leadul trece singur în Nurture. Un apel la care a răspuns repornește numărătoarea.</span></li>
+        <li><span class="b">🤖</span><span>După 3 încercări la rând fără răspuns, leadul trece singur în Nurture. Un apel la care a răspuns repornește numărătoarea.</span></li>
+        <li><span class="b">🤖</span><span>Cât timp stegulețul e ignorat, leadul NU pleacă nicăieri: stegulețul crește, cardul rămâne în coloană. Vina noastră nu scoate omul din pipeline.</span></li>
       </ul>
       <div class="note"><span class="lbl">Pe unde iese</span>Programat · Waiting List · Pierdut · Nurture</div>
       <a class="toplink" href="#top">▲ sus</a>
@@ -314,6 +315,7 @@
       <ul class="big">
         <li><span class="b">🤖</span><span>Trimite SMS de confirmare la câteva minute după programare și reminder la 10:00 în ziua ședinței (pentru weekend, cu o zi înainte).</span></li>
         <li><span class="b">🤖</span><span>Pune leadul în rosterul grupei din ziua respectivă.</span></li>
+        <li><span class="b">🤖</span><span>Bifa din rosterul grupei îl mută singură pe „A venit" — și cea a instructorului, și cea a recepției.</span></li>
         <li><span class="b">🤖</span><span>Dacă rămâne nebifat, peste noapte devine „Nu a venit", iar în următoarea zi lucrătoare la 16:00 primește SMS-ul „ne pare rău că nu ai ajuns". Dacă de fapt a venit, mută-l pe „A venit" înainte de ora aceea.</span></li>
       </ul>
       <div class="note"><span class="lbl">Pe unde iese</span>A venit · Nu a venit</div>
@@ -334,7 +336,7 @@
       <ul class="big">
         <li><span class="b">🤖</span><span>La 2 zile după demo trimite SMS-ul cu rezervarea locului (la 16:00, luni–vineri).</span></li>
         <li><span class="b">🤖</span><span>Lunea pune ⚑ pe cei neînscriși — lista de sunat de luni.</span></li>
-        <li><span class="b">🤖</span><span>A doua luni la rând fără niciun contact logat → Nurture.</span></li>
+        <li><span class="b">🤖</span><span>A doua luni la rând fără niciun contact logat → Nurture. Sare peste cei care au cerut să fie sunați la o dată din viitor.</span></li>
       </ul>
       <div class="note"><span class="lbl">Pe unde iese</span>Convertit · Pierdut · Nurture</div>
       <a class="toplink" href="#top">▲ sus</a>
@@ -352,7 +354,7 @@
       <h3>Ce face aplicația singură</h3>
       <ul class="big">
         <li><span class="b">🤖</span><span>La prima neprezentare trimite SMS-ul „ne pare rău că nu ai ajuns", la 16:00 în zi lucrătoare.</span></li>
-        <li><span class="b">🤖</span><span>După 10 zile fără reprogramare → Nurture.</span></li>
+        <li><span class="b">🤖</span><span>La 10 zile de la ZIUA în care n-a venit, fără reprogramare → Nurture.</span></li>
         <li><span class="b">🤖</span><span>A doua neprezentare → direct în Nurture, fără SMS.</span></li>
       </ul>
       <div class="note"><span class="lbl">Pe unde iese</span>Programat · Nurture</div>
