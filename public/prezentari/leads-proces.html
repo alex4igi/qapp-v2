@@ -222,7 +222,7 @@
       </div>
       <div class="story">
         <span class="lbl">4 · Vine la probă</span>
-        <p>În dimineața ședinței (ora 10), Diana primește automat un <b>SMS de reamintire</b>. Maria vine — la sală, <b>recepția o bifează Prezent</b> în rosterul grupei, iar cardul trece în <b>A venit</b>. Bifa e importantă: dacă nu o pui, peste noapte aplicația presupune că n-a venit și a doua zi Dianei îi pleacă mesajul „ne pare rău că nu ai ajuns".</p>
+        <p>În dimineața ședinței (ora 10), Diana primește automat un <b>SMS de reamintire</b>. Maria vine — la sală, <b>recepția o bifează Prezent</b> în rosterul grupei, iar cardul trece în <b>A venit</b>. Bifa e importantă: dacă nu o pui, peste noapte aplicația presupune că n-a venit — și peste două zile recepția o sună degeaba pe Diana, ca să reprogrameze o ședință la care copilul fusese deja.</p>
       </div>
       <div class="story">
         <span class="lbl">5 · Se înscrie</span>
@@ -231,7 +231,7 @@
       </div>
       <div class="story">
         <span class="lbl">Varianta „nu vine"</span>
-        <p>Dacă Maria nu s-ar fi prezentat, cardul ar fi ajuns în <b>Nu a venit</b> (manual sau automat, peste noapte) și Diana ar fi primit <b>SMS-ul de revenire</b> a doua zi la 16:00. De acolo <b>nu se mai sună</b>: dacă scrie sau sună ea, o reprogramezi; dacă nu, cardul trece singur în <b>Nurture</b> după 10 zile. <b>Pierdut</b> îl folosim doar dacă a spus clar că nu mai vrea.</p>
+        <p>Dacă Maria nu s-ar fi prezentat, cardul ar fi ajuns în <b>Nu a venit</b> (manual sau automat, peste noapte), iar aplicația i-ar fi scris pe card <b>ziua apelului: peste două zile</b> — sau luni, dacă absența ar fi fost joi ori vineri. În ziua aceea o suni pe Diana și încerci să stabilești o dată nouă. Dacă nu răspunde, <b>3 încercări în 5 zile</b>, ca la „Contactat". <b>Pierdut</b> îl folosim doar dacă a spus clar că nu mai vrea.</p>
       </div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
@@ -316,7 +316,7 @@
         <li><span class="b">🤖</span><span>Trimite SMS de confirmare la câteva minute după programare și reminder la 10:00 în ziua ședinței (pentru weekend, cu o zi înainte).</span></li>
         <li><span class="b">🤖</span><span>Pune leadul în rosterul grupei din ziua respectivă.</span></li>
         <li><span class="b">🤖</span><span>Bifa din rosterul grupei îl mută singură pe „A venit" — și cea a instructorului, și cea a recepției.</span></li>
-        <li><span class="b">🤖</span><span>Dacă rămâne nebifat, peste noapte devine „Nu a venit", iar în următoarea zi lucrătoare la 16:00 primește SMS-ul „ne pare rău că nu ai ajuns". Dacă de fapt a venit, mută-l pe „A venit" înainte de ora aceea.</span></li>
+        <li><span class="b">🤖</span><span>Dacă rămâne nebifat, peste noapte devine „Nu a venit" și intră pe lista de sunat de peste două zile. Dacă de fapt a venit, mută-l pe „A venit" — altfel îl sună recepția degeaba.</span></li>
       </ul>
       <div class="note"><span class="lbl">Pe unde iese</span>A venit · Nu a venit</div>
       <a class="toplink" href="#top">▲ sus</a>
@@ -348,16 +348,22 @@
       <p class="intro">A avut programare și nu a ajuns.</p>
       <h3>Ce faci tu</h3>
       <ul class="big">
-        <li><span class="b">👉</span><span>Nimic din oficiu: nu se sună.</span></li>
-        <li><span class="b">👉</span><span>Dacă scrie sau sună el, reprogramează-l (trage-l pe „Programat").</span></li>
+        <li><span class="b">👉</span><span>Sună-l la 2 zile de la ședința ratată. Dacă a lipsit joi sau vineri, îl suni luni — ziua exactă scrie pe card.</span></li>
+        <li><span class="b">👉</span><span>Ținta convorbirii: o dată nouă de ședință → „Programat".</span></li>
+        <li><span class="b">👉</span><span>Nu răspunde: 3 încercări în 5 zile, ca la „Contactat". Apasă 📞 la fiecare încercare.</span></li>
+        <li><span class="b">👉</span><span>A spus clar că nu mai vrea → Pierdut. „Nu acum" → Nurture.</span></li>
       </ul>
       <h3>Ce face aplicația singură</h3>
       <ul class="big">
-        <li><span class="b">🤖</span><span>La prima neprezentare trimite SMS-ul „ne pare rău că nu ai ajuns", la 16:00 în zi lucrătoare.</span></li>
-        <li><span class="b">🤖</span><span>La 10 zile de la ZIUA în care n-a venit, fără reprogramare → Nurture.</span></li>
-        <li><span class="b">🤖</span><span>A doua neprezentare → direct în Nurture, fără SMS.</span></li>
+        <li><span class="b">🤖</span><span>Pune singură ziua apelului pe card: 2 zile de la absență, iar dacă ar pica în weekend, luni.</span></li>
+        <li><span class="b">🤖</span><span>În ziua aceea urcă leadul în „De lucrat azi" și îi pune ⚑.</span></li>
+        <li><span class="b">🤖</span><span>După 3 încercări la rând fără răspuns, trece singur în Nurture.</span></li>
+        <li><span class="b">🤖</span><span>Cât timp nu l-a sunat nimeni, NU pleacă nicăieri: stegulețul crește, cardul rămâne în coloană.</span></li>
+        <li><span class="b">🤖</span><span>Sunat, dar tot fără niciun semn, la 10 zile de la absență → Nurture.</span></li>
+        <li><span class="b">🤖</span><span>A doua neprezentare → direct în Nurture.</span></li>
+        <li><span class="b">🤖</span><span>Nu mai trimite niciun SMS la neprezentare: din septembrie 2026 îl sunăm în loc.</span></li>
       </ul>
-      <div class="note"><span class="lbl">Pe unde iese</span>Programat · Nurture</div>
+      <div class="note"><span class="lbl">Pe unde iese</span>Programat · Pierdut · Nurture</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>
 
@@ -428,8 +434,8 @@
       <table class="t">
         <tr><th>Când</th><th>Ce face cu leads</th></tr>
         <tr><td><b>Dimineața, ora 10</b></td><td>Trimite <b>SMS-ul de reamintire</b> pentru ședințele de probă de <b>azi</b> (Luni–Vineri) sau de <b>mâine</b> (când urmează weekend). <b>Lunea</b>, pune steguleț pe cei din „A venit" care încă nu s-au înscris — lista de sunat a săptămânii.</td></tr>
-        <tr><td><b>După-amiaza, ora 16</b><br><span style="color:var(--gri2);font-size:12px">Luni–Vineri</span></td><td>Pleacă mesajele la care omul <b>poate răspunde</b>, când e cineva la sală să-i răspundă: „ne pare rău că nu ai ajuns", mesajul de la <b>2 zile după probă</b> și confirmarea înrolării.</td></tr>
-        <tr><td><b>Noaptea, după închidere</b></td><td>Cele rămase în „Programat" cu data trecută → trec pe <b>„Nu a venit"</b>. Lead-urilor uitate li se pune <b>steguleț</b>. Cele „reci" (multe încercări fără răspuns, neprezentări, steguleț ignorat) trec în <b>Nurture</b>.</td></tr>
+        <tr><td><b>După-amiaza, ora 16</b><br><span style="color:var(--gri2);font-size:12px">Luni–Vineri</span></td><td>Pleacă mesajele la care omul <b>poate răspunde</b>, când e cineva la sală să-i răspundă: mesajul de la <b>2 zile după probă</b> și confirmarea înrolării.</td></tr>
+        <tr><td><b>Noaptea, după închidere</b></td><td>Cele rămase în „Programat" cu data trecută → trec pe <b>„Nu a venit"</b>, cu ziua apelului scrisă pe card. Lead-urilor ajunse la scadență li se pune <b>steguleț</b>. Trec în <b>Nurture</b> doar cele în care <b>omul</b> n-a răspuns de 3 ori, n-a venit sau nu s-a înscris — niciodată fiindcă noi am uitat să sunăm.</td></tr>
         <tr><td><b>La finalul sezonului</b></td><td>Cine a rămas pe <b>Waiting List</b> trece în <b>Nurture</b> — lista nu se reportează de la un sezon la altul.</td></tr>
       </table>
       <div class="note"><span class="lbl">Liniște noaptea</span>Niciun SMS nu pleacă între <b>19:30 și 10:00</b>. Ce s-ar trimite în intervalul ăsta se amână automat.</div>
@@ -447,10 +453,10 @@
         <tr><td>→ <b>Waiting List</b></td><td>waiting list</td><td>confirmare că e pe listă</td></tr>
         <tr><td>→ <b>Programat</b> <span style="color:var(--gri2)">(după ~2 min)</span></td><td>confirmare</td><td>data + ora + adresa</td></tr>
         <tr><td><b>Ora 10</b>, ziua probei</td><td>reminder</td><td>azi/mâine + data + ora + adresa</td></tr>
-        <tr><td>→ <b>Nu a venit</b> <span style="color:var(--gri2)">(ora 16, doar prima dată)</span></td><td>follow-up</td><td>telefonul locației</td></tr>
+        
         <tr><td><b>La 2 zile după probă</b> <span style="color:var(--gri2)">(ora 16, dacă nu s-a înscris)</span></td><td>post-demo</td><td>locurile se ocupă în ordinea înscrierilor</td></tr>
       </table>
-      <div class="note"><span class="lbl">Nu mai există</span>SMS-ul prin care ceream un <b>review pe Google la conversie</b> a fost <b>scos</b> (septembrie 2026). Dacă îți amintești de el: nu mai pleacă. La fel, a doua neprezentare nu mai primește niciun mesaj — cardul trece direct în Nurture.</div>
+      <div class="note"><span class="lbl">Nu mai există</span>SMS-ul prin care ceream un <b>review pe Google la conversie</b> a fost <b>scos</b> (septembrie 2026). La fel, <b>SMS-ul „ne pare rău că nu ai ajuns"</b> de la neprezentare: din 19 septembrie 2026 <b>îl sunăm</b> în loc, la două zile de la absență. Dacă îți amintești de ele: nu mai pleacă.</div>
       <div class="note"><span class="lbl">Regulă</span>Recepția și vânzările trimit <b>doar șabloane gata făcute</b>, niciodată text liber. Mesajele sunt scurte, fără diacritice și fără emoji. Nu se trimite același SMS de două ori (deduplicare).</div>
       <a class="toplink" href="#top">▲ sus</a>
     </section>

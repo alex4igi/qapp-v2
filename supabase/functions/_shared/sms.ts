@@ -129,7 +129,6 @@ export type SmsTip =
   | 'confirmare'
   | 'reminder'
   | 'review'
-  | 'followup'
   | 'waiting_list'
   | 'post_demo'
 
@@ -163,8 +162,8 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
     }
     case 'review':
       return `${salut} Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: ${reviewLink} Multumim!`
-    case 'followup':
-      return `${salut} Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la ${telefon}!`
+    // „followup" („ne pare rau ca nu ai ajuns") a fost scos pe 19.09.2026:
+    // neprezentarea se lucrează la telefon, la 2 zile de la absență.
     case 'waiting_list':
       return `${salut} Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!`
     // La 2 zile dupa demo, pentru cine a venit si nu s-a inscris. Miza e locul in

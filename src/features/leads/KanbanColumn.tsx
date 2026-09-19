@@ -50,6 +50,14 @@ function sortLeads(leads: Lead[], status: string): Lead[] {
     }
     if (status === 'waiting_list') return ts(a.created) - ts(b.created)
 
+    // „Nu a venit": ziua apelului decide ordinea — cine trebuia sunat de mai
+    // demult stă sus. Restul, după cât de aproape e ziua apelului.
+    if (status === 'nu_a_venit') {
+      const cb = (l: Lead) =>
+        l.data_callback_dorit ? ts(l.data_callback_dorit) : Infinity
+      return cb(a) - cb(b)
+    }
+
     if (status === 'contactat') {
       const now = Date.now()
       // Follow-up scadent (data a trecut) → capul coloanei, imediat ce se

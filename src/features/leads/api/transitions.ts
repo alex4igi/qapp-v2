@@ -176,11 +176,14 @@ export async function updateLead(
     } else {
       const newNr = (current.nr_contactari ?? 0) + 1
       payload.nr_contactari = newNr
-      // Cadența decisă 2026-09-17: 3 încercări în 5 zile, apoi Nurture.
+      // Cadența decisă 2026-09-17: 3 încercări în 5 zile, apoi Nurture. Din
+      // 09-19 se aplică și la „Nu a venit" — acolo categoria rămâne absența,
+      // fiindcă asta caută lista de recuperare, nu ultimul apel neridicat.
       if (newNr >= MAX_INCERCARI_FARA_RASPUNS) {
         payload.status = 'nurture'
         payload.sub_status = null
-        payload.motiv_categorie = 'nu_a_raspuns'
+        payload.motiv_categorie =
+          current.status === 'nu_a_venit' ? 'nu_a_venit' : 'nu_a_raspuns'
       }
     }
   }
@@ -355,9 +358,13 @@ export async function logContact(input: LogContactInput): Promise<void> {
   }
 
   if (input.rezultat === 'follow_up') {
-    patch.sub_status = input.subStatus ?? 'de_revenit'
-    if (input.dataCallback) patch.data_callback_dorit = input.dataCallback
     if (current?.status === 'nou') patch.status = 'contactat'
+    // `sub_status` are înțeles doar în „Contactat". Un apel dat pe un lead care
+    // n-a venit la demo nu-l scoate din coloana lui: rămâne acolo, cu ziua
+    // reîncercării pe card, până când omul răspunde sau se umple seria de 3.
+    if (current?.status === 'nou' || current?.status === 'contactat')
+      patch.sub_status = input.subStatus ?? 'de_revenit'
+    if (input.dataCallback) patch.data_callback_dorit = input.dataCallback
   } else if (input.rezultat === 'pierdut') {
     patch.status = 'pierdut'
     if (input.observatii?.trim()) patch.motiv_pierdut = input.observatii.trim()

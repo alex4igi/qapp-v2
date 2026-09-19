@@ -1,7 +1,7 @@
 # Procedura pe statusurile de leads
 
 Sursa de adevăr pentru ce are de făcut recepția cu un lead și ce face aplicația singură.
-Decizii Alex, **17 septembrie 2026**.
+Decizii Alex, **17 septembrie 2026**, cu „Nu a venit" rescris pe **19 septembrie 2026**.
 
 Trei fețe ale aceluiași text, care nu au voie să se contrazică:
 
@@ -26,9 +26,9 @@ recepției o alertă inexistentă e mai rău decât lipsa textului.
 > 3. **De revenit** — sună-l fix în ziua pe care a cerut-o el.
 > 4. Un lead „Contactat" are **mereu** un sub-status și o dată. Ați vorbit și nu s-a stabilit nimic ⇒ alege ceva.
 > 5. **Waiting List** = doar „nu e loc". „Vreau, dar nu acum" → Contactat / De revenit, cu dată.
-> 6. **Programat** — recepția bifează prezența în ziua ședinței. Nebifat ⇒ pleacă SMS-ul greșit.
+> 6. **Programat** — recepția bifează prezența în ziua ședinței. Nebifat ⇒ îl sunăm degeaba peste două zile.
 > 7. **A venit** — discuția de după clasă e pasul care aduce înscrierea, nu SMS-ul.
-> 8. **Nu a venit** — nu se sună. Dacă revine el, reprogramezi.
+> 8. **Nu a venit** — **îl suni la 2 zile de la absență**; dacă a lipsit joi sau vineri, luni. Nu răspunde ⇒ aceeași cadență de 3 încercări.
 > 9. **Pierdut = nu mai contactăm niciodată.** Orice „nu acum" → **Nurture**.
 >
 > *Regula din spatele tuturor: un lead pleacă singur în Nurture doar când OMUL n-a răspuns, n-a venit
@@ -62,6 +62,52 @@ evaluarea oamenilor — de decis separat.
 
 Butonul 📞 rămâne necesar pentru ce nu se vede dintr-o mutare: **„am sunat și n-a răspuns"** și notițele.
 
+## „Nu a venit" se sună (19 septembrie 2026)
+
+Decizie Alex: **SMS-ul de neprezentare se înlocuiește cu un telefon.**
+
+Ce era: o singură atingere — SMS-ul „ne pare rău că nu ai ajuns, dă-ne un mesaj la …", la 16:00 în
+prima zi lucrătoare — după care procedura spunea explicit *„nu se sună"*, iar cardul cădea în Nurture
+la 10 zile. Măsurat pe 19 sept.: **48 de carduri** în coloană, 46 cu SMS-ul trimis, **un singur apel
+logat** pe toate 48. Regula chiar se respecta.
+
+Ce a cântărit în decizie: **27% dintre ședințele demo se termină cu o neprezentare** (70 în
+septembrie, din 262 de ședințe consumate; rata e constantă din iunie), iar din cele 129 de leaduri
+care au trecut vreodată prin „Nu a venit", **16 au devenit până la urmă clienți (12%)** — fără ca
+cineva să-i fi sunat, în medie la 46 de zile. E singurul status în care omul a arătat interes de
+două ori: a lăsat datele **și** a acceptat o dată.
+
+**Regula nouă:**
+
+| | |
+|---|---|
+| Când sună recepția | la **2 zile** de la absență; dacă apelul ar pica sâmbătă sau duminică, **luni** |
+| Dacă nu răspunde | **3 încercări în 5 zile**, ca la „Contactat" — a 3-a fără răspuns ⇒ Nurture |
+| Dacă nu sună nimeni | cardul **rămâne** în coloană, cu steguleț care crește. Nesunat ⇒ nu pleacă în Nurture |
+| Cele 10 zile → Nurture | rămân, dar **doar dacă s-a încercat măcar un apel** după absență |
+| SMS | **niciunul**. Tipul `followup` a fost scos din cod (`_shared/sms.ts`, `send-lead-sms`, `cron-afternoon`) |
+
+„La două zile, sau luni dacă absența e joi sau vineri" e, scris pe weekend, exact **+2 zile, iar dacă
+pică în weekend, luni**: joi+2 = sâmbătă, vineri+2 = duminică. Formularea asta acoperă și absențele
+de sâmbătă–duminică, zile în care se țin ședințe demo.
+
+**Cum ajunge apelul în fața recepției.** Ziua apelului se **ștampilează în DB**, la intrarea în
+status, de triggerul `lead_ziua_apelului` (`20260919140000`) — nu de fiecare apelant: în „Nu a venit"
+se intră din `prune_expired_leads`, din `resolveNoShow`, din drag & drop și din stepperul fișei, iar
+toate patru trebuie să lase aceeași dată în urmă. Data stă în `data_callback_dorit`, care de acum
+înseamnă **„ziua în care sunăm noi"** la „Nu a venit" și „ziua cerută de om" la „Contactat". De acolo
+leadul apare singur în „De lucrat azi" (grupul *Callback scadent*), urcă în capul coloanei și
+primește ⚑ de la cronul de seară (bucket `nu_a_venit_de_sunat`).
+
+⚠️ **`data_callback_dorit` se curăță la ieșire.** Același trigger o șterge când leadul trece într-un
+status în care n-are înțeles. Era o scurgere veche: 28 de leaduri din „Programat", „A venit" și
+„Waiting List" cărau o dată rămasă din faza de „Contactat" și apăreau zilnic la *Callback scadent* cu
+un termen pe care nu-l ceruse nimeni.
+
+**Ce se sparge dacă cineva pune la loc SMS-ul:** textele din `procedura.ts` promit acum un apel, iar
+ghidul recepției e generat din ele. Un SMS readăugat fără să treacă prin `procedura.ts` + `npm run
+gen:ghid` înseamnă că omul primește și mesaj, și telefon, pentru aceeași absență.
+
 ## Regulă → loc în cod
 
 | Regulă | Unde trăiește |
@@ -74,6 +120,8 @@ Butonul 📞 rămâne necesar pentru ce nu se vede dintr-o mutare: **„am sunat
 | Cine intră în numitorul conversiei | `lead_intra_in_palnie()`, `20260918160000` |
 | Termenul primului apel, în DB | `lead_termen_primul_apel()`, `20260918150000` |
 | Ziua neprezentării (cele 10 zile) | `lead_data_neprezentarii()`, `20260918150000` |
+| Ziua apelului după neprezentare (+2 zile, weekend ⇒ luni) | `lead_zi_apel_dupa_neprezentare()`, `20260919140000` |
+| Ștampila zilei de apel + curățarea ei la ieșire | trigger `lead_ziua_apelului`, `20260919140000` |
 | Mutarea cardului = contact | trigger `lead_contact_dedus`, `20260918120000_contact_dedus_din_mutare.sql` |
 | Categoriile de motiv | `MOTIVE_PIERDUT` / `MOTIVE_NURTURE`, `src/features/leads/constants.ts` + CHECK în `20260918100000` |
 | Prag încercări fără răspuns (3) | `updateLead()`, `src/features/leads/api/transitions.ts` + bucket-ul `plasa_3_incercari` |
@@ -81,7 +129,7 @@ Butonul 📞 rămâne necesar pentru ce nu se vede dintr-o mutare: **„am sunat
 | Programare expirată → Nu a venit | `prune_expired_leads()`, `supabase/migrations/20260909110000_prune_expired_leads_sursa_unica.sql` |
 | Lista de sunat de luni | pasul 2 din `supabase/functions/cron-morning/index.ts` |
 | SMS-urile de lead (texte) | `supabase/functions/_shared/sms.ts`; catalog: `scripts/sms/templates.md` |
-| Ce SMS pleacă la ce tranziție | `src/features/leads/sms.ts` + `supabase/functions/cron-afternoon/index.ts` |
+| Ce SMS pleacă la ce tranziție | `src/features/leads/sms.ts` + `supabase/functions/cron-afternoon/index.ts` (neprezentarea **nu** mai trimite nimic) |
 | Orele liniștite (19:30–10:00) | `supabase/functions/_shared/quietHours.ts` |
 | Un lead = o singură programare | RPC `inlocuieste_programari_lead` |
 | Conversia (client + înrolare) | `src/features/leads/api/conversie.ts` + trigger `enrollment_marcheaza_lead_convertit` |
@@ -98,8 +146,8 @@ central, într-un trigger (Faza 2a), nu la fiecare apelant.
 | 2 | A 2-a neprezentare | `api/transitions.ts` · `resolveNoShow` | da |
 | 3 | A 2-a neprezentare, la curățenia de seară | `prune_expired_leads()` | da |
 | 4 | ~~Steguleț ignorat (nou / contactat)~~ | — | ❌ **scos pe 18 sept.** |
-| 5 | „Nu a venit" mai vechi de 10 zile | `cron-evening` | da |
-| 6 | Plasa de siguranță pe nr. de încercări | `cron-evening` | da |
+| 5 | „Nu a venit" mai vechi de 10 zile, **sunat** cel puțin o dată | `cron-evening` | da |
+| 6 | Plasa de siguranță pe nr. de încercări (și pe „Nu a venit") | `cron-evening` | da |
 | 7 | A 2-a luni după demo, neconvertit | `cron-morning` | da |
 | 8 | Waiting list, la finalul sezonului | `cron-season-end` | da |
 | 9 | Client devenit EXclient (45 zile fără prezență) | `auto_mark_inactiv_si_exclient()` | da |
@@ -222,14 +270,15 @@ Plan complet: `~/.claude/plans/fiecare-coloana-din-kanban-lexical-biscuit.md`.
 
 ## De unde se continuă
 
-**Stare la 18 septembrie 2026:** fazele 0, 1 și 2a sunt livrate — migrațiile `20260918100000` …
-`20260918160000` sunt aplicate pe producție.
+**Stare la 19 septembrie 2026:** fazele 0, 1 și 2a sunt livrate — migrațiile `20260918100000` …
+`20260918160000` sunt aplicate pe producție, iar `cron-evening` / `cron-morning` sunt deployate
+(19 sept., 11:34). Peste ele, `20260919140000` a mutat „Nu a venit" pe apel.
 
-⚠️ **Edge functions:** `cron-evening` și `cron-morning` sunt rescrise în arbore. Până la
-`npx supabase functions deploy`, producția rulează versiunile vechi peste schema nouă: RPC-urile
-sunt compatibile (`prune_expired_leads` întoarce aceleași chei, plus `a_venit`), dar drumul 4 spre
-Nurture e încă activ în cronul de seară deployat. **Verifică cu `npx supabase functions list`
-înainte să declari faza închisă.**
+⚠️ **Edge functions de deployat:** `cron-afternoon` (nu mai trimite `followup`) și `send-lead-sms`
+(tipul `followup` scos). Până la `npx supabase functions deploy`, versiunea veche a lui
+`cron-afternoon` mai poate trimite SMS-ul „ne pare rău că nu ai ajuns" — dedup-ul pe `sms_logs` îi
+acoperă pe cei 46 care l-au primit deja, dar nu și pe cine intră nou în coloană.
+**Verifică cu `npx supabase functions list` înainte să declari închis.**
 
 Următorul pas e **Faza 2b** (SMS `apel_ratat` + verificarea opt-out). Două lucruri de ținut minte:
 

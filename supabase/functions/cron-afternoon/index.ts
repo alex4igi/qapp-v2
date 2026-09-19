@@ -2,9 +2,11 @@
 // SMS-urile la care omul poate vrea să ne răspundă pleacă atunci când e cineva la
 // sală să preia telefonul (decizie Alex, 15.09.2026). Până atunci plecau din
 // cron-morning la 10:00, când nu răspundea nimeni.
-//   1. followup — cei mutați la „nu a venit" (automat sau marcați după 19:30)
-//   2. confirmarea înrolării recurente, a doua zi
-//   3. post_demo — la 2–4 zile după demo, pentru cine n-a mai venit să se înscrie
+//   1. confirmarea înrolării recurente, a doua zi
+//   2. post_demo — la 2–4 zile după demo, pentru cine n-a mai venit să se înscrie
+// Aici pleca și „ne pare rău că nu ai ajuns", la prima neprezentare. Scos pe
+// 19.09.2026: neprezentarea se lucrează la telefon, nu prin SMS (vezi
+// docs/procedura-leads-kanban.md).
 // Sâmbăta și duminica nu pleacă nimic de aici: tot ce se strânge în weekend iese
 // luni la 16:00. Reminderul ședinței rămâne dimineața, în cron-morning.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
@@ -75,56 +77,7 @@ Deno.serve(async (req) => {
 
   const errors: string[] = []
 
-  // --- 1. Follow-up „nu ai ajuns la ședință" ---
-  // Prinde doi oameni: cei mutați automat programat → nu_a_venit de cron-evening /
-  // prune_expired_leads (fără SMS la mutare) și cei marcați manual după 19:30, pe
-  // care send-lead-sms nu-i mai trimite imediat, ci îi lasă pentru rularea asta.
-  // Fereastra de 4 zile acoperă weekendul: mutat vineri noaptea → luni 16:00 e
-  // ~64h, iar o rulare ratată luni se recuperează marți. Dedup pe sms_logs
-  // (tip='followup', pe viață) sare peste cei deja notificați.
-  let followupSent = 0
-  const cutoffFollowup = new Date(now.getTime() - 4 * 86_400_000).toISOString()
-  const { data: noShows } = await supabase
-    .from('leads')
-    .select('id, prenume, nume, telefon, locatia, data_programare, nr_neprezentari')
-    .eq('status', 'nu_a_venit')
-    .eq('deja_client', false)
-    .gte('updated', cutoffFollowup)
-
-  for (const lead of noShows ?? []) {
-    if (!lead.telefon) continue
-    // A 2-a neprezentare nu primește followup (e rutată în nurture oricum).
-    if ((lead.nr_neprezentari ?? 0) >= 2) continue
-
-    const { data: existing } = await supabase
-      .from('sms_logs')
-      .select('id')
-      .eq('lead_id', lead.id)
-      .eq('tip', 'followup')
-      .maybeSingle()
-    if (existing) continue
-
-    const { locatie } = await getProgramareSms(supabase, lead.id, lead.locatia)
-    const mesaj = buildSms('followup', {
-      prenume: lead.prenume || lead.nume,
-      locatie,
-    })
-
-    const result = await sendSms(lead.telefon, mesaj)
-    if (result.ok) {
-      await supabase.from('sms_logs').insert({
-        lead_id: lead.id,
-        tip: 'followup',
-        telefon: lead.telefon,
-        mesaj,
-      })
-      followupSent++
-    } else {
-      errors.push(`${lead.nume} (followup): ${result.error}`)
-    }
-  }
-
-  // --- 2. Confirmări înrolare recurentă (a doua zi) ---
+  // --- 1. Confirmări înrolare recurentă (a doua zi) ---
   // Coada `confirmari_inrolare_sms` e alimentată la crearea înrolării (send_after =
   // mâine 00:00 local); aici trimitem rândurile scadente dacă înrolarea e încă
   // activă. Ștearsă în interval (greșeală) → rândul a dispărut prin ON DELETE
@@ -334,10 +287,9 @@ Deno.serve(async (req) => {
   }
 
   console.log(
-    `[cron/afternoon] followup: ${followupSent}, confirmari: ${confirmariSent}, postDemo: ${postDemoSent}, erori: ${errors.length}`,
+    `[cron/afternoon] confirmari: ${confirmariSent}, postDemo: ${postDemoSent}, erori: ${errors.length}`,
   )
   return Response.json({
-    followup: followupSent,
     confirmari: confirmariSent,
     postDemo: postDemoSent,
     errors,

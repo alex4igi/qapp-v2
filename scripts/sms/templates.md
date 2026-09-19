@@ -72,13 +72,13 @@ Buna {prenume}! Va reamintim de sedinta gratuita la Quasar Dance {AZI/MAINE}, {d
 Buna {prenume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: {link} Multumim!
 ```
 
-### 4. `followup` — la mutarea lead → **Nu a venit**
-> Marcat manual în timpul zilei → pleacă pe loc. Mutat automat noaptea (cron-evening)
-> sau marcat după 19:30 → **`cron-afternoon`, 16:00, luni–vineri** (din 2026-09-15),
-> ca să fie cineva la sală când omul sună. Weekendul se strânge pentru luni.
-> Fereastră de 4 zile pe `leads.updated`; dedup pe `sms_logs` (`tip='followup'`, pe viață).
+### 4. ~~`followup` — la mutarea lead → **Nu a venit**~~ — ⛔ SCOS 2026-09-19
+> Înlocuit cu un **apel**: recepția sună la 2 zile de la absență (joi/vineri ⇒ luni).
+> Decizie Alex — vezi `docs/procedura-leads-kanban.md`, secțiunea „«Nu a venit» se sună".
+> Tipul a fost scos din `_shared/sms.ts`, `send-lead-sms` și `cron-afternoon`; rândurile
+> istorice din `sms_logs` (`tip='followup'`) rămân.
 ```
-Buna {prenume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la {telefon locatie}!
+(nu mai pleacă) Buna {prenume}! Ne pare rau ca nu ai ajuns la sedinta gratuita la Quasar Dance. Pentru a beneficia de ea, da-ne un mesaj la {telefon locatie}!
 ```
 
 ### 5. `waiting_list` — la mutarea lead → **Waiting list**
@@ -216,7 +216,7 @@ Buna ziua! Pentru a pastra {locul lui X / locurile lui X si Y} la Quasar Dance, 
 
 ## De implementat (TODO — cerut 2026-06-08)
 1. ✅ **Review pe conversie** (LIVRAT 2026-06-08) — `review` (#3) pleacă când lead-ul ajunge `convertit` (drag în coloană sau `linkLeadToClient`). Dedup pe `sms_logs` tip='review'. Trigger-ul de după demo (cron-morning) a rămas scos.
-2. ✅ **Telefonul locației** (LIVRAT 2026-06-08) — hardcoded `TELEFOANE` în `_shared/sms.ts` (kanban `followup`) și `TELEFOANE_LOCATIE` în `templates.ts` (bulk). `get_sms_recipients` întoarce `nume_locatie` pentru maparea pe telefon.
+2. ✅ **Telefonul locației** (LIVRAT 2026-06-08) — hardcoded `TELEFOANE` în `_shared/sms.ts` (kanban) și `TELEFOANE_LOCATIE` în `templates.ts` (bulk). `get_sms_recipients` întoarce `nume_locatie` pentru maparea pe telefon.
 3. ✅ **`avertisment_loc` > 50 zile + termen dinamic** (LIVRAT 2026-06-08) — prag `zile_dep > 50` în RPC; un SMS / familie cu suma totală; `{termen}` = data trimiterii + 2 zile.
 4. ✅ **Scadențe prima/ultima rată** (LIVRAT 2026-06-08) — scadențele primei (luna de început, ex. sept.) și ultimei rate (luna de final, ex. iunie) se definesc EXPLICIT pe sezon (coloane `sezoane.scadenta_prima_rata` / `scadenta_ultima_rata`, editabile în formularul de sezon din /setari ȘI în wizard-ul de clonare — pasul 1, ca să nu fie uitate la sezonul nou). `get_sms_recipients` calculează scadența per rând (prima/ultima rată din sezon → data explicită; lunile intermediare → ziua 15) și o folosește pentru `zile_depasire`, fereastra `reminder_plata` și textul „N zile pana la termen". Necompletat pe sezon = ziua 15 (fallback). Ex. sezon 2025-2026: prima = 19 sept, ultima = 13 iunie.
 

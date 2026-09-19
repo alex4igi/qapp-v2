@@ -92,10 +92,10 @@ export const STATUS_PROCEDURA: Record<StatusLead, ProceduraStatus> = {
       'Trimite SMS de confirmare la câteva minute după programare și reminder la 10:00 în ziua ședinței (pentru weekend, cu o zi înainte).',
       'Pune leadul în rosterul grupei din ziua respectivă.',
       'Bifa din rosterul grupei îl mută singură pe „A venit" — și cea a instructorului, și cea a recepției.',
-      'Dacă rămâne nebifat, peste noapte devine „Nu a venit", iar în următoarea zi lucrătoare la 16:00 primește SMS-ul „ne pare rău că nu ai ajuns". Dacă de fapt a venit, mută-l pe „A venit" înainte de ora aceea.',
+      'Dacă rămâne nebifat, peste noapte devine „Nu a venit" și intră pe lista de sunat de peste două zile. Dacă de fapt a venit, mută-l pe „A venit" — altfel îl sună recepția degeaba.',
     ],
     iesiri: 'A venit · Nu a venit',
-    pasUrmator: 'Bifează-i prezența în rosterul grupei în ziua ședinței. Nebifat = „Nu a venit" + SMS.',
+    pasUrmator: 'Bifează-i prezența în rosterul grupei în ziua ședinței. Nebifat = „Nu a venit" + apel peste 2 zile.',
   },
   a_venit: {
     inseamna: 'A fost la ședința gratuită și nu s-a înscris încă.',
@@ -119,20 +119,26 @@ export const STATUS_PROCEDURA: Record<StatusLead, ProceduraStatus> = {
   nu_a_venit: {
     inseamna: 'A avut programare și nu a ajuns.',
     peScurt: {
-      ceFaci: 'Nimic. Dacă revine el, reprogramează-l.',
-      aplicatia: 'A trimis SMS-ul „ne pare rău”. La 10 zile de la neprezentare → Nurture.',
+      ceFaci: 'Sună-l la 2 zile de la absență — joi sau vineri ⇒ luni.',
+      aplicatia: 'Îi pune singură ziua apelului și ⚑ în ziua aceea. Niciun SMS.',
     },
     ceFaci: [
-      'Nimic din oficiu: nu se sună.',
-      'Dacă scrie sau sună el, reprogramează-l (trage-l pe „Programat").',
+      'Sună-l la 2 zile de la ședința ratată. Dacă a lipsit joi sau vineri, îl suni luni — ziua exactă scrie pe card.',
+      'Ținta convorbirii: o dată nouă de ședință → „Programat".',
+      'Nu răspunde: 3 încercări în 5 zile, ca la „Contactat". Apasă 📞 la fiecare încercare.',
+      'A spus clar că nu mai vrea → Pierdut. „Nu acum" → Nurture.',
     ],
     aplicatia: [
-      'La prima neprezentare trimite SMS-ul „ne pare rău că nu ai ajuns", la 16:00 în zi lucrătoare.',
-      'La 10 zile de la ZIUA în care n-a venit, fără reprogramare → Nurture.',
-      'A doua neprezentare → direct în Nurture, fără SMS.',
+      'Pune singură ziua apelului pe card: 2 zile de la absență, iar dacă ar pica în weekend, luni.',
+      'În ziua aceea urcă leadul în „De lucrat azi" și îi pune ⚑.',
+      'După 3 încercări la rând fără răspuns, trece singur în Nurture.',
+      'Cât timp nu l-a sunat nimeni, NU pleacă nicăieri: stegulețul crește, cardul rămâne în coloană.',
+      'Sunat, dar tot fără niciun semn, la 10 zile de la absență → Nurture.',
+      'A doua neprezentare → direct în Nurture.',
+      'Nu mai trimite niciun SMS la neprezentare: din septembrie 2026 îl sunăm în loc.',
     ],
-    iesiri: 'Programat · Nurture',
-    pasUrmator: 'Nu se sună. Dacă revine el, reprogramează-l; altfel trece singur în Nurture după 10 zile.',
+    iesiri: 'Programat · Pierdut · Nurture',
+    pasUrmator: 'Sună-l la 2 zile de la absență (weekend ⇒ luni). Ținta: o dată nouă de ședință.',
   },
   convertit: {
     inseamna: 'E client cu înrolare activă. Treaba pe lead s-a încheiat.',
@@ -347,7 +353,7 @@ export function actiuneCard(
         text: 'Bifează dacă a venit',
         ton: 'urgent',
         detaliu:
-          'Ședința a trecut și cardul e încă aici. Dacă a venit și nu bifezi, primește SMS-ul „ne pare rău că nu ai ajuns".',
+          'Ședința a trecut și cardul e încă aici. Dacă a venit și nu bifezi, îl trecem „Nu a venit" și-l sunăm degeaba peste două zile.',
       }
     }
 
@@ -366,13 +372,30 @@ export function actiuneCard(
           'Discuția de după clasă e pasul care aduce înscrierea. Se înscrie → convertește-l. Se gândește → pune o dată. Nu vrea → motiv.',
       }
 
-    case 'nu_a_venit':
+    case 'nu_a_venit': {
+      // Ziua apelului o ștampilează DB-ul la intrarea în status (+2 zile de la
+      // absență, weekendul împins pe luni) — aici doar se citește.
+      const zile = zileDe(lead.data_callback_dorit)
+      const incercari = lead.nr_contactari ?? 0
+      const detaliu =
+        incercari > 0
+          ? `${incercari} ${incercari === 1 ? 'încercare' : 'încercări'} fără răspuns. După 3 pleacă în Nurture.`
+          : 'N-a ajuns la ședință. Ținta: o dată nouă, nu o explicație.'
+      if (zile === null)
+        return { text: 'Sună-l — reprogramează ședința', ton: 'azi', detaliu }
+      if (zile > 0)
+        return {
+          text: `Sună-l pe ${ziScurta(lead.data_callback_dorit)}`,
+          ton: 'asteptare',
+          detaliu: 'La 2 zile de la absență. Până atunci, nimic.',
+        }
       return {
-        text: 'Nimic — nu se sună',
-        ton: 'asteptare',
-        detaliu:
-          'A primit SMS-ul „ne pare rău că nu ai ajuns". Dacă revine el, reprogramează-l. Altfel pleacă singur în Nurture.',
+        text:
+          zile === 0 ? 'Sună-l azi — n-a ajuns la ședință' : 'Sună-l acum, ai întârziat',
+        ton: zile === 0 ? 'azi' : 'urgent',
+        detaliu,
       }
+    }
 
     case 'convertit':
       return {

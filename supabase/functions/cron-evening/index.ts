@@ -10,8 +10,9 @@
 //      nou_termen_depasit    → flag  (termenul procedurii, nu „24h de la intrare")
 //      nu_raspunde_scadent   → flag
 //      de_revenit_scadent    → flag
-//      nu_a_venit_10z        → nurture  (10 zile de la NEPREZENTARE)
-//      plasa_3_incercari     → nurture  (efort dovedit, prag 3)
+//      nu_a_venit_de_sunat   → flag  (ziua apelului: absență + 2 zile, weekend ⇒ luni)
+//      nu_a_venit_10z        → nurture  (10 zile de la NEPREZENTARE, DOAR dacă s-a sunat)
+//      plasa_3_incercari     → nurture  (efort dovedit, prag 3; și pe „nu a venit")
 //
 // DRUMUL 4 E ÎNCHIS (decizie Alex, 09-17): un steguleț ignorat pe `nu_raspunde`
 // sau pe `de_revenit` înseamnă că NOI n-am sunat. Vina noastră nu scoate omul

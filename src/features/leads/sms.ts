@@ -15,14 +15,10 @@ export async function triggerLeadSms(
 
   // Conversia nu mai trimite SMS de review (scos 2026-09-16); coada
   // `confirmari_review_sms` rămâne goală.
+  //
+  // Neprezentarea nu mai trimite nimic (scos 2026-09-19): în locul SMS-ului
+  // „ne pare rău că nu ai ajuns" recepția sună, la 2 zile de la absență.
   const tips: string[] = []
-  // followup DOAR la 1-a neprezentare; a 2-a e rutată în nurture (fără SMS).
-  if (
-    lead.status === 'nu_a_venit' &&
-    prev !== 'nu_a_venit' &&
-    (lead.nr_neprezentari ?? 0) < 2
-  )
-    tips.push('followup')
   if (lead.status === 'waiting_list' && prev !== 'waiting_list')
     tips.push('waiting_list')
 

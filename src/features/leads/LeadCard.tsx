@@ -71,12 +71,14 @@ export function LeadCard({
     Boolean(lead.id_client) &&
     lead.status !== 'convertit' &&
     !isEnrolled
-  // Lead contactat cu sub-status (de_revenit / nu_raspunde): pe card arătăm doar
-  // data de follow-up, nu data programării (care n-are sens pentru ele).
-  const isContactatSubStatus =
-    lead.status === 'contactat' && Boolean(lead.sub_status)
+  // Când cardul are o zi de apel, ea bate data programării: la „Contactat" e
+  // data cerută de om, la „Nu a venit" e ziua în care îl sunăm (absență + 2
+  // zile). Data ședinței ratate nu mai e o acțiune pentru nimeni.
+  const areZiDeApel =
+    (lead.status === 'contactat' && Boolean(lead.sub_status)) ||
+    lead.status === 'nu_a_venit'
   const followupOverdue =
-    isContactatSubStatus &&
+    areZiDeApel &&
     Boolean(lead.data_callback_dorit) &&
     new Date(lead.data_callback_dorit!).getTime() < Date.now()
 
@@ -232,7 +234,7 @@ export function LeadCard({
         )}
       </div>
 
-      {isContactatSubStatus
+      {areZiDeApel
         ? lead.data_callback_dorit && (
             <div className="mt-1.5 flex items-center gap-1" {...listeners}>
               <span
