@@ -102,3 +102,16 @@ export type TemplateField = {
   h: number
   fontSize?: number
 }
+
+// Numele fișierului de descărcare. Supabase pune `download` în query string și îl
+// re-encodează în Content-Disposition, așa că diacriticele ajungeau în numele
+// salvat ca „%C8%9B" — coborâm la ASCII înainte.
+export function pdfFileName(nume: string | null | undefined): string {
+  const ascii = String(nume ?? '')
+    .replace(/[/\\]/g, '-')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z0-9 ._-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return `${ascii || 'Document'}.pdf`
+}

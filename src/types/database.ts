@@ -2571,6 +2571,7 @@ export type Database = {
           id: string
           link: string
           observatii: string | null
+          storage_path: string | null
           tip: Database["public"]["Enums"]["tip_document"]
           titlu: string | null
         }
@@ -2582,6 +2583,7 @@ export type Database = {
           id?: string
           link: string
           observatii?: string | null
+          storage_path?: string | null
           tip?: Database["public"]["Enums"]["tip_document"]
           titlu?: string | null
         }
@@ -2593,6 +2595,7 @@ export type Database = {
           id?: string
           link?: string
           observatii?: string | null
+          storage_path?: string | null
           tip?: Database["public"]["Enums"]["tip_document"]
           titlu?: string | null
         }
@@ -12320,6 +12323,10 @@ export type Database = {
           sala_nume: string
         }[]
       }
+      get_document_storage_path: {
+        Args: { p_document: string }
+        Returns: string
+      }
       get_documente_client: {
         Args: { p_client: string }
         Returns: {
@@ -12327,6 +12334,7 @@ export type Database = {
           id: string
           link: string
           observatii: string
+          storage_path: string
           tip: Database["public"]["Enums"]["tip_document"]
           titlu: string
         }[]

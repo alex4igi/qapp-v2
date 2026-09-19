@@ -395,18 +395,35 @@ Deno.serve(async (req) => {
       ? (copii ?? []).filter((c) => c.id === contract.client_id)
       : (copii ?? [])
     let docClientId: string | null = null
+    if (vizati.length === 0) {
+      // Fără rând în documente_client documentul nu ajunge niciodată la client:
+      // nu apare în portal și n-are ce descărca. Merită urlat în jurnal.
+      await logEvent(admin, contractId, 'eroare', {
+        pas: 'documente_client',
+        mesaj_eroare: 'niciun cursant vizat — documentul nu apare la client',
+      })
+    }
     for (const c of vizati) {
-      const { data: dc } = await admin
+      const { data: dc, error: dcErr } = await admin
         .from('documente_client')
         .insert({
           client: c.id,
           tip: tpl.tip === 'act_aditional' ? 'Anexa' : 'Contract',
           titlu: tpl.nume,
           link,
+          // copia din bucketul privat — sursa pentru descărcarea clientului
+          // (linkul de Drive e intern, dă 401 în afara studioului)
+          storage_path: storagePath,
           observatii: `Semnat electronic la ${contract.semnat_la?.slice(0, 10)} (contract ${contractId.slice(0, 8)})`,
         })
         .select('id')
         .single()
+      if (dcErr) {
+        await logEvent(admin, contractId, 'eroare', {
+          pas: 'documente_client', client: c.id, mesaj_eroare: dcErr.message,
+        })
+        continue
+      }
       if (dc && !docClientId) docClientId = dc.id
     }
 

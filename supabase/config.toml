@@ -450,6 +450,10 @@ verify_jwt = false
 [functions.netopia-create-payment]
 verify_jwt = true
 
+# Descărcarea unui document propriu din portal (JWT de portal verificat în funcție).
+[functions.portal-document]
+verify_jwt = true
+
 [functions.netopia-webhook]
 verify_jwt = false
 

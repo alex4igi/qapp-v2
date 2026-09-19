@@ -2,6 +2,10 @@
 //
 // action='load'   → validează tokenul, marchează prima deschidere, întoarce
 //                   definițiile câmpurilor + precompletările + signed URL preview.
+// action='status'   → starea documentului (pagina așteaptă finalizarea după semnare).
+// action='download' → documentul semnat, ca signed URL scurt din bucketul privat.
+//                   Linkul din SMS rămâne astfel și calea părintelui spre propriul
+//                   contract după semnare (Drive-ul intern e 401 pentru el).
 // action='submit' → validează, salvează valori + semnătură ATOMIC (guard pe status),
 //                   upsert profil semnare, loghează consimțământ + semnat (IP/UA),
 //                   declanșează contract-finalize (fire-and-forget).
@@ -13,6 +17,7 @@ import {
   clientIp,
   isValidCnp,
   logEvent,
+  pdfFileName,
   serviceClient,
   sha256Hex,
   type TemplateField,
@@ -41,13 +46,14 @@ type ContractRow = {
   valori: Record<string, unknown> | null
   template_id: string
   deschis_prima_data_la: string | null
+  pdf_storage_path: string | null
 }
 
 async function findByToken(admin: ReturnType<typeof serviceClient>, token: string) {
   const tokenHash = await sha256Hex(token)
   const { data } = await admin
     .from('contract_tokens')
-    .select('contracte(id, status, token_expira_la, familie_id, client_id, valori, template_id, deschis_prima_data_la)')
+    .select('contracte(id, status, token_expira_la, familie_id, client_id, valori, template_id, deschis_prima_data_la, pdf_storage_path)')
     .eq('token_hash', tokenHash)
     .maybeSingle()
   return (data?.contracte ?? null) as ContractRow | null
@@ -129,6 +135,43 @@ Deno.serve(async (req) => {
       }, 404)
     }
 
+    // Starea documentului, pentru pagina care așteaptă finalizarea după semnare.
+    // Separată de 'download' ca să nu semneze URL-uri și să nu umple jurnalul cu
+    // descărcări care nu s-au întâmplat.
+    if (body.action === 'status') {
+      return json({
+        status: contract.status,
+        ready: contract.status === 'finalizat' && !!contract.pdf_storage_path,
+      })
+    }
+
+    // Descărcarea propriului document semnat. Stă înaintea gardurilor de mai jos:
+    // un contract finalizat nu mai e „disponibil pentru semnare", dar exact atunci
+    // trebuie să poată fi luat acasă.
+    if (body.action === 'download') {
+      if (!['semnat', 'finalizat'].includes(contract.status)) {
+        return json({ error: 'Documentul nu este semnat.' }, 409)
+      }
+      // 'semnat' = finalizarea (PDF + arhivare) încă rulează; pagina reîncearcă.
+      if (contract.status === 'semnat' || !contract.pdf_storage_path) {
+        return json({ pending: true })
+      }
+      const { data: tplNume } = await admin
+        .from('contract_templates')
+        .select('nume')
+        .eq('id', contract.template_id)
+        .single()
+      const fisier = pdfFileName(tplNume?.nume)
+      const { data: signed } = await admin.storage
+        .from('contracte')
+        .createSignedUrl(contract.pdf_storage_path, 300, { download: fisier })
+      if (!signed?.signedUrl) return json({ error: 'Documentul nu poate fi descărcat acum.' }, 500)
+      await logEvent(admin, contract.id, 'descarcat', {
+        ip: clientIp(req), ua: req.headers.get('user-agent') ?? '', canal: 'link_semnare',
+      })
+      return json({ url: signed.signedUrl })
+    }
+
     // expirare
     if (
       ['trimis', 'deschis'].includes(contract.status) &&
@@ -139,7 +182,11 @@ Deno.serve(async (req) => {
       return json({ error: 'Linkul a expirat. Contactați recepția pentru unul nou.' }, 410)
     }
     if (['semnat', 'finalizat'].includes(contract.status)) {
-      return json({ alreadySigned: true, message: 'Documentul a fost deja semnat. Mulțumim!' })
+      return json({
+        alreadySigned: true,
+        canDownload: contract.status === 'finalizat' && !!contract.pdf_storage_path,
+        message: 'Documentul a fost deja semnat. Mulțumim!',
+      })
     }
     if (!['trimis', 'deschis'].includes(contract.status)) {
       return json({ error: 'Documentul nu mai este disponibil pentru semnare.' }, 410)
