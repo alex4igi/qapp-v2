@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Spinner, type BadgeTone } from '@/components/ui'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import type { DashboardCourse } from './api'
 
@@ -200,6 +201,7 @@ export function DailyAgenda({
   compact = true,
 }: Props) {
   const { date, setDate, isToday, resetToToday } = useWorkingDate()
+  const { active: todayOnly } = useTodayOnly()
   const days = weekDays(date)
 
   const nGroups = courses.length
@@ -249,8 +251,11 @@ export function DailyAgenda({
     <div className="mb-6">
       {/* strip zile + navigare */}
       {/* Pe telefon cele 7 zile + navigatorul nu încap pe un rând: zilele rămân
-          sus, controalele coboară dedesubt. */}
-      <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
+          sus, controalele coboară dedesubt. În modul „doar azi" nu există altă zi. */}
+      <div
+        hidden={todayOnly}
+        className="mb-4 flex flex-col gap-2 md:flex-row md:items-center"
+      >
         <div className="flex flex-1 gap-1 md:gap-2">
           {days.map((d) => {
             const iso = toIso(d)

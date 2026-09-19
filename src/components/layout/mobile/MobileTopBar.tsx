@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { TodayOnlyButton } from '../TodayOnlyButton'
 import { useUnreadCount } from '../useUnreadCount'
 
 // Rutele de detaliu primesc săgeata de „înapoi". Ținta de rezervă contează:
@@ -27,6 +29,7 @@ export function MobileTopBar({ onSearch, onLocatie }: Props) {
   const location = useLocation()
   const { locatieNume } = useWorkingLocatie()
   const { enabled: showNotificari, count: unreadCount } = useUnreadCount()
+  const { active: todayOnly } = useTodayOnly()
 
   const detail = DETAIL_ROUTES.find((r) => location.pathname.startsWith(r.prefix))
 
@@ -80,22 +83,26 @@ export function MobileTopBar({ onSearch, onLocatie }: Props) {
         </span>
       </button>
 
-      <button type="button" onClick={onSearch} className={btn} aria-label="Caută client">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="M21 21l-4-4" />
-        </svg>
-      </button>
+      <TodayOnlyButton />
 
-      {showNotificari && (
+      {!todayOnly && (
+        <button type="button" onClick={onSearch} className={btn} aria-label="Caută client">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4-4" />
+          </svg>
+        </button>
+      )}
+
+      {showNotificari && !todayOnly && (
         <Link
           to="/notificari"
           className={`${btn} relative text-base`}

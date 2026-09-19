@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { DateInput } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { canAccessRoute, roleLabel } from '@/lib/rolesMatrix'
 import { isMobileRoute } from '@/lib/mobileMatrix'
@@ -17,6 +18,7 @@ export function MenuSheet({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
   const { user, role, teacherId, signOut } = useAuth()
   const { date, setDate, isToday, resetToToday } = useWorkingDate()
+  const { active: todayOnly } = useTodayOnly()
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -27,7 +29,7 @@ export function MenuSheet({ onClose }: { onClose: () => void }) {
   }, [onClose])
 
   // Secțiunile păstrează doar destinațiile adaptate; restul trăiesc pe desktop.
-  const sections = visibleSections(role, teacherId)
+  const sections = visibleSections(role, teacherId, todayOnly)
     .map((s) => ({ ...s, items: s.items.filter((i) => isMobileRoute(i.path)) }))
     .filter((s) => s.items.length > 0)
 
@@ -73,21 +75,25 @@ export function MenuSheet({ onClose }: { onClose: () => void }) {
           </div>
           <LocationPicker />
 
-          <div className="mb-1.5 mt-3 flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-              Ziua de lucru
-            </span>
-            {!isToday && (
-              <button
-                type="button"
-                onClick={resetToToday}
-                className="rounded-lg bg-ink px-2.5 py-1 text-xs font-semibold text-white"
-              >
-                Revino la azi
-              </button>
-            )}
-          </div>
-          <DateInput value={date} onChange={(e) => setDate(e.target.value)} />
+          {!todayOnly && (
+            <>
+              <div className="mb-1.5 mt-3 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  Ziua de lucru
+                </span>
+                {!isToday && (
+                  <button
+                    type="button"
+                    onClick={resetToToday}
+                    className="rounded-lg bg-ink px-2.5 py-1 text-xs font-semibold text-white"
+                  >
+                    Revino la azi
+                  </button>
+                )}
+              </div>
+              <DateInput value={date} onChange={(e) => setDate(e.target.value)} />
+            </>
+          )}
         </div>
 
         <div className="px-2 py-2">
@@ -113,9 +119,11 @@ export function MenuSheet({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           ))}
-          <p className="px-3 pb-2 pt-1 text-xs text-muted">
-            Restul modulelor se lucrează de pe desktop.
-          </p>
+          {!todayOnly && (
+            <p className="px-3 pb-2 pt-1 text-xs text-muted">
+              Restul modulelor se lucrează de pe desktop.
+            </p>
+          )}
         </div>
 
         <div className="border-t border-line px-2 py-2">

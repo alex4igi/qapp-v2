@@ -1,5 +1,6 @@
 import type { AppRole } from '@/hooks/useAuth'
 import { canAccessRoute, type AppRoute } from '@/lib/rolesMatrix'
+import { isTodayOnlyRoute } from '@/lib/todayOnlyMatrix'
 
 export type NavItem = {
   label: string
@@ -133,9 +134,12 @@ export function sectionMatches(section: NavSection, pathname: string): boolean {
 export function visibleSections(
   role: AppRole,
   teacherId: string | null = null,
+  /** Modul „doar azi": meniul păstrează doar destinațiile din lista lui albă. */
+  todayOnly = false,
 ): NavSection[] {
   const isVisible = (item: NavItem) =>
-    canAccessRoute(role, item.path, teacherId)
+    canAccessRoute(role, item.path, teacherId) &&
+    (!todayOnly || isTodayOnlyRoute(item.path))
   return navSections
     .map((s) => ({ ...s, items: s.items.filter(isVisible) }))
     .filter((s) => s.items.length > 0)

@@ -14,6 +14,7 @@ import {
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { canMesajGrupa, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
@@ -601,6 +602,9 @@ export function GrupaDashboardPage() {
   const { cursId } = useParams<{ cursId: string }>()
   const navigate = useNavigate()
   const { date } = useWorkingDate()
+  // Modul „doar azi": rosterul rămâne pe ziua curentă — fără luni trecute, fără
+  // restanțieri, fără „foști" și fără drumul spre fișa cursului.
+  const { active: todayOnly } = useTodayOnly()
   const { role } = useAuth()
   const isMobile = useIsMobile()
   // Înrolarea și încasarea sunt responsabilitatea front_desk/manager — teacherul
@@ -651,7 +655,7 @@ export function GrupaDashboardPage() {
   const luniQ = useQuery({
     queryKey: ['curs', cursId, 'luni'],
     queryFn: () => getCursLuni(cursId!),
-    enabled: Boolean(cursId),
+    enabled: Boolean(cursId) && !todayOnly,
   })
 
   // Grupă dintr-un sezon închis: se deschide direct pe ultima lună cu oameni.
@@ -664,7 +668,7 @@ export function GrupaDashboardPage() {
     return lunaDeLucru
   }, [luniQ.data, lunaDeLucru])
 
-  const lunaActiva = lunaAleasa ?? lunaImplicita
+  const lunaActiva = todayOnly ? lunaDeLucru : (lunaAleasa ?? lunaImplicita)
   const esteIstoric = lunaActiva !== lunaDeLucru
 
   const istoricQ = useQuery({
@@ -893,7 +897,7 @@ export function GrupaDashboardPage() {
             Grup WhatsApp
           </a>
         )}
-        {!isMobile && (
+        {!isMobile && !todayOnly && (
           <Button variant="secondary" onClick={() => navigate(`/cursuri/${cursId}`)}>
             Editează grupa
           </Button>
@@ -947,7 +951,7 @@ export function GrupaDashboardPage() {
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-end gap-3">
+      <div hidden={todayOnly} className="mt-5 flex flex-wrap items-end gap-3">
         <div className="w-56">
           <Field label="Luna" htmlFor="grupa-luna">
             <Select
@@ -979,7 +983,7 @@ export function GrupaDashboardPage() {
       )}
 
       {/* tab-uri */}
-      <div className="mt-5">
+      <div hidden={todayOnly} className="mt-5">
         <Tabs
           tabs={[
             { id: 'roster', label: 'Roster' },
@@ -1080,20 +1084,22 @@ export function GrupaDashboardPage() {
             </div>
           )}
 
-          <FostiSection
-            rows={data.fosti}
-            cursNume={data.cursNume}
-            canEnroll={canDeskActionsHere}
-            onReinrol={(clientId) => {
-              setAddClientId(clientId)
-              setAddOpen(true)
-            }}
-            navigate={(to) => navigate(to)}
-          />
+          {!todayOnly && (
+            <FostiSection
+              rows={data.fosti}
+              cursNume={data.cursNume}
+              canEnroll={canDeskActionsHere}
+              onReinrol={(clientId) => {
+                setAddClientId(clientId)
+                setAddOpen(true)
+              }}
+              navigate={(to) => navigate(to)}
+            />
+          )}
         </>
       )}
 
-      {tab === 'restantieri' && (
+      {tab === 'restantieri' && !todayOnly && (
         <div className="mt-2">
           <RestantieriTab
             loading={restantieriQ.isLoading}

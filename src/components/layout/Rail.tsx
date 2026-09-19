@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { canAccessRoute, canEditLeads, roleLabel } from '@/lib/rolesMatrix'
 import { isForcedDesktop, isNarrowViewport, setForceDesktop } from '@/hooks/useIsMobile'
 import { initialsFromEmail } from './accountInitials'
@@ -38,7 +39,8 @@ function RailNav({
   onExpand: () => void
 }) {
   const { role, teacherId } = useAuth()
-  const sections = visibleSections(role, teacherId)
+  const { active: todayOnly } = useTodayOnly()
+  const sections = visibleSections(role, teacherId, todayOnly)
   const location = useLocation()
 
   // Secțiunea căreia îi aparține ruta curentă (sau null pe rute fără secțiune,
@@ -221,12 +223,14 @@ function RailNav({
 /* ---------- acțiuni rapide ---------- */
 function RailActions({ collapsed }: { collapsed: boolean }) {
   const { role } = useAuth()
+  const { active: todayOnly } = useTodayOnly()
   const [leadOpen, setLeadOpen] = useState(false)
   const [clientOpen, setClientOpen] = useState(false)
 
   // Cine nu poate scrie lead-uri/clienți nu vede nici scurtăturile de creare
-  // (teacher, agenția de ads).
-  if (!canEditLeads(role)) return null
+  // (teacher, agenția de ads). În modul „doar azi" dispar și ele: ambele duc pe
+  // fișe (client, lead), adică exact în istoricul pe care modul îl închide.
+  if (!canEditLeads(role) || todayOnly) return null
 
   if (collapsed) {
     return (

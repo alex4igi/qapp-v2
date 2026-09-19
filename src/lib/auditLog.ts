@@ -15,6 +15,7 @@ export type AuditAction =
   | 'curs_archived'
   | 'teacher_archived'
   | 'client_data_changed'
+  | 'today_only_activated'
 
 type Jsonish = Record<string, unknown> | unknown[] | null
 

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui'
 import { formatRON } from '@/lib/format'
 import { locatiiOptions } from '@/lib/lookups'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import {
   getIncasariZi,
@@ -129,7 +130,9 @@ function SumarStrip({
 
 export function SituatieZilnicaPage() {
   const { locatieId: globalLocatieId } = useWorkingLocatie()
-  const [ziua, setZiua] = useState(todayIso())
+  const { active: todayOnly } = useTodayOnly()
+  const [ziuaAleasa, setZiua] = useState(todayIso())
+  const ziua = todayOnly ? todayIso() : ziuaAleasa
   // Default la locația globală; userul poate override pe pagină
   const [locatieId, setLocatieId] = useState(globalLocatieId ?? '')
 
@@ -156,15 +159,17 @@ export function SituatieZilnicaPage() {
         title="Situație zilnică"
         actions={
           <div className="flex flex-wrap items-end gap-3 max-md:w-full">
-            <div className="w-44 max-md:w-full">
-              <Field label="Ziua" htmlFor="sz-data">
-                <DateInput
-                  id="sz-data"
-                  value={ziua}
-                  onChange={(e) => setZiua(e.target.value || todayIso())}
-                />
-              </Field>
-            </div>
+            {!todayOnly && (
+              <div className="w-44 max-md:w-full">
+                <Field label="Ziua" htmlFor="sz-data">
+                  <DateInput
+                    id="sz-data"
+                    value={ziua}
+                    onChange={(e) => setZiua(e.target.value || todayIso())}
+                  />
+                </Field>
+              </div>
+            )}
             <div className="w-60 max-md:w-full">
               <Field label="Locația" htmlFor="sz-loc">
                 <Select

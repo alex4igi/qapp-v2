@@ -26,6 +26,7 @@ const ACTION_LABEL: Record<string, string> = {
   curs_archived: 'Suspendare curs',
   teacher_archived: 'Arhivare instructor',
   client_data_changed: 'Modificare date client',
+  today_only_activated: 'Mod „doar azi" activat',
 }
 
 const ROLE_COLOR: Record<string, string> = {

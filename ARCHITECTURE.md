@@ -141,10 +141,44 @@ modale de desktop. `DataTable` se transformă singur în carduri; `Modal`, `Tabs
 
 ---
 
+## Modul „doar azi" (butonul roșu)
+
+Butonul roșu cu lacăt din bara de sus (`TodayOnlyButton`, desktop + mobil, toate
+rolurile în afară de `marketing`) restrânge aplicația la **ziua curentă de lucru**
+până la următoarea logare. Nu șterge și nu modifică nimic — doar ce se vede.
+
+- **Starea** stă în `useTodayOnly` (`src/hooks/useTodayOnly.tsx`): în
+  `localStorage['qapp.today_only']` se scrie `session_id` din JWT. Modul e pornit cât
+  timp valoarea se potrivește cu sesiunea curentă ⇒ ține la refresh și în toate
+  taburile, iar **o logare nouă îl stinge singură** (alt `session_id`). Nu există
+  buton de ieșire; eticheta „Doar azi" doar deloghează.
+- **Rutele**: listă albă `TODAY_ONLY_ROUTES` (`src/lib/todayOnlyMatrix.ts`) — `/`,
+  `/grupa/:id`, `/eveniment/:id`, `/situatie-zilnica`. Restul primesc
+  `TodayOnlyBlockedPage`, decis în shell ÎNAINTE de `<Outlet/>` (ca la mobil), deci
+  paginile cu istoric nu se montează și nu-și cer datele. Meniul se filtrează pe
+  aceeași listă (`visibleSections(..., todayOnly)`).
+- **Ziua** e blocată la sursă, în `WorkingDateProvider`: `date` = azi, `setDate` nu
+  face nimic. Paginile cu selector propriu (`SituatieZilnicaPage`) îl ascund singure.
+- **În paginile rămase** se ascund: căutarea de clienți, notificările, „+ Client /
+  + Lead", KPI-urile + lead-urile + restanțele + graficul de pe Dashboard, banda cu
+  zilele săptămânii, iar în roster luna, tabul „Restanțieri", „Foști" și „Editează grupa".
+- **Activarea** se scrie în `audit_log` (`today_only_activated`) și reîncarcă pagina
+  complet — aruncă și cache-ul React Query, și modalele deschise.
+
+⚠️ E o restrângere de **interfață**, nu de date: RLS-ul nu știe de ea. Cine are
+contul și știe să ocolească UI-ul ajunge tot la ce-i permite rolul.
+
+**Când adaugi o pagină sau un panou nou:** dacă arată ceva din afara zilei curente,
+nu o pune în `TODAY_ONLY_ROUTES`; dacă stă pe o pagină din listă, ascunde-l pe
+`useTodayOnly().active`.
+
+---
+
 ## State & contexte
 
-3 contexte React (nu Zustand/Redux):
+4 contexte React (nu Zustand/Redux):
 - `AuthContext` (useAuth) — sesiune Supabase, rol, locatieId
+- `TodayOnlyContext` (useTodayOnly) — modul „doar azi", legat de `session_id`
 - `WorkingDateContext` (useWorkingDate) — data de lucru (poate fi schimbată din Header pentru retroactiv)
 - `WorkingLocatieContext` (useWorkingLocatie) — locația globală selectată
 

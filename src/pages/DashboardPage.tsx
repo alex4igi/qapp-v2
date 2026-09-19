@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
 import { saliWithLocatie, cursuriOptionsForCurrentTeacher, sezonActiv } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { hasTeacherLens, isTeacher } from '@/lib/rolesMatrix'
@@ -39,6 +40,10 @@ export function DashboardPage() {
   // complet PLUS o secțiune cu grupele lui de azi — aditiv, nu în locul lui.
   const teacherLens = hasTeacherLens(role, teacherId) && !teacherMode
   const { date } = useWorkingDate()
+  // Modul „doar azi": rămâne programul zilei; cifrele, lead-urile și restanțele
+  // (toate privesc în urmă) nu se mai montează, deci nici nu-și cer datele.
+  const { active: todayOnly } = useTodayOnly()
+  const showStaffPanels = !teacherMode && !todayOnly
   // `ready` = locația de lucru e decisă; altfel fiecare query cheiat pe locație ar
   // rula o dată cu „toate" și încă o dată după ce se încarcă lista de locații.
   const { locatieId, ready: locatieReady } = useWorkingLocatie()
@@ -161,7 +166,7 @@ export function DashboardPage() {
 
   // Chart doar pentru staff — pe luna curentă (YYYY-MM)
   const lunaCurenta = date.slice(0, 7)
-  const showChart = !teacherMode && !isMobile
+  const showChart = showStaffPanels && !isMobile
   const chartQ = useQuery({
     queryKey: [
       'dashboard',
@@ -197,11 +202,11 @@ export function DashboardPage() {
           cât timp e o rundă deschisă. Se auto-ascunde în rest. */}
       <EvaluariCountdown variant="inline" />
 
-      {!teacherMode && <DashboardKpis date={date} courses={courseRefs} sali={salaFilter} />}
+      {showStaffPanels && <DashboardKpis date={date} courses={courseRefs} sali={salaFilter} />}
 
-      {!teacherMode && <AgendaAziCard />}
+      {showStaffPanels && <AgendaAziCard />}
 
-      {!teacherMode && <DatorniciWorklistCard locatieId={locatieId ?? null} />}
+      {showStaffPanels && <DatorniciWorklistCard locatieId={locatieId ?? null} />}
 
       {!teacherMode && (eventsQ.data ?? []).length > 0 && (
         <div className="mb-6">

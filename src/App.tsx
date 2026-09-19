@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui'
 import { AuthProvider } from '@/hooks/useAuth'
+import { TodayOnlyProvider } from '@/hooks/useTodayOnly'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AuthBootGate } from '@/components/AuthBootGate'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -185,6 +186,7 @@ function App() {
   return (
     <AuthProvider>
       <AuthBootGate>
+      <TodayOnlyProvider>
       <BrowserRouter>
         <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center"><Spinner /></div>}>
         <Routes>
@@ -449,6 +451,7 @@ function App() {
         </Routes>
         </Suspense>
       </BrowserRouter>
+      </TodayOnlyProvider>
       </AuthBootGate>
     </AuthProvider>
   )

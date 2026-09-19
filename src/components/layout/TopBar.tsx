@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
 import { DateInput } from '@/components/ui'
 import { LocationPicker } from './LocationPicker'
+import { TodayOnlyButton } from './TodayOnlyButton'
 import { useClientSearch } from './useClientSearch'
 import { useUnreadCount } from './useUnreadCount'
 
@@ -102,24 +104,31 @@ function ClientSearch() {
 export function TopBar() {
   const { date, setDate } = useWorkingDate()
   const { enabled: showNotificari, count: unreadCount } = useUnreadCount()
+  // Modul „doar azi" scoate tot ce duce în afara zilei: căutarea (fișe de client),
+  // selectorul de zi și notificările.
+  const { active: todayOnly } = useTodayOnly()
 
   return (
     <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-card px-6">
-      <ClientSearch />
+      {!todayOnly && <ClientSearch />}
 
       <div className="flex-1" />
 
       <LocationPicker />
 
-      <div title="Ziua de lucru">
-        <DateInput
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          wrapperClassName="w-40"
-        />
-      </div>
+      {!todayOnly && (
+        <div title="Ziua de lucru">
+          <DateInput
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            wrapperClassName="w-40"
+          />
+        </div>
+      )}
 
-      {showNotificari && (
+      <TodayOnlyButton />
+
+      {showNotificari && !todayOnly && (
         <Link
           to="/notificari"
           className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-card text-base transition-colors hover:bg-surface"

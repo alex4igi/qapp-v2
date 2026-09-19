@@ -1,7 +1,9 @@
 import { NavLink } from 'react-router-dom'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useTodayOnly } from '@/hooks/useTodayOnly'
 import { activeTabPath, mobileTabsFor } from '@/lib/mobileMatrix'
+import { isTodayOnlyRoute } from '@/lib/todayOnlyMatrix'
 import { useUnreadCount } from '../useUnreadCount'
 import { TabIcon } from './TabIcon'
 
@@ -13,7 +15,10 @@ export function BottomNav({ onMenu }: { onMenu: () => void }) {
   const { pathname } = useLocation()
   const { count: unreadCount } = useUnreadCount()
 
-  const tabs = mobileTabsFor(role, teacherId)
+  const { active: todayOnly } = useTodayOnly()
+  const tabs = mobileTabsFor(role, teacherId).filter(
+    (t) => !todayOnly || isTodayOnlyRoute(t.path),
+  )
   const active = activeTabPath(pathname, tabs)
 
   return (
