@@ -4,8 +4,18 @@
 //          și creează un lead în status 'nou'.
 //
 // Env necesare (setate cu `supabase secrets set`):
-//   META_VERIFY_TOKEN        — token-ul de verificare ales în Meta App.
+//   META_VERIFY_TOKEN        — token-ul de verificare ales în Meta App (doar GET).
 //   META_PAGE_ACCESS_TOKEN   — token-ul paginii, pentru Graph API.
+//   META_APP_SECRET          — App Secret-ul din Meta App; cu el se verifică semnătura
+//                              `X-Hub-Signature-256` de pe POST-uri. Fără el, notificările
+//                              sunt neautentificate: oricine poate trimite leadgen_id-uri
+//                              (nu poate injecta date false — lead-ul se aduce din Graph —
+//                              dar poate forța apeluri și zgomot).
+//   META_REQUIRE_SIGNATURE   — 'true' ⇒ o semnătură lipsă sau greșită înseamnă 401.
+//     Cât timp NU e setat: fereastră de observare — se verifică și se loghează, dar
+//     notificarea se procesează oricum. Se aprinde abia după ce logurile arată că
+//     semnăturile reale ale Meta trec. Leadurile din reclame sunt plătite; un secret
+//     greșit pus direct pe refuz le-ar arunca tăcut.
 // Setup complet: docs/integrare-meta-lead-ads.md.
 import {
   serviceClient,
@@ -13,6 +23,35 @@ import {
   insertLead,
 } from '../_shared/intake.ts'
 import { GRAPH, parseLeadFields } from '../_shared/meta.ts'
+import { clientIp, raspuns429, verificaPlafon } from '../_shared/rateLimit.ts'
+
+// Plafon DOAR pentru apelanții fără semnătură validă: Meta trimite loturi și reîncearcă
+// la timeout, iar un plafon pe traficul ei legitim ar pierde lead-uri plătite.
+const PLAFON_NESEMNAT = { fereastraSec: 300, limita: 60 }
+
+function egalConstant(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let d = 0
+  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return d === 0
+}
+
+// Meta semnează corpul BRUT cu HMAC-SHA256(app_secret): `X-Hub-Signature-256: sha256=<hex>`.
+// Se verifică pe textul exact primit — un JSON re-serializat nu mai dă aceeași semnătură.
+async function semnaturaValida(raw: string, header: string | null): Promise<boolean> {
+  const secret = Deno.env.get('META_APP_SECRET')
+  if (!secret || !header?.startsWith('sha256=')) return false
+  const cheie = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sig = await crypto.subtle.sign('HMAC', cheie, new TextEncoder().encode(raw))
+  const asteptat = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  return egalConstant(asteptat, header.slice('sha256='.length).toLowerCase())
+}
 
 Deno.serve(async (req) => {
   const url = new URL(req.url)
@@ -33,9 +72,27 @@ Deno.serve(async (req) => {
   }
 
   // --- POST: notificare lead ---
+  const raw = await req.text()
+  const semnat = await semnaturaValida(raw, req.headers.get('x-hub-signature-256'))
+
+  if (!semnat) {
+    if (Deno.env.get('META_REQUIRE_SIGNATURE') === 'true') {
+      console.warn('[intake/meta] semnătură lipsă sau greșită — refuzat')
+      return Response.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    console.warn(
+      `[intake/meta] NESEMNAT (fereastră de observare) de la ${clientIp(req)}` +
+        `${Deno.env.get('META_APP_SECRET') ? '' : ' — META_APP_SECRET nesetat'}`,
+    )
+    const plafon = await verificaPlafon(serviceClient(), 'intake-meta-nesemnat', clientIp(req), PLAFON_NESEMNAT)
+    if (!plafon.permis) return raspuns429(plafon.retryAfter)
+  }
+
   try {
     const pageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN')
-    const body = await req.json().catch(() => ({}))
+    // deno-lint-ignore no-explicit-any
+    let body: any = {}
+    try { body = JSON.parse(raw || '{}') } catch { /* corp invalid → nimic de procesat */ }
     const supabase = serviceClient()
     const sursa = lazyCampanie(supabase, 'Meta Ads')
     let created = 0
