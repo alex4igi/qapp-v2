@@ -15,7 +15,8 @@
 // care predă are role='manager' ȘI un rând `teacheri` legat — link_teacher NU
 // mai suprascrie rolul. Consecință utilă: canManageRole(manager, manager)=false,
 // deci un manager nu se poate lega singur de un profil purtător de salariu.
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { PRIVILEGED, requireStaffRole } from '../_shared/staffAuth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -101,26 +102,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization') ?? ''
-    const token = authHeader.replace(/^Bearer\s+/i, '')
-    if (!token) return json({ error: 'missing auth' }, 401)
-
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data: userRes, error: userErr } = await admin.auth.getUser(token)
-    if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
-
-    const callerMeta = (userRes.user.app_metadata ?? {}) as AppMeta
-    const callerRole = callerMeta.role ?? 'front_desk'
-    const callerLocatie = callerMeta.locatie_id ?? null
-    const callerId = userRes.user.id
-
-    if (callerRole !== 'owner' && callerRole !== 'admin' && callerRole !== 'manager') {
-      return json({ error: 'forbidden' }, 403)
-    }
+    const auth = await requireStaffRole(req, PRIVILEGED, admin)
+    if (!auth.ok) return json({ error: auth.error }, auth.status)
+    const callerRole = auth.role as Role
+    const callerLocatie = (auth.meta as AppMeta).locatie_id ?? null
+    const callerId = auth.userId
 
     const body = (await req.json()) as Payload
 
@@ -468,7 +459,7 @@ Deno.serve(async (req) => {
 })
 
 async function countByRole(
-  admin: ReturnType<typeof createClient>,
+  admin: SupabaseClient,
   role: string,
 ): Promise<number> {
   const { data, error } = await admin.auth.admin.listUsers({

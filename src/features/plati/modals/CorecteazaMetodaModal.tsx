@@ -6,7 +6,7 @@ import { metodaPlataOptions } from '@/lib/enums'
 import { formatRON } from '@/lib/format'
 import {
   getIncasareForEdit,
-  updateIncasareWithAudit,
+  corecteazaMetodaIncasare,
 } from '../api/incasare-edit'
 
 type Props = {
@@ -43,9 +43,9 @@ export function CorecteazaMetodaModal({ incasareId, open, onClose, onSaved }: Pr
 
   const save = useMutation({
     mutationFn: () =>
-      updateIncasareWithAudit({
+      corecteazaMetodaIncasare({
         id: incasareId,
-        patch: { metoda: metoda || null },
+        metoda: metoda || null,
         motiv,
       }),
     onSuccess: () => {

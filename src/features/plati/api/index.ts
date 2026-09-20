@@ -10,6 +10,7 @@ export type { IncasareEditable } from './incasare-edit'
 export {
   getIncasareForEdit,
   updateIncasareWithAudit,
+  corecteazaMetodaIncasare,
   deleteIncasareWithAudit,
 } from './incasare-edit'
 

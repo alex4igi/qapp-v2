@@ -3,6 +3,7 @@
 // SMS dacă familia are telefon, altfel email — vezi ../_shared/contractNotify.ts.
 import { mesajContract, notificaContract } from '../_shared/contractNotify.ts'
 import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
+import { requireStaffRole } from '../_shared/staffAuth.ts'
 
 // Aceleași roluri ca ROUTE_ACCESS['/contracte'] (ALL_STAFF, recepția inclusă) și
 // ca contract-template-storage: recepția trimite contractele la ghișeu.
@@ -34,13 +35,9 @@ Deno.serve(async (req) => {
 
   try {
     // autorizare: staff
-    const authHeader = req.headers.get('authorization') ?? ''
-    const jwt = authHeader.replace(/^Bearer\s+/i, '')
     const admin = serviceClient()
-    const { data: userRes, error: userErr } = await admin.auth.getUser(jwt)
-    if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
-    const role = (userRes.user.app_metadata as { role?: string })?.role ?? 'front_desk'
-    if (!STAFF_ROLES.includes(role)) return json({ error: 'rol fără drept de trimitere contracte' }, 403)
+    const auth = await requireStaffRole(req, STAFF_ROLES, admin)
+    if (!auth.ok) return json({ error: auth.error }, auth.status)
 
     const { templateId, targets } = (await req.json()) as {
       templateId: string
@@ -163,7 +160,7 @@ Deno.serve(async (req) => {
           status: 'trimis',
           token_expira_la: expiraLa,
           trimis_la: new Date().toISOString(),
-          created_by: userRes.user.id,
+          created_by: auth.userId,
         })
         .select('id')
         .single()
@@ -182,7 +179,7 @@ Deno.serve(async (req) => {
         continue
       }
 
-      await logEvent(admin, contract.id, 'creat', { template: tpl.nume, de: userRes.user.email })
+      await logEvent(admin, contract.id, 'creat', { template: tpl.nume, de: auth.email })
       await logEvent(admin, contract.id, 'trimis', {
         telefon_mascat: familie.telefon ? `…${familie.telefon.slice(-4)}` : null,
         email: familie.email ?? null,

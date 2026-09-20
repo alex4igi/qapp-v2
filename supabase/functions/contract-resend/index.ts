@@ -6,6 +6,7 @@
 // primit între timp alt contract pe același șablon (gardul de dublură din contract-send).
 import { mesajContract, notificaContract } from '../_shared/contractNotify.ts'
 import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
+import { requireStaffRole } from '../_shared/staffAuth.ts'
 
 // Aceleași roluri ca contract-send.
 const STAFF_ROLES = ['owner', 'admin', 'manager', 'front_desk']
@@ -27,12 +28,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const jwt = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
     const admin = serviceClient()
-    const { data: userRes, error: userErr } = await admin.auth.getUser(jwt)
-    if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
-    const role = (userRes.user.app_metadata as { role?: string })?.role ?? 'front_desk'
-    if (!STAFF_ROLES.includes(role)) return json({ error: 'rol fără drept de trimitere contracte' }, 403)
+    const auth = await requireStaffRole(req, STAFF_ROLES, admin)
+    if (!auth.ok) return json({ error: auth.error }, auth.status)
 
     const { contractId } = (await req.json()) as { contractId?: string }
     if (!contractId) return json({ error: 'contractId este obligatoriu' }, 400)
@@ -105,7 +103,7 @@ Deno.serve(async (req) => {
     }
 
     await logEvent(admin, c.id, 'retrimis', {
-      de: userRes.user.email,
+      de: auth.email,
       status_anterior: c.status,
       expira_la: expiraLa,
     })

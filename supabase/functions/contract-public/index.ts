@@ -4,8 +4,9 @@
 //                   definițiile câmpurilor + precompletările + signed URL preview.
 // action='status'   → starea documentului (pagina așteaptă finalizarea după semnare).
 // action='download' → documentul semnat, ca signed URL scurt din bucketul privat.
-//                   Linkul din SMS rămâne astfel și calea părintelui spre propriul
-//                   contract după semnare (Drive-ul intern e 401 pentru el).
+//                   Linkul din SMS e calea părintelui spre propriul contract după
+//                   semnare (Drive-ul intern e 401 pentru el), dar DOAR ZILE_DESCARCARE_LINK
+//                   zile; după aceea documentul rămâne în portal, la Documente.
 // action='submit' → validează, salvează valori + semnătură ATOMIC (guard pe status),
 //                   upsert profil semnare, loghează consimțământ + semnat (IP/UA),
 //                   declanșează contract-finalize (fire-and-forget).
@@ -13,6 +14,12 @@
 // Securitate: clientul nu primește niciodată date fără token valid; căutarea se face
 // pe sha256(token) în `contract_tokens` (tabel doar service_role); IP + user-agent
 // intră în jurnalul probatoriu.
+//
+// Linkul e un secret purtat prin SMS/email: se poate redirecționa, poate rămâne în
+// istoricul telefonului, poate ajunge la altcineva. De-aia pagina NU mai trimite
+// CNP-ul și seria/numărul CI în clar (doar o mască — valoarea reală se ia din
+// `familii_date_semnatar` la semnare), nu mai listează frații cursantului și nu mai
+// dă documentul semnat la nesfârșit.
 import {
   clientIp,
   isValidCnp,
@@ -37,6 +44,29 @@ function json(body: unknown, status = 200): Response {
 
 const MAX_SIGNATURE_BYTES = 300_000 // PNG canvas; generos dar limitat
 
+// Cât timp după finalizare mai merge descărcat documentul de pe linkul public.
+// După aceea rămâne în portal (Documente), în spatele login-ului.
+const ZILE_DESCARCARE_LINK = 90
+
+// Câmpurile care NU pleacă în clar către pagina publică. Valoarea reală rămâne în
+// `familii_date_semnatar` și e pusă înapoi la semnare (vezi completeazaMascate).
+const SURSE_MASCATE = ['familie.cnp', 'familie.ci']
+
+function mascheazaCnp(v: string): string {
+  const d = v.replace(/\D/g, '')
+  return d.length >= 4 ? `•••••••••${d.slice(-4)}` : '•••••••••••••'
+}
+
+function mascheazaCi(v: string): string {
+  const serie = (v.trim().match(/^[A-Za-z]{1,2}/)?.[0] ?? '').toUpperCase()
+  const nr = v.replace(/\D/g, '')
+  return `${serie} ••••${nr.slice(-2)}`.trim()
+}
+
+function esteEditabil(f: TemplateField): boolean {
+  return f.editable ?? f.source === 'manual'
+}
+
 type ContractRow = {
   id: string
   status: string
@@ -47,13 +77,23 @@ type ContractRow = {
   template_id: string
   deschis_prima_data_la: string | null
   pdf_storage_path: string | null
+  semnat_la: string | null
+  finalizat_la: string | null
+}
+
+// Fereastra de descărcare curge de la finalizare; `semnat_la` e plasa de siguranță
+// pentru contractele vechi, finalizate înainte ca `finalizat_la` să se scrie.
+function descarcareExpirata(c: ContractRow): boolean {
+  const reper = c.finalizat_la ?? c.semnat_la
+  if (!reper) return false
+  return Date.now() - new Date(reper).getTime() > ZILE_DESCARCARE_LINK * 86_400_000
 }
 
 async function findByToken(admin: ReturnType<typeof serviceClient>, token: string) {
   const tokenHash = await sha256Hex(token)
   const { data } = await admin
     .from('contract_tokens')
-    .select('contracte(id, status, token_expira_la, familie_id, client_id, valori, template_id, deschis_prima_data_la, pdf_storage_path)')
+    .select('contracte(id, status, token_expira_la, familie_id, client_id, valori, template_id, deschis_prima_data_la, pdf_storage_path, semnat_la, finalizat_la)')
     .eq('token_hash', tokenHash)
     .maybeSingle()
   return (data?.contracte ?? null) as ContractRow | null
@@ -86,18 +126,30 @@ async function buildPrefill(
     .join(' ') || familie?.nume_familie || ''
 
   const prefill: Record<string, unknown> = {}
+  // cheie → mască de afișat („•••••••••1234"); valoarea reală nu pleacă din server
+  const mascate: Record<string, string> = {}
   for (const f of fields) {
     switch (f.source) {
       case 'familie.reprezentant': prefill[f.key] = reprezentant; break
       case 'familie.telefon': prefill[f.key] = familie?.telefon ?? ''; break
       case 'familie.email': prefill[f.key] = familie?.email ?? ''; break
-      case 'familie.cnp': prefill[f.key] = profil?.cnp ?? ''; break
+      case 'familie.cnp': {
+        // Pe un câmp editabil masca n-are ce căuta în input (părintele ar semna cu
+        // buline): trimitem gol, iar masca merge separat, ca indiciu de verificare.
+        const real = profil?.cnp ?? ''
+        if (real) mascate[f.key] = mascheazaCnp(real)
+        prefill[f.key] = real && !esteEditabil(f) ? mascate[f.key] : ''
+        break
+      }
       case 'familie.adresa': prefill[f.key] = profil?.adresa ?? ''; break
-      case 'familie.ci':
-        prefill[f.key] = profil?.ci_serie
+      case 'familie.ci': {
+        const real = profil?.ci_serie
           ? `${profil.ci_serie} ${profil.ci_numar ?? ''}`.trim()
           : ''
+        if (real) mascate[f.key] = mascheazaCi(real)
+        prefill[f.key] = real && !esteEditabil(f) ? mascate[f.key] : ''
         break
+      }
       case 'copil.nume': {
         const copil = copii?.find((c) => c.id === contract.client_id) ?? copii?.[0]
         prefill[f.key] = copil ? `${copil.nume} ${copil.prenume ?? ''}`.trim() : ''
@@ -107,14 +159,48 @@ async function buildPrefill(
       case 'manual': break
     }
   }
+  // Un contract pe un copil nu are de ce să spună linkului cine sunt frații lui.
+  // Data nașterii nu se folosește în pagină (PDF-ul o ia din DB la finalizare).
+  const deAratat = contract.client_id
+    ? (copii ?? []).filter((c) => c.id === contract.client_id)
+    : (copii ?? [])
+
   return {
     prefill,
+    mascate,
     profilExistent: !!profil?.cnp,
-    copii: (copii ?? []).map((c) => ({
+    copii: deAratat.map((c) => ({
       id: c.id,
       nume: `${c.nume} ${c.prenume ?? ''}`.trim(),
-      dataNasterii: c.data_nasterii,
     })),
+  }
+}
+
+// Pune la loc valorile mascate înainte de validare și salvare: dacă părintele n-a
+// scris nimic (sau a trimis înapoi masca), contractul se semnează cu datele din fișă.
+async function completeazaMascate(
+  admin: ReturnType<typeof serviceClient>,
+  contract: ContractRow,
+  fields: TemplateField[],
+  valori: Record<string, unknown>,
+): Promise<void> {
+  const deCompletat = fields.filter((f) => SURSE_MASCATE.includes(f.source))
+  if (!deCompletat.length) return
+  const { data: profil } = await admin
+    .from('familii_date_semnatar')
+    .select('cnp, ci_serie, ci_numar')
+    .eq('familie_id', contract.familie_id)
+    .maybeSingle()
+  if (!profil) return
+  for (const f of deCompletat) {
+    const trimis = String(valori[f.key] ?? '').trim()
+    if (trimis && !trimis.includes('•')) continue // părintele a scris o valoare nouă
+    const real = f.source === 'familie.cnp'
+      ? (profil.cnp ?? '')
+      : profil.ci_serie
+        ? `${profil.ci_serie} ${profil.ci_numar ?? ''}`.trim()
+        : ''
+    if (real) valori[f.key] = real
   }
 }
 
@@ -139,9 +225,11 @@ Deno.serve(async (req) => {
     // Separată de 'download' ca să nu semneze URL-uri și să nu umple jurnalul cu
     // descărcări care nu s-au întâmplat.
     if (body.action === 'status') {
+      const expirat = descarcareExpirata(contract)
       return json({
         status: contract.status,
-        ready: contract.status === 'finalizat' && !!contract.pdf_storage_path,
+        ready: contract.status === 'finalizat' && !!contract.pdf_storage_path && !expirat,
+        descarcareExpirata: expirat,
       })
     }
 
@@ -155,6 +243,12 @@ Deno.serve(async (req) => {
       // 'semnat' = finalizarea (PDF + arhivare) încă rulează; pagina reîncearcă.
       if (contract.status === 'semnat' || !contract.pdf_storage_path) {
         return json({ pending: true })
+      }
+      if (descarcareExpirata(contract)) {
+        return json({
+          descarcareExpirata: true,
+          error: `Linkul de descărcare a fost valabil ${ZILE_DESCARCARE_LINK} de zile de la semnare. Documentul te așteaptă în contul tău de membru, la Documente.`,
+        }, 410)
       }
       const { data: tplNume } = await admin
         .from('contract_templates')
@@ -182,9 +276,11 @@ Deno.serve(async (req) => {
       return json({ error: 'Linkul a expirat. Contactați recepția pentru unul nou.' }, 410)
     }
     if (['semnat', 'finalizat'].includes(contract.status)) {
+      const expirat = descarcareExpirata(contract)
       return json({
         alreadySigned: true,
-        canDownload: contract.status === 'finalizat' && !!contract.pdf_storage_path,
+        canDownload: contract.status === 'finalizat' && !!contract.pdf_storage_path && !expirat,
+        descarcareExpirata: expirat,
         message: 'Documentul a fost deja semnat. Mulțumim!',
       })
     }
@@ -221,7 +317,7 @@ Deno.serve(async (req) => {
         .from('contracte-templates')
         .createSignedUrl(tpl.pdf_storage_path, 600)
 
-      const { prefill, profilExistent, copii } = await buildPrefill(admin, contract, fields)
+      const { prefill, mascate, profilExistent, copii } = await buildPrefill(admin, contract, fields)
 
       return json({
         contract: { nume: tpl.nume, tip: tpl.tip },
@@ -232,6 +328,7 @@ Deno.serve(async (req) => {
           source: f.source,
         })),
         prefill,
+        mascate,
         profilExistent,
         copii,
         pdfUrl: signed?.signedUrl ?? null,
@@ -257,6 +354,8 @@ Deno.serve(async (req) => {
       if (pngBytes.length < 500 || pngBytes.length > MAX_SIGNATURE_BYTES) {
         return json({ error: 'Semnătura este goală sau prea mare.' }, 400)
       }
+
+      await completeazaMascate(admin, contract, fields, valori)
 
       for (const f of fields) {
         if (f.type === 'signature' || f.type === 'copii_table') continue

@@ -11838,6 +11838,10 @@ export type Database = {
         Args: { p_data_noua: string; p_enrollment: string; p_motiv: string }
         Returns: Json
       }
+      corecteaza_metoda_incasare: {
+        Args: { p_id: string; p_metoda?: string; p_motiv: string }
+        Returns: undefined
+      }
       create_campanie_reinscriere: {
         Args: {
           p_data_final: string
@@ -11895,6 +11899,15 @@ export type Database = {
       deduce_motiv_categorie: {
         Args: { p_lead: string; p_status_vechi: string }
         Returns: string
+      }
+      definer_views_report: {
+        Args: never
+        Returns: {
+          anon_select: boolean
+          authenticated_select: boolean
+          updatable: boolean
+          view_name: string
+        }[]
       }
       delete_curs_safe: {
         Args: { p_force?: boolean; p_id: string }
@@ -11975,6 +11988,21 @@ export type Database = {
           p_curs: string
           p_motiv: string
           p_sesiune: string
+        }
+        Returns: undefined
+      }
+      delete_incasare: {
+        Args: { p_id: string; p_motiv: string }
+        Returns: undefined
+      }
+      edit_incasare: {
+        Args: {
+          p_data?: string
+          p_id: string
+          p_metoda?: string
+          p_motiv: string
+          p_observatii?: string
+          p_suma?: number
         }
         Returns: undefined
       }
@@ -13535,6 +13563,10 @@ export type Database = {
         Returns: boolean
       }
       lead_termen_primul_apel: { Args: { p_created: string }; Returns: string }
+      lead_zi_apel_dupa_neprezentare: {
+        Args: { p_zi: string }
+        Returns: string
+      }
       leads_de_flagat_seara: {
         Args: never
         Returns: {

@@ -22,6 +22,7 @@ const ACTION_LABEL: Record<string, string> = {
   incasare_modified: 'Modificare încasare',
   incasare_deleted: 'Ștergere încasare',
   incasare_moved: 'Mutare plată la alt client',
+  datorie_deleted: 'Ștergere datorie',
   lead_deleted: 'Ștergere lead',
   curs_archived: 'Suspendare curs',
   teacher_archived: 'Arhivare instructor',

@@ -1,6 +1,4 @@
 import { supabase } from '@/lib/supabase'
-import { recordAuditLog } from '@/lib/auditLog'
-import type { Enums } from '@/types/db'
 
 // Corectare / ștergere încasare — cu motiv obligatoriu + audit.
 // Forma de plată o corectează și recepția; suma, data și ștergerea doar manager+.
@@ -31,6 +29,10 @@ export async function getIncasareForEdit(id: string): Promise<IncasareEditable> 
   }
 }
 
+// Modificarea și ștergerea trec prin RPC-uri `security definer`: ele scriu rândul
+// din audit_log în ACEEAȘI tranzacție cu modificarea, iar `authenticated` nu mai
+// are UPDATE/DELETE direct pe `incasari` (migrația 20260920151546). Înainte,
+// jurnalul era un al doilea apel din browser — care putea pur și simplu să lipsească.
 export async function updateIncasareWithAudit(params: {
   id: string
   patch: { data?: string | null; suma?: number; metoda?: string | null; observatii?: string | null }
@@ -39,40 +41,34 @@ export async function updateIncasareWithAudit(params: {
   const motiv = params.motiv.trim()
   if (!motiv) throw new Error('Motivul e obligatoriu.')
 
+  // RPC-ul suprascrie toate cele patru coloane → completăm din valorile curente.
   const cur = await getIncasareForEdit(params.id)
-  const next = {
-    data: params.patch.data ?? cur.data,
-    suma: params.patch.suma ?? cur.suma,
-    metoda: params.patch.metoda ?? cur.metoda,
-    observatii: params.patch.observatii ?? cur.observatii,
-  }
-
-  const { error: uErr } = await supabase
-    .from('incasari')
-    .update({
-      data: next.data,
-      suma: next.suma,
-      metoda: next.metoda as Enums<'metoda_plata'> | null,
-      observatii: next.observatii,
-      updated: new Date().toISOString(),
-    })
-    .eq('id', params.id)
-  if (uErr) throw uErr
-
-  await recordAuditLog({
-    action: 'incasare_modified',
-    entityType: 'incasare',
-    entityId: params.id,
-    oldValue: {
-      data: cur.data,
-      suma: cur.suma,
-      metoda: cur.metoda,
-      observatii: cur.observatii,
-    },
-    newValue: next,
-    reason: motiv,
-    locatieId: cur.locatie,
+  const { error } = await supabase.rpc('edit_incasare', {
+    p_id: params.id,
+    p_motiv: motiv,
+    p_data: (params.patch.data ?? cur.data) ?? undefined,
+    p_suma: (params.patch.suma ?? cur.suma) ?? undefined,
+    p_metoda: (params.patch.metoda ?? cur.metoda) ?? undefined,
+    p_observatii: (params.patch.observatii ?? cur.observatii) ?? undefined,
   })
+  if (error) throw error
+}
+
+// Recepția poate corecta DOAR forma de plată (meniul „Corectează forma de plată").
+// RPC separat, cu gard de rol propriu — vezi migrația 20260920152400.
+export async function corecteazaMetodaIncasare(params: {
+  id: string
+  metoda: string | null
+  motiv: string
+}): Promise<void> {
+  const motiv = params.motiv.trim()
+  if (!motiv) throw new Error('Motivul e obligatoriu.')
+  const { error } = await supabase.rpc('corecteaza_metoda_incasare', {
+    p_id: params.id,
+    p_motiv: motiv,
+    p_metoda: params.metoda ?? undefined,
+  })
+  if (error) throw error
 }
 
 export async function deleteIncasareWithAudit(params: {
@@ -81,26 +77,9 @@ export async function deleteIncasareWithAudit(params: {
 }): Promise<void> {
   const motiv = params.motiv.trim()
   if (!motiv) throw new Error('Motivul e obligatoriu.')
-
-  const cur = await getIncasareForEdit(params.id)
-
-  const { error: dErr } = await supabase.from('incasari').delete().eq('id', params.id)
-  if (dErr) throw dErr
-
-  await recordAuditLog({
-    action: 'incasare_deleted',
-    entityType: 'incasare',
-    entityId: params.id,
-    oldValue: {
-      data: cur.data,
-      suma: cur.suma,
-      metoda: cur.metoda,
-      categorie: cur.categorie,
-      client: cur.client_nume,
-      detalii: cur.detalii,
-    },
-    newValue: null,
-    reason: motiv,
-    locatieId: cur.locatie,
+  const { error } = await supabase.rpc('delete_incasare', {
+    p_id: params.id,
+    p_motiv: motiv,
   })
+  if (error) throw error
 }

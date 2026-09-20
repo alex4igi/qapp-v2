@@ -5,6 +5,7 @@
 // (RLS `contract_templates_write_staff` permite tot staff-ul) — nu duplicăm aici,
 // dar ținem allowlist-ul de mai jos oglindă a acelei policy.
 import { serviceClient } from '../_shared/contracte.ts'
+import { requireStaffRole } from '../_shared/staffAuth.ts'
 
 // Oglindește RLS-ul `contract_templates_write_staff` (migrația 20260831201000).
 const STAFF_ROLES = ['owner', 'admin', 'manager', 'front_desk']
@@ -43,13 +44,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const authHeader = req.headers.get('authorization') ?? ''
-    const jwt = authHeader.replace(/^Bearer\s+/i, '')
     const admin = serviceClient()
-    const { data: userRes, error: userErr } = await admin.auth.getUser(jwt)
-    if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
-    const role = (userRes.user.app_metadata as { role?: string })?.role ?? 'front_desk'
-    if (!STAFF_ROLES.includes(role)) return json({ error: 'forbidden' }, 403)
+    const auth = await requireStaffRole(req, STAFF_ROLES, admin)
+    if (!auth.ok) return json({ error: auth.error }, auth.status)
 
     const body = (await req.json()) as Record<string, unknown>
     const action = body.action as string

@@ -8,6 +8,7 @@
 // Potrivirea fuzzy (match_bank_payer) și warn_existing_incasare se cheamă DIRECT din browser (RPC).
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { createHash } from 'node:crypto'
+import { ADMIN_OR_OWNER, ALL_STAFF, requireStaffRole } from '../_shared/staffAuth.ts'
 import { emitInvoice, type FgoClient, type FgoFirma } from '../_shared/fgo.ts'
 import { emitPortalInvoice } from '../_shared/portal-invoice.ts'
 import { emitClientInvoice } from '../_shared/client-invoice.ts'
@@ -21,28 +22,20 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const authHeader = req.headers.get('Authorization') ?? ''
-    const token = authHeader.replace(/^Bearer\s+/i, '')
-    if (!token) return json({ error: 'missing auth' }, 401)
-
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data: userRes, error: userErr } = await admin.auth.getUser(token)
-    if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
-    const role = ((userRes.user.app_metadata ?? {}) as { role?: string }).role ?? 'front_desk'
-
-    const STAFF = ['owner', 'admin', 'manager', 'front_desk']
-    const ADMINS = ['owner', 'admin']
-    if (!STAFF.includes(role)) return json({ error: 'forbidden' }, 403)
+    const auth = await requireStaffRole(req, ALL_STAFF, admin)
+    if (!auth.ok) return json({ error: auth.error }, auth.status)
+    const role = auth.role
 
     const body = await req.json()
     const action = body.action as string
 
     if (action === 'ingest') {
-      if (!ADMINS.includes(role)) return json({ error: 'doar adminul încarcă extrasul' }, 403)
+      if (!ADMIN_OR_OWNER.includes(role)) return json({ error: 'doar adminul încarcă extrasul' }, 403)
       return await handleIngest(admin, body.csv as string)
     }
     if (action === 'emite') {
