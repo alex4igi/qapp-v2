@@ -12,7 +12,6 @@ import {
 import { canalComunicareOptions, canaleOnlineOptions } from '@/lib/enums'
 import type { CampaniePromovare } from '@/types/db'
 import { createCampanie, deleteCampanie, updateCampanie } from './api'
-import { WidgetSnippet } from './WidgetSnippet'
 
 type Props = {
   open: boolean
@@ -190,8 +189,6 @@ export function CampanieForm({ open, campanie, onClose }: Props) {
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
-
-        {isEdit && <WidgetSnippet campanieNume={campanie!.nume} />}
 
         {confirmDelete && (
           <div className="rounded-md border border-red-200 bg-red-50 p-3">

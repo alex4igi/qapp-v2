@@ -13,7 +13,16 @@
 //   - email invalid NU blochează: se ignoră (null) + `warnings:['email_invalid_ignorat']`.
 //   - interes/locatia acceptă aliasurile site-ului (mapInteres/mapLocatie);
 //     valorile nemapabile ajung în observații. grupa_varsta invalidă → null.
-// Creează un lead în status 'nou'. Public (CORS *) — protejat doar de validare.
+// Creează un lead în status 'nou'.
+//
+// ACCES: singurul apelant legitim e serverul site-ului (`/api/inscriere`), care trimite
+// `x-intake-secret` = INTAKE_SECRET. Widgetul embeddabil (public/qleads-widget.js) e
+// parcat — nu mai există apelant din browser.
+//   INTAKE_REQUIRE_SECRET != 'true' → fereastră de rollout: apelurile fără secret trec,
+//     dar sunt marcate în `leads_intake_log.detalii->fara_secret`, cu Origin/Referer, ca
+//     să vedem dacă a mai rămas vreun apelant necunoscut. CORS-ul e încă deschis.
+//   INTAKE_REQUIRE_SECRET = 'true' → fără secret = 403, CORS închis. Revenirea la
+//     fereastră = ștergerea secretului-comutator, fără redeploy.
 import {
   serviceClient,
   resolveCampanie,
@@ -23,10 +32,22 @@ import {
   logIntake,
 } from '../_shared/intake.ts'
 
-const cors = {
+const SECRET = Deno.env.get('INTAKE_SECRET') ?? ''
+const REQUIRE_SECRET = Deno.env.get('INTAKE_REQUIRE_SECRET') === 'true'
+
+// CORS-ul există doar cât timp mai e posibil un apelant din browser.
+const cors: Record<string, string> = REQUIRE_SECRET ? {} : {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type',
+  'Access-Control-Allow-Headers': 'content-type, x-intake-secret',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+// Plafoanele erau doar în serverul site-ului; endpoint-ul le repetă, fiindcă el e granița.
+const MAX_SCURT = 200
+const MAX_MESAJ = 1000
+const cap = (v: unknown, max: number): string | null => {
+  const t = String(v ?? '').trim()
+  return t ? t.slice(0, max) : null
 }
 
 function json(body: unknown, status = 200) {
@@ -37,13 +58,28 @@ function json(body: unknown, status = 200) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  if (req.method === 'OPTIONS') {
+    if (REQUIRE_SECRET) return json({ error: 'Doar POST' }, 405)
+    return new Response('ok', { headers: cors })
+  }
   if (req.method !== 'POST') return json({ error: 'Doar POST' }, 405)
+
+  const areSecret = SECRET !== '' && req.headers.get('x-intake-secret') === SECRET
+  if (REQUIRE_SECRET && !areSecret) return json({ error: 'Forbidden' }, 403)
+
+  // Urma apelurilor fără secret: detectorul care spune dacă mai există vreun apelant
+  // din browser înainte să punem obligativitatea.
+  const urma = areSecret ? undefined : {
+    fara_secret: true,
+    origin: req.headers.get('origin'),
+    referer: req.headers.get('referer'),
+    user_agent: req.headers.get('user-agent')?.slice(0, 200) ?? null,
+  }
 
   try {
     const body = await req.json().catch(() => ({}))
-    const nume = String(body.nume ?? '').trim()
-    const telefon = String(body.telefon ?? '').trim()
+    const nume = cap(body.nume, MAX_SCURT) ?? ''
+    const telefon = cap(body.telefon, MAX_SCURT) ?? ''
     const supabase = serviceClient()
 
     // Submisiile respinse se loghează: altfel „am trimis X formulare, voi aveți
@@ -60,7 +96,7 @@ Deno.serve(async (req) => {
           campaign_id: body.campaign_id ?? null,
           platform: body.utm_source ?? null,
         },
-        detalii: { motiv },
+        detalii: { ...(urma ?? {}), motiv },
       })
 
     if (!nume || !telefon) {
@@ -84,39 +120,37 @@ Deno.serve(async (req) => {
     }
 
     // Email: best-effort — un email greșit NU pierde lead-ul, doar îl ignorăm.
-    const emailRaw = String(body.email ?? '').trim()
+    const emailRaw = cap(body.email, MAX_SCURT) ?? ''
     const emailValid = emailRaw ? isValidEmail(emailRaw) : true
     const emailFinal = emailValid ? (emailRaw || null) : null
     const warnings: string[] = []
     if (emailRaw && !emailValid) warnings.push('email_invalid_ignorat')
 
-    const campanieNume = String(
-      body.campanie ?? 'Website quasardance.ro',
-    ).trim()
+    const campanieNume = cap(body.campanie, MAX_SCURT) ?? 'Website quasardance.ro'
     const sursaId = await resolveCampanie(supabase, campanieNume)
 
     const result = await insertLead(
       supabase,
       {
         nume,
-        prenume: body.prenume ?? null,
-        nume_parinte: body.nume_parinte ?? null,
+        prenume: cap(body.prenume, MAX_SCURT),
+        nume_parinte: cap(body.nume_parinte, MAX_SCURT),
         telefon,
         email: emailFinal,
-        data_nasterii: body.data_nasterii ?? null,
-        interes: body.interes ?? null,
-        grupa_varsta: body.grupa_varsta ?? null,
-        locatia: body.locatia ?? null,
-        observatii: body.mesaj ?? null,
-        utm_source: body.utm_source ?? null,
-        utm_medium: body.utm_medium ?? null,
-        utm_campaign: body.utm_campaign ?? null,
-        platform: body.utm_source ?? null,
-        campaign_id: body.campaign_id ?? null,
-        gclid: body.gclid ?? null,
+        data_nasterii: cap(body.data_nasterii, 40),
+        interes: cap(body.interes, MAX_SCURT),
+        grupa_varsta: cap(body.grupa_varsta, MAX_SCURT),
+        locatia: cap(body.locatia, MAX_SCURT),
+        observatii: cap(body.mesaj, MAX_MESAJ),
+        utm_source: cap(body.utm_source, MAX_SCURT),
+        utm_medium: cap(body.utm_medium, MAX_SCURT),
+        utm_campaign: cap(body.utm_campaign, MAX_SCURT),
+        platform: cap(body.utm_source, MAX_SCURT),
+        campaign_id: cap(body.campaign_id, MAX_SCURT),
+        gclid: cap(body.gclid, MAX_SCURT),
       },
       sursaId,
-      { canal: 'website' },
+      { canal: 'website', detalii: urma },
     )
 
     console.log(
@@ -128,6 +162,9 @@ Deno.serve(async (req) => {
     // noi ar dubla mesajul. Capabilitatea există în _shared/messaging.ts (sendEmail)
     // dacă vreodată mutăm confirmarea în aplicație.
 
+    // `created` spune dacă telefonul e deja în CRM — merge doar către serverul site-ului,
+    // niciodată către un apelant anonim.
+    if (!areSecret) return json({ ok: true })
     return json(warnings.length ? { ...result, warnings } : result)
   } catch (e) {
     return json({ error: String(e) }, 500)

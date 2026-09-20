@@ -1,3 +1,9 @@
+// ⚠️ PARCAT (20 sept. 2026) — nu mai e afișat în aplicație.
+// `intake-website-lead` acceptă doar apeluri server-server, cu `x-intake-secret`, deci
+// widgetul ar primi 403 din browser. Îl păstrăm fiindcă e singura cale prin care o
+// pagină străină (landing page, site de partener) ar putea trimite lead-uri direct.
+// Ca să-l reînvii: token Turnstile în widget, validat ÎN funcție (o singură dată),
+// plus plafoanele și răspunsul neutru de acolo.
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui'
 

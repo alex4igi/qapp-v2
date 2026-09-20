@@ -324,7 +324,13 @@ export async function insertLead(
   supabase: SupabaseClient,
   lead: IntakeLead,
   sursaId: string | null,
-  opts?: { status?: string; canal?: IntakeCanal },
+  opts?: {
+    status?: string
+    canal?: IntakeCanal
+    // Context care se lipește pe TOATE rândurile de log ale acestui apel (nu doar
+    // pe cel de respingere): folosit ca să marcăm apelurile fără secret de server.
+    detalii?: Record<string, unknown>
+  },
 ): Promise<{ created: boolean; leadId: string | null; reason?: string }> {
   const telefon = lead.telefon ? normalizeTelefon(lead.telefon) : null
 
@@ -345,6 +351,7 @@ export async function insertLead(
           leadId: existing.id,
           lead,
           telefon,
+          detalii: opts.detalii ?? null,
         })
       }
       return { created: false, leadId: existing.id, reason: 'telefon existent' }
@@ -412,7 +419,7 @@ export async function insertLead(
         rezultat: 'respins_validare',
         lead,
         telefon,
-        detalii: { eroare: error.message },
+        detalii: { ...(opts.detalii ?? {}), eroare: error.message },
       })
     }
     return { created: false, leadId: null, reason: error.message }
@@ -424,6 +431,7 @@ export async function insertLead(
       leadId: data.id,
       lead,
       telefon,
+      detalii: opts.detalii ?? null,
     })
   }
   return { created: true, leadId: data.id }
