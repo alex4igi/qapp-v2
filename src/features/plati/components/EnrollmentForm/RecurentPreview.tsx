@@ -8,7 +8,7 @@ type Props = {
 }
 
 // Pentru recurent + per lună: afișează câte rânduri se vor crea, eventuala
-// prorata pentru prima lună la grupă cu semnare la mijlocul lunii, și un
+// prorata pentru prima lună (doar când clientul pierde ședințe din ea), și un
 // blocker roșu dacă cursul nu are nici „Preț ședință" nici „Preț anual"
 // (atunci nu se poate calcula prorata pentru înrolare târzie).
 export function RecurentPreview({ preview, cursSelectat, blockantPretLipsa }: Props) {
@@ -23,8 +23,9 @@ export function RecurentPreview({ preview, cursSelectat, blockantPretLipsa }: Pr
           {preview.prorata?.sursaPret === 'sedinta' && (
             <p className="mt-1">
               Prima lună e prorata: <strong>{preview.prorata.sedinte}</strong>{' '}
-              ședințe rămase × {cursSelectat?.pret_sedinta} RON ={' '}
-              <strong>{preview.prorata.suma} RON</strong>.
+              din {preview.prorata.sedinteLuna} ședințe × {cursSelectat?.pret_sedinta}{' '}
+              RON = <strong>{preview.prorata.suma} RON</strong>
+              {preview.prorata.plafonat && ' (plafonat la rata lunii)'}.
             </p>
           )}
           {preview.prorata?.sursaPret === 'anual' && (

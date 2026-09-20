@@ -660,26 +660,22 @@ export function EnrollmentForm({
         cursSelectat,
         sezonStart: sezonSelectat?.data_incepere ?? null,
         sezonEnd: sezonSelectat?.data_final ?? null,
+        esteReinscriere: aplicPromo,
       }),
-    [dataIncepere, isFacultativ, isTrupa, tipPlata, cursSelectat, sezonSelectat],
+    [
+      dataIncepere,
+      isFacultativ,
+      isTrupa,
+      tipPlata,
+      cursSelectat,
+      sezonSelectat,
+      aplicPromo,
+    ],
   )
 
-  // Prorata (deci nevoie de preț) doar la înscriere TÂRZIE mid-lună — nu la
-  // prima lună a sezonului (septembrie), care e rată întreagă.
-  const seasonFirstMonth = sezonSelectat?.data_incepere
-    ? sezonSelectat.data_incepere.slice(0, 7) + '-01'
-    : null
-  const primaLunaESezonStart =
-    seasonFirstMonth != null && dataIncepere.slice(0, 7) + '-01' === seasonFirstMonth
-  const blockantPretLipsa =
-    !isFacultativ &&
-    !isTrupa &&
-    tipPlata === 'Per luna' &&
-    !primaLunaESezonStart &&
-    dataIncepere.slice(8, 10) !== '01' &&
-    Boolean(cursSelectat) &&
-    cursSelectat?.pret_sedinta == null &&
-    cursSelectat?.pret_anual == null
+  // Cursul are nevoie de preț doar când prorata chiar se aplică — condiția
+  // trăiește într-un singur loc, în `derivePreviewRecurent`.
+  const blockantPretLipsa = previewRecurent?.prorata?.sursaPret === 'lipsa'
 
   // Promo iulie: abonament facultativ „Per lună" cu start în iulie 2026, creat în
   // fereastra promoției (≤ 30 iunie) → poate include gratuit ședințele 29-30 iunie.

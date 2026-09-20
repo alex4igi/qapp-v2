@@ -32,14 +32,20 @@ export const TIP_ORDER: Record<TipInrolare, number> = {
 export type PrevizualizareRecurent = {
   months: number
   prorata:
-    | { sursaPret: 'sedinta'; sedinte: number; suma: number }
+    | {
+        sursaPret: 'sedinta'
+        sedinte: number
+        sedinteLuna: number
+        suma: number
+        plafonat: boolean
+      }
     | { sursaPret: 'anual' }
     | { sursaPret: 'lipsa' }
     | null
 }
 
 // Pentru recurent + per lună: câte înrolări lunare se vor crea (până la 30 iun)
-// și — la grupă cu semnare la mijlocul lunii — suma prorata pentru prima lună.
+// și — la grupă care pierde ședințe din prima lună — suma prorata.
 export function derivePreviewRecurent(params: {
   dataIncepere: string
   isFacultativ: boolean
@@ -52,6 +58,9 @@ export function derivePreviewRecurent(params: {
   // Finalul sezonului ales — dă numărul real de rate. Fără el cădem pe convenția
   // istorică „sezonul se termină în iunie".
   sezonEnd?: string | null
+  // Reînscrierea schimbă rata lunară (pret_lunar_promo) — deci și plafonul
+  // peste care prorata nu poate trece.
+  esteReinscriere?: boolean
 }): PrevizualizareRecurent | null {
   if (params.isFacultativ || params.tipPlata !== 'Per luna') return null
   const d = new Date(params.dataIncepere)
@@ -76,26 +85,35 @@ export function derivePreviewRecurent(params: {
   const primaLunaESezonStart =
     seasonFirstMonth != null &&
     params.dataIncepere.slice(0, 7) + '-01' === seasonFirstMonth
-  const semnareNuELaZi1 = params.dataIncepere.slice(8, 10) !== '01'
+  // Oglindește `buildRecurentPerLuna`: prorata doar când se pierd efectiv
+  // ședințe din prima lună, nu doar pentru că ziua semnării nu e 1.
+  const luna = params.dataIncepere.slice(0, 7) + '-01'
+  const fin = endOfMonth(luna)
+  const zile = params.cursSelectat?.zile ?? null
+  const sedinte = countSessionsBetween(params.dataIncepere, fin, zile)
+  const sedinteLuna = countSessionsBetween(luna, fin, zile)
   if (
     !params.isTrupa &&
     !primaLunaESezonStart &&
-    semnareNuELaZi1 &&
-    params.cursSelectat
+    params.cursSelectat &&
+    sedinte < sedinteLuna
   ) {
-    const fin = endOfMonth(params.dataIncepere.slice(0, 7) + '-01')
-    const sedinte = countSessionsBetween(
-      params.dataIncepere,
-      fin,
-      params.cursSelectat.zile,
-    )
-    if (params.cursSelectat.pret_sedinta != null) {
+    const curs = params.cursSelectat
+    if (curs.pret_sedinta != null) {
+      const rata = params.esteReinscriere
+        ? curs.pret_lunar_promo
+        : curs.pret_anual != null
+          ? Math.round(curs.pret_anual / 10)
+          : null
+      const brut = Math.round(sedinte * curs.pret_sedinta)
       prorata = {
         sedinte,
-        suma: sedinte * params.cursSelectat.pret_sedinta,
+        sedinteLuna,
+        suma: rata != null ? Math.min(brut, rata) : brut,
+        plafonat: rata != null && brut > rata,
         sursaPret: 'sedinta',
       }
-    } else if (params.cursSelectat.pret_anual != null) {
+    } else if (curs.pret_anual != null) {
       prorata = { sursaPret: 'anual' }
     } else {
       prorata = { sursaPret: 'lipsa' }

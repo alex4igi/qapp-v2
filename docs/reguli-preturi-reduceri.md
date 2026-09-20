@@ -209,6 +209,27 @@ A10 (plata integrală merge pe −5% din contract, §4) și LATESTART (prorata e
 - Plata online (webhook) nu mai e reverificată la confirmare: codul e validat la crearea
   comenzii, iar un refuz după ce banii au intrat ar lăsa plata fără înrolare.
 
+## 7. Prima rată la înscriere târzie (prorata)
+
+Cine se înscrie după startul sezonului plătește prima lună **prorata**, dar regula
+se uită la **ședințele pierdute**, nu la ziua din calendar:
+
+- **Nu pierde nicio ședință din lună ⇒ rată întreagă.** Exemplu real (20 sept. 2026):
+  două fete au fost înrolate pe „N Dans Juniori INC SD" (Sâmbătă+Duminică) cu start
+  **3 octombrie**. 3 octombrie e chiar *prima* ședință a lunii — prind toate cele 9
+  ședințe din octombrie, deci prima rată e **270**, nu prorata.
+- **Pierde ședințe ⇒** `ședințe rămase × cursuri.pret_sedinta`, **plafonat la rata lunii**.
+  Plafonul e obligatoriu: `pret_sedinta` e preț de **drop-in** (38 RON), mai scump per
+  ședință decât abonamentul (270 / 9 = 30 RON), deci fără plafon o lună aproape întreagă
+  ar costa mai mult decât una plină (9 × 38 = **342** > 270).
+- **Prima lună a sezonului (septembrie) nu e niciodată prorata** — e rată întreagă, cu
+  `data_incepere` = startul sezonului. Modelul rămâne 10 rate egale = `pret_anual`.
+- **Trupele n-au prorata** (toți încep la 1 septembrie, contractul e ferm pe sezon).
+- **Facultativele n-au prorata** — luna se plătește integral, indiferent de zi.
+
+Fallback când cursul n-are `pret_sedinta`: `pret_anual / ședințe_totale_sezon`. Dacă n-are
+nici `pret_anual`, formularul blochează înrolarea și cere setarea prețului în Studio → Cursuri.
+
 ## Unde trăiesc regulile în cod
 
 | Regulă | Locul |
@@ -230,6 +251,7 @@ A10 (plata integrală merge pe −5% din contract, §4) și LATESTART (prorata e
 | …dropdown-ul recepției | `list_vouchere_aplicabile` → `VoucherField.tsx` (EnrollmentForm + OpenClassTab) |
 | …gardul pe orice insert | triggerele `trg_enrollment_voucher_valid` (+ regula cu reînscrierea) și `trg_incasare_voucher_valid` |
 | …o singură rată lunară | `buildRecurentPerLuna` (doar prima rată) + triggerele `trg_enrollments_voucher_o_rata_ins/_upd` |
+| Prorata primei luni (§7) | `buildRecurentPerLuna` ([enrollments.ts](../src/features/plati/api/enrollments.ts)) + preview-ul `derivePreviewRecurent` ([helpers.ts](../src/features/plati/components/EnrollmentForm/helpers.ts)) — ambele folosesc `countSessionsBetween` din `api/calendar.ts` |
 | …ședința OPEN la recepție | `rezerva_loc_open(..., p_voucher)` |
 
 **Capcană:** penalizarea trăiește în DOUĂ locuri (cron + motor) și trebuie ținute
