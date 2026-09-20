@@ -19,6 +19,8 @@ type Props = {
   defaultInchiriere?: DefaultInchiriere
   defaultSuma?: number
   defaultMetoda?: MetodaSel
+  /** Data reală a plății (ex. data tranzacției din extrasul bancar), nu ziua înregistrării. */
+  defaultData?: string
   onRecorded?: (linii: FacturaLinie[], clientId: string) => void
 }
 
@@ -32,6 +34,7 @@ export function PlataNouaModal({
   defaultInchiriere,
   defaultSuma,
   defaultMetoda,
+  defaultData,
   onRecorded,
 }: Props) {
   const [tip, setTip] = useState<TipPlata>(defaultTip ?? 'Abonament')
@@ -52,6 +55,7 @@ export function PlataNouaModal({
           defaultClientId={defaultClientId}
           defaultSuma={defaultSuma}
           defaultMetoda={defaultMetoda}
+          defaultData={defaultData}
           onRecorded={onRecorded}
         />
       ) : tip === 'Open' ? (
@@ -67,6 +71,7 @@ export function PlataNouaModal({
           defaultBiletId={tip === 'Bilet' ? defaultBiletId : undefined}
           defaultSuma={defaultSuma != null ? String(defaultSuma) : undefined}
           defaultMetoda={defaultMetoda}
+          defaultData={defaultData}
           onRecorded={onRecorded}
         />
       )}

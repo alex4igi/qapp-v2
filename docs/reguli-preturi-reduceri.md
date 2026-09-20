@@ -81,11 +81,31 @@ Dacă la scadență rata nu e acoperită integral, acea rată pierde
 `politica_discount` și revine la `suma_baza`. **Doar luna aia** — celelalte
 rămân neatinse. Penalizarea e **definitivă**: plata ulterioară nu o readuce.
 
-Două garduri intenționate:
+„Acoperită la scadență" înseamnă **bani cu data plății ≤ scadență**
+(`incasari.data`), nu bani prezenți în DB la ora verificării. Distincția contează
+pentru că transferurile se înregistrează din extrasul ING, cu o zi–două întârziere.
+
+Patru garduri intenționate:
 - se aplică doar sezoanelor care încep de la **2026-09-01** (altfel prima rulare
   retrăgea retroactiv reducerea de pe 37 de rate din vara 2026);
 - o rată creată **după** propriul termen (înscriere târzie în lună) nu e
-  penalizată — n-a avut ce să rateze.
+  penalizată — n-a avut ce să rateze;
+- **grație de 5 zile calendaristice** după scadență, înainte ca penalizarea să se
+  aplice. E fereastra în care apucăm să importăm extrasul bancar; termenul
+  clientului rămâne 15/20, se mișcă doar momentul în care verificăm noi
+  (decizie Alex, 2026-09-20 — vezi mai jos de ce);
+- decizia se ia **într-un singur loc**: funcția `penalizare_activa(enrollment)`.
+
+> **De ce grația:** pe 20 septembrie 2026, prima scadență a sezonului, cronul ar
+> fi tăiat reducerea a 19 rate (17 clienți, 392 RON) în noaptea de 21. Scadența
+> pica duminică: oamenii transferaseră la termen, banii se procesau luni, iar
+> extrasul se importa luni–marți. Cronul nu se uita deloc la data plății, deci îi
+> trata ca restanțieri — ireversibil, fiindcă motorul nu reevaluează o rată care
+> are încasări. Cronul a fost oprit manual înainte de rulare.
+
+⚠️ Consecința pentru recepție: **data plății trebuie să fie data reală**, nu ziua
+înregistrării. De aceea „Plată nouă" are câmp de dată pe toate tabelele de
+încasare, iar fluxul bancă îl pre-completează cu `facturi_fgo.data_tranzactie`.
 
 #### 3b. La 50 de zile se anulează locul în grupă
 
@@ -254,9 +274,12 @@ nici `pret_anual`, formularul blochează înrolarea și cere setarea prețului �
 | Prorata primei luni (§7) | `buildRecurentPerLuna` ([enrollments.ts](../src/features/plati/api/enrollments.ts)) + preview-ul `derivePreviewRecurent` ([helpers.ts](../src/features/plati/components/EnrollmentForm/helpers.ts)) — ambele folosesc `countSessionsBetween` din `api/calendar.ts` |
 | …ședința OPEN la recepție | `rezerva_loc_open(..., p_voucher)` |
 
-**Capcană:** penalizarea trăiește în DOUĂ locuri (cron + motor) și trebuie ținute
-sincronizate. Fără condiția din motor, orice modificare în familie ar re-acorda
-reducerea și ar anula penalizarea aplicată de cron.
+**Penalizarea are o singură definiție:** `penalizare_activa(enrollment)`. O cheamă
+toate cele trei consumatoare — cronul `cancel_discount_familie_restant`, motorul
+`recalculate_pool_discount` (fără condiția din motor, orice modificare în familie
+ar re-acorda reducerea și ar anula penalizarea cronului) și `ocupa_locul_integral`.
+Până în 2026-09-20 condiția era copiată în toate trei și divergase: doar
+`ocupa_locul_integral` se uita la data plății.
 
 Migrațiile relevante: `20260518110000` (politica inițială), `20260701120000`
 (dublură same-course), `20260831120000` (reduceri neacumulabile),
@@ -266,4 +289,6 @@ Migrațiile relevante: `20260518110000` (politica inițială), `20260701120000`
 `20260911160000` (rata plătită întreg ocupă locul integral → frații primesc reducerea),
 `20260912100000` (promo se pierde la mutarea în trupă + `cursul` în triggerul de recalcul),
 `20260912120000` (plata integrală −5%, intrarea din portal),
-`20260913130000` (același motor, extras + intrarea de la recepție).
+`20260913130000` (același motor, extras + intrarea de la recepție),
+`20260920210000` (grație 5 zile + criteriul pe data plății, regula într-un
+singur loc: `penalizare_activa`).

@@ -1,7 +1,7 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Field, TextInput, Select, Combobox, Button, Spinner } from '@/components/ui'
+import { Field, TextInput, Select, Combobox, Button, Spinner, DateInput } from '@/components/ui'
 import { clientiOptions } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { formatRON } from '@/lib/format'
@@ -19,6 +19,7 @@ import {
   useClientCredit,
 } from '../../api'
 import { fmtDate, todayIso } from './helpers'
+import { avertismentDataPlata, minDataPlata } from '../../dataPlata'
 import {
   MetodaPlataField,
   resolveTenders,
@@ -34,6 +35,8 @@ type Props = {
   defaultClientId?: string
   defaultSuma?: number
   defaultMetoda?: MetodaSel
+  /** Data reală a plății (ex. data tranzacției din extras), nu ziua înregistrării. */
+  defaultData?: string
   // clientId e cel din formular la momentul salvării, nu defaultClientId: selectorul de
   // cursant rămâne editabil, iar apelantul (fluxul bancă) atribuie plata pe cine trebuie.
   onRecorded?: (linii: FacturaLinie[], clientId: string) => void
@@ -71,6 +74,7 @@ export function DatoriiUnificateTab({
   defaultClientId,
   defaultSuma,
   defaultMetoda,
+  defaultData,
   onRecorded,
 }: Props) {
   const queryClient = useQueryClient()
@@ -86,7 +90,10 @@ export function DatoriiUnificateTab({
   const [useCreditOn, setUseCreditOn] = useState(false)
   const [useCreditAmt, setUseCreditAmt] = useState('')
   const [integralOn, setIntegralOn] = useState(false)
+  const [dataPlatii, setDataPlatii] = useState(defaultData ?? todayIso())
   const [error, setError] = useState<string | null>(null)
+  const azi = todayIso()
+  const avertismentData = avertismentDataPlata(dataPlatii, azi)
 
   const clientiQ = useQuery({ queryKey: ['lookup', 'clienti'], queryFn: clientiOptions })
   const sezoaneQ = useQuery({ queryKey: ['lookup', 'sezoane-full'], queryFn: listSezoane })
@@ -268,6 +275,8 @@ export function DatoriiUnificateTab({
       if (!locatieId) {
         throw new Error('Setează locația de lucru din bara de sus (📍 lângă dată).')
       }
+      if (!dataPlatii) throw new Error('Completează data plății.')
+      if (dataPlatii > azi) throw new Error('Data plății nu poate fi în viitor.')
 
       // Plata integrală a sezonului: un singur RPC, care recalculează el prețurile.
       // Nu trece prin FIFO — nu alegem noi ce rate se achită, ci tot contractul.
@@ -281,7 +290,7 @@ export function DatoriiUnificateTab({
         await incaseazaPlataIntegrala({
           clientId,
           tenders,
-          data: todayIso(),
+          data: dataPlatii,
           locatieId,
         })
         const platiPeRand = new Map(
@@ -401,7 +410,7 @@ export function DatoriiUnificateTab({
             partialAmount: enrollmentPay,
             metoda: enrollTenders[0].metoda,
             tenders: enrollTenders,
-            data: todayIso(),
+            data: dataPlatii,
             locatieId,
           })
         }
@@ -418,7 +427,7 @@ export function DatoriiUnificateTab({
               })),
               partialAmount: datoriiPay,
               tenders: datTenders,
-              data: todayIso(),
+              data: dataPlatii,
               locatieId,
             })
           } catch (e) {
@@ -762,6 +771,20 @@ export function DatoriiUnificateTab({
           )}
         </div>
       )}
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <Field label="Data plății">
+          <DateInput
+            value={dataPlatii}
+            min={minDataPlata(azi)}
+            max={azi}
+            onChange={(e) => setDataPlatii(e.target.value)}
+          />
+        </Field>
+        {avertismentData && (
+          <p className="self-end pb-2 text-sm text-amber-800">{avertismentData}</p>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Field label="Plată parțială (opțional)">

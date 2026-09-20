@@ -14,6 +14,7 @@ import {
 import { clientiOptions } from '@/lib/lookups'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { formatRON } from '@/lib/format'
+import { avertismentDataPlata, minDataPlata } from './dataPlata'
 import { listVouchereIncasareSimpla } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
 import type { Incasare, InsertDto, Voucher } from '@/types/db'
@@ -43,6 +44,8 @@ type Props = {
   defaultSuma?: string
   defaultObservatii?: string
   defaultMetoda?: MetodaSel
+  /** Data reală a plății (ex. data tranzacției din extras), nu ziua înregistrării. */
+  defaultData?: string
   /** Apelat cu încasarea creată (înainte de onClose) — folosit ca să legăm taxa de campania de reînscrieri. */
   onCreated?: (incasare: Incasare) => void
   /** Liniile de factură ale plății + clientul — fluxul bancă marchează transferul „înregistrat". */
@@ -76,6 +79,7 @@ export function SimpleIncasareForm({
   defaultSuma,
   defaultObservatii,
   defaultMetoda,
+  defaultData,
   onCreated,
   onRecorded,
 }: Props) {
@@ -88,7 +92,9 @@ export function SimpleIncasareForm({
   ) // bilet/inventar id
   const [bucati, setBucati] = useState('1')
   const [suma, setSuma] = useState(defaultSuma ?? '')
-  const [data, setData] = useState(todayIso())
+  const [data, setData] = useState(defaultData ?? todayIso())
+  const azi = todayIso()
+  const avertismentData = avertismentDataPlata(data, azi)
   const [metoda, setMetoda] = useState<MetodaSel>(defaultMetoda ?? 'Cash')
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
@@ -177,6 +183,9 @@ export function SimpleIncasareForm({
       const sumaInput = Number(suma)
       if (!suma.trim() || !isFinite(sumaInput) || sumaInput <= 0) {
         throw new Error('Suma este obligatorie și pozitivă.')
+      }
+      if (data && data > azi) {
+        throw new Error('Data plății nu poate fi în viitor.')
       }
       if (tip === 'Bilet' && !sursaId) {
         throw new Error('Alege un eveniment sau concurs.')
@@ -443,10 +452,16 @@ export function SimpleIncasareForm({
         <Field label="Data">
           <DateInput
             value={data}
+            min={minDataPlata(azi)}
+            max={azi}
             onChange={(e) => setData(e.target.value)}
           />
         </Field>
       </div>
+
+      {avertismentData && (
+        <p className="text-sm text-amber-800">{avertismentData}</p>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Încasează acum (RON)">

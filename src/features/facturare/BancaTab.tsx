@@ -75,6 +75,7 @@ export function BancaTab() {
     clientId: string
     suma?: number
     tip?: TipPlata
+    data?: string
   } | null>(null)
   const [facturaFor, setFacturaFor] = useState<FacturaRow | null>(null)
   const [marcheazaFor, setMarcheazaFor] = useState<FacturaRow | null>(null)
@@ -187,7 +188,9 @@ export function BancaTab() {
       ? 'Bilet'
       : undefined
     const suma = neplatiti.length <= 1 && rest > 0.004 ? rest : undefined
-    setPlataFor({ ref: r.ref, clientId, suma, tip })
+    // Data e cea din extras, nu ziua importului: penalizarea reducerii de familie
+    // compară `incasari.data` cu scadența ratei, iar extrasul vine cu întârziere.
+    setPlataFor({ ref: r.ref, clientId, suma, tip, data: r.data_tranzactie })
   }
 
   const ignoraOne = useMutation({
@@ -442,6 +445,7 @@ export function BancaTab() {
         defaultClientId={plataFor?.clientId}
         defaultTip={plataFor?.tip}
         defaultSuma={plataFor?.suma}
+        defaultData={plataFor?.data}
         defaultMetoda="Transfer"
         onRecorded={(linii, clientId) => {
           if (plataFor) void onPlataRecorded(plataFor.ref, linii, clientId)
