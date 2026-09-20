@@ -38,11 +38,12 @@ const CATEGORII: Record<string, CategorieSms> = {
 }
 
 // `mesaj_liber` NU e în tabel intenționat: textul îl scrie operatorul, deci
-// categoria nu se poate deduce din cod. Până când compozitorul din /sms cere
-// explicit Operațional/Marketing, rândurile libere sunt tratate ca marketing
-// (`esteMarketing` întoarce true pentru orice cod necunoscut) — varianta
-// prudentă: un mesaj operațional netrimis se retrimite, o reclamă trimisă cuiva
-// care a cerut opt-out nu se ia înapoi.
+// categoria nu se poate deduce din cod. Exact de-aia a fost PARCAT pe 20.09.2026
+// (migrația 20260920200000 — RLS-ul refuză inserturile, iar /sms nu-l mai oferă):
+// era singura cale pe care gardul de opt-out de aici n-o putea acoperi.
+// `esteMarketing` întoarce oricum `true` pentru orice cod necunoscut — varianta
+// prudentă, dacă vreodată se repornește: un mesaj operațional netrimis se
+// retrimite, o reclamă trimisă cuiva care a cerut opt-out nu se ia înapoi.
 export function esteMarketing(cod: string | null | undefined): boolean {
   if (!cod) return true
   return (CATEGORII[cod] ?? 'marketing') === 'marketing'

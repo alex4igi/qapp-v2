@@ -18,6 +18,7 @@ import {
   SMS_BULK_CODES,
   SMS_BULK_LABEL,
   buildBulkSms,
+  esteParcat,
   type SmsBulkCod,
   type SmsRecipient,
 } from './templates'
@@ -46,10 +47,12 @@ export function SmsComposer({ open, onClose }: Props) {
   const [deselected, setDeselected] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
 
+  // Codurile parcate nu mai apar deloc: baza le refuză la insert (politica
+  // `situatie_sms_uri_adhoc_restrict`), deci oferirea lor ar fi o promisiune goală.
   const codOptions = useMemo(
     () =>
       SMS_BULK_CODES.filter(
-        (c) => c !== 'mesaj_liber' || poateMesajLiber,
+        (c) => !esteParcat(c) && (c !== 'mesaj_liber' || poateMesajLiber),
       ).map((c) => ({ value: c, label: SMS_BULK_LABEL[c] })),
     [poateMesajLiber],
   )

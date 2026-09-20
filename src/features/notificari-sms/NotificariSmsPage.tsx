@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher, isManagerOrHigher } from '@/lib/rolesMatrix'
 import { SmsQueueForm } from './SmsQueueForm'
 import { SmsComposer } from './SmsComposer'
+import { esteParcat } from './templates'
 import {
   listSmsQueue,
   deleteSmsQueueEntry,
@@ -39,7 +40,10 @@ const STATUS_STYLE: Record<string, string> = {
 export function NotificariSmsPage() {
   const queryClient = useQueryClient()
   const { role } = useAuth()
-  const poateMesajLiber = isManagerOrHigher(role)
+  // „+ SMS manual" scrie tot `cod_mesaj = 'mesaj_liber'`, deci urmează aceeași
+  // parcare ca mesajul liber din compozitor — altfel butonul ar duce la un insert
+  // pe care RLS-ul îl refuză.
+  const poateMesajLiber = isManagerOrHigher(role) && !esteParcat('mesaj_liber')
   // Sub admin se șterg doar rândurile „De trimis" (RPC delete_sms_queue_entry refuză
   // restul) — dezactivăm butonul acolo unde ar eșua oricum.
   const poateStergeOrice = isAdminOrHigher(role)

@@ -211,8 +211,20 @@ Buna ziua! Pentru pastrarea {locului lui X / locurilor lui X si Y} la Quasar Dan
 > Spune acum și ce se întâmplă după termen — până acum mesajul cerea bani fără să
 > zică ce se pierde.
 
-### 9. `mesaj_liber` — text liber ad-hoc
-- Fără șablon; textul e tastat de operator. **Doar manager în sus** (owner/admin/manager).
+### 9. ~~`mesaj_liber` — text liber ad-hoc~~ — ⛔ PARCAT 2026-09-20
+> Fără șablon; textul e tastat de operator — exact de-aia a fost parcat: categoria
+> marketing/tranzacțional nu se poate deduce din cod, deci gardul de opt-out nu-l
+> acoperă. La momentul deciziei, **116 clienți activi cu opt-out** (din 665 de
+> destinatari) ar fi primit un mesaj liber de marketing.
+>
+> Închis în DB (politica `situatie_sms_uri_adhoc_restrict`, migrația
+> `20260920200000`), nu doar ascuns în UI. Costul parcării e zero:
+> `situatie_sms_uri` n-a avut niciodată un rând cu `cod_mesaj = 'mesaj_liber'`.
+>
+> **Parcat, nu șters:** builderul, formularul „+ SMS manual" (`SmsQueueForm.tsx`) și
+> ramura din `get_sms_recipients` rămân pe loc. Repornire: scoate codul din
+> `SMS_BULK_PARCATE` (`templates.ts`) ȘI readu politica de RLS la varianta din
+> `20260606210000`. Înainte de repornire, fă selectorul Operațional/Marketing.
 
 ---
 
@@ -267,11 +279,12 @@ Unde e pus gardul:
 - `process-review-sms` — rândul se anulează cu motivul „opt-out marketing".
 
 ⚠️ **`mesaj_liber` nu e clasificat** — textul îl scrie operatorul, deci categoria nu
-se poate deduce din cod. `esteMarketing()` întoarce `true` pentru orice cod
-necunoscut (varianta prudentă), dar **compozitorul bulk nu consultă încă gardul**:
-rândurile libere pleacă spre toți destinatarii selectați manual, inclusiv cei cu
-opt-out. De făcut: selectorul obligatoriu Operațional/Marketing în „Generează
-SMS-uri", cu excluderea automată a celor cu opt-out și numărul lor în previzualizare.
+se poate deduce din cod, iar gardul de mai sus nu-l acoperă. De-aia a fost **PARCAT
+pe 2026-09-20** (vezi §9): calea stă închisă în DB, nu deschisă pe încredere.
+`esteMarketing()` întoarce `true` pentru orice cod necunoscut — plasa de siguranță
+dacă se repornește vreodată. Condiția de repornire: selectorul obligatoriu
+Operațional/Marketing în „Generează SMS-uri", cu excluderea automată a celor cu
+opt-out și numărul lor afișat în previzualizare.
 
 > Până la 2026-09-20 coloana `opt_out_marketing` era **doar audit**: se scria, se
 > vedea în /opt-out și nu oprea nimic — omul care ceruse explicit să nu mai fie

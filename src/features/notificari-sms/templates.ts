@@ -46,6 +46,20 @@ export const SMS_BULK_LABEL: Record<SmsBulkCod, string> = {
   mesaj_liber: 'Mesaj liber (ad-hoc)',
 }
 
+// Coduri PARCATE — codul rămâne pe loc, dar UI-ul nu le mai oferă. Gardul real e
+// în DB (politica `situatie_sms_uri_adhoc_restrict`, migrația 20260920200000);
+// lista asta doar ține butoanele să nu promită ceva ce baza refuză.
+//
+// `mesaj_liber` e parcat pe 20.09.2026: textul îl scrie operatorul la trimitere,
+// deci categoria marketing/tranzacțional nu se poate deduce din cod, iar gardul de
+// opt-out nu-l acoperă — 116 clienți activi cu opt-out ar fi fost prinși. Se
+// repornește scoțându-l de aici ȘI din politica de RLS.
+export const SMS_BULK_PARCATE: readonly SmsBulkCod[] = ['mesaj_liber']
+
+export function esteParcat(cod: SmsBulkCod): boolean {
+  return SMS_BULK_PARCATE.includes(cod)
+}
+
 export type SmsRecipientMembru = { nume: string; rest: number }
 
 export type SmsRecipient = {
