@@ -83,9 +83,16 @@ export function NotificariSmsPage() {
   const process = useMutation({
     mutationFn: processSmsQueue,
     onSuccess: (res) => {
-      setProcessMsg(
-        `Procesate: ${res.total} · trimise: ${res.sent} · eșuate: ${res.failed}`,
-      )
+      const parti = res.quiet
+        ? [`Amânate: ${res.deferred ?? 0} (zonă interzisă)`]
+        : [
+            `Procesate: ${res.total}`,
+            `trimise: ${res.sent}`,
+            `eșuate: ${res.failed}`,
+          ]
+      if (res.programate)
+        parti.push(`${res.programate} programate pentru mai târziu`)
+      setProcessMsg(parti.join(' · '))
       void queryClient.invalidateQueries({ queryKey: ['sms-queue'] })
       void queryClient.invalidateQueries({ queryKey: ['sms-amanate-info'] })
     },
@@ -176,7 +183,7 @@ export function NotificariSmsPage() {
               onClick={() => {
                 if (
                   !window.confirm(
-                    'Sigur pornești trimiterea? TOATE SMS-urile cu status „De trimis" vor fi trimise efectiv.',
+                    'Sigur pornești trimiterea? Pleacă efectiv toate SMS-urile „De trimis" ajunse la data planificată. Cele planificate pentru o zi viitoare rămân în coadă.',
                   )
                 )
                   return

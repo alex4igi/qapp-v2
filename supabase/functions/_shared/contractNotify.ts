@@ -49,7 +49,7 @@ export function mesajContract(
   const cine = prenumeCopil ? ` pentru ${prenumeCopil}` : ''
   return {
     smsText:
-      `Quasar Dance: contractul${cine} este pregatit de semnare. Deschide linkul, verifica datele si semneaza: ${link} (valabil ${zile} zile)`,
+      `Buna ziua! Contractul${cine} este pregatit pentru semnare. Va rugam sa verificati datele si sa il semnati aici: ${link}. Linkul este valabil ${zile} zile.`,
     emailSubject: `Quasar Dance — contract de semnat${cine}`,
     emailHtml:
       `<p>Bună ziua,</p><p>Contractul${cine} este pregătit pentru semnare. ` +

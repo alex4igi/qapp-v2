@@ -7,8 +7,15 @@
 // Acțiuni: create, reset_password, unlink.
 // Securitate: parolele se hash-uiesc DOAR în DB (RPC pgcrypto SECURITY DEFINER); rolul
 // 'parinte' NU are acces direct la tabele (politica RESTRICTIVE deny_parinte_direct).
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { sendEmail, sendSms } from '../_shared/messaging.ts'
+import {
+  deferUntil,
+  getQuietHoursConfig,
+  isQuiet,
+  localDateBucharest,
+} from '../_shared/quietHours.ts'
+import { requireStaffRole } from '../_shared/staffAuth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,35 +65,96 @@ async function sendCredentialsEmail(email: string, password: string): Promise<bo
 }
 
 // Trimite datele de acces pe SMS (TheMarketer/SMSLink prin wrapper). Fără diacritice
-// (GSM-7) și ≤160 caractere. Întoarce true dacă a plecat.
-async function sendCredentialsSms(telefon: string, email: string, password: string): Promise<boolean> {
+// (GSM-7). Depășește 160 de caractere la un email obișnuit ⇒ 2 segmente; asumat,
+// fiindcă mesajul pleacă o singură dată per cont.
+//
+// RESPECTĂ ZONA INTERZISĂ (decizie 20.09.2026): era singura cale de SMS din tot
+// repo-ul care suna direct `sendSms`, fără gardul `isQuiet` — recepția care crea
+// un cont la 20:30 trimitea parola în mijlocul serii. În fereastră, mesajul intră
+// în `sms_amanate` și pleacă dimineața, prin process-sms-amanate.
+//
+// Scrie și rândul din `situatie_sms_uri`, ca /notificari-sms să rămână jurnalul
+// complet de SMS-uri — la fel ca fluxul de contracte (vezi _shared/contractNotify.ts).
+type RezultatSms = { plecat: boolean; amanat: boolean }
+
+async function sendCredentialsSms(
+  admin: SupabaseClient,
+  telefon: string,
+  email: string,
+  password: string,
+): Promise<RezultatSms> {
   const mesaj =
-    `Quasar Dance - cont portal: ${PORTAL_URL} ` +
-    `Email: ${email} Parola: ${password} Schimba parola dupa prima logare.`
+    `Quasar Dance: contul de membru este activ. Acces: ${PORTAL_URL} ` +
+    `Email: ${email} Parola temporara: ${password} ` +
+    `Va recomandam sa schimbati parola dupa prima autentificare.`
+
+  const now = new Date()
+  const cfg = await getQuietHoursConfig(admin)
+  const amanat = isQuiet(now, cfg)
+  const sendAfter = amanat ? deferUntil(now, cfg) : null
+
+  const { data: rand } = await admin
+    .from('situatie_sms_uri')
+    .insert({
+      telefon,
+      mesaj,
+      cod_mesaj: 'cont_portal',
+      status: amanat ? 'Amanat' : 'In curs de trimitere',
+      data_planificata: localDateBucharest(sendAfter ? new Date(sendAfter) : now),
+    })
+    .select('id')
+    .single()
+
+  if (amanat) {
+    // `sursa_id` = legătura prin care process-sms-amanate trece rândul pe 'Trimis'.
+    const { error } = await admin.from('sms_amanate').insert({
+      telefon,
+      mesaj,
+      tip: 'cont_portal',
+      send_after: sendAfter,
+      sursa_id: rand?.id ?? null,
+    })
+    if (error) {
+      await marcheazaSms(admin, rand?.id, 'Esuat')
+      return { plecat: false, amanat: false }
+    }
+    return { plecat: false, amanat: true }
+  }
+
   try {
     const r = await sendSms(telefon, mesaj)
-    return r.ok
+    // Un stub (lipsă credențiale / allowlist de test) NU e o trimitere.
+    const plecat = r.ok && !r.stub
+    await marcheazaSms(admin, rand?.id, plecat ? 'Trimis' : 'Esuat')
+    return { plecat, amanat: false }
   } catch {
-    return false
+    await marcheazaSms(admin, rand?.id, 'Esuat')
+    return { plecat: false, amanat: false }
   }
+}
+
+async function marcheazaSms(
+  admin: SupabaseClient,
+  id: string | undefined,
+  status: 'Trimis' | 'Esuat',
+): Promise<void> {
+  if (!id) return
+  const patch: Record<string, string> = { status }
+  if (status === 'Trimis') patch.data_trimitere = localDateBucharest(new Date())
+  await admin.from('situatie_sms_uri').update(patch).eq('id', id)
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-    if (!token) return json({ error: 'missing auth' }, 401)
-
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data: userRes, error: userErr } = await admin.auth.getUser(token)
-    if (userErr || !userRes.user) return json({ error: 'invalid token' }, 401)
-    const callerRole = (userRes.user.app_metadata?.role as string) ?? 'front_desk'
-    if (!STAFF_ROLES.includes(callerRole)) return json({ error: 'forbidden' }, 403)
+    const auth = await requireStaffRole(req, STAFF_ROLES, admin)
+    if (!auth.ok) return json({ error: auth.error }, auth.status)
 
     const body = (await req.json()) as Payload
 
@@ -139,12 +207,16 @@ Deno.serve(async (req) => {
       }
 
       const emailed = body.notify === 'email' ? await sendCredentialsEmail(email, body.password) : undefined
-      const smsSent = body.notify === 'sms'
-        ? (existing.telefon
-            ? await sendCredentialsSms(existing.telefon, email, body.password)
-            : false)
-        : undefined
-      return json({ user: { id: newId, email }, emailed, smsSent })
+      let smsSent: boolean | undefined
+      let smsAmanat: boolean | undefined
+      if (body.notify === 'sms') {
+        const r = existing.telefon
+          ? await sendCredentialsSms(admin, existing.telefon, email, body.password)
+          : { plecat: false, amanat: false }
+        smsSent = r.plecat
+        smsAmanat = r.amanat
+      }
+      return json({ user: { id: newId, email }, emailed, smsSent, smsAmanat })
     }
 
     if (body.action === 'reset_password') {
@@ -160,6 +232,7 @@ Deno.serve(async (req) => {
       if (error) return json({ error: error.message }, 500)
       const emailed = body.notify === 'email' ? await sendCredentialsEmail(acc.email, body.password) : undefined
       let smsSent: boolean | undefined
+      let smsAmanat: boolean | undefined
       if (body.notify === 'sms') {
         // contul e legat fie de o familie, fie de un client → caută telefonul în ambele
         const [fam, cli] = await Promise.all([
@@ -167,9 +240,13 @@ Deno.serve(async (req) => {
           admin.from('clienti').select('telefon').eq('auth_user_id', body.userId).maybeSingle(),
         ])
         const telefon = fam.data?.telefon ?? cli.data?.telefon ?? null
-        smsSent = telefon ? await sendCredentialsSms(telefon, acc.email, body.password) : false
+        const r = telefon
+          ? await sendCredentialsSms(admin, telefon, acc.email, body.password)
+          : { plecat: false, amanat: false }
+        smsSent = r.plecat
+        smsAmanat = r.amanat
       }
-      return json({ ok: true, emailed, smsSent })
+      return json({ ok: true, emailed, smsSent, smsAmanat })
     }
 
     if (body.action === 'unlink') {

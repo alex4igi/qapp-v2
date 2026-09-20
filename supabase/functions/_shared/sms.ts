@@ -153,26 +153,37 @@ export function buildSms(tip: SmsTip, params: SmsParams): string {
   const oraTxt = params.ora ? `, ora ${params.ora}` : ''
 
   // Texte fără diacritice și fără emoji — vezi REGULA din capul fișierului.
+  //
+  // Formulările sunt cele aprobate pe 20.09.2026 (handoff Codex → Claude), aduse
+  // la GSM-7 și TĂIATE până încap în 160 de caractere cu cel mai lung nume admis
+  // de `numeSalut` (20). Varianta „de birou" a fiecărui text era cu 10-15
+  // caractere mai lungă și trecea mesajul pe 2 segmente — la volumele de leads
+  // ale sezonului, exact aceleași cuvinte costau dublu. Ce s-a tăiat și de ce:
+  //   * confirmare: „la ora X" → „ora X" (SCM/Q4K urcau de la nume ≤11 la ≤8);
+  //   * reminder:   „Va reamintim ca …" → „Va reamintim: …" (altfel ≤6, azi ≤8);
+  //   * post_demo:  „Va multumim pentru participarea la" → „Multumim pentru
+  //     prezenta la" și „ne puteti scrie" → „scrieti-ne" (varianta lungă cădea
+  //     pe 2 segmente de la nume ≥10, adică la majoritatea).
   switch (tip) {
     case 'confirmare':
-      return `${salut} Sedinta gratuita la Quasar Dance e confirmata pe ${data}${oraTxt}. Va asteptam cu drag la ${adresa}!`
+      return `${salut} Sedinta gratuita Quasar Dance este confirmata pentru ${data}${oraTxt}, la ${adresa}. Va asteptam!`
     case 'reminder': {
-      const cand = params.cand === 'azi' ? 'AZI' : 'MAINE'
-      return `${salut} Va reamintim de sedinta gratuita la Quasar Dance ${cand}, ${data}${oraTxt}, la ${adresa}. Te asteptam!`
+      const cand = params.cand === 'azi' ? 'astazi' : 'maine'
+      return `${salut} Va reamintim: sedinta gratuita Quasar Dance este ${cand}, ${data}${oraTxt}, la ${adresa}. Va asteptam!`
     }
     case 'review':
-      return `${salut} Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: ${reviewLink} Multumim!`
+      return `${salut} Va multumim ca ati ales Quasar Dance. Daca experienta a fost una placuta, ne-ar ajuta o recenzie: ${reviewLink}`
     // „followup" („ne pare rau ca nu ai ajuns") a fost scos pe 19.09.2026:
     // neprezentarea se lucrează la telefon, la 2 zile de la absență.
     case 'waiting_list':
-      return `${salut} Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!`
+      return `${salut} V-am adaugat pe lista de asteptare Quasar Dance. Va contactam imediat ce devine disponibil un loc potrivit. Va multumim!`
     // La 2 zile dupa demo, pentru cine a venit si nu s-a inscris. Miza e locul in
     // grupa (capacitatea e reala), nu politetea — un „ne-a parut bine" nu misca
     // pe nimeni. Finalul e IMPERSONAL („rezervarea locului", nu „locul tau"):
     // acelasi mesaj ajunge si la parintele care citeste despre copil, si la
     // studentul care citeste despre el. Trimis de cron-afternoon la 16:00, luni-vineri.
     case 'post_demo':
-      return `${salut} Locurile pentru grupa de varsta de dans, se ocupa in ordinea inscrierilor. Pentru rezervarea locului, da-ne un mesaj la ${telefon}.`
+      return `${salut} Multumim pentru prezenta la sedinta de proba. Locurile se ocupa in ordinea inscrierii. Pentru rezervare, scrieti-ne la ${telefon}.`
     default:
       return ''
   }
@@ -197,10 +208,14 @@ export type ConfirmareInrolareParams = {
 }
 
 export function buildConfirmareInrolareSms(p: ConfirmareInrolareParams): string {
-  // Acelasi tratament ca la salutul din buildSms: numele vine din `clienti`, unde
-  // diacriticele sunt REGULA, nu exceptia (le tasteaza recepatia). Mesajul asta e
-  // deja ~2 segmente; o diacritica in nume l-ar duce pe UCS-2, deci la 4+.
-  const salut = salutSms(p.prenume)
+  // Mesajul se adreseaza PARINTELUI despre copil, deci nu mai deschide cu „Buna
+  // {nume}!" (aprobat 20.09.2026): numele cursantului intra in fraza
+  // („Confirmam inscrierea pentru Ana"), unde chiar spune cine e inscris — la o
+  // familie cu doi copii, salutul pe prenumele copilului suna ca si cum
+  // mesajul ar fi pentru el. Numele vine din `clienti`, unde diacriticele sunt
+  // REGULA, nu exceptia (le tasteaza receptia) — `faraDiacritice` de la final
+  // acopera tot textul.
+  const cine = faraDiacritice((p.prenume ?? '').trim()).split(/\s+/)[0] ?? ''
   const detalii: string[] = []
   const zile = (p.zile ?? []).filter(Boolean)
   const orePeZi =
@@ -208,31 +223,34 @@ export function buildConfirmareInrolareSms(p: ConfirmareInrolareParams): string 
       ? p.orePeZi
       : null
   // Per zi DOAR daca orele chiar difera; daca toate zilele au aceeasi ora,
-  // foloseste formularea compacta "in zilele de … la ora …".
+  // foloseste formularea compacta "Luni, Miercuri, ora 17:30".
   const oreDistincte = orePeZi
     ? new Set(zile.map((z) => orePeZi[z] ?? p.ora?.trim()).filter(Boolean))
     : null
   if (orePeZi && zile.length && oreDistincte && oreDistincte.size > 1) {
-    // ex: "in zilele de Luni la 17:00, Vineri la 18:00"
+    // ex: "Luni ora 17:00, Vineri ora 18:00"
     const parts = zile.map((z) => {
       const ora = orePeZi[z] ?? p.ora?.trim()
-      return ora ? `${z} la ${ora}` : z
+      return ora ? `${z} ora ${ora}` : z
     })
-    detalii.push(`in zilele de ${parts.join(', ')}`)
+    detalii.push(parts.join(', '))
   } else {
-    if (zile.length) detalii.push(`in zilele de ${zile.join(', ')}`)
+    if (zile.length) detalii.push(zile.join(', '))
     // ora unica: din `ora` sau, daca lipseste, prima ora din map
     const oraUnica = p.ora?.trim() || (oreDistincte && [...oreDistincte][0])
-    if (oraUnica) detalii.push(`la ora ${oraUnica}`)
+    if (oraUnica) detalii.push(`ora ${oraUnica}`)
   }
-  if (p.instructor?.trim()) detalii.push(`cu instructor ${p.instructor.trim()}`)
-  const detaliiStr = detalii.length ? `, ${detalii.join(', ')}` : ''
+  const program = detalii.length ? ` Program: ${detalii.join(', ')}.` : ''
+  const instructor = p.instructor?.trim()
+    ? ` Instructor: ${p.instructor.trim()}.`
+    : ''
   const pret =
-    p.pretLunar != null ? ` Abonamentul lunar este ${p.pretLunar} RON.` : ''
+    p.pretLunar != null ? ` Abonament: ${p.pretLunar} RON/luna.` : ''
   const wa = p.linkWhatsapp?.trim()
     ? ` Grup WhatsApp: ${p.linkWhatsapp.trim()}`
     : ''
-  const text = `${salut} Iti confirmam locul in grupa ${p.curs}${detaliiStr}.${pret}${wa}`
+  const pentru = cine ? ` pentru ${cine}` : ''
+  const text = `Buna ziua! Confirmam inscrierea${pentru} la grupa ${p.curs}.${program}${instructor}${pret}${wa}`
   return faraDiacritice(text)
 }
 

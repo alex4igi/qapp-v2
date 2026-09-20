@@ -40,24 +40,36 @@ export type NotifyChannel = 'email' | 'sms'
 
 export async function createPortalAccount(
   input: Target & { email: string; password: string; notify?: NotifyChannel },
-): Promise<{ id: string; email: string | null; emailed?: boolean; smsSent?: boolean }> {
+): Promise<{
+  id: string
+  email: string | null
+  emailed?: boolean
+  smsSent?: boolean
+  smsAmanat?: boolean
+}> {
   const data = await invoke<{
     user: { id: string; email: string | null }
     emailed?: boolean
     smsSent?: boolean
+    smsAmanat?: boolean
   }>({
     action: 'create',
     ...input,
   })
-  return { ...data.user, emailed: data.emailed, smsSent: data.smsSent }
+  return {
+    ...data.user,
+    emailed: data.emailed,
+    smsSent: data.smsSent,
+    smsAmanat: data.smsAmanat,
+  }
 }
 
 export async function resetPortalPassword(
   userId: string,
   password: string,
   notify?: NotifyChannel,
-): Promise<{ emailed?: boolean; smsSent?: boolean }> {
-  return invoke<{ emailed?: boolean; smsSent?: boolean }>({
+): Promise<{ emailed?: boolean; smsSent?: boolean; smsAmanat?: boolean }> {
+  return invoke<{ emailed?: boolean; smsSent?: boolean; smsAmanat?: boolean }>({
     action: 'reset_password',
     userId,
     password,

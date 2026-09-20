@@ -131,6 +131,13 @@ export type ProcessResult = {
   total: number
   sent: number
   failed: number
+  // Rânduri „De trimis" cu `data_planificata` în viitor — rămân în coadă până la
+  // termenul lor, procesorul nu le atinge.
+  programate?: number
+  // Prezent doar când drain-ul a picat în zona interzisă: rândurile au trecut pe
+  // 'Amanat' și pleacă singure dimineața.
+  deferred?: number
+  quiet?: boolean
   error?: string
 }
 

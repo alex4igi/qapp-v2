@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   for (const row of due ?? []) {
     const { data: lead } = await supabase
       .from('leads')
-      .select('id, prenume, nume, telefon, locatia, grupa_varsta, status')
+      .select('id, prenume, nume, telefon, locatia, grupa_varsta, status, opt_out_marketing')
       .eq('id', row.lead_id)
       .single()
 
@@ -60,6 +60,17 @@ Deno.serve(async (req) => {
       await supabase
         .from('confirmari_review_sms')
         .update({ status: 'anulat' })
+        .eq('id', row.id)
+      canceled++
+      continue
+    }
+
+    // Cererea de review e MARKETING (vezi _shared/smsCategorie.ts) — opt-out-ul o
+    // oprește. Rândul se anulează cu motiv, ca să se vadă de ce n-a plecat.
+    if (lead.opt_out_marketing) {
+      await supabase
+        .from('confirmari_review_sms')
+        .update({ status: 'anulat', error: 'opt-out marketing' })
         .eq('id', row.id)
       canceled++
       continue

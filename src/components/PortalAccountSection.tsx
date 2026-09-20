@@ -211,7 +211,7 @@ function NotifyPicker({
 function deliveryMsg(
   prefix: string,
   notify: 'none' | 'email' | 'sms',
-  r: { emailed?: boolean; smsSent?: boolean },
+  r: { emailed?: boolean; smsSent?: boolean; smsAmanat?: boolean },
   password: string,
 ): string {
   if (notify === 'email') {
@@ -220,6 +220,9 @@ function deliveryMsg(
       : `${prefix}. ⚠️ Emailul NU a plecat (TheMarketer neconfigurat?) — comunică manual parola: ${password}`
   }
   if (notify === 'sms') {
+    // Amânat ≠ eșuat: e în zona interzisă (19:30–10:00) și pleacă singur dimineața.
+    if (r.smsAmanat)
+      return `${prefix}. SMS-ul e programat pentru dimineață (acum e zonă interzisă) — pleacă automat, nu trebuie să faci nimic.`
     return r.smsSent
       ? `${prefix}. Datele au fost trimise pe SMS.`
       : `${prefix}. ⚠️ SMS-ul NU a plecat (lipsă număr sau provider neconfigurat) — comunică manual parola: ${password}`

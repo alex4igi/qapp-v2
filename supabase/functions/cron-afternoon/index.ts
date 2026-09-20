@@ -227,6 +227,9 @@ Deno.serve(async (req) => {
       .not('lead', 'is', null)
 
     const leadIds = [...new Set((prezenteDemo ?? []).map((p) => p.lead as string))]
+    // `post_demo` e MARKETING (vezi _shared/smsCategorie.ts): cine a cerut opt-out
+    // nu-l primește. Gardul e aici, în interogare, nu la trimitere — un lead cu
+    // opt-out nu trebuie nici măcar să consume dedupul din `sms_logs`.
     const { data: candidati } = leadIds.length
       ? await supabase
           .from('leads')
@@ -234,6 +237,7 @@ Deno.serve(async (req) => {
           .in('id', leadIds)
           .eq('status', 'a_venit')
           .eq('deja_client', false)
+          .eq('opt_out_marketing', false)
       : { data: [] }
 
     if ((candidati ?? []).length) {

@@ -1,9 +1,12 @@
 // Edge Function: trimite un SMS pentru un lead, în funcție de tipul tranziției.
-// Apelată din client după schimbările de status. Dedup prin tabelul sms_logs.
+// Apelată din aplicația de staff după schimbările de status (rol verificat în corp,
+// vezi _shared/staffAuth.ts). Dedup prin tabelul sms_logs.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { ALL_STAFF, requireStaffRole } from '../_shared/staffAuth.ts'
 import { buildSms, sendSms, type SmsTip } from '../_shared/sms.ts'
 import { getProgramareSms } from '../_shared/leadLocatie.ts'
 import { deferUntil, getQuietHoursConfig, isQuiet } from '../_shared/quietHours.ts'
+import { esteMarketing } from '../_shared/smsCategorie.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,21 +27,25 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
+
+    // Staff, nu „orice token valid": `verify_jwt` acceptă și cheia publică anon.
+    const auth = await requireStaffRole(req, ALL_STAFF, supabase)
+    if (!auth.ok) return json({ error: auth.error }, auth.status)
+
     const { leadId, tip } = await req.json()
 
     if (!leadId || !VALID_TIPURI.includes(tip)) {
       return json({ error: 'leadId și tip valide sunt obligatorii' }, 400)
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    )
-
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .select(
-        'id, prenume, nume, telefon, locatia, grupa_varsta, data_programare, deja_client',
+        'id, prenume, nume, telefon, locatia, grupa_varsta, data_programare, deja_client, opt_out_marketing',
       )
       .eq('id', leadId)
       .single()
@@ -52,6 +59,12 @@ Deno.serve(async (req) => {
     // Lead „deja client" e scos din fluxul rece — nu i se trimite SMS automat.
     if (lead.deja_client) {
       return json({ skipped: true, reason: 'deja client' })
+    }
+    // Opt-out-ul oprește DOAR marketingul (vezi _shared/smsCategorie.ts):
+    // confirmarea programării și reminderul pleacă în continuare, fiindcă le-a
+    // provocat omul înscriindu-se — n-are sens să-l lăsăm să vină degeaba.
+    if (lead.opt_out_marketing && esteMarketing(tip)) {
+      return json({ skipped: true, reason: 'opt-out marketing' })
     }
 
     // Dedup — un SMS de un anumit tip se trimite o singură dată per lead

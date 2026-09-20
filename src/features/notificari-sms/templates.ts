@@ -80,17 +80,16 @@ function joinSi(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} si ${items[items.length - 1]}`
 }
 
-// Zile până la termenul lunii (15). Fallback când sezonul n-are scadență explicită.
-function zilePanaLaTermen(azi: Date): number {
-  return 15 - azi.getDate()
-}
-
-// Zile (calendaristice) de azi până la scadența 'YYYY-MM-DD'.
-function zilePanaLaScadenta(scadentaISO: string, azi: Date): number {
-  const [y, m, d] = scadentaISO.slice(0, 10).split('-').map(Number)
-  const scad = new Date(y, m - 1, d)
-  const az = new Date(azi.getFullYear(), azi.getMonth(), azi.getDate())
-  return Math.round((scad.getTime() - az.getTime()) / 86_400_000)
+// Termenul scris în clar („15 octombrie"), nu relativ („peste 3 zile"): reminderul
+// pleacă în loturi care pot fi generate azi și trimise mâine, iar „peste 3 zile"
+// devine fals între generare și plecare. Fallback pe ziua 15 când rândul n-are
+// scadență explicită (sezon fără prima/ultima rată configurată).
+function textScadenta(scadentaISO: string | null, azi: Date): string {
+  if (scadentaISO) {
+    const [y, m, d] = scadentaISO.slice(0, 10).split('-').map(Number)
+    return formatZiLuna(new Date(y, m - 1, d))
+  }
+  return formatZiLuna(new Date(azi.getFullYear(), azi.getMonth(), 15))
 }
 
 // Construiește textul SMS pentru un destinatar + un cod. Pentru mesaj_liber,
@@ -105,40 +104,50 @@ export function buildBulkSms(
   switch (cod) {
     case 'reminder_plata': {
       // Scadența reală a rândului (prima/ultima rată din sezon sau ziua 15).
-      const n = r.scadenta
-        ? zilePanaLaScadenta(r.scadenta, azi)
-        : zilePanaLaTermen(azi)
-      const cand =
-        n > 1 ? `peste ${n} zile` : n === 1 ? 'maine' : 'astazi'
-      // Varianta cu reducere e scurtată („la Quasar Dance") ca să încapă în 160 car.
+      const termen = textScadenta(r.scadenta, azi)
+      // Varianta cu reducere e scurtată (fără „Daca ati achitat deja…") ca să
+      // încapă în 160 car. — cu fraza de politețe ajungea la 185, adică 2 segmente.
       if (r.are_reducere) {
-        return `Buna ziua! Va reamintim ca ${cand} este termenul de plata la Quasar Dance. Dupa acest termen se pierde reducerea de familie. Echipa Quasar Dance`
+        return `Buna ziua! Termenul de plata pentru abonamentul Quasar Dance este ${termen}. Dupa aceasta data, reducerea aferenta lunii curente nu se mai aplica.`
       }
-      return `Buna ziua! Va reamintim ca ${cand} este termenul de plata pentru cursurile Quasar Dance. Echipa Quasar Dance`
+      return `Buna ziua! Va reamintim ca termenul de plata pentru abonamentul Quasar Dance este ${termen}. Daca ati efectuat deja plata, va multumim.`
     }
 
     case 'notificare_restante': {
-      const detalii = r.membri.map(
-        (m) => `${faraDiacritice(m.nume)} in valoare de ${Math.round(m.rest)} RON`,
-      )
-      const intro =
-        detalii.length > 1
-          ? 'Exista plati restante'
-          : 'Exista o plata restanta'
+      // Textul aprobat (20.09.2026) anunță doar soldul total. Defalcarea pe copil
+      // rămâne totuși: la o familie cu doi cursanți, un total fără nume nu se
+      // poate reconcilia cu ce a plătit deja pentru unul dintre ei.
+      const nume = numeMembri(r.membri)
+      const total = Math.round(r.total_restanta)
+      const pentru =
+        nume.length > 1
+          ? ` (${r.membri
+              .map((m) => `${faraDiacritice(m.nume)} ${Math.round(m.rest)} RON`)
+              .join(', ')})`
+          : nume[0]
+            ? ` pentru ${nume[0]}`
+            : ''
       const tel = telefonLocatie(r.locatie_nume)
-      return `Buna ziua! ${intro} la cursurile Quasar Dance pentru ${joinSi(detalii)}. Se poate achita cash/card la studio sau prin transfer la IBAN ${IBAN}. Pentru intrebari, contactati-ne la ${tel}. Echipa Quasar Dance`
+      return `Buna ziua! In evidentele Quasar Dance figureaza un sold restant de ${total} RON${pentru}. Plata se poate face la studio sau in contul ${IBAN}. Pentru detalii: ${tel}.`
     }
 
     case 'avertisment_loc': {
       // Un SMS / familie: listează copiii în pericol + suma totală. Termen
       // limită = data trimiterii + 2 zile (vezi scripts/sms/templates.md #3).
+      // Textul aprobat spune „locurile rezervate familiei"; păstrăm numele,
+      // fiindcă la o familie cu doi copii doar unul e de obicei în pericol.
       const nume = numeMembri(r.membri)
-      const subiect =
-        nume.length > 1 ? `locurile lui ${joinSi(nume)}` : `locul lui ${nume[0] ?? ''}`
+      const multi = nume.length > 1
+      const subiect = multi
+        ? `locurilor lui ${joinSi(nume)}`
+        : `locului lui ${nume[0] ?? ''}`
+      const consecinta = multi
+        ? 'locurile pot fi eliberate'
+        : 'locul poate fi eliberat'
       const termen = new Date(azi)
       termen.setDate(termen.getDate() + 2)
       const tel = telefonLocatie(r.locatie_nume)
-      return `Buna ziua! Pentru a pastra ${subiect} la Quasar Dance, te rugam sa achiti ${Math.round(r.total_restanta)} RON pana pe ${formatZiLuna(termen)}. Pentru intrebari, contactati-ne la ${tel}. Echipa Quasar Dance`
+      return `Buna ziua! Pentru pastrarea ${subiect} la Quasar Dance, va rugam sa achitati soldul restant de ${Math.round(r.total_restanta)} RON pana pe ${formatZiLuna(termen)}. Dupa aceasta data, ${consecinta}. Pentru detalii: ${tel}.`
     }
 
     case 'mesaj_liber':

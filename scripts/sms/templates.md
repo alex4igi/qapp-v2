@@ -5,6 +5,9 @@
 > citește automat la runtime). Fișiere oglindă:
 > - Kanban (leads) + confirmare inrolare: [`supabase/functions/_shared/sms.ts`](../../supabase/functions/_shared/sms.ts)
 > - Bulk (restanțe): [`src/features/notificari-sms/templates.ts`](../../src/features/notificari-sms/templates.ts)
+> - Contracte: [`supabase/functions/_shared/contractNotify.ts`](../../supabase/functions/_shared/contractNotify.ts) + `process-contract-reminders`
+> - Cont de portal: [`supabase/functions/provision-client/index.ts`](../../supabase/functions/provision-client/index.ts)
+> - Marketing vs tranzacțional: [`supabase/functions/_shared/smsCategorie.ts`](../../supabase/functions/_shared/smsCategorie.ts)
 
 ## Reguli de conținut
 - **FĂRĂ diacritice** (ă→a, î/â→i/a, ș→s, ț→t) și **fără emoji** — GSM-7 le strică pe telefon.
@@ -22,7 +25,8 @@
   nume reale (94, „Andronic Petronela Andreea"), la 4+ aproape numai răspunsuri
   scrise în câmpul greșit (21).
 - **160 caractere = 1 SMS.** Peste → se taxează 2+ mesaje. Țintă: 1 SMS unde se poate.
-- Provider beta: **smslink.ro**. Placeholderele `{...}` se completează automat.
+- Provider: **themarketer.com** (transactional 1-la-1; `SMS_PROVIDER=themarketer`).
+  SMSLink a rămas fallback. Placeholderele `{...}` se completează automat.
 
 ## Placeholdere
 | Placeholder | Sens |
@@ -51,8 +55,10 @@
 > **reprogramare** (marți → joi) își primește confirmarea ei, ce înainte nu se
 > întâmpla niciodată (dedupul era pe viață per lead).
 ```
-Buna {prenume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}. Va asteptam cu drag la {adresa}!
+Buna {prenume}! Sedinta gratuita Quasar Dance este confirmata pentru {data}, ora {ora}, la {adresa}. Va asteptam!
 ```
+> Text nou 2026-09-20. „ora {ora}", nu „la ora {ora}": cu prepoziție, mesajul trecea
+> de 160 la Ștefan cel Mare / Q4K de la nume ≥9 caractere (adresele lor au 46-47).
 
 ### 2. `reminder` — dimineața (10:00 local), ziua ședinței
 > Weekend: programări sâmbătă → reminder vineri; duminică → sâmbătă (varianta „MAINE").
@@ -64,13 +70,19 @@ Buna {prenume}! Sedinta gratuita la Quasar Dance e confirmata pe {data}. Va aste
 > (sau cursul) programării, citite live la trimitere** — nu din copia stocată la
 > înscriere, care rămâne veche dacă se mută ora. Evenimentul `Anulat` nu trimite.
 ```
-Buna {prenume}! Va reamintim de sedinta gratuita la Quasar Dance {AZI/MAINE}, {data}, la {adresa}. Te asteptam!
+Buna {prenume}! Va reamintim: sedinta gratuita Quasar Dance este {astazi/maine}, {data}, ora {ora}, la {adresa}. Va asteptam!
 ```
+> Text nou 2026-09-20. Două puncte în loc de „Va reamintim ca …", din același motiv
+> de lungime; „AZI/MAINE" cu majuscule a devenit „astazi/maine".
 
 ### 3. `review` — la conversie (lead → client) — ✅ LIVRAT 2026-06-08
 ```
-Buna {prenume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar ajuta enorm un review scurt: {link} Multumim!
+Buna {prenume}! Va multumim ca ati ales Quasar Dance. Daca experienta a fost una placuta, ne-ar ajuta o recenzie: {link}
 ```
+> Text nou 2026-09-20. **MARKETING** — opt-out-ul îl oprește (vezi secțiunea D).
+> ⚠️ Coada `confirmari_review_sms` nu mai e alimentată din 2026-09-16 (conversia nu
+> mai programează review), deci practic nu pleacă nimic. Momentul nou propus — după
+> minimum două prezențe, la 7-14 zile de la înrolare — **nu e încă decis**.
 
 ### 4. ~~`followup` — la mutarea lead → **Nu a venit**~~ — ⛔ SCOS 2026-09-19
 > Înlocuit cu un **apel**: recepția sună la 2 zile de la absență (joi/vineri ⇒ luni).
@@ -83,8 +95,10 @@ Buna {prenume}! Ne bucuram ca faci parte din comunitatea Quasar Dance. Ne-ar aju
 
 ### 5. `waiting_list` — la mutarea lead → **Waiting list**
 ```
-Buna {prenume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adaugat pe lista de asteptare - te contactam imediat ce iti putem oferi un loc!
+Buna {prenume}! V-am adaugat pe lista de asteptare Quasar Dance. Va contactam imediat ce devine disponibil un loc potrivit. Va multumim!
 ```
+> Text nou 2026-09-20 — și cu 17 caractere mai scurt, deci intră în 1 segment
+> inclusiv la numele de 20 de caractere (înainte trecea pe 2 de la 19).
 
 ### 6. `post_demo` — la 2 zile după ședința de probă, dacă NU s-a înscris — ✅ LIVRAT 2026-09-08
 > Trimis de **`cron-afternoon`** (16:00 local, luni–vineri — din 2026-09-15; înainte
@@ -93,15 +107,19 @@ Buna {prenume}! Multumim pentru interes acordat catre Quasar Dance. Te-am adauga
 > de joi primește mesajul luni (D-4), odată cu apelurile de pe lista de sunat.
 > Fereastră de 2–4 zile pe interogare (rezistă la o rulare ratată), dedup pe
 > `sms_logs` (`tip='post_demo'`, pe viață): cine vine la două demo-uri ia un singur SMS.
-> **139 car. șablon + prenume → 1 SMS.** Numele e limitat la 21 car. de `numeSalut`
+> **132 car. șablon + prenume → 1 SMS.** Numele e limitat la 20 car. de `numeSalut`
 > (vezi Reguli de conținut), deci mesajul nu poate depăși 160.
 >
 > **Text impersonal cap-coadă** (2026-09-08): același mesaj ajunge și la părintele
 > care citește despre copil, și la studentul care citește despre el. Nici „locul tău",
 > nici „unde ai fost la probă" — se vorbește despre grupa de vârstă, nu despre cititor.
 ```
-Buna {prenume}! Locurile pentru grupa de varsta de dans, se ocupa in ordinea inscrierilor. Pentru rezervarea locului, da-ne un mesaj la {telefon locatie}.
+Buna {prenume}! Multumim pentru prezenta la sedinta de proba. Locurile se ocupa in ordinea inscrierii. Pentru rezervare, scrieti-ne la {telefon locatie}.
 ```
+> Text nou 2026-09-20. **MARKETING** — opt-out-ul îl oprește (vezi secțiunea D).
+> Varianta „de birou" („Va multumim pentru participarea la … ne puteti scrie la …")
+> avea 144 car. de corp și trecea pe 2 segmente de la nume ≥10, adică la majoritatea
+> leadurilor. Tăiată la 132, încape cu orice nume admis de `numeSalut`.
 **Nu primesc:** cine a ieșit între timp din `a_venit` (înscris / mutat — fereastră de
 undo gratuită), `deja_client`, leadurile legate de un client încă Activ/Inactiv
 (conversie neînregistrată — vezi `leaduriProtejate`), cine și-a luat deja altă
@@ -125,8 +143,12 @@ pleacă; dacă e reziliată/dezactivată, cronul îl marchează `anulat` fără 
 Părțile opționale (zile/oră/instructor/preț/link) se omit dacă lipsesc.
 > **~2 segmente SMS** (depășește 160 car. cu instructor + link WhatsApp — decizie asumată).
 ```
-Buna {prenume}! Iti confirmam locul in grupa {nume curs}, in zilele de {zile}, la ora {ora}, cu instructor {nume instructor}. Abonamentul lunar este {pret} RON. Grup WhatsApp: {link_whatsapp}
+Buna ziua! Confirmam inscrierea pentru {prenume} la grupa {nume curs}. Program: {zile}, ora {ora}. Instructor: {nume instructor}. Abonament: {pret} RON/luna. Grup WhatsApp: {link_whatsapp}
 ```
+> Text nou 2026-09-20. Nu mai deschide cu „Buna {prenume}!": mesajul e pentru
+> părinte, despre copil, iar la o familie cu doi copii salutul pe prenumele unuia
+> suna ca și cum mesajul ar fi pentru el. Orar diferit pe zile: „Program: Luni ora
+> 17:00, Vineri ora 18:30."
 - `{nume curs}` = `cursuri.numele` · `{zile}` = `cursuri.zile` · `{ora}` = `cursuri.ora`
 - `{nume instructor}` = titular din `cursuri_teacheri` (rol='titular'), fallback `cursuri.teacher`
 - `{pret}` = rata lunară REALĂ a înrolării, din `enrollments.suma` — nu prețul de
@@ -143,8 +165,11 @@ Buna {prenume}! Iti confirmam locul in grupa {nume curs}, in zilele de {zile}, l
 
 ### 6. `reminder_plata` — reminder termen de plată (scadența ratei)
 ```
-Buna ziua! Va reamintim ca {N zile/maine/astazi} este termenul de plata pentru cursurile Quasar Dance. Echipa Quasar Dance
+Buna ziua! Va reamintim ca termenul de plata pentru abonamentul Quasar Dance este {termen}. Daca ati efectuat deja plata, va multumim.
 ```
+> Text nou 2026-09-20. `{termen}` e data în clar („15 octombrie"), nu relativ
+> („peste 3 zile"): loturile se generează într-o zi și se pot trimite în alta, iar
+> „peste 3 zile" devine fals între generare și plecare.
 **Varianta „reducere de familie"** (2026-08-31) — destinatarii cu cel puțin o rată
 care are reducere de familie/cross-sell (`politica_discount > 0`) primesc
 avertismentul că o pierd pe luna respectivă dacă depășesc termenul. Prețul promo
@@ -152,15 +177,23 @@ NU se mai pierde niciodată (regula din 2026-08-31), deci nu el e miza avertisme
 `get_sms_recipients` întoarce `are_reducere`; composer-ul arată ambele variante în
 previzualizare + badge „reducere familie" în listă.
 ```
-Buna ziua! Va reamintim ca {N zile/maine/astazi} este termenul de plata la Quasar Dance. Dupa acest termen se pierde reducerea de familie. Echipa Quasar Dance
+Buna ziua! Termenul de plata pentru abonamentul Quasar Dance este {termen}. Dupa aceasta data, reducerea aferenta lunii curente nu se mai aplica.
 ```
-> Textul e scurtat („la Quasar Dance" în loc de „pentru cursurile Quasar Dance")
-> ca să încapă în 160 car. la worst-case „peste 19 zile" (148 car.).
+> Textul e scurtat (fără „Daca ati achitat deja, va multumim.") ca să încapă în
+> 160 car. — cu fraza de politețe ajungea la 185, adică 2 segmente.
 
 ### 7. `notificare_restante` — clienți cu restanță
 ```
-Buna ziua! Exista {plati restante/o plata restanta} la cursurile Quasar Dance pentru {nume + suma}. Se poate achita cash/card la studio sau prin transfer la IBAN RO85 INGB 0000 9999 1498 9082. Pentru intrebari, contactati-ne la {nr telefon locatia inrolarii}. Echipa Quasar Dance
+Buna ziua! In evidentele Quasar Dance figureaza un sold restant de {total} RON pentru {nume}. Plata se poate face la studio sau in contul RO85 INGB 0000 9999 1498 9082. Pentru detalii: {nr telefon locatia inrolarii}.
 ```
+La 2+ cursanți, numele trec în paranteză cu suma fiecăruia — textul aprobat anunța
+doar totalul, dar o familie cu doi copii nu poate reconcilia un total cu ce a
+plătit deja pentru unul dintre ei:
+```
+… un sold restant de 450 RON (Popescu Ana Maria 270 RON, Popescu Stefan 180 RON). Plata …
+```
+> Text nou 2026-09-20 — **cu ~76 caractere mai scurt** la doi cursanți, deci trece
+> de la 3 segmente la 2.
 > **Aliniat cu worklist-ul de recuperare** (2026-07-24, migrația `20260724100000`):
 > țintește EXACT setul din `get_restante_worklist` — clienți **Activi**, neprescris,
 > nereziliat, **cel puțin o rată chiar depășită** (nu doar luna curentă nescadentă).
@@ -171,11 +204,113 @@ Buna ziua! Exista {plati restante/o plata restanta} la cursurile Quasar Dance pe
 ### 8. `avertisment_loc` — pierderea locului (restanță > 50 zile) — ✅ LIVRAT 2026-06-08
 Un SMS / familie (listează copiii în pericol + suma totală). `{termen}` = data trimiterii + 2 zile.
 ```
-Buna ziua! Pentru a pastra {locul lui X / locurile lui X si Y} la Quasar Dance, te rugam sa achiti {total} RON pana pe {termen}. Pentru intrebari, contactati-ne la {telefon locatie}. Echipa Quasar Dance
+Buna ziua! Pentru pastrarea {locului lui X / locurilor lui X si Y} la Quasar Dance, va rugam sa achitati soldul restant de {total} RON pana pe {termen}. Dupa aceasta data, {locul poate fi eliberat / locurile pot fi eliberate}. Pentru detalii: {telefon locatie}.
 ```
+> Text nou 2026-09-20. Textul aprobat spunea „locurile rezervate familiei", fără
+> nume; le-am păstrat, fiindcă de obicei doar unul dintre copii e în pericol.
+> Spune acum și ce se întâmplă după termen — până acum mesajul cerea bani fără să
+> zică ce se pierde.
 
 ### 9. `mesaj_liber` — text liber ad-hoc
 - Fără șablon; textul e tastat de operator. **Doar manager în sus** (owner/admin/manager).
+
+---
+
+## C. Contracte și cont de portal — trimise AUTOMAT, un singur canal
+
+Un singur canal per familie: **SMS dacă are telefon, email doar ca rezervă**
+(decis 2026-09-10). Rândul din `situatie_sms_uri` se scrie oricum, cu status final,
+ca /notificari-sms să rămână jurnalul complet.
+
+### 10. `contract` — contract pregătit de semnare (prima trimitere / „Retrimite link")
+> `_shared/contractNotify.ts` → `mesajContract()`. Linkul de semnare are 75 car.
+> (domeniu + token de 43), deci mesajul e inevitabil pe 2 segmente.
+```
+Buna ziua! Contractul pentru {prenume} este pregatit pentru semnare. Va rugam sa verificati datele si sa il semnati aici: {link}. Linkul este valabil {N} zile.
+```
+
+### 11. `contract_reminder` — contractul n-a fost semnat
+> `process-contract-reminders`. Același link stabil, nu unul rotit.
+```
+Buna ziua! Contractul pentru {prenume} nu este inca semnat. Il puteti verifica si semna aici: {link}. Linkul mai este valabil {N} zile.
+```
+
+### 12. `cont_portal` — datele contului de membru (creare + resetare parolă)
+> `provision-client`. Trimis de recepție, la cerere. Depășește 160 car. la un email
+> obișnuit ⇒ 2 segmente; asumat, fiindcă pleacă o singură dată per cont.
+> **Respectă zona interzisă din 2026-09-20** — vezi mai jos.
+```
+Quasar Dance: contul de membru este activ. Acces: {url} Email: {email} Parola temporara: {parola} Va recomandam sa schimbati parola dupa prima autentificare.
+```
+
+---
+
+## D. Marketing vs tranzacțional — ce oprește opt-out-ul
+
+Sursa unică: **[`supabase/functions/_shared/smsCategorie.ts`](../../supabase/functions/_shared/smsCategorie.ts)**.
+Orice cale nouă de SMS își declară categoria acolo, nu în locul de unde trimite.
+
+Regula (decisă 2026-09-20): `opt_out_marketing` din `clienti`/`leads`/`familii`
+rămâne opt-out **de marketing**, nu blocare generală. Cine a cerut să nu mai
+primească promovare continuă să primească mesajele pe care le-a provocat el —
+interes legitim, GDPR art. 6 lit. f.
+
+| Categorie | Mesaje | Opt-out |
+|---|---|---|
+| **Marketing** | `post_demo`, `review`, `followup` (parcat) | **blochează** |
+| **Tranzacțional** | `confirmare`, `reminder`, `waiting_list`, `confirmare_inrolare`, `reminder_plata`, `notificare_restante`, `avertisment_loc`, `contract`, `contract_reminder`, `cont_portal` | nu blochează |
+
+Unde e pus gardul:
+- `send-lead-sms` — verifică `leads.opt_out_marketing` și sare dacă tipul e marketing;
+- `cron-afternoon` — `post_demo` filtrează `opt_out_marketing = false` direct în
+  interogarea de candidați, ca leadul cu opt-out să nu consume nici dedupul;
+- `process-review-sms` — rândul se anulează cu motivul „opt-out marketing".
+
+⚠️ **`mesaj_liber` nu e clasificat** — textul îl scrie operatorul, deci categoria nu
+se poate deduce din cod. `esteMarketing()` întoarce `true` pentru orice cod
+necunoscut (varianta prudentă), dar **compozitorul bulk nu consultă încă gardul**:
+rândurile libere pleacă spre toți destinatarii selectați manual, inclusiv cei cu
+opt-out. De făcut: selectorul obligatoriu Operațional/Marketing în „Generează
+SMS-uri", cu excluderea automată a celor cu opt-out și numărul lor în previzualizare.
+
+> Până la 2026-09-20 coloana `opt_out_marketing` era **doar audit**: se scria, se
+> vedea în /opt-out și nu oprea nimic — omul care ceruse explicit să nu mai fie
+> contactat primea în continuare „locurile se ocupă în ordinea înscrierii".
+
+---
+
+## E. Zona interzisă (quiet hours) — 19:30–10:00 local
+
+Config în `parametri_aplicatie.sms_quiet_hours`, editabil din Setări. Gardianul
+autoritar e `isQuiet(now)` evaluat **la trimitere**, nu `send_after`.
+
+Toate căile de SMS o respectă:
+
+| Cale | Cum amână |
+|---|---|
+| `send-lead-sms` | rând în `sms_amanate` |
+| `process-sms-queue` | rând în `sms_amanate`, sursa trece pe 'Amanat' |
+| `process-sms-amanate` | re-amână lotul scadent dacă e încă în fereastră |
+| `process-programare-sms`, `process-review-sms` | împing `send_after` spre dimineață |
+| `_shared/contractNotify.ts` | rând în `sms_amanate` |
+| `provision-client` (`cont_portal`) | rând în `sms_amanate` — **din 2026-09-20** |
+| `cron-morning` (10:00), `cron-afternoon` (16:00) | rulează prin construcție în afara ferestrei |
+
+> `provision-client` era singura cale care suna direct `sendSms`, fără gard:
+> recepția care crea un cont la 20:30 trimitea parola în mijlocul serii.
+
+---
+
+## F. `data_planificata` — termen, nu etichetă
+
+`situatie_sms_uri.data_planificata` e **termenul** rândului. Din 2026-09-20,
+`process-sms-queue` trimite numai rândurile cu `data_planificata` nulă sau ≤ ziua
+locală curentă; restul rămân „De trimis" până la termenul lor și apar în rezultat
+ca „N programate pentru mai târziu".
+
+> Înainte, drain-ul lua tot ce era 'De trimis', deci data pusă în „+ SMS manual"
+> nu amâna nimic — un mesaj programat pentru 1 octombrie pleca la prima apăsare pe
+> „Trimite cele de trimis".
 
 ---
 
@@ -220,11 +355,24 @@ Buna ziua! Pentru a pastra {locul lui X / locurile lui X si Y} la Quasar Dance, 
 3. ✅ **`avertisment_loc` > 50 zile + termen dinamic** (LIVRAT 2026-06-08) — prag `zile_dep > 50` în RPC; un SMS / familie cu suma totală; `{termen}` = data trimiterii + 2 zile.
 4. ✅ **Scadențe prima/ultima rată** (LIVRAT 2026-06-08) — scadențele primei (luna de început, ex. sept.) și ultimei rate (luna de final, ex. iunie) se definesc EXPLICIT pe sezon (coloane `sezoane.scadenta_prima_rata` / `scadenta_ultima_rata`, editabile în formularul de sezon din /setari ȘI în wizard-ul de clonare — pasul 1, ca să nu fie uitate la sezonul nou). `get_sms_recipients` calculează scadența per rând (prima/ultima rată din sezon → data explicită; lunile intermediare → ziua 15) și o folosește pentru `zile_depasire`, fereastra `reminder_plata` și textul „N zile pana la termen". Necompletat pe sezon = ziua 15 (fallback). Ex. sezon 2025-2026: prima = 19 sept, ultima = 13 iunie.
 
-### Gata de sincronizat acum (text pur, fără funcții noi)
-- `confirmare` (#1) — 162 car. worst-case (2 SMS la combinațiile lungi)
-- `reminder` (#2) — 162 car. worst-case
-- `waiting_list` (#5) — 153 car. ✓
-- `reminder_plata` (#6) — 114 car. ✓ standard / 149 car. ✓ varianta reducere familie
+### Segmente măsurate după rescrierea din 2026-09-20
+Worst-case = numele cel mai lung admis de `numeSalut` (20 car.) + adresa cea mai
+lungă (Ștefan cel Mare / Q4K, 46-47 car.).
+
+| Mesaj | Înainte | Acum |
+|---|---|---|
+| `confirmare` | 2 seg. de la nume ≥9 | **1 seg.** până la nume de 15 |
+| `reminder` | 2 seg. de la nume ≥9 | 2 seg. de la nume ≥9 (neschimbat) |
+| `waiting_list` | 2 seg. de la nume ≥17 | **1 seg. mereu** |
+| `post_demo` | 1 seg. mereu | 1 seg. mereu |
+| `review` | 2 seg. de la nume ≥15 | 2 seg. de la nume ≥17 |
+| `reminder_plata` | 1 seg. | 1 seg. |
+| `notificare_restante` (2 cursanți) | 3 seg. | **2 seg.** |
+| `avertisment_loc` | 2 seg. | 2 seg. |
+| `confirmare_inrolare` | 2 seg. | 2 seg. |
+
+Verificat rulând builderele reale pe 58 de combinații (nume × locație × tip):
+0 mesaje urcă un segment, 4 coboară.
 
 ---
 

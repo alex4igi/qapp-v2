@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         ? Math.max(1, Math.ceil((new Date(c.token_expira_la).getTime() - now) / 86400_000))
         : 7
       const mesaj =
-        `Quasar Dance: reminder - contractul${cine} asteapta semnatura ta: ${link} (mai e valabil ${zileRamase} zile)`
+        `Buna ziua! Contractul${cine} nu este inca semnat. Il puteti verifica si semna aici: ${link}. Linkul mai este valabil ${zileRamase} zile.`
 
       // Un singur canal, ca la prima trimitere: SMS dacă are telefon, altfel email.
       const notif = await notificaContract(admin, {
