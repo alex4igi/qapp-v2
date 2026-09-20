@@ -21,9 +21,10 @@ export async function sha256Hex(input: string | Uint8Array): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-export function clientIp(req: Request): string {
-  return (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'necunoscut'
-}
+// O singură definiție a IP-ului de client, în `rateLimit.ts`: acolo e explicat de ce
+// `cf-connecting-ip` e cel de încredere. IP-ul de aici intră în jurnalul probatoriu al
+// semnăturii, deci contează să nu fie falsificabil.
+export { clientIp } from './rateLimit.ts'
 
 // Jurnal probatoriu append-only. Eșecul de logging nu blochează fluxul principal,
 // dar îl raportăm în consolă (apare în logurile funcției).

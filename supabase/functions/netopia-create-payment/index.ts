@@ -6,6 +6,7 @@
 // Confirmarea efectivă (scrierea în `incasari`) se face DOAR din `netopia-webhook`.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import * as jose from 'npm:jose@5'
+import { raspuns429, verificaPlafon } from '../_shared/rateLimit.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -74,6 +75,15 @@ Deno.serve(async (req) => {
     } catch {
       return json({ error: 'invalid token' }, 401)
     }
+
+    // Cheia e contul, nu IP-ul: apelantul e deja identificat, iar o familie întreagă
+    // poate sta pe același IP. 15 inițieri la 10 minute acoperă orice om care se
+    // răzgândește între rate și blochează o buclă de comenzi.
+    const plafon = await verificaPlafon(admin, 'netopia-create', portalAccountId, {
+      fereastraSec: 600,
+      limita: 15,
+    })
+    if (!plafon.permis) return raspuns429(plafon.retryAfter, corsHeaders)
 
     const { clientId, kind = 'abonament', sesiuneId, evenimentId, qty, panaLa, datorii, includeInrolari, voucherCod, platesteIntegral } = (await req.json()) as Body
     if (!clientId) return json({ error: 'clientId obligatoriu' }, 400)

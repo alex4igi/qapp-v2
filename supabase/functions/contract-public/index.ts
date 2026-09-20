@@ -29,6 +29,7 @@ import {
   sha256Hex,
   type TemplateField,
 } from '../_shared/contracte.ts'
+import { raspuns429, verificaPlafon } from '../_shared/rateLimit.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,6 +42,10 @@ function json(body: unknown, status = 200): Response {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 }
+
+// O semnare completă face câteva apeluri (load → semnare → stare → download).
+// 30 la 5 minute lasă loc unei reîncercări, dar nu unui script care ghicește tokenuri.
+const PLAFON = { fereastraSec: 300, limita: 30 }
 
 const MAX_SIGNATURE_BYTES = 300_000 // PNG canvas; generos dar limitat
 
@@ -213,6 +218,10 @@ Deno.serve(async (req) => {
     if (!token || token.length < 20) return json({ error: 'token invalid' }, 400)
 
     const admin = serviceClient()
+
+    const plafon = await verificaPlafon(admin, 'contract-public', clientIp(req), PLAFON)
+    if (!plafon.permis) return raspuns429(plafon.retryAfter, corsHeaders)
+
     const contract = await findByToken(admin, token)
     // Linkurile înlocuite de remindere până la 2026-09-15 nu mai pot fi recuperate.
     if (!contract) {

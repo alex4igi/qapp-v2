@@ -31,6 +31,7 @@ import {
   isValidEmail,
   logIntake,
 } from '../_shared/intake.ts'
+import { clientIp, raspuns429, verificaPlafon } from '../_shared/rateLimit.ts'
 
 const SECRET = Deno.env.get('INTAKE_SECRET') ?? ''
 const REQUIRE_SECRET = Deno.env.get('INTAKE_REQUIRE_SECRET') === 'true'
@@ -41,6 +42,10 @@ const cors: Record<string, string> = REQUIRE_SECRET ? {} : {
   'Access-Control-Allow-Headers': 'content-type, x-intake-secret',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
+
+// O familie care înscrie doi copii trimite două formulare; 5 la 10 minute e larg pentru
+// om și strâmt pentru un script.
+const PLAFON = { fereastraSec: 600, limita: 5 }
 
 // Plafoanele erau doar în serverul site-ului; endpoint-ul le repetă, fiindcă el e granița.
 const MAX_SCURT = 200
@@ -76,11 +81,16 @@ Deno.serve(async (req) => {
     user_agent: req.headers.get('user-agent')?.slice(0, 200) ?? null,
   }
 
+  const supabasePlafon = serviceClient()
+  const ip = clientIp(req, areSecret)
+  const plafon = await verificaPlafon(supabasePlafon, 'intake-website', ip, PLAFON)
+  if (!plafon.permis) return raspuns429(plafon.retryAfter, cors)
+
   try {
     const body = await req.json().catch(() => ({}))
     const nume = cap(body.nume, MAX_SCURT) ?? ''
     const telefon = cap(body.telefon, MAX_SCURT) ?? ''
-    const supabase = serviceClient()
+    const supabase = supabasePlafon
 
     // Submisiile respinse se loghează: altfel „am trimis X formulare, voi aveți
     // Y lead-uri" nu se poate explica. Fără PII — doar motivul + atribuirea.
