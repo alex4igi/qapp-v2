@@ -77,6 +77,28 @@ export function serieSubMinim(g: GrupaPragMinim): string {
     .join(' · ')
 }
 
+// Avertizarea timpurie (decisă 21 sept. 2026): grupa e sub minim în luna în
+// CURS, cât încă se mai poate umple. Nu atinge regula de suspendare — aceea
+// testează doar lunile încheiate de după luna lansării. Grupele deja în
+// observație sau propuse pentru suspendare au semnalul lor, mai tare.
+export function subMinimLunaAsta(g: GrupaPragMinim): boolean {
+  return (
+    g.sezonInCurs &&
+    g.stare !== 'suspendat' &&
+    g.stare !== 'in_observatie' &&
+    g.stare !== 'de_suspendat' &&
+    g.cursantiLunaCurenta != null &&
+    g.cursantiLunaCurenta < g.minim
+  )
+}
+
+/** Luna în curs e luna lansării grupei — nu se numără la cele 3 luni. */
+export function eLunaLansarii(g: GrupaPragMinim): boolean {
+  const d = new Date()
+  const azi = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  return g.lunaLansare.slice(0, 7) === azi
+}
+
 export function motivSuspendareSubMinim(g: GrupaPragMinim): string {
   return `Sub minimul de ${g.minim} cursanți ${g.luniSubConsecutive} luni la rând (${serieSubMinim(g)}).`
 }

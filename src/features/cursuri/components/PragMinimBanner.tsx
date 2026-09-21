@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui'
 import {
   LUNI_PANA_LA_PROPUNERE,
+  eLunaLansarii,
   lunaScurta,
   serieSubMinim,
+  subMinimLunaAsta,
   type GrupaPragMinim,
 } from '../api'
 
@@ -13,9 +15,31 @@ type Props = {
 }
 
 // Semnalul apare doar cât sezonul grupei e în curs: pe un sezon încheiat nu mai
-// ai ce suspenda, iar pe grupele în rodaj nu s-a încheiat încă nicio lună testată.
+// ai ce suspenda. Pe luna în curs e doar avertizare — fără buton de suspendare,
+// pentru că nicio lună testată nu s-a încheiat încă sub minim.
 export function PragMinimBanner({ grupa, onSuspenda }: Props) {
   if (!grupa.sezonInCurs) return null
+
+  if (subMinimLunaAsta(grupa)) {
+    return (
+      <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <p className="text-sm font-bold text-amber-900">
+          Sub minimul de cursanți luna asta: {grupa.cursantiLunaCurenta} din{' '}
+          {grupa.minim}
+        </p>
+        <p className="mt-0.5 text-sm text-amber-800">
+          minim {grupa.minim}
+          {grupa.salaNume ? ` în ${grupa.salaNume}` : ''} · cursanți plătitori
+        </p>
+        <p className="mt-1 text-xs text-amber-800/80">
+          {eLunaLansarii(grupa)
+            ? `E luna lansării — nu se numără la cele ${LUNI_PANA_LA_PROPUNERE} luni, grupa încă se poate umple.`
+            : `Dacă luna se încheie sub ${grupa.minim}, grupa intră în observație; ${LUNI_PANA_LA_PROPUNERE} luni încheiate la rând înseamnă propunere de suspendare.`}
+        </p>
+      </div>
+    )
+  }
+
   if (grupa.stare !== 'de_suspendat' && grupa.stare !== 'in_observatie') return null
 
   const luniRamase = LUNI_PANA_LA_PROPUNERE - grupa.luniSubConsecutive

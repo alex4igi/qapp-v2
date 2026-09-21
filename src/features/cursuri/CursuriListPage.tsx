@@ -30,6 +30,7 @@ import { CursForm } from './CursForm'
 import {
   getCursuriChecklistFields,
   getGrupeSubMinim,
+  subMinimLunaAsta,
   listCursuri,
   listCursuriFilterOptions,
   PAGE_SIZE,
@@ -103,6 +104,16 @@ const makeColumns = (
         ? `${c.inscrisi}/${c.capacitate_maxima}`
         : c.inscrisi
       const prag = c.id ? pragMinimById.get(c.id) : undefined
+      if (prag && subMinimLunaAsta(prag)) {
+        return (
+          <span className="flex flex-col items-start gap-0.5">
+            <span>{inscrisi}</span>
+            <Badge tone="warn">
+              luna asta {prag.cursantiLunaCurenta}/{prag.minim}
+            </Badge>
+          </span>
+        )
+      }
       if (prag?.stare !== 'de_suspendat' && prag?.stare !== 'in_observatie') {
         return inscrisi
       }

@@ -60,5 +60,7 @@ export {
   lunaScurta,
   serieSubMinim,
   motivSuspendareSubMinim,
+  subMinimLunaAsta,
+  eLunaLansarii,
   LUNI_PANA_LA_PROPUNERE,
 } from './pragMinim'

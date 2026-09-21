@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui'
 import {
   LUNI_PANA_LA_PROPUNERE,
+  eLunaLansarii,
   serieSubMinim,
+  subMinimLunaAsta,
   type GrupaPragMinim,
 } from '../api'
 
@@ -12,19 +14,29 @@ type Props = {
 }
 
 // Lista de lucru a managerului pe sezonul în curs: ce grupe sunt propuse pentru
-// suspendare și ce grupe se apropie. Decizia se ia din fișa fiecărei grupe.
+// suspendare, ce grupe se apropie și ce grupe sunt sub minim chiar luna asta.
+// Decizia se ia din fișa fiecărei grupe.
 export function PragMinimPanel({ grupe }: Props) {
   const [observatieOpen, setObservatieOpen] = useState(false)
+  const [lunaAstaOpen, setLunaAstaOpen] = useState<boolean | null>(null)
   const inCurs = grupe.filter((g) => g.sezonInCurs)
   if (inCurs.length === 0) return null
 
   const deSuspendat = inCurs.filter((g) => g.stare === 'de_suspendat')
   const inObservatie = inCurs.filter((g) => g.stare === 'in_observatie')
+  // Cele mai goale primele — acolo e cel mai puțin timp de umplut.
+  const lunaAsta = inCurs
+    .filter(subMinimLunaAsta)
+    .sort((a, b) => (a.cursantiLunaCurenta ?? 0) - (b.cursantiLunaCurenta ?? 0))
   const toateInRodaj = inCurs.every(
     (g) => g.stare === 'in_rodaj' || g.stare === 'suspendat',
   )
+  // Deschisă implicit doar când e singurul semnal de pe ecran; lângă grupe propuse
+  // pentru suspendare ar îneca lista care cere o decizie.
+  const lunaAstaDeschisa =
+    lunaAstaOpen ?? (deSuspendat.length === 0 && inObservatie.length === 0)
 
-  if (deSuspendat.length === 0 && inObservatie.length === 0) {
+  if (deSuspendat.length === 0 && inObservatie.length === 0 && lunaAsta.length === 0) {
     return (
       <p className="mb-4 text-xs text-quasar-gray">
         Prag minim de cursanți:{' '}
@@ -77,11 +89,56 @@ export function PragMinimPanel({ grupe }: Props) {
           )}
         </div>
       )}
+
+      {lunaAsta.length > 0 && (
+        <div
+          className={
+            deSuspendat.length > 0 || inObservatie.length > 0
+              ? 'mt-2 border-t border-gray-100 pt-2'
+              : ''
+          }
+        >
+          <button
+            type="button"
+            aria-expanded={lunaAstaDeschisa}
+            onClick={() => setLunaAstaOpen(!lunaAstaDeschisa)}
+            className="flex items-center gap-2 text-xs font-medium text-quasar-gray hover:text-quasar-black"
+          >
+            <span className={`transition-transform ${lunaAstaDeschisa ? 'rotate-90' : ''}`}>
+              ▶
+            </span>
+            Sub minim luna asta ({lunaAsta.length})
+          </button>
+          {lunaAstaDeschisa && (
+            <>
+              <p className="mt-1 text-xs text-quasar-gray">
+                Cifra lunii în curs — grupa încă se poate umple. Intră la
+                numărătoarea celor {LUNI_PANA_LA_PROPUNERE} luni abia când luna se
+                încheie; luna lansării nu se numără.
+              </p>
+              <ul className="mt-1 divide-y divide-gray-100">
+                {lunaAsta.map((g) => (
+                  <GrupaRand key={g.cursId} g={g} tone="warn" timpuriu />
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
     </section>
   )
 }
 
-function GrupaRand({ g, tone }: { g: GrupaPragMinim; tone: 'danger' | 'warn' }) {
+function GrupaRand({
+  g,
+  tone,
+  timpuriu = false,
+}: {
+  g: GrupaPragMinim
+  tone: 'danger' | 'warn'
+  /** Avertizare pe luna în curs: fără serie de luni încheiate. */
+  timpuriu?: boolean
+}) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2">
       <div className="min-w-0">
@@ -96,14 +153,22 @@ function GrupaRand({ g, tone }: { g: GrupaPragMinim; tone: 'danger' | 'warn' }) 
         </p>
       </div>
       <div className="flex items-center gap-3 text-xs text-quasar-gray">
-        <span>{serieSubMinim(g)}</span>
-        {g.cursantiLunaCurenta != null && (
+        {timpuriu ? (
+          eLunaLansarii(g) && <span>luna lansării</span>
+        ) : (
+          <span>{serieSubMinim(g)}</span>
+        )}
+        {!timpuriu && g.cursantiLunaCurenta != null && (
           <span>
             luna asta {g.cursantiLunaCurenta}/{g.minim}
           </span>
         )}
         <Badge tone={tone}>
-          {g.luniSubConsecutive === 1 ? '1 lună' : `${g.luniSubConsecutive} luni`}
+          {timpuriu
+            ? `${g.cursantiLunaCurenta}/${g.minim}`
+            : g.luniSubConsecutive === 1
+              ? '1 lună'
+              : `${g.luniSubConsecutive} luni`}
         </Badge>
       </div>
     </li>
