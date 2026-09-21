@@ -62,10 +62,16 @@ export function calendarLuna(sezon: ScadenteSezon, azi: Date): CalendarLuna | nu
     termen = dataLocala(sezon.scadenta_ultima_rata)
   }
 
+  // Mesajul de datorii nu pleacă de Crăciun: în decembrie se trimite pe 23.
+  let datorii = plusZile(termen, ZILE_DATORII_DUPA)
+  if (datorii.getMonth() === 11 && datorii.getDate() === 25) {
+    datorii = plusZile(datorii, -2)
+  }
+
   return {
     termen,
     reminder: plusZile(termen, -ZILE_REMINDER_INAINTE),
-    datorii: plusZile(termen, ZILE_DATORII_DUPA),
+    datorii,
   }
 }
 

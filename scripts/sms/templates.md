@@ -201,7 +201,7 @@ rată au termen propriu), deci septembrie și iunie se mută singure:
 | Luna | Termen | Reminder | Datorii |
 |------|--------|----------|---------|
 | Septembrie (prima rată, 2026-2027) | 20 | 15 | 30 |
-| Octombrie – mai | 15 | 10 | 25 |
+| Octombrie – mai | 15 | 10 | 25 (decembrie: **23**, nu de Crăciun) |
 | Iunie (ultima rată, 2026-2027) | 7 | 2 | 17 |
 
 Fereastra „Generează SMS-uri" arată calendarul lunii și avertizează când
