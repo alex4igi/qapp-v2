@@ -37,7 +37,7 @@ export function LeadsMobileView({ poateEdita }: { poateEdita: boolean }) {
   const leadsQuery = useQuery({
     queryKey: ['leads'],
     queryFn: async () => {
-      await pruneExpiredLeads()
+      if (poateEdita) await pruneExpiredLeads()
       return listLeads()
     },
   })

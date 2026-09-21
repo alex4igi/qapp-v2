@@ -68,6 +68,8 @@ const PLIATE_IMPLICIT: StatusLead[] = ['waiting_list', 'convertit', 'pierdut']
 
 export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   const queryClient = useQueryClient()
+  const { role } = useAuth()
+  const poateEdita = canEditLeads(role)
   const [searchParams, setSearchParams] = useSearchParams()
   // Presetul de status e în URL, ca tabul „Nurture" să fie doar o scurtătură
   // către ?vedere=lista&status=nurture — un singur cod, două uși de intrare.
@@ -121,7 +123,9 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
   const leadsQuery = useQuery({
     queryKey: ['leads'],
     queryFn: async () => {
-      await pruneExpiredLeads()
+      // Curățenia scrie în leaduri; DB-ul o refuză rolurilor read-only (42501)
+      // și, pusă înaintea citirii, bloca toată lista pentru agenție.
+      if (poateEdita) await pruneExpiredLeads()
       return listLeads()
     },
   })
@@ -174,10 +178,8 @@ export function KanbanBoard({ mode }: { mode: PipelineMode }) {
     return map
   }, [campaniiQuery.data])
 
-  const { role } = useAuth()
   // Agenția de ads vede pipeline-ul, nu-l mută. Fără senzori dnd-kit nu pornește
   // niciun drag — statusul nu se poate schimba nici accidental.
-  const poateEdita = canEditLeads(role)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: poateEdita
