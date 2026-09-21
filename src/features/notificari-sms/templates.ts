@@ -4,6 +4,8 @@
 // Mesajul final e construit aici și stocat în situatie_sms_uri.mesaj — processorul
 // doar îl trimite. REGULĂ: text fără diacritice și fără emoji (GSM-7).
 
+import { dataLocala, formatZiLuna, ziua } from './calendar'
+
 const IBAN = 'RO85 INGB 0000 9999 1498 9082'
 
 // Telefonul locației (hardcoded, ca în _shared/sms.ts — nu există în DB).
@@ -19,15 +21,6 @@ const TELEFON_DEFAULT = '0730 534 172'
 
 function telefonLocatie(nume: string | null): string {
   return TELEFOANE_LOCATIE[nume ?? ''] ?? TELEFON_DEFAULT
-}
-
-const MONTHS = [
-  'ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
-  'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie',
-]
-
-function formatZiLuna(d: Date): string {
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}`
 }
 
 export const SMS_BULK_CODES = [
@@ -98,12 +91,10 @@ function joinSi(items: string[]): string {
 // pleacă în loturi care pot fi generate azi și trimise mâine, iar „peste 3 zile"
 // devine fals între generare și plecare. Fallback pe ziua 15 când rândul n-are
 // scadență explicită (sezon fără prima/ultima rată configurată).
-function textScadenta(scadentaISO: string | null, azi: Date): string {
-  if (scadentaISO) {
-    const [y, m, d] = scadentaISO.slice(0, 10).split('-').map(Number)
-    return formatZiLuna(new Date(y, m - 1, d))
-  }
-  return formatZiLuna(new Date(azi.getFullYear(), azi.getMonth(), 15))
+function termenRata(scadentaISO: string | null, azi: Date): Date {
+  return scadentaISO
+    ? dataLocala(scadentaISO)
+    : new Date(azi.getFullYear(), azi.getMonth(), 15)
 }
 
 // Construiește textul SMS pentru un destinatar + un cod. Pentru mesaj_liber,
@@ -118,7 +109,14 @@ export function buildBulkSms(
   switch (cod) {
     case 'reminder_plata': {
       // Scadența reală a rândului (prima/ultima rată din sezon sau ziua 15).
-      const termen = textScadenta(r.scadenta, azi)
+      const termenData = termenRata(r.scadenta, azi)
+      const termen = formatZiLuna(termenData)
+      // După termen (fereastra ține până la ziua datoriilor) nu mai amenințăm cu
+      // reducerea: cine a plătit la timp prin transfer, încă neimportat, o are
+      // întreagă, iar ceilalți au pierdut-o deja.
+      if (ziua(azi) > termenData) {
+        return `Buna ziua! Va reamintim ca termenul de plata pentru abonamentul Quasar Dance a fost ${termen}. Daca ati efectuat deja plata, va multumim.`
+      }
       // Varianta cu reducere e scurtată (fără „Daca ati achitat deja…") ca să
       // încapă în 160 car. — cu fraza de politețe ajungea la 185, adică 2 segmente.
       if (r.are_reducere) {

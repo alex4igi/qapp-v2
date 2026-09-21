@@ -25,8 +25,16 @@ import {
 import {
   getSmsRecipients,
   getClientiVizatiLunaCurenta,
+  getScadenteSezon,
   createSmsQueueBatch,
 } from './api'
+import {
+  LUNI,
+  calendarLuna,
+  formatZiLuna,
+  ziua,
+  type CalendarLuna,
+} from './calendar'
 
 type Props = {
   open: boolean
@@ -73,6 +81,17 @@ export function SmsComposer({ open, onClose }: Props) {
       setSezonInit(true)
     }
   }, [sezonInit, sezonActiv.data])
+
+  // Calendarul se citește din sezonul filtrat; pe „Toate", din sezonul activ.
+  const sezonCalendar = sezon || sezonActiv.data || ''
+  const scadenteQuery = useQuery({
+    queryKey: ['sezon-scadente', sezonCalendar],
+    queryFn: () => getScadenteSezon(sezonCalendar),
+    enabled: open && !!sezonCalendar,
+  })
+  const calendar = scadenteQuery.data
+    ? calendarLuna(scadenteQuery.data, new Date())
+    : null
 
   // mesaj_liber are nevoie de locație (ca să nu trimitem aiurea tuturor).
   const needsLocatie = cod === 'mesaj_liber'
@@ -135,17 +154,21 @@ export function SmsComposer({ open, onClose }: Props) {
       return next
     })
 
-  // La reminder_plata textul diferă pentru cei cu preț promo — arătăm ambele
-  // variante prezente în selecție, ca operatorul să vadă exact ce pleacă.
+  // La reminder_plata textul diferă pentru cei cu reducere de familie — arătăm
+  // ambele variante prezente în selecție, ca operatorul să vadă exact ce pleacă.
+  // După termen variantele coincid, deci rămâne una singură.
   const samplePreviews = useMemo(() => {
     const out: Array<{ eticheta: string | null; text: string }> = []
     const faraReducere = selectedRecipients.find((r) => !r.are_reducere)
     const cuReducere = selectedRecipients.find((r) => r.are_reducere)
     if (cod === 'reminder_plata') {
       if (faraReducere)
-        out.push({ eticheta: 'preț standard', text: buildBulkSms(cod, faraReducere, { textLiber }) })
+        out.push({ eticheta: 'fără reducere', text: buildBulkSms(cod, faraReducere, { textLiber }) })
       if (cuReducere)
-        out.push({ eticheta: 'preț promo', text: buildBulkSms(cod, cuReducere, { textLiber }) })
+        out.push({ eticheta: 'cu reducere familie', text: buildBulkSms(cod, cuReducere, { textLiber }) })
+      if (out.length === 2 && out[0].text === out[1].text) {
+        return [{ eticheta: null, text: out[0].text }]
+      }
       return out
     }
     const r = selectedRecipients[0]
@@ -244,6 +267,11 @@ export function SmsComposer({ open, onClose }: Props) {
             />
           </Field>
         </div>
+
+        {calendar &&
+          (cod === 'reminder_plata' || cod === 'notificare_restante') && (
+            <CalendarTrimiteri calendar={calendar} cod={cod} />
+          )}
 
         {cod === 'mesaj_liber' && (
           <Field label="Text mesaj (fără diacritice)" htmlFor="text" required>
@@ -384,5 +412,55 @@ export function SmsComposer({ open, onClose }: Props) {
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </Modal>
+  )
+}
+
+// Ziua de trimitere a lunii + ce înseamnă să generezi azi, în altă zi.
+function CalendarTrimiteri({
+  calendar,
+  cod,
+}: {
+  calendar: CalendarLuna
+  cod: 'reminder_plata' | 'notificare_restante'
+}) {
+  const azi = ziua(new Date())
+  const { termen, reminder, datorii } = calendar
+  const luna = LUNI[termen.getMonth()]
+
+  let nota: { text: string; atentie: boolean } | null = null
+  if (cod === 'reminder_plata') {
+    if (azi < reminder) {
+      nota = { text: `Reminderul lunii se trimite pe ${formatZiLuna(reminder)}.`, atentie: false }
+    } else if (azi > termen && azi < datorii) {
+      nota = {
+        text: `Termenul a trecut: pleacă varianta „termenul a fost ${formatZiLuna(termen)}", fără avertismentul despre reducere.`,
+        atentie: false,
+      }
+    } else if (azi >= datorii) {
+      nota = {
+        text: 'Fereastra reminderului s-a închis — pentru rata lunii se trimite acum mesajul de datorii.',
+        atentie: false,
+      }
+    }
+  } else if (azi < datorii) {
+    nota = {
+      text: `Mesajul de datorii al lunii se trimite pe ${formatZiLuna(datorii)}. Până atunci, rata din ${luna} apare restantă și la cei care au plătit prin transfer, dar extrasul n-a fost încă importat.`,
+      atentie: true,
+    }
+  }
+
+  return (
+    <div className="rounded-md border border-quasar-gray-light px-3 py-2 text-sm">
+      <p>
+        <span className="font-medium">Calendar {luna}:</span> termen de plată{' '}
+        {formatZiLuna(termen)} · reminder pe {formatZiLuna(reminder)} · mesaj de
+        datorii pe {formatZiLuna(datorii)}
+      </p>
+      {nota && (
+        <p className={nota.atentie ? 'mt-1 text-amber-800' : 'mt-1 text-quasar-gray'}>
+          {nota.text}
+        </p>
+      )}
+    </div>
   )
 }

@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { getSmsQuietHours } from '@/features/setari/api/sms'
 import type { SituatieSms, InsertDto } from '@/types/db'
 import type { SmsBulkCod, SmsRecipient, SmsRecipientMembru } from './templates'
+import type { ScadenteSezon } from './calendar'
 
 export const PAGE_SIZE = 25
 
@@ -182,6 +183,17 @@ export async function getSmsRecipients({
     client_ids: r.client_ids ?? [],
     are_reducere: r.are_reducere ?? false,
   }))
+}
+
+// Termenele sezonului, din care se calculează calendarul trimiterilor.
+export async function getScadenteSezon(sezonId: string): Promise<ScadenteSezon> {
+  const { data, error } = await supabase
+    .from('sezoane')
+    .select('data_incepere, data_final, scadenta_prima_rata, scadenta_ultima_rata')
+    .eq('id', sezonId)
+    .single()
+  if (error) throw error
+  return data
 }
 
 // Inserare în lot a SMS-urilor compuse în coadă (status 'De trimis').

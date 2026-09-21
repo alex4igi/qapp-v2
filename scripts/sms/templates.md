@@ -182,6 +182,34 @@ Buna ziua! Termenul de plata pentru abonamentul Quasar Dance este {termen}. Dupa
 > Textul e scurtat (fără „Daca ati achitat deja, va multumim.") ca să încapă în
 > 160 car. — cu fraza de politețe ajungea la 185, adică 2 segmente.
 
+**Varianta „după termen"** (2026-09-21) — între termen și ziua mesajului de datorii
+(termen + 10 zile), reminderul rămâne deschis și pleacă aceeași formulare pentru
+toți, fără avertismentul despre reducere: cine a plătit la timp prin transfer,
+încă neimportat, o are întreagă, iar ceilalți au pierdut-o deja. 141 car. cu
+„20 septembrie", deci 1 segment.
+```
+Buna ziua! Va reamintim ca termenul de plata pentru abonamentul Quasar Dance a fost {termen}. Daca ati efectuat deja plata, va multumim.
+```
+> Dedup-ul rămâne unul pe lună și cod: cine a primit reminderul la timp nu-l mai
+> primește și pe cel de după termen.
+
+### Calendarul trimiterilor (decis 2026-09-21)
+Zilele stau la distanță fixă de termenul lunii: **reminder cu 5 zile înainte,
+mesajul de datorii cu 10 zile după**. Termenul vine din sezon (prima și ultima
+rată au termen propriu), deci septembrie și iunie se mută singure:
+
+| Luna | Termen | Reminder | Datorii |
+|------|--------|----------|---------|
+| Septembrie (prima rată, 2026-2027) | 20 | 15 | 30 |
+| Octombrie – mai | 15 | 10 | 25 |
+| Iunie (ultima rată, 2026-2027) | 7 | 2 | 17 |
+
+Fereastra „Generează SMS-uri" arată calendarul lunii și avertizează când
+`notificare_restante` se generează înainte de ziua datoriilor (rata lunii pare
+restantă și la cei cu transfer neimportat). Regula e în
+`src/features/notificari-sms/calendar.ts` + fereastra `reminder_plata` din
+`get_sms_recipients` (migrația `20260921150000`).
+
 ### 7. `notificare_restante` — clienți cu restanță
 ```
 Buna ziua! In evidentele Quasar Dance figureaza un sold restant de {total} RON pentru {nume}. Plata se poate face la studio sau in contul RO85 INGB 0000 9999 1498 9082. Pentru detalii: {nr telefon locatia inrolarii}.
