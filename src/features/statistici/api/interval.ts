@@ -20,6 +20,9 @@ export function lunaCurenta(): string {
 
 export function lunaCuOffset(offset: number): string {
   const d = new Date()
+  // Ancorăm pe ziua 1 înainte de `setMonth`: pe un 31 saltul trece peste lunile
+  // scurte (31 mart. − 1 lună = 3 mart., nu februarie).
+  d.setDate(1)
   d.setMonth(d.getMonth() + offset)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }

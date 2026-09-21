@@ -55,10 +55,14 @@ function rata(prezenti: number, posibile: number): number {
   return posibile > 0 ? Math.round((100 * prezenti) / posibile) : 0
 }
 
-// Rată prezență (engagement) pe luna curentă, doar cursuri recurent + trupă.
-// global = sumă peste locații; perLocatie = defalcare.
-export async function getRataPrezentaLuna(): Promise<RataPrezentaLuna> {
-  const { data, error } = await supabase.rpc('get_rata_prezenta_luna')
+// Rată prezență (engagement) pe luna curentă (1 → azi), doar cursuri recurent +
+// trupă. global = sumă peste locații; perLocatie = defalcare.
+export async function getRataPrezentaLuna(
+  locatieId: string | null = null,
+): Promise<RataPrezentaLuna> {
+  const { data, error } = await supabase.rpc('get_rata_prezenta_luna', {
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
   if (error) throw error
 
   const rows = (data ?? []).map((r) => ({

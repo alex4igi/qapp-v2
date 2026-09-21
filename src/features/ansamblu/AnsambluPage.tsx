@@ -2,328 +2,455 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
 import { formatRON } from '@/lib/format'
+import { sezonActiv, saliWithLocatie } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { KpiCard } from '@/features/statistici/KpiCard'
-import { OverviewDonut } from '@/features/statistici/OverviewDonut'
 import {
   getRataPrezentaLuna,
   getRetentieLuna,
-  getVenitLunaCurenta,
+  getVenitLunaComparat,
+  lunaCuOffset,
 } from '@/features/statistici/api'
+import { getAbsente21zCount } from '@/features/absente21z/api'
+import { getDatoriiDashboard, restTotal, sumDatorii } from '@/features/datorii/api'
+import { getGrupeSubMinim, subMinimLunaAsta } from '@/features/cursuri/api'
 import {
   getClientiActivi,
   getClientiInscrisiSezon,
   getOcuparePeLocatii,
 } from './api'
-import { CursantiPeLocatieChart } from './CursantiPeLocatieChart'
+import {
+  SituatieLocatiiList,
+  SituatieLocatiiTable,
+  type SituatieRow,
+} from './SituatieLocatiiTable'
+import { PrezentaRetentieCard } from './PrezentaRetentieCard'
+import { DeUrmarit, type RandDeUrmarit } from './DeUrmarit'
+
+const INFO_INSCRISI = (
+  <>
+    <p className="font-semibold">Ce numără</p>
+    <p className="mt-1">
+      Cursanții cu cel puțin o înrolare nereziliată în sezonul activ — „câți am pe
+      listă".
+    </p>
+    <p className="mt-1.5">
+      Spre deosebire de „Vin efectiv", cifra nu cade în groapa dintre sezoane:
+      contractele noi încep la startul sezonului.
+    </p>
+  </>
+)
+
+const INFO_ACTIVI = (
+  <>
+    <p className="font-semibold">Ce numără</p>
+    <p className="mt-1">
+      Cursanții cu un contract care acoperă ziua de azi <strong>sau</strong> cu o
+      prezență în ultimele 21 de zile — definiția canonică de „activ".
+    </p>
+    <p className="mt-1.5">
+      Un om se numără o singură dată, chiar dacă merge la mai multe grupe.
+    </p>
+  </>
+)
+
+const INFO_VENIT = (
+  <>
+    <p className="font-semibold">Cum se calculează</p>
+    <p className="mt-1">
+      Suma încasărilor pe data plății, atribuite locației la care s-au încasat.
+    </p>
+    <p className="mt-1.5">
+      Comparația e cu <strong>aceeași fereastră</strong> din luna trecută (1 → ziua
+      de azi), nu cu luna trecută întreagă — altfel la început de lună variația ar
+      fi mereu catastrofală.
+    </p>
+  </>
+)
+
+const INFO_OCUPARE = (
+  <>
+    <p className="font-semibold">Cum se calculează</p>
+    <p className="mt-1">
+      Locuri ocupate azi împărțit la capacitatea maximă a tuturor grupelor din
+      sezonul activ.
+    </p>
+    <ul className="mt-1.5 list-disc space-y-1 pl-4">
+      <li>
+        Intră toate grupele: cursuri, trupe, facultative și Open Class. Grupele
+        goale intră în capacitate.
+      </li>
+      <li>
+        Un loc = un cursant cu plată la grupă. Un copil la 2 grupe ocupă 2 locuri.
+      </li>
+      <li>
+        Abonamentul ține locul cât e valabil. O ședință plătită îl ține 30 de zile.
+      </li>
+      <li>Rezilierile și rezervările anulate nu se numără.</li>
+    </ul>
+  </>
+)
+
+const INFO_ABSENTE = (
+  <>
+    <p className="font-semibold">Ce numără</p>
+    <p className="mt-1">
+      Cazurile deschise din lista de recuperare: cursanți fără prezență de 21+
+      zile, încă necontactați și nereactivați, din sezonul curent.
+    </p>
+  </>
+)
+
+const INFO_GRUPE = (
+  <>
+    <p className="font-semibold">Ce numără</p>
+    <p className="mt-1">
+      Grupele sub minimul sălii (8 cursanți plătitori, 6 în SCM Studio 2): cele
+      sub minim <strong>luna asta</strong>, plus cele care au închis deja luni sub
+      minim.
+    </p>
+    <p className="mt-1.5">
+      La 3 luni încheiate la rând sub minim grupa e <strong>propusă</strong> pentru
+      suspendare — decizia rămâne a managerului. Luna în curs e doar avertizare:
+      grupa încă se poate umple, iar luna lansării nu se numără.
+    </p>
+  </>
+)
+
+const INFO_DATORII = (
+  <>
+    <p className="font-semibold">Ce numără</p>
+    <p className="mt-1">
+      Clienții cu sold restant și totalul restanței cumulate, fără sumele
+      prescrise.
+    </p>
+    <p className="mt-1.5">
+      Pe tot clubul, un client cu restanțe la două locații se numără la fiecare.
+    </p>
+  </>
+)
+
+const LUNI_VACANTA = [7, 8]
+
+function numeLuna(luna: string): string {
+  const [y, m] = luna.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('ro-RO', {
+    month: 'long',
+    timeZone: 'UTC',
+  })
+}
 
 export function AnsambluPage() {
   const { role } = useAuth()
   const isMobile = useIsMobile()
-  const { locatieId, locatieNume } = useWorkingLocatie()
-  // Pe telefon: doar cifrele. Donut-urile și plăcinta rămân pe laptop.
-  const privileged = isManagerOrHigher(role) && !isMobile
+  const { locatieId, locatieNume, ready } = useWorkingLocatie()
+  // Pragul minim al grupei e o decizie de management: RPC-ul refuză front_desk-ul,
+  // deci rândul nici nu se cere.
+  const privileged = isManagerOrHigher(role)
 
-  const activiQ = useQuery({
-    queryKey: ['ansamblu', 'clienti-activi'],
-    queryFn: getClientiActivi,
-  })
   const inscrisiQ = useQuery({
-    queryKey: ['ansamblu', 'clienti-inscrisi-sezon'],
+    queryKey: ['ansamblu', 'inscrisi'],
     queryFn: getClientiInscrisiSezon,
   })
-  const venitLunaQ = useQuery({
-    queryKey: ['ansamblu', 'venit-luna'],
-    queryFn: getVenitLunaCurenta,
-  })
-  const rataPrezentaQ = useQuery({
-    queryKey: ['ansamblu', 'rata-prezenta'],
-    queryFn: getRataPrezentaLuna,
+  const activiQ = useQuery({
+    queryKey: ['ansamblu', 'activi'],
+    queryFn: getClientiActivi,
   })
   const ocupareQ = useQuery({
-    queryKey: ['ansamblu', 'ocupare-locatii'],
+    queryKey: ['ansamblu', 'ocupare'],
     queryFn: getOcuparePeLocatii,
   })
+  const venitQ = useQuery({
+    queryKey: ['ansamblu', 'venit', locatieId],
+    queryFn: () => getVenitLunaComparat(locatieId),
+    enabled: ready,
+  })
+  const prezentaQ = useQuery({
+    queryKey: ['ansamblu', 'prezenta', locatieId],
+    queryFn: () => getRataPrezentaLuna(locatieId),
+    enabled: ready,
+  })
   const retentieQ = useQuery({
-    queryKey: ['ansamblu', 'retentie'],
-    queryFn: () => getRetentieLuna(),
+    queryKey: ['ansamblu', 'retentie', locatieId],
+    queryFn: () => getRetentieLuna(locatieId),
+    enabled: ready,
+  })
+  const sezonQ = useQuery({
+    queryKey: ['lookup', 'sezon-activ-detaliu'],
+    queryFn: sezonActiv,
+  })
+  const sezon = sezonQ.data ?? null
+
+  const absenteQ = useQuery({
+    queryKey: ['ansamblu', 'absente-21z', locatieId, sezon?.data_incepere ?? null],
+    queryFn: () => getAbsente21zCount(locatieId, sezon?.data_incepere ?? null),
+    enabled: ready && !!sezon,
+  })
+  const datoriiQ = useQuery({
+    queryKey: ['ansamblu', 'datorii', locatieId],
+    queryFn: () => getDatoriiDashboard(locatieId),
+    enabled: ready,
+  })
+  const grupeQ = useQuery({
+    queryKey: ['ansamblu', 'grupe-sub-minim', sezon?.id ?? null],
+    queryFn: () => getGrupeSubMinim({ sezonId: sezon!.id }),
+    enabled: privileged && !!sezon,
+  })
+  // `get_grupe_sub_minim` n-are p_locatie — pragul e al sălii, deci scopăm prin
+  // maparea sală → locație.
+  const saliQ = useQuery({
+    queryKey: ['lookup', 'sali-cu-locatie'],
+    queryFn: saliWithLocatie,
+    enabled: privileged && !!locatieId,
   })
 
-  const { total, perLocatie } = useMemo(() => {
-    const rows = activiQ.data ?? []
-    return {
-      total: rows.find((r) => r.locatie_id === null)?.activi ?? 0,
-      perLocatie: rows.filter((r) => r.locatie_id !== null),
+  const situatie = useMemo<SituatieRow[]>(() => {
+    const map = new Map<string, SituatieRow>()
+    const upsert = (id: string, nume: string) => {
+      const existing = map.get(id)
+      if (existing) return existing
+      const row: SituatieRow = {
+        locatieId: id,
+        nume,
+        inscrisi: 0,
+        activi: 0,
+        ocupate: null,
+        capacitate: null,
+        procent: null,
+      }
+      map.set(id, row)
+      return row
     }
-  }, [activiQ.data])
-
-  const { inscrisiTotal, inscrisiPerLocatie } = useMemo(() => {
-    const rows = inscrisiQ.data ?? []
-    return {
-      inscrisiTotal: rows.find((r) => r.locatie_id === null)?.inscrisi ?? 0,
-      inscrisiPerLocatie: rows.filter((r) => r.locatie_id !== null),
+    for (const r of inscrisiQ.data ?? []) {
+      if (r.locatie_id) upsert(r.locatie_id, r.locatie_nume).inscrisi = r.inscrisi
     }
-  }, [inscrisiQ.data])
+    for (const r of activiQ.data ?? []) {
+      if (r.locatie_id) upsert(r.locatie_id, r.locatie_nume).activi = r.activi
+    }
+    for (const r of ocupareQ.data?.perLocatie ?? []) {
+      if (!r.locatie_id) continue
+      const row = upsert(r.locatie_id, r.locatie_nume)
+      row.ocupate = r.ocupate
+      row.capacitate = r.capacitate
+      row.procent = r.procent
+    }
+    return [...map.values()].sort(
+      (a, b) => b.inscrisi - a.inscrisi || a.nume.localeCompare(b.nume, 'ro'),
+    )
+  }, [inscrisiQ.data, activiQ.data, ocupareQ.data])
 
-  const scopLabel = locatieId
-    ? `la ${locatieNume ?? 'locația selectată'}`
-    : 'unic, pe tot clubul'
-  const scopActivi = locatieId
-    ? perLocatie.find((r) => r.locatie_id === locatieId)?.activi ?? 0
-    : total
-  const scopInscrisi = locatieId
-    ? inscrisiPerLocatie.find((r) => r.locatie_id === locatieId)?.inscrisi ?? 0
-    : inscrisiTotal
-  const scopOcupare = locatieId
-    ? ocupareQ.data?.perLocatie.find((r) => r.locatie_id === locatieId)
-    : ocupareQ.data?.total
+  const totalRow: SituatieRow = {
+    locatieId: null,
+    nume: 'Total club',
+    inscrisi: inscrisiQ.data?.find((r) => r.locatie_id === null)?.inscrisi ?? 0,
+    activi: activiQ.data?.find((r) => r.locatie_id === null)?.activi ?? 0,
+    ocupate: ocupareQ.data?.total.ocupate ?? null,
+    capacitate: ocupareQ.data?.total.capacitate ?? null,
+    procent: ocupareQ.data?.total.procent ?? null,
+  }
 
-  const venitCard = (
-    <KpiCard
-      label="Venit luna curentă"
-      value={venitLunaQ.data != null ? formatRON(venitLunaQ.data) : '—'}
-      tone="positive"
-      hint="încasări în luna în curs"
-    />
+  // „—" înseamnă „n-am datele", nu „zero" — un 0% afișat din eroare de rețea se
+  // citește ca dezastru operațional.
+  const scopat = <T,>(
+    incarcat: boolean,
+    peLocatie: () => T,
+    peClub: () => T,
+  ): T | null => (incarcat ? (locatieId ? peLocatie() : peClub()) : null)
+
+  const scopInscrisi = scopat(
+    !!inscrisiQ.data,
+    () => situatie.find((r) => r.locatieId === locatieId)?.inscrisi ?? 0,
+    () => totalRow.inscrisi,
   )
+  const scopActivi = scopat(
+    !!activiQ.data,
+    () => situatie.find((r) => r.locatieId === locatieId)?.activi ?? 0,
+    () => totalRow.activi,
+  )
+  const scopOcupare = ocupareQ.data
+    ? locatieId
+      ? (ocupareQ.data.perLocatie.find((r) => r.locatie_id === locatieId) ?? null)
+      : ocupareQ.data.total
+    : null
+
+  const scopLabel = locatieId ? (locatieNume ?? 'locația selectată') : 'total club'
+
+  const azi = new Date()
+  const perioadaPrezenta = `1–${azi.getDate()} ${azi
+    .toLocaleDateString('ro-RO', { month: 'short' })
+    .replace('.', '')}`
+  const lunaDe = lunaCuOffset(-2)
+  const lunaLa = lunaCuOffset(-1)
+
+  const venit = venitQ.data ?? null
+  const datorii = datoriiQ.data ? sumDatorii(datoriiQ.data) : null
+
+  const grupeScop = useMemo(() => {
+    const rows = grupeQ.data ?? []
+    if (!locatieId) return rows
+    const salaLocatie = new Map((saliQ.data ?? []).map((s) => [s.nume, s.locatie]))
+    return rows.filter((g) => g.salaNume && salaLocatie.get(g.salaNume) === locatieId)
+  }, [grupeQ.data, saliQ.data, locatieId])
+
+  const randuri = useMemo<RandDeUrmarit[]>(() => {
+    const out: RandDeUrmarit[] = []
+
+    if (absenteQ.data) {
+      out.push({
+        key: 'absente',
+        valoare: absenteQ.data,
+        tone: 'danger',
+        text: 'cursanți tăcuți de 21+ zile, necontactați',
+        to: '/absente-21z',
+        info: INFO_ABSENTE,
+      })
+    }
+
+    if (privileged) {
+      const inCurs = grupeScop.filter((g) => g.sezonInCurs)
+      const deSuspendat = inCurs.filter((g) => g.stare === 'de_suspendat').length
+      const inObservatie = inCurs.filter((g) => g.stare === 'in_observatie').length
+      const lunaAsta = inCurs.filter(subMinimLunaAsta).length
+      const total = deSuspendat + inObservatie + lunaAsta
+      if (total > 0) {
+        const hint = [
+          deSuspendat > 0 && `${deSuspendat} propuse pentru suspendare`,
+          inObservatie > 0 && `${inObservatie} în observație`,
+          lunaAsta > 0 && `${lunaAsta} doar luna asta — încă se pot umple`,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+        out.push({
+          key: 'grupe',
+          valoare: total,
+          tone: deSuspendat > 0 ? 'danger' : 'warn',
+          text: 'grupe sub minimul sălii',
+          hint,
+          to: '/cursuri',
+          info: INFO_GRUPE,
+        })
+      }
+    }
+
+    if (datorii && datorii.nr_datornici > 0) {
+      out.push({
+        key: 'datorii',
+        valoare: datorii.nr_datornici,
+        tone: 'danger',
+        text: 'clienți cu restanțe',
+        hint: `${formatRON(restTotal(datorii))} restant, fără prescrise`,
+        to: '/datorii',
+        info: INFO_DATORII,
+      })
+    }
+
+    return out
+  }, [absenteQ.data, privileged, grupeScop, datorii])
+
+  const headcountLoading = inscrisiQ.isLoading || activiQ.isLoading
 
   return (
     <div>
-      <PageHeader
-        title="Overview"
-        subtitle="Înscriși în sezon = are înrolare ne-reziliată în sezonul activ. Vin efectiv = prezent în ultimele 21 de zile."
-      />
+      <PageHeader title="Overview" />
 
-      <div className="flex flex-col gap-8">
-          {/* Clienți activi + venit luna curentă */}
-          {activiQ.isLoading || inscrisiQ.isLoading ? (
-            <Spinner />
-          ) : privileged ? (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {inscrisiPerLocatie.length > 0 || perLocatie.length > 0 ? (
-                <CursantiPeLocatieChart
-                  inscrisi={inscrisiPerLocatie}
-                  inscrisiTotal={inscrisiTotal}
-                  activi={perLocatie}
-                  activiTotal={total}
-                />
-              ) : (
-                <KpiCard
-                  label="Înscriși în sezon"
-                  value={scopInscrisi}
-                  tone="positive"
-                  hint={scopLabel}
-                />
-              )}
-              <div className="grid grid-cols-1 gap-3 self-start">{venitCard}</div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiCard
-                label="Înscriși în sezon"
-                value={scopInscrisi}
-                tone="positive"
-                hint={scopLabel}
-              />
-              <KpiCard
-                label="Vin efectiv"
-                value={scopActivi}
-                hint="prezenți în ultimele 21 de zile"
-              />
-              {venitCard}
-            </div>
-          )}
-
-          {/* Donuturi luna curentă: prezență, ocupare, retenție */}
-          {isMobile ? (
-            <div className="grid grid-cols-2 gap-3">
-              <KpiCard
-                label="Rată prezență"
-                value={`${rataPrezentaQ.data?.global.rata ?? 0}%`}
-                hint={
-                  rataPrezentaQ.data
-                    ? `${rataPrezentaQ.data.global.prezenti} din ${rataPrezentaQ.data.global.posibile}`
-                    : undefined
-                }
-              />
-              <KpiCard
-                label="Grad de ocupare grupe"
-                value={`${(scopOcupare?.procent ?? 0).toLocaleString('ro-RO')}%`}
-                hint={
-                  scopOcupare
-                    ? `${scopOcupare.ocupate} din ${scopOcupare.capacitate} locuri ${locatieId ? `la ${locatieNume ?? 'locația selectată'}` : 'pe tot clubul'}`
-                    : undefined
-                }
-              />
-              <KpiCard
-                label="Retenție (luna trecută)"
-                value={`${retentieQ.data?.rata ?? 0}%`}
-                hint={
-                  retentieQ.data
-                    ? `${retentieQ.data.retinuti} din ${retentieQ.data.bazaPrev}`
-                    : undefined
-                }
-              />
-            </div>
-          ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div>
-              {rataPrezentaQ.isLoading ? (
-                <Spinner />
-              ) : (
-                <OverviewDonut
-                  title="Rată prezență"
-                  percent={rataPrezentaQ.data?.global.rata ?? 0}
-                  centerSub={
-                    rataPrezentaQ.data
-                      ? `${rataPrezentaQ.data.global.prezenti} din ${rataPrezentaQ.data.global.posibile}`
-                      : undefined
-                  }
-                  slices={[
-                    {
-                      name: 'Prezenți',
-                      value: rataPrezentaQ.data?.global.prezenti ?? 0,
-                    },
-                    {
-                      name: 'Lipsă',
-                      value: Math.max(
-                        0,
-                        (rataPrezentaQ.data?.global.posibile ?? 0) -
-                          (rataPrezentaQ.data?.global.prezenti ?? 0),
-                      ),
-                    },
-                  ]}
-                  emptyMessage="Nicio prezență marcată luna aceasta."
-                >
-                  {rataPrezentaQ.data &&
-                    rataPrezentaQ.data.perLocatie.length > 0 && (
-                      <ul className="mt-3 space-y-1 border-t border-quasar-gray-light pt-3 text-sm">
-                        {rataPrezentaQ.data.perLocatie.map((l) => (
-                          <li
-                            key={l.nume}
-                            className="flex justify-between gap-2"
-                          >
-                            <span className="text-quasar-gray">{l.nume}</span>
-                            <span className="font-medium text-quasar-black">
-                              {l.rata}%{' '}
-                              <span className="text-xs font-normal text-quasar-gray">
-                                ({l.prezenti}/{l.posibile})
-                              </span>
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                </OverviewDonut>
-              )}
-            </div>
-
-            <div>
-              {ocupareQ.isLoading ? (
-                <Spinner />
-              ) : (
-                <OverviewDonut
-                  title="Grad de ocupare grupe"
-                  percent={ocupareQ.data?.total.procent ?? 0}
-                  centerSub={
-                    ocupareQ.data
-                      ? `${ocupareQ.data.total.ocupate} din ${ocupareQ.data.total.capacitate}`
-                      : undefined
-                  }
-                  slices={[
-                    { name: 'Ocupat', value: ocupareQ.data?.total.ocupate ?? 0 },
-                    {
-                      name: 'Liber',
-                      value: Math.max(
-                        0,
-                        (ocupareQ.data?.total.capacitate ?? 0) -
-                          (ocupareQ.data?.total.ocupate ?? 0),
-                      ),
-                    },
-                  ]}
-                  emptyMessage="Nicio grupă cu capacitate în sezonul activ."
-                  info={
+      <div className="flex flex-col gap-4 lg:gap-6">
+        {headcountLoading ? (
+          <Spinner />
+        ) : (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            <KpiCard
+              label="Înscriși în sezon"
+              value={scopInscrisi ?? '—'}
+              hint={scopLabel}
+              info={INFO_INSCRISI}
+            />
+            <KpiCard
+              label="Vin efectiv"
+              value={scopActivi ?? '—'}
+              hint={scopLabel}
+              info={INFO_ACTIVI}
+            />
+            <KpiCard
+              label="Încasări luna curentă"
+              value={venit ? formatRON(venit.curent) : '—'}
+              hint={
+                venit ? (
+                  venit.variatie == null ? (
+                    `fără încasări în 1–${venit.panaLaZiua} luna trecută`
+                  ) : (
                     <>
-                      <p className="font-semibold">Cum se calculează</p>
-                      <p className="mt-1">
-                        Locuri ocupate azi împărțit la capacitatea maximă a
-                        tuturor grupelor din sezonul activ.
-                      </p>
-                      <ul className="mt-1.5 list-disc space-y-1 pl-4">
-                        <li>
-                          Intră toate grupele: cursuri, trupe, facultative și
-                          Open Class. Grupele goale intră în capacitate.
-                        </li>
-                        <li>
-                          Un loc = un cursant cu plată la grupă. Un copil la 2
-                          grupe ocupă 2 locuri.
-                        </li>
-                        <li>
-                          Abonamentul ține locul cât e valabil. O ședință
-                          plătită îl ține 30 de zile.
-                        </li>
-                        <li>Rezilierile și rezervările anulate nu se numără.</li>
-                      </ul>
+                      <span
+                        className={
+                          venit.variatie >= 0 ? 'text-success' : 'text-danger'
+                        }
+                      >
+                        {venit.variatie >= 0 ? '↑' : '↓'}{' '}
+                        {Math.abs(venit.variatie).toLocaleString('ro-RO')}%
+                      </span>{' '}
+                      față de 1–{venit.panaLaZiua} luna trecută
                     </>
-                  }
-                >
-                  {ocupareQ.data && ocupareQ.data.perLocatie.length > 0 && (
-                    <div className="mt-3 border-t border-quasar-gray-light pt-3">
-                      <ul className="space-y-2.5 text-sm">
-                        {ocupareQ.data.perLocatie.map((l) => (
-                          <li key={l.locatie_id}>
-                            <div className="flex justify-between gap-2">
-                              <span className="truncate text-quasar-gray">
-                                {l.locatie_nume}
-                              </span>
-                              <span className="fnum whitespace-nowrap font-semibold text-quasar-black">
-                                {l.procent.toLocaleString('ro-RO')}%{' '}
-                                <span className="text-xs font-normal text-quasar-gray">
-                                  ({l.ocupate}/{l.capacitate})
-                                </span>
-                              </span>
-                            </div>
-                            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-quasar-gray-light">
-                              <div
-                                className="h-full rounded-full bg-quasar-yellow"
-                                style={{ width: `${Math.min(100, l.procent)}%` }}
-                              />
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </OverviewDonut>
-              )}
-            </div>
-
-            <div>
-              {retentieQ.isLoading ? (
-                <Spinner />
-              ) : (
-                <OverviewDonut
-                  title="Retenție membri (luna trecută)"
-                  percent={retentieQ.data?.rata ?? 0}
-                  centerSub={
-                    retentieQ.data
-                      ? `${retentieQ.data.retinuti} din ${retentieQ.data.bazaPrev}`
-                      : undefined
-                  }
-                  slices={[
-                    { name: 'Reținuți', value: retentieQ.data?.retinuti ?? 0 },
-                    { name: 'Pierduți', value: retentieQ.data?.pierduti ?? 0 },
-                  ]}
-                  emptyMessage="Fără bază de comparație luna trecută."
-                />
-              )}
-            </div>
+                  )
+                ) : undefined
+              }
+              info={INFO_VENIT}
+            />
+            <KpiCard
+              label="Ocupare grupe"
+              value={
+                scopOcupare
+                  ? `${scopOcupare.procent.toLocaleString('ro-RO')}%`
+                  : '—'
+              }
+              hint={
+                scopOcupare
+                  ? `${scopOcupare.ocupate} din ${scopOcupare.capacitate} locuri · ${scopLabel}`
+                  : undefined
+              }
+              info={INFO_OCUPARE}
+            />
           </div>
-          )}
+        )}
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            {ocupareQ.isLoading || headcountLoading ? (
+              <div className="rounded-2xl border border-line bg-card p-5">
+                <Spinner />
+              </div>
+            ) : isMobile ? (
+              <SituatieLocatiiList
+                rows={situatie}
+                total={totalRow}
+                activeLocatieId={locatieId}
+              />
+            ) : (
+              <SituatieLocatiiTable
+                rows={situatie}
+                total={totalRow}
+                activeLocatieId={locatieId}
+              />
+            )}
+          </div>
+          <div className="lg:col-span-2">
+            <PrezentaRetentieCard
+              prezenta={prezentaQ.data}
+              retentie={retentieQ.data}
+              loading={prezentaQ.isLoading || retentieQ.isLoading}
+              perioadaPrezenta={perioadaPrezenta}
+              lunaDe={numeLuna(lunaDe)}
+              lunaLa={numeLuna(lunaLa)}
+              retentieInVacanta={[lunaDe, lunaLa].some((l) =>
+                LUNI_VACANTA.includes(Number(l.slice(5, 7))),
+              )}
+            />
+          </div>
         </div>
+
+        <DeUrmarit rows={randuri} />
+      </div>
     </div>
   )
 }

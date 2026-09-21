@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
-import { type Interval, intervalToDateRange, lunaToBounds, lunaCurenta, lunileInInterval } from './interval'
+import { type Interval, intervalToDateRange, lunaToBounds, lunaCurenta, lunaCuOffset, lunileInInterval } from './interval'
 
 export type Kpis = {
   incasari: number
@@ -173,16 +173,57 @@ export async function getMixCategoriiCheltuieli(
     .sort((a, b) => b.total - a.total)
 }
 
-// Venit (încasări) pe luna curentă. Aceeași definiție canonică ca în getKpis
-// (sumă pe data plății, server-side), ca să fie consistent cu /statistici.
-export async function getVenitLunaCurenta(): Promise<number> {
-  const { from, to } = lunaToBounds(lunaCurenta())
+export type VenitComparat = {
+  curent: number
+  precedent: number
+  /** Variația față de luna trecută; null când luna trecută a fost 0. */
+  variatie: number | null
+  /** Ziua până la care s-a numărat — aceeași fereastră în ambele luni. */
+  panaLaZiua: number
+}
+
+async function incasariIntre(
+  from: string,
+  to: string,
+  locatieId: string | null,
+): Promise<number> {
   const { data, error } = await supabase.rpc('get_kpis_financiar', {
     p_from: from,
     p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
   })
   if (error) throw error
   return Number((data ?? [])[0]?.incasari ?? 0)
+}
+
+// Venit (încasări) pe luna curentă + aceeași fereastră din luna trecută. Aceeași
+// definiție canonică ca în getKpis (sumă pe data plății, server-side, filtrată pe
+// `incasari.locatie`). Comparăm 1→azi cu 1→aceeași zi, nu cu luna trecută
+// întreagă: altfel pe 3 ale lunii variația ar arăta −90% în fiecare lună.
+export async function getVenitLunaComparat(
+  locatieId: string | null = null,
+): Promise<VenitComparat> {
+  const ziua = new Date().getDate()
+  const curent = lunaToBounds(lunaCurenta())
+  const precedent = lunaToBounds(lunaCuOffset(-1))
+  // Luna trecută poate fi mai scurtă (31 mart. vs 28 feb.) — ne oprim la ultima ei zi.
+  const panaLa = (b: { from: string; to: string }) =>
+    `${b.from.slice(0, 8)}${String(Math.min(ziua, Number(b.to.slice(8, 10)))).padStart(2, '0')}`
+
+  const [sumaCurenta, sumaPrecedenta] = await Promise.all([
+    incasariIntre(curent.from, panaLa(curent), locatieId),
+    incasariIntre(precedent.from, panaLa(precedent), locatieId),
+  ])
+
+  return {
+    curent: sumaCurenta,
+    precedent: sumaPrecedenta,
+    variatie:
+      sumaPrecedenta > 0
+        ? Math.round(((sumaCurenta - sumaPrecedenta) / sumaPrecedenta) * 1000) / 10
+        : null,
+    panaLaZiua: ziua,
+  }
 }
 
 export async function getMixMetode(
