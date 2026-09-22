@@ -349,9 +349,10 @@ function buildRecurentPerAn(
 
 // recurent + Per lună: N rânduri (prima zi a fiecărei luni rămase),
 // suma = pret_anual / 10 (sau pret_lunar_promo la reînscriere). La GRUPĂ, dacă
-// clientul pierde ședințe din prima lună, aceea e prorata (suma = ședințe rămase
-// × pret_sedinta, plafonat la rata lunii). La TRUPĂ nu se aplică prorata (toți
-// încep la 1 septembrie).
+// clientul pierde ședințe din prima lună, aceea e prorata: în luna de start a
+// sezonului rată × ședințe prinse / ședințe de la start, în rest ședințe rămase ×
+// pret_sedinta, plafonat la rată. La TRUPĂ nu se aplică prorata (toți încep la
+// 1 septembrie). Regulile: docs/reguli-preturi-reduceri.md §7.
 function buildRecurentPerLuna(
   params: CreateInrolariParams,
   curs: Curs,
@@ -366,7 +367,22 @@ function buildRecurentPerLuna(
     params.dataIncepere < sezon.data_incepere
       ? sezon.data_incepere
       : params.dataIncepere
-  const months = enumerateMonths(startEfectiv, sezon.data_final)
+  const seasonFirstMonth = sezon.data_incepere.slice(0, 7) + '-01'
+  // Luna de start e scurtă (sezonul pornește pe 12, nu pe 1): „luna întreagă" se
+  // măsoară de la startul sezonului — cine pornește cu sezonul n-a pierdut nimic.
+  const inceputLuna = (m: string) =>
+    m === seasonFirstMonth ? sezon.data_incepere! : m
+  let months = enumerateMonths(startEfectiv, sezon.data_final)
+  // Nicio ședință rămasă în luna semnării (29 sept pe un curs de Sâm+Dum): prima
+  // rată e luna următoare, nu una pentru o lună în care nu mai vine.
+  if (
+    params.tipInrolare === 'recurent-grupa' &&
+    months.length > 0 &&
+    countSessionsBetween(startEfectiv, endOfMonth(months[0]), curs.zile) === 0 &&
+    countSessionsBetween(inceputLuna(months[0]), endOfMonth(months[0]), curs.zile) > 0
+  ) {
+    months = months.slice(1)
+  }
   if (months.length === 0) return []
   const esteReinscriere = params.esteReinscriere === true
   const sumaLunara =
@@ -378,34 +394,34 @@ function buildRecurentPerLuna(
         : null)
   // Prima lună a sezonului (septembrie) = rată întreagă, cu data_incepere fixată
   // la startul sezonului (NU ziua 1 → nu cade în „gaura" dintre sezoane). Prorata
-  // se aplică DOAR la înscriere TÂRZIE (lună ulterioară începutului de sezon),
-  // pe grupă, și doar dacă se pierd efectiv ședințe din luna aceea.
-  const seasonFirstMonth = sezon.data_incepere.slice(0, 7) + '-01'
-  const primaLunaESezonStart = months[0] === seasonFirstMonth
-  // Prorata nu se decide după ziua din calendar, ci după ședințele PIERDUTE: pe
-  // un curs de Sâmbătă+Duminică, 3 octombrie e chiar prima ședință a lunii, deci
-  // clientul prinde luna întreagă ⇒ rată întreagă, nu prorata.
+  // se aplică pe grupă, în orice lună, doar dacă se pierd efectiv ședințe: pe un
+  // curs de Sâmbătă+Duminică, 3 octombrie e chiar prima ședință a lunii ⇒ rată
+  // întreagă.
+  const esteLunaDeStart = months[0] === seasonFirstMonth
+  const startPrimaLuna = startEfectiv > months[0] ? startEfectiv : months[0]
   const primaLunaFin = endOfMonth(months[0])
   const sedinteRamase = countSessionsBetween(
-    params.dataIncepere,
+    startPrimaLuna,
     primaLunaFin,
     curs.zile,
   )
   const sedinteLunaPlina = countSessionsBetween(
-    months[0],
+    inceputLuna(months[0]),
     primaLunaFin,
     curs.zile,
   )
   const aplicProrata =
-    params.tipInrolare === 'recurent-grupa' &&
-    !primaLunaESezonStart &&
-    sedinteRamase < sedinteLunaPlina
+    params.tipInrolare === 'recurent-grupa' && sedinteRamase < sedinteLunaPlina
+  // În luna de start, proporțional din rată (decizie Alex, 22 sept. 2026): colegii
+  // plătesc rata întreagă pe o lună deja scurtă, deci prețul de drop-in i-ar face
+  // pe cei întârziați mai ieftini pe ședință decât ei.
+  const prorataProportionala = esteLunaDeStart && sumaLunara != null
 
-  // Preț per ședință pentru prorata:
+  // Preț per ședință pentru prorata (restul lunilor):
   //  - prima alegere: curs.pret_sedinta (setat explicit)
   //  - fallback: curs.pret_anual / sedinte_total_sezon
   let pretPerSedintaProrata: number | null = null
-  if (aplicProrata) {
+  if (aplicProrata && !prorataProportionala) {
     if (curs.pret_sedinta != null) {
       pretPerSedintaProrata = curs.pret_sedinta
     } else if (curs.pret_anual != null) {
@@ -432,7 +448,28 @@ function buildRecurentPerLuna(
   for (let i = 0; i < months.length; i++) {
     const m = months[i]
     const isFirst = i === 0
-    if (isFirst && primaLunaESezonStart) {
+    if (isFirst && aplicProrata) {
+      // `pret_sedinta` e preț de drop-in, mai scump per ședință decât
+      // abonamentul (38 vs 270/9), deci prorata se plafonează la rata lunii —
+      // altfel o lună aproape întreagă costă mai mult decât una plină.
+      const brut =
+        prorataProportionala && sumaLunara != null
+          ? Math.round((sumaLunara * sedinteRamase) / sedinteLunaPlina)
+          : Math.round(sedinteRamase * (pretPerSedintaProrata ?? 0))
+      const sumaBaza = sumaLunara != null ? Math.min(brut, sumaLunara) : brut
+      inserts.push({
+        client: params.client,
+        cursul: params.cursId,
+        tip_plata: 'Per luna',
+        suma_baza: sumaBaza,
+        suma: sumaCuVoucher(sumaBaza, voucher),
+        data_incepere: startPrimaLuna,
+        data_final: primaLunaFin,
+        activ: true,
+        voucher: voucher?.id ?? null,
+        este_reinscriere: esteReinscriere,
+      })
+    } else if (isFirst && esteLunaDeStart) {
       // Prima lună la START de sezon (septembrie): rată întreagă, data_incepere
       // = data de start a sezonului. Total sezon = 10 × rată = pret_anual.
       inserts.push({
@@ -443,25 +480,6 @@ function buildRecurentPerLuna(
         suma: sumaCuVoucher(sumaLunara, voucher),
         data_incepere: sezon.data_incepere,
         data_final: endOfMonth(m),
-        activ: true,
-        voucher: voucher?.id ?? null,
-        este_reinscriere: esteReinscriere,
-      })
-    } else if (isFirst && aplicProrata) {
-      const fin = endOfMonth(m)
-      // `pret_sedinta` e preț de drop-in, mai scump per ședință decât
-      // abonamentul (38 vs 270/9), deci prorata se plafonează la rata lunii —
-      // altfel o lună aproape întreagă costă mai mult decât una plină.
-      const brut = Math.round(sedinteRamase * (pretPerSedintaProrata ?? 0))
-      const sumaBaza = sumaLunara != null ? Math.min(brut, sumaLunara) : brut
-      inserts.push({
-        client: params.client,
-        cursul: params.cursId,
-        tip_plata: 'Per luna',
-        suma_baza: sumaBaza,
-        suma: sumaCuVoucher(sumaBaza, voucher),
-        data_incepere: params.dataIncepere,
-        data_final: fin,
         activ: true,
         voucher: voucher?.id ?? null,
         este_reinscriere: esteReinscriere,
@@ -574,6 +592,11 @@ export async function createInrolari(
       params.tipPlata === 'Per an'
         ? buildRecurentPerAn(params, curs, voucher, sezon)
         : buildRecurentPerLuna(params, curs, voucher, sezon)
+    if (inserts.length === 0) {
+      throw new Error(
+        'Nu se poate crea nicio rată: sezonul nu mai are ședințe după data aleasă.',
+      )
+    }
   }
 
   // Gard anti-dublură: blochează o a doua înrolare (ne-Per-ședință) pe același

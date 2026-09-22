@@ -31,7 +31,15 @@ export const TIP_ORDER: Record<TipInrolare, number> = {
 
 export type PrevizualizareRecurent = {
   months: number
+  // Nicio ședință rămasă în luna semnării ⇒ prima rată e luna următoare.
+  primaLunaSarita: boolean
   prorata:
+    | {
+        sursaPret: 'proportional'
+        sedinte: number
+        sedinteLuna: number
+        suma: number
+      }
     | {
         sursaPret: 'sedinta'
         sedinte: number
@@ -52,8 +60,8 @@ export function derivePreviewRecurent(params: {
   isTrupa: boolean
   tipPlata: string
   cursSelectat: Curs | null
-  // Data de start a sezonului ales. Prima lună a sezonului = rată întreagă;
-  // prorata se aplică doar la înscriere TÂRZIE (lună ulterioară începutului).
+  // Data de start a sezonului ales: în luna de start, ședințele se numără de la
+  // ea, nu de la 1 — cine pornește cu sezonul plătește rata întreagă.
   sezonStart?: string | null
   // Finalul sezonului ales — dă numărul real de rate. Fără el cădem pe convenția
   // istorică „sezonul se termină în iunie".
@@ -78,33 +86,41 @@ export function derivePreviewRecurent(params: {
     1
   if (months <= 0) return null
 
-  let prorata: PrevizualizareRecurent['prorata'] = null
-  const seasonFirstMonth = params.sezonStart
-    ? params.sezonStart.slice(0, 7) + '-01'
-    : null
-  const primaLunaESezonStart =
-    seasonFirstMonth != null &&
-    params.dataIncepere.slice(0, 7) + '-01' === seasonFirstMonth
   // Oglindește `buildRecurentPerLuna`: prorata doar când se pierd efectiv
   // ședințe din prima lună, nu doar pentru că ziua semnării nu e 1.
   const luna = params.dataIncepere.slice(0, 7) + '-01'
+  const esteLunaDeStart =
+    params.sezonStart != null &&
+    luna === params.sezonStart.slice(0, 7) + '-01'
+  const inceputLuna =
+    esteLunaDeStart && params.sezonStart ? params.sezonStart : luna
   const fin = endOfMonth(luna)
   const zile = params.cursSelectat?.zile ?? null
   const sedinte = countSessionsBetween(params.dataIncepere, fin, zile)
-  const sedinteLuna = countSessionsBetween(luna, fin, zile)
-  if (
-    !params.isTrupa &&
-    !primaLunaESezonStart &&
-    params.cursSelectat &&
-    sedinte < sedinteLuna
-  ) {
-    const curs = params.cursSelectat
-    if (curs.pret_sedinta != null) {
-      const rata = params.esteReinscriere
-        ? curs.pret_lunar_promo
-        : curs.pret_anual != null
-          ? Math.round(curs.pret_anual / 10)
-          : null
+  const sedinteLuna = countSessionsBetween(inceputLuna, fin, zile)
+  const curs = params.isTrupa ? null : params.cursSelectat
+
+  if (curs && sedinte === 0 && sedinteLuna > 0) {
+    return months > 1
+      ? { months: months - 1, primaLunaSarita: true, prorata: null }
+      : null
+  }
+
+  let prorata: PrevizualizareRecurent['prorata'] = null
+  if (curs && sedinte < sedinteLuna) {
+    const rata = params.esteReinscriere
+      ? curs.pret_lunar_promo
+      : curs.pret_anual != null
+        ? Math.round(curs.pret_anual / 10)
+        : null
+    if (esteLunaDeStart && rata != null) {
+      prorata = {
+        sedinte,
+        sedinteLuna,
+        suma: Math.round((rata * sedinte) / sedinteLuna),
+        sursaPret: 'proportional',
+      }
+    } else if (curs.pret_sedinta != null) {
       const brut = Math.round(sedinte * curs.pret_sedinta)
       prorata = {
         sedinte,
@@ -119,5 +135,5 @@ export function derivePreviewRecurent(params: {
       prorata = { sursaPret: 'lipsa' }
     }
   }
-  return { months, prorata }
+  return { months, primaLunaSarita: false, prorata }
 }

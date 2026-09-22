@@ -20,6 +20,19 @@ export function RecurentPreview({ preview, cursSelectat, blockantPretLipsa }: Pr
             ⚠️ Se vor crea <strong>{preview.months}</strong> înrolări lunare,
             una pentru fiecare lună rămasă din sezon (până la 30 iunie).
           </p>
+          {preview.primaLunaSarita && (
+            <p className="mt-1">
+              Luna aceasta nu mai are ședințe la cursul ales — prima rată e{' '}
+              <strong>luna următoare</strong>.
+            </p>
+          )}
+          {preview.prorata?.sursaPret === 'proportional' && (
+            <p className="mt-1">
+              Prima lună e prorata: prinde <strong>{preview.prorata.sedinte}</strong>{' '}
+              din {preview.prorata.sedinteLuna} ședințe de la startul sezonului ={' '}
+              <strong>{preview.prorata.suma} RON</strong>.
+            </p>
+          )}
           {preview.prorata?.sursaPret === 'sedinta' && (
             <p className="mt-1">
               Prima lună e prorata: <strong>{preview.prorata.sedinte}</strong>{' '}
