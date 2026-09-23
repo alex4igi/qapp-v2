@@ -239,21 +239,30 @@ se uită la **ședințele pierdute**, nu la ziua din calendar:
   **3 octombrie**. 3 octombrie e chiar *prima* ședință a lunii — prind toate cele 9
   ședințe din octombrie, deci prima rată e **270**, nu prorata.
 - **Pierde ședințe ⇒** `ședințe rămase × cursuri.pret_sedinta`, **plafonat la rata lunii**.
-  Plafonul e obligatoriu: `pret_sedinta` e preț de **drop-in** (38 RON), mai scump per
-  ședință decât abonamentul (270 / 9 = 30 RON), deci fără plafon o lună aproape întreagă
-  ar costa mai mult decât una plină (9 × 38 = **342** > 270).
+  Plafonul e obligatoriu: `pret_sedinta` e **prețul pe ședință din contract** = `pret_anual /
+  ședințele din contract` (2×/săpt.: 2.700 / 70 = 38,6 ⇒ **39** din 22 sept. 2026, înainte 38).
+  Contractul scade vacanțele, deci o lună plină din calendar are mai multe ședințe decât media
+  (8–9 vs 7): fără plafon, o lună aproape întreagă ar costa mai mult decât una plină
+  (9 × 38 = **342** > 270). Nu e preț de drop-in — acela e `pret_sedinta_reziliere` (60).
+  **Valorile din sezonul 2026-2027** (decizie Alex, 22 sept. 2026, rotunjite în sus):
+  2×/săpt. **39** (2.700 / 70 = 38,6) · 1×/săpt. **52** (1.800 / 35 = 51,4). Același principiu
+  la ambele: o săptămână lipsă într-o lună „lungă" (9 ședințe, respectiv 5) ⇒ luna întreagă;
+  fiecare ședință pierdută în plus scade cu prețul unei ședințe. Fără alte praguri („sub 6”
+  a fost discutat și respins).
 - **Septembrie (luna de start) — ședințele se numără de la startul sezonului, nu de la 1.**
   Cine pornește cu sezonul (sau s-a reînscris din vară) plătește **rata întreagă**, cu
   `data_incepere` = startul sezonului — modelul rămâne 10 rate egale = `pret_anual`.
   Cine vine după start plătește **proporțional**: `rată × ședințe prinse / ședințe de la start`
-  (decizie Alex, 22 sept. 2026). Nu drop-in: septembrie e deja o lună scurtă plătită integral
-  de colegi (270 / 6 = 45 RON/ședință), iar prețul de drop-in (38) i-ar face pe cei întârziați
+  (decizie Alex, 22 sept. 2026). Nu pe ședință: septembrie e deja o lună scurtă plătită integral
+  de colegi (270 / 6 = 45 RON/ședință), iar prețul pe ședință (39) i-ar face pe cei întârziați
   mai ieftini pe ședință decât cei veniți la timp. Exemplu, Sâm+Dum, 6 ședințe din 12 sept:
   semnat 20 sept ⇒ 3/6 ⇒ **135**; cu preț de reînscriere 260 ⇒ **130**.
 - **Nicio ședință rămasă în luna semnării ⇒ prima rată e luna următoare.** Semnat 28 sept pe
   un curs de Sâm+Dum ⇒ fără rată pe septembrie; înainte plătea 270 pentru zero ședințe.
 - **Doar de acum înainte:** înrolările de septembrie create înainte de 22 sept. 2026 (50 care
   pierd ședințe, ~5.472 RON) rămân la rata întreagă — decizie Alex, fără corecție retroactivă.
+- Cu 39, pe grupele de 2×/săpt. plafonul face singur ca **1–2 ședințe pierdute să însemne luna
+  întreagă** (7 × 39 = 273 > 270). Exemplu: înscris pe 7 octombrie ⇒ 270.
 - **Trupele n-au prorata** (toți încep la 1 septembrie, contractul e ferm pe sezon).
 - **Facultativele n-au prorata** — luna se plătește integral, indiferent de zi.
 
