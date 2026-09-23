@@ -5,8 +5,9 @@
 // funcție nouă, iar `auth_role()` cade pe 'front_desk' pentru requesturile fără rol —
 // deci RPC-uri security definer deveneau apelabile public (inclusiv mutații financiare).
 // Fix + convenție: fiecare RPC nou face `revoke execute ... from anon` (+ from public
-// dacă e cazul). Excepția unică e `my_teacher_id`, referențiată într-o politică RLS
-// pentru rolul public — gardianul din DB (anon_rpc_gap_report) o exclude automat.
+// dacă e cazul). Gardianul din DB (anon_rpc_gap_report) sare peste funcțiile chemate
+// dintr-o politică RLS scrisă pentru rolul public — din 2026-09-23 nu mai e niciuna
+// (politicile de pe salarii_teacher s-au legat explicit de `authenticated`).
 //
 // Rulare:  node scripts/check-anon-rpc.mjs
 // Exit 0 = totul închis; exit 1 = există funcții încă apelabile de anon (listate).
@@ -34,7 +35,7 @@ const { data, error } = await svc.rpc('anon_rpc_gap_report')
 if (error) throw new Error(`anon_rpc_gap_report: ${error.message}`)
 
 if (!data || data.length === 0) {
-  console.log('✅ Nicio funcție security definer nu e apelabilă de anon (exceptând my_teacher_id, intenționat).')
+  console.log('✅ Nicio funcție security definer nu e apelabilă de anon.')
   process.exit(0)
 }
 
