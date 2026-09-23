@@ -6,6 +6,11 @@
 // comanda rămâne 'pending' la nesfârșit. Pe 2026-09-23 erau 6 comenzi așa, 4 de câte
 // 290 RON din 12–16 septembrie.
 //
+// Cheia de interogare e `netopia_orders.ntp_id`, salvat de netopia-create-payment la
+// pornirea plății: `/operation/status` cere ntpID, cu orderID singur răspunde „error 99:
+// Invalid ntpID". Comenzile de dinainte de migrația `20260923120500` nu au ntp_id — apar
+// în `fara_ntp_id` și se verifică manual în panoul Netopia.
+//
 // Procesăm exact ca webhookul (aceleași RPC-uri, idempotente):
 //   plătită  → confirm_netopia_payment + factura FGO (dacă e pornită)
 //   eșuată   → cancel_netopia_order (eliberează holdul de rezervare)
@@ -46,10 +51,25 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}))
   const simulare = body?.simulare === true
 
+  // `{"simulare":true,"ntp_id":"…"}` întreabă Netopia doar despre acel ntpID și raportează.
+  // Nu atinge baza — sondă de verificat că interogarea de stare funcționează.
+  if (simulare && typeof body?.ntp_id === 'string' && body.ntp_id) {
+    const st = await fetchNetopiaStatus({ ntpID: body.ntp_id })
+    if (!st.ok) return json({ sonda: body.ntp_id, ok: false, detail: st.detail })
+    const status = Number(st.payment?.status)
+    return json({
+      sonda: body.ntp_id,
+      ok: true,
+      status,
+      amount: st.payment?.amount,
+      verdict: SUCCESS_STATUSES.has(status) ? 'plătită' : FAILED_STATUSES.has(status) ? 'eșuată' : 'în curs',
+    })
+  }
+
   const now = Date.now()
   const { data: orders, error } = await admin
     .from('netopia_orders')
-    .select('order_ref, amount, created')
+    .select('order_ref, amount, created, ntp_id')
     .eq('status', 'pending')
     .lt('created', new Date(now - MIN_AGE_MIN * 60_000).toISOString())
     .gt('created', new Date(now - MAX_AGE_DAYS * 86_400_000).toISOString())
@@ -64,12 +84,19 @@ Deno.serve(async (req) => {
     anulate: 0,
     in_curs: 0,
     probleme: [] as string[],
+    // Comenzi de dinainte ca `ntp_id` să fie salvat la pornirea plății: Netopia nu poate
+    // fi întrebată de ele, se verifică manual în panou.
+    fara_ntp_id: [] as string[],
     detalii: [] as { order_ref: string; status: number | null; verdict: string }[],
   }
 
   for (const o of orders ?? []) {
+    if (!o.ntp_id) {
+      rezultat.fara_ntp_id.push(o.order_ref)
+      continue
+    }
     rezultat.verificate++
-    const st = await fetchNetopiaStatus({ orderID: o.order_ref })
+    const st = await fetchNetopiaStatus({ ntpID: o.ntp_id })
     if (!st.ok) {
       // Netopia nu știe de comandă (omul n-a ajuns să plătească) sau API-ul e picat.
       // Nu e o problemă de bani: rămâne 'pending' și reîncercăm ora următoare.

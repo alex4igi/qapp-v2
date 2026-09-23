@@ -30,10 +30,12 @@ export async function fetchNetopiaStatus(
   const res = await fetch(`${netopiaBase()}/operation/status`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: Deno.env.get('NETOPIA_API_KEY')! },
+    // Doar cheia după care întrebăm: cu `ntpID: ''` API-ul răspunde „error 99: Invalid
+    // ntpID" chiar dacă orderID e bun (verificat pe 2026-09-23).
     body: JSON.stringify({
       posID: Deno.env.get('NETOPIA_POS_SIGNATURE') ?? '',
-      ntpID: by.ntpID ?? '',
-      orderID: by.orderID ?? '',
+      ...(by.ntpID ? { ntpID: by.ntpID } : {}),
+      ...(by.orderID ? { orderID: by.orderID } : {}),
     }),
   })
   const text = await res.text()

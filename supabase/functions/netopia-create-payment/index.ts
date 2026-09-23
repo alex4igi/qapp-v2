@@ -276,6 +276,20 @@ Deno.serve(async (req) => {
       return json({ error: ntp?.error?.message ?? 'Netopia start a eșuat', netopia: ntp?.error }, 502)
     }
 
+    // ntpID e singura cheie cu care se poate întreba Netopia de starea plății
+    // (`/operation/status`). Fără el, o comandă cu IPN pierdut rămâne „în așteptare"
+    // pentru totdeauna, iar reconcilierea n-o poate atinge. Eșecul aici nu strică plata.
+    const ntpID = ntp?.payment?.ntpID ? String(ntp.payment.ntpID) : null
+    if (ntpID) {
+      const { error: ntpErr } = await admin
+        .from('netopia_orders')
+        .update({ ntp_id: ntpID })
+        .eq('order_ref', orderRef)
+      if (ntpErr) console.error('salvare ntp_id eșuată', orderRef, ntpErr.message)
+    } else {
+      console.error('Netopia start fără ntpID', orderRef)
+    }
+
     return json({ redirectUrl, orderId: orderRef })
   } catch (e) {
     return json({ error: String(e) }, 500)

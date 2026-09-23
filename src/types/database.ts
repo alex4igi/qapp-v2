@@ -6307,6 +6307,7 @@ export type Database = {
           id: string
           netopia_transaction_id: string | null
           nr_bilete: number | null
+          ntp_id: string | null
           order_ref: string
           order_type: string
           plata_integrala: boolean
@@ -6327,6 +6328,7 @@ export type Database = {
           id?: string
           netopia_transaction_id?: string | null
           nr_bilete?: number | null
+          ntp_id?: string | null
           order_ref: string
           order_type?: string
           plata_integrala?: boolean
@@ -6347,6 +6349,7 @@ export type Database = {
           id?: string
           netopia_transaction_id?: string | null
           nr_bilete?: number | null
+          ntp_id?: string | null
           order_ref?: string
           order_type?: string
           plata_integrala?: boolean
@@ -11734,6 +11737,7 @@ export type Database = {
           umbre_curatate: number
         }[]
       }
+      backup_list_views: { Args: never; Returns: string[] }
       build_fifo_plan_membru: {
         Args: {
           p_client: string
@@ -13841,6 +13845,10 @@ export type Database = {
       notifica_grupe_peste_capacitate: { Args: never; Returns: number }
       notifica_grupe_sub_minim: {
         Args: { p_la?: string; p_sezon?: string }
+        Returns: number
+      }
+      notifica_plata_online_problema: {
+        Args: { p_motiv: string; p_order_ref: string }
         Returns: number
       }
       notifications_mark_all_read: { Args: never; Returns: number }
