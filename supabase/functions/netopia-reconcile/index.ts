@@ -14,7 +14,7 @@
 // Procesăm exact ca webhookul (aceleași RPC-uri, idempotente):
 //   plătită  → confirm_netopia_payment + factura FGO (dacă e pornită)
 //   eșuată   → cancel_netopia_order (eliberează holdul de rezervare)
-//   în curs  → o lăsăm, revenim peste o oră
+//   în curs  → o lăsăm, revenim peste o oră; după 7 zile o considerăm abandonată
 // Când plata e bună dar comanda nu se poate finaliza (hold expirat, sumă diferită),
 // anunțăm owner/admin prin notifica_plata_online_problema.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
@@ -26,6 +26,12 @@ import { FAILED_STATUSES, SUCCESS_STATUSES, fetchNetopiaStatus } from '../_share
 const MIN_AGE_MIN = 20
 // Peste 30 de zile nu mai vine nimic; căutarea ar rula degeaba la nesfârșit.
 const MAX_AGE_DAYS = 30
+// O plată abandonată (omul a deschis pagina Netopia și s-a oprit acolo) rămâne
+// „inițiată" la ei PENTRU TOTDEAUNA — nu trece niciodată în „expirată". Fără pragul
+// ăsta, comenzile abandonate s-ar aduna la nesfârșit în 'pending'. Se aplică DOAR
+// comenzilor pe care Netopia ni le-a confirmat ca fiind încă în curs, nu și celor
+// pe care nu le putem verifica.
+const ABANDON_DAYS = 7
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -82,6 +88,7 @@ Deno.serve(async (req) => {
     verificate: 0,
     confirmate: 0,
     anulate: 0,
+    abandonate: 0,
     in_curs: 0,
     probleme: [] as string[],
     // Comenzi de dinainte ca `ntp_id` să fie salvat la pornirea plății: Netopia nu poate
@@ -122,6 +129,7 @@ Deno.serve(async (req) => {
     if (simulare) {
       if (verdict === 'plătită') rezultat.confirmate++
       else if (verdict === 'eșuată') rezultat.anulate++
+      else if (Date.parse(o.created) < now - ABANDON_DAYS * 86_400_000) rezultat.abandonate++
       else rezultat.in_curs++
       continue
     }
@@ -153,6 +161,9 @@ Deno.serve(async (req) => {
     } else if (FAILED_STATUSES.has(status)) {
       await admin.rpc('cancel_netopia_order', { p_order_ref: o.order_ref })
       rezultat.anulate++
+    } else if (Date.parse(o.created) < now - ABANDON_DAYS * 86_400_000) {
+      await admin.rpc('cancel_netopia_order', { p_order_ref: o.order_ref })
+      rezultat.abandonate++
     } else {
       rezultat.in_curs++
     }
