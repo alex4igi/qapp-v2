@@ -282,6 +282,11 @@ Buna ziua! Contractul pentru {prenume} nu este inca semnat. Il puteti verifica s
 ```
 Quasar Dance: contul de membru este activ. Acces: {url} Email: {email} Parola temporara: {parola} Va recomandam sa schimbati parola dupa prima autentificare.
 ```
+> Când contul e creat cu `mustChange` (provisioning pe grupă, din 23 sept. 2026),
+> ultima frază devine — schimbarea nu mai e o recomandare, e obligatorie:
+```
+... Parola temporara: {parola} La prima autentificare iti alegi parola ta.
+```
 
 ---
 

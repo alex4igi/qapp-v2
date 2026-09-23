@@ -35,6 +35,8 @@ type CreatePayload = {
   familieId?: string | null
   clientId?: string | null
   notify?: Notify
+  // Parola trimisă acum e temporară: portalul cere una nouă la prima autentificare.
+  mustChange?: boolean
 }
 type ResetPayload = { action: 'reset_password'; userId: string; password: string; notify?: Notify }
 type UnlinkPayload = { action: 'unlink'; familieId?: string | null; clientId?: string | null }
@@ -42,7 +44,14 @@ type Payload = CreatePayload | ResetPayload | UnlinkPayload
 
 // Trimite datele de acces pe email (TheMarketer transactional). Întoarce true dacă a plecat.
 // Nu aruncă — provisioning-ul nu trebuie să eșueze dacă emailul nu pleacă.
-async function sendCredentialsEmail(email: string, password: string): Promise<boolean> {
+async function sendCredentialsEmail(
+  email: string,
+  password: string,
+  mustChange = false,
+): Promise<boolean> {
+  const inchidere = mustChange
+    ? '<p>La prima autentificare îți vei alege o parolă nouă, doar a ta — parola de mai sus funcționează o singură dată.</p>'
+    : '<p>Te recomandăm să schimbi parola după prima autentificare (Profil → Schimbă parola).</p>'
   const html = `
     <p>Bun venit în portalul Quasar Dance!</p>
     <p>Datele tale de acces la <a href="${PORTAL_URL}">${PORTAL_URL}</a>:</p>
@@ -50,7 +59,7 @@ async function sendCredentialsEmail(email: string, password: string): Promise<bo
       <li>Email: <b>${email}</b></li>
       <li>Parolă: <b>${password}</b></li>
     </ul>
-    <p>Te recomandăm să schimbi parola după prima autentificare (Profil → Schimbă parola).</p>`
+    ${inchidere}`
   try {
     const r = await sendEmail({
       to: email,
@@ -82,11 +91,14 @@ async function sendCredentialsSms(
   telefon: string,
   email: string,
   password: string,
+  mustChange = false,
 ): Promise<RezultatSms> {
   const mesaj =
     `Quasar Dance: contul de membru este activ. Acces: ${PORTAL_URL} ` +
     `Email: ${email} Parola temporara: ${password} ` +
-    `Va recomandam sa schimbati parola dupa prima autentificare.`
+    (mustChange
+      ? `La prima autentificare iti alegi parola ta.`
+      : `Va recomandam sa schimbati parola dupa prima autentificare.`)
 
   const now = new Date()
   const cfg = await getQuietHoursConfig(admin)
@@ -180,38 +192,52 @@ Deno.serve(async (req) => {
       if (existing.auth_user_id) return json({ error: 'are deja un cont de portal' }, 409)
 
       const email = body.email.trim().toLowerCase()
+      const emailLuat = `Există deja un cont de portal pe emailul „${email}". Folosește alt email pentru această familie, sau resetează parola din profilul care deține deja contul.`
 
-      // Insert-only: întoarce null dacă emailul are deja un cont de portal.
-      const { data: newId, error: createErr } = await admin.rpc('portal_create_account', {
-        p_email: email,
-        p_password: body.password,
-      })
-      if (createErr) return json({ error: createErr.message }, 500)
-      if (!newId) {
-        return json(
-          {
-            error: `Există deja un cont de portal pe emailul „${email}". Folosește alt email pentru această familie, sau resetează parola din profilul care deține deja contul.`,
-          },
-          409,
-        )
+      let newId: string | null = null
+      if (body.mustChange) {
+        // Creează ȘI leagă într-o singură tranzacție, cu marcajul de parolă temporară
+        // pornit: portal-auth nu emite tokenuri până nu își alege omul parola lui.
+        const { data, error } = await admin.rpc('portal_create_account_temp', {
+          p_email: email,
+          p_password: body.password,
+          p_familie_id: hasFamilie ? targetId : null,
+          p_client_id: hasFamilie ? null : targetId,
+        })
+        if (error) {
+          const luat = error.message.includes('email folosit deja')
+          return json({ error: luat ? emailLuat : error.message }, luat ? 409 : 500)
+        }
+        newId = data as string
+      } else {
+        // Insert-only: întoarce null dacă emailul are deja un cont de portal.
+        const { data, error: createErr } = await admin.rpc('portal_create_account', {
+          p_email: email,
+          p_password: body.password,
+        })
+        if (createErr) return json({ error: createErr.message }, 500)
+        if (!data) return json({ error: emailLuat }, 409)
+        newId = data as string
+
+        const { error: linkErr } = await admin
+          .from(table)
+          .update({ auth_user_id: newId })
+          .eq('id', targetId)
+        if (linkErr) {
+          // rollback contul orfan
+          await admin.from('portal_accounts').delete().eq('id', newId)
+          return json({ error: `legare eșuată: ${linkErr.message}` }, 500)
+        }
       }
 
-      const { error: linkErr } = await admin
-        .from(table)
-        .update({ auth_user_id: newId })
-        .eq('id', targetId)
-      if (linkErr) {
-        // rollback contul orfan
-        await admin.from('portal_accounts').delete().eq('id', newId)
-        return json({ error: `legare eșuată: ${linkErr.message}` }, 500)
-      }
-
-      const emailed = body.notify === 'email' ? await sendCredentialsEmail(email, body.password) : undefined
+      const emailed = body.notify === 'email'
+        ? await sendCredentialsEmail(email, body.password, body.mustChange)
+        : undefined
       let smsSent: boolean | undefined
       let smsAmanat: boolean | undefined
       if (body.notify === 'sms') {
         const r = existing.telefon
-          ? await sendCredentialsSms(admin, existing.telefon, email, body.password)
+          ? await sendCredentialsSms(admin, existing.telefon, email, body.password, body.mustChange)
           : { plecat: false, amanat: false }
         smsSent = r.plecat
         smsAmanat = r.amanat

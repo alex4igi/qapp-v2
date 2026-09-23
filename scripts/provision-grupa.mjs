@@ -7,6 +7,8 @@
 //  - țintele care au deja `auth_user_id` sunt sărite (edge function-ul ar da 409 oricum).
 //  - `provision-client` NU eșuează dacă notificarea nu pleacă (întoarce `emailed:false`),
 //    de aceea parolele se scriu într-un CSV, ca să poată fi comunicate manual.
+//  - parola trimisă e TEMPORARĂ (`mustChange`): portalul cere una nouă la prima
+//    autentificare, altfel parola scrisă în CSV/email rămâne bună oricui o vede.
 //
 // Rulare:
 //   node scripts/provision-grupa.mjs --curs <uuid> --dry-run
@@ -128,6 +130,7 @@ try {
       password,
       ...(t.kind === 'familie' ? { familieId: t.targetId } : { clientId: t.targetId }),
       ...(NOTIFY === 'none' ? {} : { notify: NOTIFY }),
+      mustChange: true,
     }
     let ok = false, mesaj = '', trimis = ''
     const { data, error } = await cli.functions.invoke('provision-client', { body })

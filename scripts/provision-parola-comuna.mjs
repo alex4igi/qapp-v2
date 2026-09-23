@@ -1,3 +1,10 @@
+// ⏸ PARCAT (decizie Alex, 23 sept. 2026): rollout-ul merge pe grupe, nu pe toată comunitatea,
+// iar datele de acces pleacă pe EMAIL, 1-la-1 — caz în care parola comună nu mai are niciun
+// avantaj, dar păstrează riscul (cine o primește poate intra în contul altui membru al cărui
+// email îl știe, și tot el îi alege parola nouă). Foloseşte `provision-grupa.mjs --curs <uuid>
+// --notify email`, care dă parolă random per cont. Scriptul rămâne pentru simulări (numărul de
+// membri activi fără cont) și pentru cazul în care se decide vreodată un rollout global.
+//
 // Creează conturi de portal cu PAROLĂ COMUNĂ TEMPORARĂ pentru membrii activi fără cont.
 // La prima logare portalul cere o parolă nouă (portal_accounts.must_change_password).
 // NU trimite nimic (email/SMS) — comunicarea se face separat, când se decide.
