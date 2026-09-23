@@ -54,6 +54,10 @@ function targetFor(n: Notification): string | null {
     const cid = (n.payload as { curs_id?: string } | null)?.curs_id
     return cid ? `/cursuri/${cid}` : '/cursuri'
   }
+  if (n.kind === 'plata_online_problema') {
+    const cid = (n.payload as { client_id?: string } | null)?.client_id
+    return cid ? `/clienti/${cid}` : '/plati'
+  }
   if (n.kind === 'demo_class_full') {
     const eid = (n.payload as { eveniment_id?: string } | null)?.eveniment_id
     return eid ? `/eveniment/${eid}` : '/evenimente'

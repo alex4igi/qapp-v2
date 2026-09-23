@@ -12,15 +12,11 @@
 // confirm_netopia_payment). Răspundem cu { errorCode: 0 } ca Netopia să nu reîncerce.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { emitPortalInvoice } from '../_shared/portal-invoice.ts'
+import { FAILED_STATUSES, SUCCESS_STATUSES, fetchNetopiaStatus } from '../_shared/netopia.ts'
 
-// v2 payment.status (constante din SDK-ul oficial netopia-payment2):
-// 3 = paid, 5 = confirmed (banii s-au mișcat) => confirmăm (idempotent).
-const SUCCESS_STATUSES = new Set([3, 5])
-// Stări TERMINALE de eșec/anulare => anulăm comanda + eliberăm holdul de rezervare.
-// 4 = canceled, 11 = error, 12 = declined, 13 = fraud, 17 = reversed, 23 = expired.
-const FAILED_STATUSES = new Set([4, 11, 12, 13, 17, 23])
-// Orice altă stare (1 new, 2 opened, 6 pending, 7 scheduled, 14 pending_auth, 15 3ds,
-// 18 pending_any, …) = tranzacție în desfășurare => lăsăm comanda 'pending', dar confirmăm primirea.
+// Stările sunt în _shared/netopia.ts (aceleași pentru webhook și reconciliere). Orice
+// stare care nu e în cele două liste = tranzacție în desfășurare => lăsăm comanda
+// 'pending', dar confirmăm primirea; de ea se ocupă `netopia-reconcile`.
 
 Deno.serve(async (req) => {
   try {
@@ -44,7 +40,7 @@ Deno.serve(async (req) => {
     // butonul „Retrimite IPN"). Nu conține orderID, dar `id` = ntpID; cerem noi starea
     // completă prin API (/operation/status) și procesăm exact ca un IPN normal.
     if (!order?.orderID && payload.id != null) {
-      const st = await fetchNetopiaStatus(String(payload.id))
+      const st = await fetchNetopiaStatus({ ntpID: String(payload.id) })
       if (!st.ok) return json({ errorCode: 1, error: 'status lookup failed', detail: st.detail }, 400)
       order = st.order
       payment = st.payment
@@ -68,7 +64,16 @@ Deno.serve(async (req) => {
         p_amount: amount,
       })
       if (error) return json({ errorCode: 1, error: error.message }, 500)
-      if (data?.ok === false) return json({ errorCode: 1, reason: data.reason }, 400)
+      if (data?.ok === false) {
+        // Plata a intrat, dar comanda nu s-a putut finaliza (hold expirat, sumă
+        // diferită…). Până la auditul din 09-20 se răspundea 400 și nu afla nimeni,
+        // deși omul plătise. Notificarea e deduplicată pe (order_ref, motiv).
+        await admin.rpc('notifica_plata_online_problema', {
+          p_order_ref: orderRef,
+          p_motiv: String(data.reason ?? 'necunoscut'),
+        })
+        return json({ errorCode: 1, reason: data.reason }, 400)
+      }
 
       // Flux 2 — factură FGO auto. IZOLAT: o eroare aici NU trebuie să rateze
       // confirmarea plății (altfel Netopia reîncearcă toată tranzacția). Idempotent
@@ -89,37 +94,6 @@ Deno.serve(async (req) => {
     return json({ errorCode: 1, error: String(e) }, 500)
   }
 })
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Status lookup — pentru notificările compacte fără orderID
-// ─────────────────────────────────────────────────────────────────────────────
-async function fetchNetopiaStatus(ntpID: string): Promise<
-  | { ok: true; order?: { orderID?: string }; payment?: { ntpID?: string; status?: number; amount?: number } }
-  | { ok: false; detail: string }
-> {
-  // Același base ca netopia-create-payment: producția e pe secure.mobilpay.ro/pay.
-  const base = (Deno.env.get('NETOPIA_ENV') ?? 'sandbox') === 'live'
-    ? 'https://secure.mobilpay.ro/pay'
-    : 'https://secure-sandbox.netopia-payments.com'
-  const res = await fetch(`${base}/operation/status`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: Deno.env.get('NETOPIA_API_KEY')! },
-    body: JSON.stringify({
-      posID: Deno.env.get('NETOPIA_POS_SIGNATURE') ?? '',
-      ntpID,
-      orderID: '',
-    }),
-  })
-  const text = await res.text()
-  let data: { order?: { orderID?: string }; payment?: { ntpID?: string; status?: number; amount?: number } } | null = null
-  try { data = JSON.parse(text) } catch { /* non-JSON */ }
-  if (!res.ok || !data?.order?.orderID) {
-    return { ok: false, detail: `status ${res.status}: ${text.slice(0, 300)}` }
-  }
-  // ntpID din răspuns poate lipsi — păstrăm id-ul din notificare ca fallback de dedup
-  data.payment = { ntpID, ...data.payment }
-  return { ok: true, order: data.order, payment: data.payment }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Verificarea IPN-ului

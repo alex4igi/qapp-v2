@@ -483,6 +483,10 @@ static_files = ["./functions/contract-finalize/NotoSans-Regular.ttf"]
 [functions.process-contract-reminders]
 verify_jwt = false
 
+# Apelată de pg_cron din oră în oră — întreabă Netopia de comenzile rămase în așteptare.
+[functions.netopia-reconcile]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
