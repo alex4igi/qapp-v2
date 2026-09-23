@@ -6,7 +6,7 @@
 // app_metadata.role='parinte' → compatibil cu auth.uid()/auth_role() din RPC-urile existente,
 // iar `deny_parinte_direct` blochează în continuare accesul direct la tabele.
 //
-// Acțiuni: login, refresh, logout, request_reset, reset, change_password.
+// Acțiuni: login, change_temporary_password, refresh, logout, request_reset, reset, change_password.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import * as jose from 'npm:jose@5'
 import { sendEmail } from '../_shared/messaging.ts'
@@ -114,6 +114,38 @@ Deno.serve(async (req) => {
       if (error) return json({ error: error.message }, 500)
       const row = Array.isArray(data) ? data[0] : data
       if (!row?.id) return json({ error: 'Email sau parolă greșite (sau cont blocat temporar).' }, 401)
+      // Parolă temporară (comună): fără tokenuri până nu își alege una proprie.
+      const { data: acc, error: accErr } = await admin
+        .from('portal_accounts')
+        .select('must_change_password')
+        .eq('id', row.id)
+        .maybeSingle()
+      if (accErr || !acc) return json({ error: accErr?.message ?? 'cont inexistent' }, 500)
+      if (acc.must_change_password) return json({ must_change_password: true, email: row.email })
+      return json({ ...(await issueTokens(row.id)), email: row.email })
+    }
+
+    // ---- change_temporary_password ---- (prima logare pe un cont cu parolă temporară)
+    if (action === 'change_temporary_password') {
+      const email = String(body.email ?? '').trim().toLowerCase()
+      const password = String(body.password ?? '')
+      const newPwd = String(body.new_password ?? '')
+      if (!email || !password) return json({ error: 'email și parolă obligatorii' }, 400)
+      if (newPwd.length < 8) return json({ error: 'Parola nouă trebuie să aibă minim 8 caractere.' }, 400)
+      if (newPwd === password) return json({ error: 'Alege o parolă diferită de cea primită.' }, 400)
+      const { data, error } = await admin.rpc('portal_login', { p_email: email, p_password: password })
+      if (error) return json({ error: error.message }, 500)
+      const row = Array.isArray(data) ? data[0] : data
+      if (!row?.id) return json({ error: 'Email sau parolă greșite (sau cont blocat temporar).' }, 401)
+      const { data: acc, error: accErr } = await admin
+        .from('portal_accounts')
+        .select('must_change_password')
+        .eq('id', row.id)
+        .maybeSingle()
+      if (accErr) return json({ error: accErr.message }, 500)
+      if (!acc?.must_change_password) return json({ error: 'Contul nu are parolă temporară.' }, 400)
+      const { error: setErr } = await admin.rpc('portal_set_password', { p_id: row.id, p_password: newPwd })
+      if (setErr) return json({ error: setErr.message }, 500)
       return json({ ...(await issueTokens(row.id)), email: row.email })
     }
 
