@@ -1,6 +1,10 @@
 // Edge Function (cron orar): întreabă Netopia ce s-a întâmplat cu comenzile rămase
 // în așteptare (audit 2026-09-20, secțiunea 4.2).
 //
+// Ritm: comenzile din ultimele 24 de ore se verifică la fiecare rulare; cele mai vechi,
+// o singură dată pe zi, la trecerea de la 06:35. Așa o comandă abandonată costă ~30 de
+// apeluri către Netopia, nu 168.
+//
 // De ce: confirmarea plății vine DOAR prin IPN. Dacă IPN-ul se pierde (rețea, eroare
 // la noi, retry epuizat), omul a plătit și în aplicație nu apare nicio încasare, iar
 // comanda rămâne 'pending' la nesfârșit. Pe 2026-09-23 erau 6 comenzi așa, 4 de câte
@@ -32,6 +36,14 @@ const MAX_AGE_DAYS = 30
 // comenzilor pe care Netopia ni le-a confirmat ca fiind încă în curs, nu și celor
 // pe care nu le putem verifica.
 const ABANDON_DAYS = 7
+// Cronul rulează din oră în oră, dar întrebăm Netopia des DOAR cât timp contează: în
+// primele 24 de ore de la plată se prinde cazul „omul a plătit, IPN-ul s-a pierdut".
+// După aceea comanda e aproape sigur abandonată, așa că o mai verificăm o dată pe zi.
+// Scopul e să nu batem API-ul lor de 168 de ori pentru o plată pe care nimeni n-a
+// dus-o până la capăt.
+const RECENT_HOURS = 24
+// Ora (București) la care facem trecerea completă, peste toate comenzile în așteptare.
+const ORA_MATURARE = 6
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -83,6 +95,13 @@ Deno.serve(async (req) => {
 
   if (error) return json({ error: error.message }, 500)
 
+  // Simularea vede tot — e citire, o cheamă omul când vrea un raport complet.
+  const oraBucuresti = Number(
+    new Intl.DateTimeFormat('ro-RO', { timeZone: 'Europe/Bucharest', hour: '2-digit', hour12: false })
+      .format(new Date()),
+  )
+  const maturaTot = simulare || oraBucuresti === ORA_MATURARE
+
   const rezultat = {
     simulare,
     verificate: 0,
@@ -90,6 +109,8 @@ Deno.serve(async (req) => {
     anulate: 0,
     abandonate: 0,
     in_curs: 0,
+    // Comenzi mai vechi de 24 h, lăsate pentru trecerea de dimineață.
+    amanate: 0,
     probleme: [] as string[],
     // Comenzi de dinainte ca `ntp_id` să fie salvat la pornirea plății: Netopia nu poate
     // fi întrebată de ele, se verifică manual în panou.
@@ -100,6 +121,10 @@ Deno.serve(async (req) => {
   for (const o of orders ?? []) {
     if (!o.ntp_id) {
       rezultat.fara_ntp_id.push(o.order_ref)
+      continue
+    }
+    if (!maturaTot && Date.parse(o.created) < now - RECENT_HOURS * 3_600_000) {
+      rezultat.amanate++
       continue
     }
     rezultat.verificate++
