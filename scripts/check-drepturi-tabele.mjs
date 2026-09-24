@@ -6,10 +6,19 @@
 // Supabase le acordă implicit pe toate, deci un tabel creat din dashboard le poate
 // primi înapoi — de-aia verificăm și default privileges. Vezi migrația 20260920...
 //
+// Invers: de la 30 oct. 2026 Supabase nu mai dă GRANT automat pe tabelele noi, deci o
+// migrație care uită `grant ... to authenticated` lasă tabelul inaccesibil din aplicație.
+//
 //   node scripts/check-drepturi-tabele.mjs      # exit 1 la regres
 import fs from 'node:fs'
 
 const PERICULOASE = /[Dxtm]/ // TRUNCATE, REFERENCES, TRIGGER, MAINTAIN în notația ACL
+
+// Tabele asumat doar-server: le ating numai edge functions cu service_role.
+const DOAR_SERVER = new Set([
+  'contract_tokens', // tokenurile linkurilor de semnare
+  'rate_limit_hits', // plafonul de cereri pe endpointurile publice
+])
 
 const env = Object.fromEntries(
   fs.readFileSync(new URL('../.env.local', import.meta.url), 'utf8')
@@ -54,5 +63,20 @@ for (const d of raport.default_privileges ?? []) {
   }
 }
 
+for (const t of raport.fara_grant ?? []) {
+  if (!t.service_role) {
+    console.error(`❌ ${t.tabel} — service_role nu are SELECT (lipsește grant ... to service_role)`)
+    probleme++
+  } else if (!t.authenticated && !DOAR_SERVER.has(t.tabel)) {
+    console.error(`❌ ${t.tabel} — authenticated nu are SELECT: aplicația primește „permission denied". Adaugă grant-ul în migrație sau, dacă e asumat doar-server, pune-l în DOAR_SERVER.`)
+    probleme++
+  }
+}
+for (const nume of DOAR_SERVER) {
+  if (!(raport.fara_grant ?? []).some((t) => t.tabel === nume)) {
+    console.warn(`⚠️  ${nume} e pe lista DOAR_SERVER, dar authenticated are acces (sau tabelul nu mai există) — verifică și scoate-l de pe listă.`)
+  }
+}
+
 if (probleme) { console.error(`\n${probleme} probleme.`); process.exit(1) }
-console.log('✅ anon/authenticated au doar SELECT/INSERT/UPDATE/DELETE pe tabelele din public.')
+console.log('✅ anon/authenticated au doar SELECT/INSERT/UPDATE/DELETE, și fiecare tabel din public are GRANT pentru aplicație.')
