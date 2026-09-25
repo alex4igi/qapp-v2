@@ -12844,6 +12844,25 @@ export type Database = {
           mrr_recurent: number
         }[]
       }
+      get_ocupare_inchirieri: {
+        Args: {
+          p_de: string
+          p_locatie?: string
+          p_pana: string
+          p_sala?: string
+        }
+        Returns: {
+          a_mea: boolean
+          data: string
+          eticheta: string
+          id: string
+          ora_final: string
+          ora_start: string
+          pret: number
+          sala: string
+          status_plata: Database["public"]["Enums"]["status_plata_inchiriere"]
+        }[]
+      }
       get_ocupare_locatii: {
         Args: never
         Returns: {
@@ -13570,6 +13589,16 @@ export type Database = {
           data_incepere: string
           nume: string
           vacanta_id: string
+        }[]
+      }
+      get_vine_la: {
+        Args: { p_clienti: string[]; p_de_la: string; p_except_curs: string }
+        Returns: {
+          client_id: string
+          curs_id: string
+          curs_nume: string
+          data: string
+          sezon_nume: string
         }[]
       }
       get_yoy_aceeasi_luna: {

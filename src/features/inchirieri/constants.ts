@@ -21,6 +21,7 @@ export const OCCUP_STYLE: Record<OccupKind, string> = {
   'inchiriere-achitata': 'bg-emerald-100 text-emerald-900 border-emerald-300',
   'inchiriere-restanta': 'bg-red-100 text-red-900 border-red-300',
   'inchiriere-gratis': 'bg-quasar-yellow/40 text-quasar-black border-quasar-yellow',
+  'inchiriere-ocupata': 'bg-gray-100 text-muted border-gray-300',
 }
 
 export const OCCUP_LEGEND: { kind: OccupKind; label: string }[] = [
@@ -30,4 +31,5 @@ export const OCCUP_LEGEND: { kind: OccupKind; label: string }[] = [
   { kind: 'inchiriere-achitata', label: 'Închiriere achitată' },
   { kind: 'inchiriere-restanta', label: 'Închiriere restantă' },
   { kind: 'inchiriere-gratis', label: 'Practică staff (gratis)' },
+  { kind: 'inchiriere-ocupata', label: 'Sală închiriată' },
 ]

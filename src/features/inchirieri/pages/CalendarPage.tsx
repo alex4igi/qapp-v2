@@ -104,7 +104,7 @@ export function CalendarPage() {
 
       {/* Legendă */}
       <div className="mb-2 flex flex-wrap gap-3 text-xs text-muted">
-        {OCCUP_LEGEND.map((l) => (
+        {OCCUP_LEGEND.filter((l) => teacherMode || l.kind !== 'inchiriere-ocupata').map((l) => (
           <span key={l.kind} className="flex items-center gap-1.5">
             <span className={`inline-block h-3 w-3 rounded border ${OCCUP_STYLE[l.kind]}`} />
             {l.label}

@@ -396,7 +396,8 @@ export function CursProfilePage() {
               ...(curs.facultativ && curs.rezervari_online
                 ? [{ id: 'open', label: 'Sesiuni OPEN' }]
                 : []),
-              { id: 'fara-documente', label: 'Fără documente' },
+              // Documentele elevilor sunt ale recepției; instructorul nu le citește.
+              ...(isTeacher(role) ? [] : [{ id: 'fara-documente', label: 'Fără documente' }]),
               { id: 'istoric',     label: 'Istoric' },
               { id: 'evenimente',  label: 'Evenimente' },
               ...(curs.facultativ ? [] : [{ id: 'metodologie', label: 'Metodologie' }]),
@@ -415,8 +416,10 @@ export function CursProfilePage() {
                 lunaLabel={lunaLabel}
                 pretLunarPromo={curs.facultativ ? null : curs.pret_lunar_promo}
                 onRowClick={(cid) => navigate(`/clienti/${cid}`)}
-                onActivateReinscriere={(cid) =>
-                  activeazaReinscriereMut.mutate(cid)
+                onActivateReinscriere={
+                  isTeacher(role)
+                    ? undefined
+                    : (cid) => activeazaReinscriereMut.mutate(cid)
                 }
                 activatingClientId={
                   activeazaReinscriereMut.isPending

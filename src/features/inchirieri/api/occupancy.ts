@@ -86,6 +86,38 @@ export async function listInchirieriWeek(params: {
   return (data ?? []) as unknown as InchiriereCalendar[]
 }
 
+export type OcupareInchiriere = {
+  /** null = rezervarea altcuiva, văzută de un instructor (fără detalii). */
+  id: string | null
+  sala: string
+  data: string
+  ora_start: string
+  ora_final: string
+  pret: number | null
+  status_plata: Enums<'status_plata_inchiriere'> | null
+  eticheta: string
+  a_mea: boolean
+}
+
+// Toate rezervările din interval, pentru grilă și verificarea de suprapunere. Trece
+// prin RPC: instructorul nu citește tabelul `inchirieri` decât pentru rândurile lui,
+// dar trebuie să vadă că sala e ocupată.
+export async function listOcupareInchirieri(params: {
+  fromIso: string
+  toIso: string
+  locatieId?: string | null
+  salaId?: string | null
+}): Promise<OcupareInchiriere[]> {
+  const { data, error } = await supabase.rpc('get_ocupare_inchirieri', {
+    p_de: params.fromIso,
+    p_pana: params.toIso,
+    p_locatie: params.locatieId ?? undefined,
+    p_sala: params.salaId ?? undefined,
+  })
+  if (error) throw error
+  return (data ?? []) as OcupareInchiriere[]
+}
+
 export type InchiriereNeachitata = {
   id: string
   data: string

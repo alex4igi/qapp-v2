@@ -4,6 +4,7 @@ import { Spinner } from '@/components/ui'
 import { AuthProvider } from '@/hooks/useAuth'
 import { TodayOnlyProvider } from '@/hooks/useTodayOnly'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { CursulMeuGuard } from '@/components/CursulMeuGuard'
 import { AuthBootGate } from '@/components/AuthBootGate'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AdministrareIndex, AdministrareLayout } from '@/components/layout/AdministrareLayout'
@@ -195,7 +196,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/evaluari']} />}>
             <Route element={<AppLayout />}>
               <Route path="evaluari" element={<EvaluariPage />} />
-              <Route path="evaluari/grupa/:cursId" element={<EvaluareGrupaPage />} />
+              <Route path="evaluari/grupa/:cursId" element={<CursulMeuGuard param="cursId"><EvaluareGrupaPage /></CursulMeuGuard>} />
             </Route>
           </Route>
 
@@ -254,10 +255,10 @@ function App() {
             <Route element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="cursuri" element={<CursuriListPage />} />
-              <Route path="cursuri/:id" element={<CursProfilePage />} />
+              <Route path="cursuri/:id" element={<CursulMeuGuard param="id"><CursProfilePage /></CursulMeuGuard>} />
               <Route path="prezente" element={<PrezentePage />} />
               <Route path="inchirieri" element={<InchirieriCalendarPage />} />
-              <Route path="grupa/:cursId" element={<GrupaDashboardPage />} />
+              <Route path="grupa/:cursId" element={<CursulMeuGuard param="cursId"><GrupaDashboardPage /></CursulMeuGuard>} />
               <Route path="clienti/:id" element={<ClientProfilePage />} />
             </Route>
           </Route>

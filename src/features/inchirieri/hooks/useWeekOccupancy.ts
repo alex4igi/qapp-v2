@@ -6,9 +6,7 @@ import {
   cursSuspendatLaData,
   listCursuriForCalendar,
   listEvenimenteWeek,
-  listInchirieriWeek,
-  renterLabel,
-  type InchiriereCalendar,
+  listOcupareInchirieri,
 } from '../api/occupancy'
 import { weekDays } from '../week'
 import type { BusyInterval } from '../types'
@@ -32,7 +30,7 @@ export function useWeekOccupancy(params: {
   const inchirieriQ = useQuery({
     queryKey: ['inchirieri', 'week', locatieId, mondayIso],
     queryFn: () =>
-      listInchirieriWeek({ fromIso: days[0], toIso: days[6], locatieId }),
+      listOcupareInchirieri({ fromIso: days[0], toIso: days[6], locatieId }),
     enabled: Boolean(locatieId),
   })
 
@@ -68,18 +66,22 @@ export function useWeekOccupancy(params: {
     }
 
     // Închirieri → pe data lor.
-    for (const r of (inchirieriQ.data ?? []) as InchiriereCalendar[]) {
+    for (const r of inchirieriQ.data ?? []) {
       if (r.sala !== salaId) continue
       const startMin = timeToMinutes(r.ora_start)
       const endMin = timeToMinutes(r.ora_final)
       if (startMin == null || endMin == null) continue
       const arr = map.get(r.data)
       if (!arr) continue
+      if (!r.id) {
+        arr.push({ startMin, endMin, label: r.eticheta, kind: 'inchiriere-ocupata' })
+        continue
+      }
       const gratis = !r.pret || Number(r.pret) === 0
       arr.push({
         startMin,
         endMin,
-        label: renterLabel(r),
+        label: r.eticheta,
         kind: gratis
           ? 'inchiriere-gratis'
           : r.status_plata === 'achitat'

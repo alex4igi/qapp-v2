@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-import { fetchAllRows } from '@/lib/fetchAll'
 
 // „Ultima prezență la grupa X" minte la graniță de sezon: o grupă se re-creează
 // ca rând NOU în `cursuri` pentru fiecare sezon, iar prezențele rămân legate de
@@ -19,28 +18,11 @@ import { fetchAllRows } from '@/lib/fetchAll'
 // `alte_grupe` din get_absente_risc_teacher.
 const VINE_LA_DAYS = 45
 
-// Vezi IN_CHUNK din features/dashboard/api/grupa.ts: `.in(...)` cu prea multe
-// UUID-uri depășește limita de headers a PostgREST.
-const IN_CHUNK = 100
-
 export type VineLa = {
   data: string
   cursId: string
   cursNume: string
   sezonNume: string | null
-}
-
-type Row = {
-  id: string
-  client: string | null
-  data: string | null
-  enr: {
-    cursul: string | null
-    curs: {
-      numele: string | null
-      sez: { numele_sezonului: string | null } | null
-    } | null
-  } | null
 }
 
 function isoDaysAgo(days: number): string {
@@ -51,16 +33,13 @@ function isoDaysAgo(days: number): string {
     .slice(0, 10)
 }
 
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = []
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
-  return out
-}
-
 // Pentru fiecare cursant dat, unde a fost prezent cel mai recent ÎN AFARA grupei
 // `exceptCursId` — dar numai dacă e mai recent decât ce știe grupa despre el.
 // Cheia hărții e `clientId`; lipsa unei chei = n-a fost văzut nicăieri altundeva
 // mai recent, deci data grupei e adevărul complet.
+//
+// Prin RPC (`get_vine_la`): instructorul nu citește prezențele de la alte grupe,
+// dar află numele grupei și data pentru cursanții grupei lui.
 export async function fetchVineLaByClient(params: {
   clienti: Array<{ id: string; ultimaPrezenta: string | null }>
   exceptCursId: string
@@ -69,37 +48,18 @@ export async function fetchVineLaByClient(params: {
   const out = new Map<string, VineLa>()
   if (params.clienti.length === 0) return out
 
-  const since = isoDaysAgo(params.zile ?? VINE_LA_DAYS)
-  const ids = params.clienti.map((c) => c.id)
-
-  const rows = (
-    await Promise.all(
-      chunk(ids, IN_CHUNK).map((ch) =>
-        fetchAllRows<Row>(() =>
-          supabase
-            .from('prezente')
-            .select(
-              'id, client, data, enr:enrollments!inner(cursul, curs:cursuri!inner(numele, sez:sezoane(numele_sezonului)))',
-            )
-            .in('client', ch)
-            .eq('status', 'Prezent')
-            .gte('data', since)
-            .order('id'),
-        ),
-      ),
-    )
-  ).flat()
-
-  for (const r of rows) {
-    if (!r.client || !r.data || !r.enr?.cursul) continue
-    if (r.enr.cursul === params.exceptCursId) continue
-    const existing = out.get(r.client)
-    if (existing && existing.data >= r.data) continue
-    out.set(r.client, {
+  const { data, error } = await supabase.rpc('get_vine_la', {
+    p_clienti: params.clienti.map((c) => c.id),
+    p_except_curs: params.exceptCursId,
+    p_de_la: isoDaysAgo(params.zile ?? VINE_LA_DAYS),
+  })
+  if (error) throw error
+  for (const r of data ?? []) {
+    out.set(r.client_id, {
       data: r.data,
-      cursId: r.enr.cursul,
-      cursNume: r.enr.curs?.numele ?? '—',
-      sezonNume: r.enr.curs?.sez?.numele_sezonului ?? null,
+      cursId: r.curs_id,
+      cursNume: r.curs_nume ?? '—',
+      sezonNume: r.sezon_nume ?? null,
     })
   }
 

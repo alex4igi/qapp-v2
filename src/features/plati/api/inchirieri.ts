@@ -10,6 +10,7 @@ import { sezonActivId } from '@/lib/lookups'
 import type { Enums, Inchiriere, InsertDto, TarifInchiriere } from '@/types/db'
 import { createDatorie } from './datorii'
 import { createIncasari, type Tender } from './incasari'
+import { listOcupareInchirieri } from '@/features/inchirieri/api/occupancy'
 
 // ---------- Tarife ----------
 export async function listTarifeInchiriere(): Promise<TarifInchiriere[]> {
@@ -41,23 +42,22 @@ export async function checkInchiriereConflict(params: {
   const endMin = timeToMinutes(oraFinal)
   if (startMin == null || endMin == null) return null
 
-  // (a) închirieri existente pe sală + dată
-  let q = supabase
-    .from('inchirieri')
-    .select('id, ora_start, ora_final, teacher, client, guest_nume')
-    .eq('sala', params.sala)
-    .eq('data', params.data)
-  if (params.excludeId) q = q.neq('id', params.excludeId)
-  const { data: rentals, error: rErr } = await q
-  if (rErr) throw rErr
-  for (const r of rentals ?? []) {
+  // (a) închirieri existente pe sală + dată — prin RPC, ca instructorul să vadă și
+  // rezervările altora (doar intervalul): suprapunerea NU e prinsă de DB.
+  const rentals = await listOcupareInchirieri({
+    fromIso: params.data,
+    toIso: params.data,
+    salaId: params.sala,
+  })
+  for (const r of rentals) {
+    if (params.excludeId && r.id === params.excludeId) continue
     const rs = timeToMinutes(r.ora_start)
     const re = timeToMinutes(r.ora_final)
     if (rs == null || re == null) continue
     if (intervalsOverlap(startMin, endMin, rs, re)) {
       return {
         kind: 'inchiriere',
-        label: r.guest_nume ?? 'închiriere',
+        label: r.eticheta,
         ora_start: r.ora_start,
         ora_final: r.ora_final,
       }

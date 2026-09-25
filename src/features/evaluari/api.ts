@@ -124,14 +124,16 @@ export async function getCurrentTeacherId(): Promise<string | null> {
 
 // Cursurile predate de un anumit instructor. Cu `sezonId`, doar cele din acel
 // sezon — altfel lista acumulează clonele din toate sezoanele (reînscrieri).
+// Pe `cursuri_teacheri` (M:N), nu pe `cursuri.teacher`: co-instructorul evaluează
+// și el grupa, iar RLS-ul și RPC-urile de evaluare îl lasă (poate_evalua_cursul).
 export async function cursuriByTeacher(
   teacherId: string,
   sezonId?: string | null,
 ): Promise<SelectOption[]> {
   let query = supabase
     .from('cursuri')
-    .select('id, numele')
-    .eq('teacher', teacherId)
+    .select('id, numele, ct:cursuri_teacheri!inner(teacher_id)')
+    .eq('ct.teacher_id', teacherId)
     .order('numele', { ascending: true })
   if (sezonId) query = query.eq('sezon', sezonId)
   const { data, error } = await query

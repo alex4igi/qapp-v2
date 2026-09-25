@@ -13,7 +13,8 @@ type Props = {
   lunaLabel?: string
   pretLunarPromo: number | null
   onRowClick: (clientId: string) => void
-  onActivateReinscriere: (clientId: string) => void
+  /** Lipsă = fără buton (instructorul vede starea, activarea e a recepției). */
+  onActivateReinscriere?: (clientId: string) => void
   activatingClientId: string | null
 }
 
@@ -81,7 +82,7 @@ export function ClientiActiviTab({
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                       ✓ Activat
                     </span>
-                  ) : !r.areInrolariViitoare ? (
+                  ) : !r.areInrolariViitoare || !onActivateReinscriere ? (
                     <span className="text-xs text-quasar-gray">—</span>
                   ) : (
                     <button
