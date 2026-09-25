@@ -46,6 +46,8 @@ export type LinieGrila = {
   luni_active: number[] | null
   eliminatoriu: boolean
   are_poarta: boolean
+  /** Luna în care indicatorul n-are ce măsura plătește standardul, fără redistribuire. */
+  na_standard: boolean
   parametri: Record<string, number | boolean | string>
   activ: boolean
   ordine: number

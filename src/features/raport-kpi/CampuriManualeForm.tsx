@@ -26,17 +26,20 @@ function intrari(raport: RaportKpi, campuri: CampManual[]): Intrare[] {
   const toate = [
     ...raport.linii.filter((l) => l.aplicabil).map((l) => ({
       kpi_id: l.kpi_id, cheie: l.cheie, denumire: l.denumire,
-      sursa: l.sursa, bifa: l.tip_prag === 'afirmativ',
+      sursa: l.sursa, bifa: l.tip_prag === 'afirmativ', parametri: l.parametri,
     })),
     ...raport.eliminatorii.filter((e) => e.aplicabil).map((e) => ({
       kpi_id: e.kpi_id, cheie: e.cheie, denumire: e.denumire,
-      sursa: e.sursa, bifa: true,
+      sursa: e.sursa, bifa: true, parametri: undefined,
     })),
   ]
 
   return toate
     .map<Intrare | null>((x) => {
-      const proprii = dupaKpi.get(x.kpi_id) ?? []
+      // K4 în modul „doar rata" (grila recepției) cere numai rata de răspuns; apelurile
+      // pierdute, timpul mediu și sondajul sunt ale șablonului MOA.
+      const doarRata = x.cheie === 'raspuns_24h' && x.parametri?.rata_peste != null
+      const proprii = (dupaKpi.get(x.kpi_id) ?? []).filter((c) => !doarRata || c.cheie === 'rata_meta')
       if (proprii.length > 0) {
         return { kpiId: x.kpi_id, cheie: x.cheie, denumire: x.denumire, campuri: proprii, simplu: null }
       }

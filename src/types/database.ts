@@ -812,6 +812,171 @@ export type Database = {
           },
         ]
       }
+      capacitate_pool: {
+        Row: {
+          adaugat_de: string | null
+          adaugat_la: string
+          capacitate: number
+          curs_id: string | null
+          curs_nume: string
+          din_luna: string
+          exclus: boolean
+          id: string
+          locatie_id: string
+          nota: string | null
+          sezon_id: string
+          sursa: string
+        }
+        Insert: {
+          adaugat_de?: string | null
+          adaugat_la?: string
+          capacitate: number
+          curs_id?: string | null
+          curs_nume: string
+          din_luna: string
+          exclus?: boolean
+          id?: string
+          locatie_id: string
+          nota?: string | null
+          sezon_id: string
+          sursa: string
+        }
+        Update: {
+          adaugat_de?: string | null
+          adaugat_la?: string
+          capacitate?: number
+          curs_id?: string | null
+          curs_nume?: string
+          din_luna?: string
+          exclus?: boolean
+          id?: string
+          locatie_id?: string
+          nota?: string | null
+          sezon_id?: string
+          sursa?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "capacitate_pool_sezon_id_fkey"
+            columns: ["sezon_id"]
+            isOneToOne: false
+            referencedRelation: "sezoane"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_logs: {
         Row: {
           answer: string | null
@@ -5417,6 +5582,7 @@ export type Database = {
           kpi_id: string
           luni_active: number[] | null
           mod_calcul: string
+          na_standard: boolean
           ordine: number
           parametri: Json
           pondere: number
@@ -5441,6 +5607,7 @@ export type Database = {
           kpi_id: string
           luni_active?: number[] | null
           mod_calcul?: string
+          na_standard?: boolean
           ordine?: number
           parametri?: Json
           pondere?: number
@@ -5465,6 +5632,7 @@ export type Database = {
           kpi_id?: string
           luni_active?: number[] | null
           mod_calcul?: string
+          na_standard?: boolean
           ordine?: number
           parametri?: Json
           pondere?: number
@@ -5720,6 +5888,7 @@ export type Database = {
           kpi_id: string
           luni_active: number[] | null
           mod_calcul: string
+          na_standard: boolean
           ordine: number
           parametri: Json
           pondere: number
@@ -5744,6 +5913,7 @@ export type Database = {
           kpi_id: string
           luni_active?: number[] | null
           mod_calcul?: string
+          na_standard?: boolean
           ordine?: number
           parametri?: Json
           pondere?: number
@@ -5768,6 +5938,7 @@ export type Database = {
           kpi_id?: string
           luni_active?: number[] | null
           mod_calcul?: string
+          na_standard?: boolean
           ordine?: number
           parametri?: Json
           pondere?: number
@@ -6244,6 +6415,79 @@ export type Database = {
           updated?: string
         }
         Relationships: []
+      }
+      manageri_locatii: {
+        Row: {
+          created: string
+          id: string
+          locatie_id: string
+          titular_nume: string
+          user_id: string | null
+          valabil_de_la: string
+          valabil_pana_la: string | null
+        }
+        Insert: {
+          created?: string
+          id?: string
+          locatie_id: string
+          titular_nume: string
+          user_id?: string | null
+          valabil_de_la: string
+          valabil_pana_la?: string | null
+        }
+        Update: {
+          created?: string
+          id?: string
+          locatie_id?: string
+          titular_nume?: string
+          user_id?: string | null
+          valabil_de_la?: string
+          valabil_pana_la?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manageri_locatii_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "manageri_locatii_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manageri_locatii_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "manageri_locatii_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "manageri_locatii_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "manageri_locatii_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+        ]
       }
       motivari_absenta: {
         Row: {
@@ -8374,6 +8618,63 @@ export type Database = {
           },
         ]
       }
+      salarii_staff_componente: {
+        Row: {
+          anul: number
+          componenta: string
+          confirmat_de: string | null
+          confirmat_la: string
+          detalii: Json
+          eticheta: string
+          id: string
+          luna: number
+          nota: string | null
+          platit_in_luna: string | null
+          post: string
+          reguli: Json
+          stare: string
+          suma: number
+          titular_nume: string
+          user_id: string | null
+        }
+        Insert: {
+          anul: number
+          componenta: string
+          confirmat_de?: string | null
+          confirmat_la?: string
+          detalii?: Json
+          eticheta: string
+          id?: string
+          luna: number
+          nota?: string | null
+          platit_in_luna?: string | null
+          post: string
+          reguli?: Json
+          stare?: string
+          suma: number
+          titular_nume: string
+          user_id?: string | null
+        }
+        Update: {
+          anul?: number
+          componenta?: string
+          confirmat_de?: string | null
+          confirmat_la?: string
+          detalii?: Json
+          eticheta?: string
+          id?: string
+          luna?: number
+          nota?: string | null
+          platit_in_luna?: string | null
+          post?: string
+          reguli?: Json
+          stare?: string
+          suma?: number
+          titular_nume?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       salarii_teacher: {
         Row: {
           anul: number
@@ -8452,6 +8753,123 @@ export type Database = {
             columns: ["teacher"]
             isOneToOne: false
             referencedRelation: "teacheri"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salarizare_grila: {
+        Row: {
+          creat_de: string | null
+          created: string
+          id: string
+          nota: string | null
+          parametri: Json
+          post: string
+          valabil_de_la: string
+        }
+        Insert: {
+          creat_de?: string | null
+          created?: string
+          id?: string
+          nota?: string | null
+          parametri: Json
+          post: string
+          valabil_de_la: string
+        }
+        Update: {
+          creat_de?: string | null
+          created?: string
+          id?: string
+          nota?: string | null
+          parametri?: Json
+          post?: string
+          valabil_de_la?: string
+        }
+        Relationships: []
+      }
+      salarizare_receptie: {
+        Row: {
+          abonament_trupa: boolean
+          bonusuri_ocazionale: boolean
+          created: string
+          facturare_la_timp: boolean
+          fidelitate: boolean
+          id: string
+          norma: number
+          titular_nume: string
+          updated: string
+          user_id: string | null
+          valabil_de_la: string
+          valabil_pana_la: string | null
+        }
+        Insert: {
+          abonament_trupa?: boolean
+          bonusuri_ocazionale?: boolean
+          created?: string
+          facturare_la_timp?: boolean
+          fidelitate?: boolean
+          id?: string
+          norma?: number
+          titular_nume: string
+          updated?: string
+          user_id?: string | null
+          valabil_de_la: string
+          valabil_pana_la?: string | null
+        }
+        Update: {
+          abonament_trupa?: boolean
+          bonusuri_ocazionale?: boolean
+          created?: string
+          facturare_la_timp?: boolean
+          fidelitate?: boolean
+          id?: string
+          norma?: number
+          titular_nume?: string
+          updated?: string
+          user_id?: string | null
+          valabil_de_la?: string
+          valabil_pana_la?: string | null
+        }
+        Relationships: []
+      }
+      salarizare_sezon: {
+        Row: {
+          campanie_id: string | null
+          mod_ocupare_instructori: string
+          mod_ocupare_manageri: string
+          nota: string | null
+          sezon_id: string
+          updated: string
+        }
+        Insert: {
+          campanie_id?: string | null
+          mod_ocupare_instructori?: string
+          mod_ocupare_manageri?: string
+          nota?: string | null
+          sezon_id: string
+          updated?: string
+        }
+        Update: {
+          campanie_id?: string | null
+          mod_ocupare_instructori?: string
+          mod_ocupare_manageri?: string
+          nota?: string | null
+          sezon_id?: string
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salarizare_sezon_campanie_id_fkey"
+            columns: ["campanie_id"]
+            isOneToOne: false
+            referencedRelation: "campanii_reinscriere"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salarizare_sezon_sezon_id_fkey"
+            columns: ["sezon_id"]
+            isOneToOne: true
+            referencedRelation: "sezoane"
             referencedColumns: ["id"]
           },
         ]
@@ -11728,9 +12146,14 @@ export type Database = {
       }
     }
     Functions: {
+      _adauga_grupe_noi_in_pool: { Args: { p_sezon?: string }; Returns: number }
       _anunt_staff_recipients: {
         Args: { p_target_locatie_ids: string[]; p_target_roles: string[] }
         Returns: string[]
+      }
+      _calcul_salariu_staff: {
+        Args: { p_anul: number; p_luna: number; p_post: string; p_user: string }
+        Returns: Json
       }
       _grupe_sub_minim: {
         Args: { p_curs?: string; p_la?: string; p_sezon?: string }
@@ -11766,12 +12189,21 @@ export type Database = {
         Args: { p_client: string; p_curs: string }
         Returns: number
       }
+      _mod_ocupare: {
+        Args: { p_luna: string; p_post: string }
+        Returns: string
+      }
       _nr_sedinta_pentru: {
         Args: { p_curs: string; p_data: string }
         Returns: number
       }
       _plan_plata_integrala: { Args: { p_client: string }; Returns: Json }
+      _salarizare_parametri: {
+        Args: { p_luna: string; p_post: string }
+        Returns: Json
+      }
       _sezon_curs_inchis: { Args: { p_curs: string }; Returns: boolean }
+      _sezon_lunii: { Args: { p_luna: string }; Returns: string }
       _try_activate_gate: { Args: { p_gate_id: string }; Returns: undefined }
       _voucher_motiv_invalid: {
         Args: {
@@ -11792,6 +12224,7 @@ export type Database = {
         Returns: number
       }
       activate_sezon: { Args: { p_sezon_id: string }; Returns: undefined }
+      adauga_grupe_noi_in_pool: { Args: never; Returns: number }
       add_eveniment_participant: {
         Args: { p_client: string; p_eveniment: string }
         Returns: undefined
@@ -11918,6 +12351,14 @@ export type Database = {
         Args: { p_anul: number; p_grila: string; p_luna: number }
         Returns: Json
       }
+      calculeaza_salariu_manager: {
+        Args: { p_anul: number; p_luna: number; p_user: string }
+        Returns: Json
+      }
+      calculeaza_salariu_receptie: {
+        Args: { p_anul: number; p_luna: number; p_user: string }
+        Returns: Json
+      }
       calculeaza_salariu_teacher: {
         Args: { p_anul: number; p_luna: number; p_teacher: string }
         Returns: Json
@@ -11973,6 +12414,16 @@ export type Database = {
         }
         Returns: Json
       }
+      confirma_salariu_staff: {
+        Args: {
+          p_anul: number
+          p_luna: number
+          p_platit_in_luna?: string
+          p_post: string
+          p_user: string
+        }
+        Returns: Json
+      }
       confirma_salariu_teacher: {
         Args: {
           p_anul: number
@@ -12024,12 +12475,25 @@ export type Database = {
         }
         Returns: Json
       }
+      corecteaza_componenta_salariu: {
+        Args: { p_id: string; p_motiv: string }
+        Returns: Json
+      }
       corecteaza_data_inrolare: {
         Args: { p_data_noua: string; p_enrollment: string; p_motiv: string }
         Returns: Json
       }
       corecteaza_metoda_incasare: {
         Args: { p_id: string; p_metoda?: string; p_motiv: string }
+        Returns: undefined
+      }
+      corecteaza_pool_capacitate: {
+        Args: {
+          p_capacitate: number
+          p_exclus: boolean
+          p_id: string
+          p_motiv: string
+        }
         Returns: undefined
       }
       create_campanie_reinscriere: {
@@ -13764,6 +14228,15 @@ export type Database = {
         Returns: Json
       }
       kpi_parametri_forma_valida: { Args: { p: Json }; Returns: boolean }
+      kpi_rata_incasare: {
+        Args: {
+          p_anul: number
+          p_locatii: string[]
+          p_luna: number
+          p_parametri?: Json
+        }
+        Returns: Json
+      }
       kpi_sablon_seteaza_linii: {
         Args: { p_linii: Json; p_sablon: string }
         Returns: number

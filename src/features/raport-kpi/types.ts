@@ -23,11 +23,14 @@ export type LinieRaport = {
   conditii: { sub: string | null; standard: string | null; peste: string | null }
   are_poarta: boolean
   poarta_ok: boolean | null
+  na_standard?: boolean
   mod_calcul: 'fix' | 'comision'
   comision_procent: number | null
   comision_plafon: number | null
   suma: number
   parametri: Record<string, number | boolean | string>
+  /** Valoarea se definitivează după finalul lunii (ex. rata de încasare la M+1). */
+  provizoriu?: boolean
   detalii: Record<string, unknown> | null
 }
 
@@ -78,6 +81,10 @@ export type RaportKpi = {
   cota_manager: number
   fond_total: number
   blocante: string[]
+  /** Subsetul din `blocante` care spune doar „valoare provizorie până la…". */
+  blocante_provizorii?: string[]
+  provizoriu?: boolean
+  bonus_provizoriu?: number
   avertismente: string[]
   stare_raport: 'nedeschis' | 'draft' | 'inchis'
   raport_id: string | null

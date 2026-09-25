@@ -81,15 +81,31 @@ penalizarea pe scadență) stau în **[docs/reguli-preturi-reduceri.md](./docs/r
 sursa de adevăr, cu maparea regulă → loc în cod. Citește-o înainte să atingi
 `recalculate_pool_discount`, `preview_pool_discount` sau `cancel_discount_familie_restant`.
 
-**Grila de salarizare a instructorilor** (propunere sept. 2026, neimplementată) stă în
+**Grila de salarizare a instructorilor** (implementată 25 sept. 2026, în test) stă în
 **[docs/grila-salarizare-instructori.md](./docs/grila-salarizare-instructori.md)** — bază pe rang ×
 nivel, bonus KPI în trei trepte, praguri de 8 și 14 cursanți, diurnă și plată pe eveniment.
 ⚠️ Conține și definiția corectă a lui „cursant plătitor": **`reziliat` NU înseamnă că omul a plecat**
 (e bifat și pe lunile încheiate) — se filtrează pe `data_reziliere`. Citește-o înainte să atingi
-`calculeaza_salariu_teacher` sau orice numărătoare de cursanți pe lună.
+`calculeaza_salariu_teacher` sau orice numărătoare de cursanți pe lună. §10 spune unde stă fiecare regulă în cod.
 
-**Salarizarea managerului de studio** (decisă 14 sept. 2026, neimplementată) stă în
+**Salarizarea managerului de studio** (implementată 25 sept. 2026, în test) stă în
 **[docs/bonus-manager-studio.md](./docs/bonus-manager-studio.md)** — bază pe locație, bonus pe încasări
 (rata lunii verificată la finalul lunii următoare) și bonus pe ocupare (locuri ocupate / capacitatea grupelor).
+Capacitatea stă în `capacitate_pool` (fixată la începutul sezonului, doar crește) — 🔒 motivul e notă internă.
+
+**Grila recepției** (implementată 25 sept. 2026, în test, pe motorul KPI) stă în
+**[docs/grila-front-desk.md](./docs/grila-front-desk.md)** — fix + bonusuri fixe + bonus KPI pe cinci
+indicatori (K1 încasare la termen, K2 rata de încasare a managerului, K3 reactivare absenți 21z, K4 răspuns 24h,
+K5 conversie lead), măsurați **pe locația omului** (șablonul „Recepție 2026-2027", grile pe Petruța și Theo).
+⚠️ Citește §6 și §9 înainte să propui praguri: cu K2 = rata de încasare (de regulă peste 95% la Ștefan și
+Nicolina) și cu „KPI fără date = standard", bonusul pe istoric iese ~500 lei/lună, peste „standardul" de 430.
+
+**Pagina `/salarizare`** (owner/admin) adună cele trei grile pe lună. **Regulă înghețare:** o lună confirmată
+nu se recalculează — instructorii în `salarii_teacher`, managerii și recepția pe componente în
+`salarii_staff_componente`; corecția trece doar prin `corecteaza_salariu_teacher` / `corecteaza_componenta_salariu`
+(owner, motiv obligatoriu, urmă în `audit_log`). Datele lipsă blochează confirmarea, nu dau 0 lei.
+
+⭐ **Toate cele trei grile sunt în NET** (Alex, 23 sept. 2026). Materialele care scriau „brute" au fost
+corectate — nu s-a schimbat nicio cifră, doar eticheta.
 
 Pentru detalii despre Quasar Dance (companie, instructori, trupe, abonamente, locații, surse leads, pipeline conversie), vezi memoria persistentă (`MEMORY.md` și fișierele `project_*.md` din `~/.claude/projects/.../memory/`). Memoriile sunt sursa principală de adevăr pentru context business — ARCHITECTURE.md descrie doar codul.

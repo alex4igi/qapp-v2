@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import {
   PageHeader, MonthPicker, Badge, Button, Spinner, DataTable, KebabMenu, type Column,
 } from '@/components/ui'
@@ -27,8 +28,13 @@ function lunaCurenta(): string {
 }
 
 export default function RaportKpiPage() {
-  const [luna, setLuna] = useState(lunaCurenta)
-  const [grilaId, setGrilaId] = useState<string | null>(null)
+  // Deschis din /salarizare cu ?luna=YYYY-MM&grila=<id>: direct pe omul și luna aia.
+  const [params] = useSearchParams()
+  const [luna, setLuna] = useState(() => {
+    const p = params.get('luna')
+    return p && /^\d{4}-\d{2}$/.test(p) ? p : lunaCurenta()
+  })
+  const [grilaId, setGrilaId] = useState<string | null>(() => params.get('grila'))
 
   const [anul, lunaNr] = useMemo(() => {
     const [y, m] = luna.split('-')
@@ -221,7 +227,12 @@ function RaportDetaliu({
     onError: (e: unknown) => setMesaj(humanizeError(e, 'Redeschiderea a eșuat.')),
   })
 
+  const inghetat = salvate.data?.stare === 'inchis' ? salvate.data.kpi : null
+
   if (raport.isLoading) return <Spinner />
+  // Pe o lună închisă se arată snapshotul, nu recalculul: până vine rândul
+  // salvat, nu afișăm nimic, ca să nu apară un render cu cifrele live.
+  if (raport.data?.stare_raport === 'inchis' && salvate.isLoading) return <Spinner />
   if (raport.isError) {
     return (
       <div className="mt-4 rounded-md border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-danger">
@@ -230,7 +241,9 @@ function RaportDetaliu({
     )
   }
 
-  const r = raport.data
+  const r = inghetat
+    ? { ...inghetat, stare_raport: 'inchis' as const, raport_id: raportId }
+    : raport.data
   if (!r) return null
   const readOnly = r.stare_raport === 'inchis'
 
@@ -249,7 +262,8 @@ function RaportDetaliu({
               {r.grila.titular_nume} · {LUNI_LUNG[r.luna - 1]} {r.anul}
             </h2>
             <p className="text-sm text-muted">
-              {r.grila.locatii} · cota managerului {Math.round(r.cota_manager * 100)}%
+              {r.grila.locatii}
+              {r.cota_manager > 0 && ` · cota managerului ${Math.round(r.cota_manager * 100)}%`}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

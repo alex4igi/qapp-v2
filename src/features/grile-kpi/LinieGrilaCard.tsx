@@ -45,7 +45,7 @@ export function LinieGrilaCard({ linie, definitie, readOnly, onChange }: Props) 
             <span className="mb-0.5 block">Pondere (%)</span>
             <TextInput
               type="number"
-              step="1"
+              step="any"
               min={0}
               max={100}
               disabled={readOnly}
@@ -64,7 +64,7 @@ export function LinieGrilaCard({ linie, definitie, readOnly, onChange }: Props) 
               <label className="text-xs text-muted">
                 <span className="mb-0.5 block">Prag standard ({definitie.unitate ?? ''})</span>
                 <TextInput
-                  type="number" step="0.1" disabled={readOnly}
+                  type="number" step="0.01" disabled={readOnly}
                   value={linie.prag_standard ?? ''}
                   onChange={(e) => onChange({ prag_standard: num(e.target.value) })}
                 />
@@ -72,7 +72,7 @@ export function LinieGrilaCard({ linie, definitie, readOnly, onChange }: Props) 
               <label className="text-xs text-muted">
                 <span className="mb-0.5 block">Prag peste standard</span>
                 <TextInput
-                  type="number" step="0.1" disabled={readOnly}
+                  type="number" step="0.01" disabled={readOnly}
                   value={linie.prag_peste ?? ''}
                   onChange={(e) => onChange({ prag_peste: num(e.target.value) })}
                 />
@@ -217,6 +217,14 @@ export function LinieGrilaCard({ linie, definitie, readOnly, onChange }: Props) 
           disabled={readOnly}
           onChange={(e) => onChange({ activ: e.target.checked })}
         />
+        {!linie.eliminatoriu && (
+          <Checkbox
+            label="Fără date în lună = se plătește standardul (nu se împarte pe ceilalți)"
+            checked={linie.na_standard}
+            disabled={readOnly}
+            onChange={(e) => onChange({ na_standard: e.target.checked })}
+          />
+        )}
       </div>
     </div>
   )

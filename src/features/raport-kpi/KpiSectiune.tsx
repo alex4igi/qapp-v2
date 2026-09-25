@@ -36,6 +36,11 @@ function drillDown(l: LinieRaport): [string, string][] {
     out.push([`Încasat până în ziua ${n('zi_termen') ?? '20'}`, lei('numarator')])
     out.push(['Rata finală a lunii (informativ)', n('rata_finala') ? `${n('rata_finala')}%` : null])
     out.push(['Înrolări în bază', n('nr_inrolari')])
+  } else if (l.cheie === 'rata_incasare_m1') {
+    out.push(['Rate scadente în lună', lei('numitor')])
+    out.push(['Plătite până la finalul lunii următoare', lei('numarator')])
+    out.push(['Rate în bază', n('nr_inrolari')])
+    out.push(['Se definitivează după', n('final_la')])
   } else if (l.cheie === 'restante_recuperate') {
     const benzi = (d.benzi ?? {}) as Record<string, unknown>
     out.push(['Stoc în bază (30 zile – 1 an)', lei('numitor')])
@@ -84,6 +89,7 @@ export function KpiSectiune({ linie }: { linie: LinieRaport }) {
             <Badge tone="neutral">{linie.pondere}%</Badge>
             {!linie.aplicabil && <Badge tone="neutral">nu se aplică luna asta</Badge>}
             {linie.sursa === 'manual' && <Badge tone="neutral">manual</Badge>}
+            {linie.provizoriu && <Badge tone="warn">provizoriu</Badge>}
           </div>
           <div className="mt-1 text-xs text-muted">{formatPrag(linie)}</div>
         </div>
@@ -111,11 +117,27 @@ export function KpiSectiune({ linie }: { linie: LinieRaport }) {
         </div>
       )}
 
+      {linie.provizoriu && (
+        <div className="mt-3 rounded-md border border-warn/30 bg-warn-bg px-3 py-2 text-sm text-warn">
+          Valoare provizorie: plățile pentru ratele lunii se mai numără până pe{' '}
+          {String((linie.detalii as Record<string, unknown> | null)?.final_la ?? 'finalul lunii următoare')}.
+          Luna se poate închide abia după.
+        </div>
+      )}
+
+      {linie.motiv === 'numitor_zero_standard' && (
+        <div className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm text-muted">
+          N-a existat ce măsura luna asta — se plătește standardul.
+        </div>
+      )}
+
       {linie.banda === 'na' && (
         <div className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm text-muted">
           {linie.motiv === 'numitor_zero'
             ? 'N-a existat ce măsura luna asta — ponderea se redistribuie peste ceilalți indicatori.'
-            : (linie.motiv_text ?? 'Datele manuale nu sunt completate.')}
+            : linie.na_standard
+              ? `${linie.motiv_text ?? 'Datele manuale nu sunt completate.'} Până se completează, linia contează 0 și luna nu se poate închide.`
+              : (linie.motiv_text ?? 'Datele manuale nu sunt completate.')}
         </div>
       )}
 

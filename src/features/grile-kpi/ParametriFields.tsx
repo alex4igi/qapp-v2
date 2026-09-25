@@ -32,7 +32,7 @@ export function ParametriFields({
             </span>
             <TextInput
               type="number"
-              step="1"
+              step="any"
               min={p.min}
               max={p.max}
               disabled={readOnly}
