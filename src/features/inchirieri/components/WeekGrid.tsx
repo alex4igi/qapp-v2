@@ -15,20 +15,22 @@ type Props = {
   todayIso: string
   onFree: (dateIso: string, oraStart: string) => void
   onRental: (inchiriereId: string) => void
+  /** Telefon: o singură zi, fără lățime minimă, sloturi destul de înalte pentru deget. */
+  compact?: boolean
 }
 
 function covering(intervals: BusyInterval[], slotStart: number): BusyInterval | null {
   return intervals.find((iv) => iv.startMin <= slotStart && slotStart < iv.endMin) ?? null
 }
 
-export function WeekGrid({ days, byDate, todayIso, onFree, onRental }: Props) {
+export function WeekGrid({ days, byDate, todayIso, onFree, onRental, compact = false }: Props) {
   const slots = Array.from({ length: SLOTS_COUNT }, (_, i) => DAY_START_MIN + i * SLOT_MIN)
 
   return (
     <div className="overflow-x-auto">
       <div
-        className="grid min-w-[720px] text-xs"
-        style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}
+        className={compact ? 'grid text-sm' : 'grid min-w-[720px] text-xs'}
+        style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0, 1fr))` }}
       >
         {/* Cap coloane */}
         <div className="sticky left-0 z-10 bg-surface" />
@@ -56,6 +58,7 @@ export function WeekGrid({ days, byDate, todayIso, onFree, onRental }: Props) {
             byDate={byDate}
             onFree={onFree}
             onRental={onRental}
+            compact={compact}
           />
         ))}
       </div>
@@ -69,13 +72,16 @@ function SlotRow({
   byDate,
   onFree,
   onRental,
+  compact,
 }: {
   slotStart: number
   days: string[]
   byDate: Map<string, BusyInterval[]>
   onFree: (dateIso: string, oraStart: string) => void
   onRental: (id: string) => void
+  compact: boolean
 }) {
+  const slotH = compact ? 'min-h-[36px]' : 'min-h-[22px]'
   const isHour = slotStart % 60 === 0
   return (
     <>
@@ -101,7 +107,8 @@ function SlotRow({
               onClick={() => iv.inchiriereId && onRental(iv.inchiriereId)}
               title={`${iv.label} ${minutesToTime(iv.startMin)}–${minutesToTime(iv.endMin)}`}
               className={[
-                'min-h-[22px] border-l px-1 text-left leading-tight',
+                slotH,
+                'border-l px-1 text-left leading-tight',
                 borderTop,
                 OCCUP_STYLE[iv.kind],
                 clickable ? 'cursor-pointer hover:brightness-95' : 'cursor-default',
@@ -117,7 +124,8 @@ function SlotRow({
             type="button"
             onClick={() => onFree(d, minutesToTime(slotStart))}
             className={[
-              'min-h-[22px] border-l border-line/60 px-1 text-left text-transparent',
+              slotH,
+              'border-l border-line/60 px-1 text-left text-transparent',
               borderTop,
               'hover:bg-quasar-yellow/20 hover:text-muted-2',
             ].join(' ')}

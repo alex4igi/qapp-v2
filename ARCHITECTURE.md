@@ -125,6 +125,10 @@ reversibil din meniul contului din rail).
 Ce e pe telefon, pe persona:
 - **Instructor** — `/` (grupele zilei), `/grupa/:id` (prezența pe poză), `/clienti/:id`,
   `/grupele-mele`, `/salariul-meu`, `/evaluari`, `/anunturi`, `/notificari`.
+  Plus `/inchirieri` (rezervarea sălii): pe telefon calendarul arată **o singură zi**
+  (`DayStrip` alege ziua din săptămână, `WeekGrid compact` = fără lățime minimă, sloturi
+  de 36px), iar un slot liber deschide doar `InchiriereTab` într-un `Modal` —
+  pentru toate rolurile, nu `PlataNouaModal`.
 - **Recepție** — în plus `/clienti`, `/leads` (doar lista de sunat), `/datorii`
   (cifre + worklist), `/absente-21z`, `/eveniment/:id`, `/situatie-zilnica`.
 - **Management** — `/analytics` și `/overview` în varianta „doar cifre": graficele

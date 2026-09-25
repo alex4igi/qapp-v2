@@ -19,7 +19,7 @@ export function RoomLocationFilter({ locatie, sala, onLocatie, onSala }: Props) 
 
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <div className="w-56">
+      <div className="w-full sm:w-56">
         <Field label="Locație">
           <Select
             options={locatiiQ.data ?? []}
@@ -32,7 +32,7 @@ export function RoomLocationFilter({ locatie, sala, onLocatie, onSala }: Props) 
           />
         </Field>
       </div>
-      <div className="w-48">
+      <div className="w-full sm:w-48">
         <Field label="Sală">
           <Select
             options={saliQ.data ?? []}

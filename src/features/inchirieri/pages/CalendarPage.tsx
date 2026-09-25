@@ -4,6 +4,7 @@ import { Modal, PageHeader, Spinner } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { useWorkingDate } from '@/hooks/useWorkingDate'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { hasTeacherLens } from '@/lib/rolesMatrix'
 import { saliOptions } from '@/lib/lookups'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
@@ -11,12 +12,13 @@ import { InchiriereTab } from '@/features/plati/modals/PlataNouaModal/Inchiriere
 import { RoomLocationFilter } from '../components/RoomLocationFilter'
 import { WeekNav } from '../components/WeekNav'
 import { WeekGrid } from '../components/WeekGrid'
+import { DayStrip } from '../components/DayStrip'
 import { TodayPanel } from '../components/TodayPanel'
 import { NeachitatePanel } from '../components/NeachitatePanel'
 import { RezervarileMelePanel } from '../components/RezervarileMelePanel'
 import { EditInchiriereModal } from '../components/EditInchiriereModal'
 import { useWeekOccupancy } from '../hooks/useWeekOccupancy'
-import { mondayOf, todayIso } from '../week'
+import { mondayOf, todayIso, weekDays } from '../week'
 import { OCCUP_LEGEND, OCCUP_STYLE } from '../constants'
 
 type BookingPrefill = { locatie: string; sala: string; data: string; oraStart: string }
@@ -24,6 +26,7 @@ type BookingPrefill = { locatie: string; sala: string; data: string; oraStart: s
 export function CalendarPage() {
   const { role, teacherId } = useAuth()
   const teacherMode = role === 'teacher'
+  const isMobile = useIsMobile()
   // Oricine are profil de instructor își vede rezervările proprii; recepția și
   // managerii păstrează în plus panourile operaționale.
   const showRezervarileMele = hasTeacherLens(role, teacherId)
@@ -39,6 +42,7 @@ export function CalendarPage() {
   const [mondayIso, setMondayIso] = useState(() => mondayOf(workDate || todayIso()))
   const [booking, setBooking] = useState<BookingPrefill | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
+  const [pickedDay, setPickedDay] = useState<string | null>(null)
 
   // „Rezervi doar la locația ta": recepția legată de o locație poate VEDEA orice
   // locație, dar rezervă doar la a ei (dublat de politica RLS de insert).
@@ -63,6 +67,15 @@ export function CalendarPage() {
     mondayIso,
   })
   const today = useMemo(() => todayIso(), [])
+
+  // Ziua aleasă pe telefon; la schimbarea săptămânii cade pe azi (dacă e în ea) sau pe luni.
+  const weekIsos = weekDays(mondayIso)
+  const dayIso =
+    pickedDay && weekIsos.includes(pickedDay)
+      ? pickedDay
+      : weekIsos.includes(today)
+        ? today
+        : mondayIso
 
   return (
     <div>
@@ -106,6 +119,21 @@ export function CalendarPage() {
         </p>
       )}
 
+      {isMobile && showRezervarileMele && (
+        <div className="mb-3">
+          <RezervarileMelePanel onRental={(id) => setEditId(id)} />
+        </div>
+      )}
+
+      {isMobile && locatie && sala && (
+        <DayStrip
+          mondayIso={mondayIso}
+          dayIso={dayIso}
+          todayIso={today}
+          onChange={setPickedDay}
+        />
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
         <div className="rounded-lg border border-line bg-card p-2">
           {!locatie || !sala ? (
@@ -116,7 +144,8 @@ export function CalendarPage() {
             <Spinner />
           ) : (
             <WeekGrid
-              days={days}
+              days={isMobile ? [dayIso] : days}
+              compact={isMobile}
               byDate={byDate}
               todayIso={today}
               onFree={(dateIso, oraStart) => {
@@ -129,7 +158,7 @@ export function CalendarPage() {
         </div>
 
         <div className="space-y-4">
-          {showRezervarileMele && (
+          {showRezervarileMele && !isMobile && (
             <RezervarileMelePanel onRental={(id) => setEditId(id)} />
           )}
           {!teacherMode && (
@@ -142,9 +171,10 @@ export function CalendarPage() {
       </div>
 
       {booking &&
-        (teacherMode ? (
+        (teacherMode || isMobile ? (
           // Teacherul nu primește modalul complet de Plată nouă (taburi de
           // încasare) — doar formularul de rezervare, în modul lui restrâns.
+          // Pe telefon nici recepția: Plată nouă cu 6 taburi e doar pe desktop.
           <Modal open title="Rezervare sală" onClose={() => setBooking(null)} size="xl">
             <InchiriereTab onClose={() => setBooking(null)} defaultInchiriere={booking} />
           </Modal>

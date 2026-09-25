@@ -24,6 +24,7 @@ export const MOBILE_ROUTES = [
   '/salariul-meu',
   '/evaluari',
   '/anunturi',
+  '/inchirieri',
   // Recepție în mișcare
   '/leads',
   '/datorii',
