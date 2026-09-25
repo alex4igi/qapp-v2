@@ -981,9 +981,6 @@ export type Database = {
           email: string | null
           factura_lunara: boolean
           factura_lunara_de_la: string | null
-          facturare_pf_adresa: string | null
-          facturare_pf_cnp: string | null
-          facturare_pf_nume: string | null
           familia: string | null
           fara_poze: boolean
           foto: string | null
@@ -1016,9 +1013,6 @@ export type Database = {
           email?: string | null
           factura_lunara?: boolean
           factura_lunara_de_la?: string | null
-          facturare_pf_adresa?: string | null
-          facturare_pf_cnp?: string | null
-          facturare_pf_nume?: string | null
           familia?: string | null
           fara_poze?: boolean
           foto?: string | null
@@ -1051,9 +1045,6 @@ export type Database = {
           email?: string | null
           factura_lunara?: boolean
           factura_lunara_de_la?: string | null
-          facturare_pf_adresa?: string | null
-          facturare_pf_cnp?: string | null
-          facturare_pf_nume?: string | null
           familia?: string | null
           fara_poze?: boolean
           foto?: string | null
@@ -4302,18 +4293,11 @@ export type Database = {
           email: string | null
           factura_pe_firma: boolean
           fara_poze: boolean
-          firma_adresa: string | null
-          firma_banca: string | null
-          firma_cif: string | null
-          firma_denumire: string | null
-          firma_iban: string | null
-          firma_reg_com: string | null
           id: string
           metoda_comunicare: string | null
           metoda_plata: string | null
           nume_familie: string
           nume_reprezentant: string | null
-          observatii: string | null
           opt_out_la: string | null
           opt_out_marketing: boolean
           opt_out_motiv: string | null
@@ -4329,18 +4313,11 @@ export type Database = {
           email?: string | null
           factura_pe_firma?: boolean
           fara_poze?: boolean
-          firma_adresa?: string | null
-          firma_banca?: string | null
-          firma_cif?: string | null
-          firma_denumire?: string | null
-          firma_iban?: string | null
-          firma_reg_com?: string | null
           id?: string
           metoda_comunicare?: string | null
           metoda_plata?: string | null
           nume_familie: string
           nume_reprezentant?: string | null
-          observatii?: string | null
           opt_out_la?: string | null
           opt_out_marketing?: boolean
           opt_out_motiv?: string | null
@@ -4356,18 +4333,11 @@ export type Database = {
           email?: string | null
           factura_pe_firma?: boolean
           fara_poze?: boolean
-          firma_adresa?: string | null
-          firma_banca?: string | null
-          firma_cif?: string | null
-          firma_denumire?: string | null
-          firma_iban?: string | null
-          firma_reg_com?: string | null
           id?: string
           metoda_comunicare?: string | null
           metoda_plata?: string | null
           nume_familie?: string
           nume_reprezentant?: string | null
-          observatii?: string | null
           opt_out_la?: string | null
           opt_out_marketing?: boolean
           opt_out_motiv?: string | null
@@ -9555,57 +9525,36 @@ export type Database = {
           arhivat: boolean
           auth_user_id: string | null
           created: string
-          data_nasterii: string | null
-          email: string | null
           id: string
-          link_contract: string | null
-          marime_tricou: Database["public"]["Enums"]["marime_tricou"] | null
-          model_salariu: string | null
           nivelul: Database["public"]["Enums"]["nivel_teacher"] | null
           nume: string
-          observatii: string | null
           old_teacher_id: number | null
           poza: string | null
           prenume: string | null
-          telefon: string | null
           updated: string
         }
         Insert: {
           arhivat?: boolean
           auth_user_id?: string | null
           created?: string
-          data_nasterii?: string | null
-          email?: string | null
           id?: string
-          link_contract?: string | null
-          marime_tricou?: Database["public"]["Enums"]["marime_tricou"] | null
-          model_salariu?: string | null
           nivelul?: Database["public"]["Enums"]["nivel_teacher"] | null
           nume: string
-          observatii?: string | null
           old_teacher_id?: number | null
           poza?: string | null
           prenume?: string | null
-          telefon?: string | null
           updated?: string
         }
         Update: {
           arhivat?: boolean
           auth_user_id?: string | null
           created?: string
-          data_nasterii?: string | null
-          email?: string | null
           id?: string
-          link_contract?: string | null
-          marime_tricou?: Database["public"]["Enums"]["marime_tricou"] | null
-          model_salariu?: string | null
           nivelul?: Database["public"]["Enums"]["nivel_teacher"] | null
           nume?: string
-          observatii?: string | null
           old_teacher_id?: number | null
           poza?: string | null
           prenume?: string | null
-          telefon?: string | null
           updated?: string
         }
         Relationships: []
