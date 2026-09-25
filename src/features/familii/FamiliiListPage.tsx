@@ -10,7 +10,6 @@ import {
   Spinner,
   type Column,
 } from '@/components/ui'
-import type { Familie } from '@/types/db'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist } from '@/lib/checklist'
 import { FAMILIE_CHECKLIST } from '@/lib/checklist/specs/familie'
@@ -18,9 +17,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import { FamilieForm } from './FamilieForm'
 import { GenereazaFamiliiModal } from './GenereazaFamiliiModal'
-import { listFamilii, PAGE_SIZE } from './api'
+import { listFamilii, PAGE_SIZE, type FamilieCompleta } from './api'
 
-const columns: Column<Familie>[] = [
+const columns: Column<FamilieCompleta>[] = [
   {
     header: 'Familie',
     cell: (f) => <span className="font-medium">{f.nume_familie}</span>,

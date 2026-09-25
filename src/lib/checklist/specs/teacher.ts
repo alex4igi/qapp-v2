@@ -1,5 +1,5 @@
 import type { ChecklistSpec } from '../types'
-import type { Teacher } from '@/types/db'
+import type { Teacher, TeacherDetalii } from '@/types/db'
 
 /** Secțiunea din TeacherForm unde se completează câmpul (deep-link din card). */
 export type SectiuneTeacher = 'identitate' | 'contact' | 'hr' | 'altele' | 'cont'
@@ -23,7 +23,7 @@ export type TeacherCheckInput = {
   email: string | null
   data_nasterii: string | null
   nivelul: Teacher['nivelul']
-  marime_tricou: Teacher['marime_tricou']
+  marime_tricou: TeacherDetalii['marime_tricou']
   link_contract: string | null
   auth_user_id: string | null
 }
@@ -32,9 +32,27 @@ const completat = (v: string | null | undefined) => Boolean(v && v.trim())
 
 /** Coloanele cerute de checklist — un singur adevăr pentru toți apelanții. */
 export const TEACHER_CHECKLIST_COLS = [
-  'id', 'nume', 'prenume', 'telefon', 'email', 'data_nasterii', 'nivelul',
-  'marime_tricou', 'link_contract', 'auth_user_id',
+  'id', 'nume', 'prenume', 'nivelul', 'auth_user_id',
+  'detalii:teacheri_detalii(telefon,email,data_nasterii,marime_tricou,link_contract)',
 ].join(',')
+
+type DetaliiKey = 'telefon' | 'email' | 'data_nasterii' | 'marime_tricou' | 'link_contract'
+type TeacherChecklistRaw = Omit<TeacherCheckInput, DetaliiKey> & {
+  detalii: Pick<TeacherCheckInput, DetaliiKey> | null
+}
+
+/** Aplatizează rândul citit cu TEACHER_CHECKLIST_COLS (datele private stau în satelit). */
+export function teacherCheckRow<T extends TeacherChecklistRaw>(r: T) {
+  const { detalii, ...rest } = r
+  return {
+    ...rest,
+    telefon: detalii?.telefon ?? null,
+    email: detalii?.email ?? null,
+    data_nasterii: detalii?.data_nasterii ?? null,
+    marime_tricou: detalii?.marime_tricou ?? null,
+    link_contract: detalii?.link_contract ?? null,
+  }
+}
 
 export const TEACHER_CHECKLIST: ChecklistSpec<TeacherCheckInput> = {
   entitate: 'teacher',

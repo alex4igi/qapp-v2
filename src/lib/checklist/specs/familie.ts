@@ -32,8 +32,24 @@ const peFirma = (f: FamilieCheckInput) => f.factura_pe_firma
 /** Coloanele cerute de checklist — un singur adevăr pentru toți apelanții. */
 export const FAMILIE_CHECKLIST_COLS = [
   'id', 'nume_familie', 'nume_reprezentant', 'prenume_reprezentant', 'telefon',
-  'email', 'factura_pe_firma', 'firma_denumire', 'firma_cif', 'firma_adresa',
+  'email', 'factura_pe_firma',
+  'facturare:familii_facturare(firma_denumire,firma_cif,firma_adresa)',
 ].join(',')
+
+type FamilieChecklistRaw = Omit<FamilieCheckInput, 'firma_denumire' | 'firma_cif' | 'firma_adresa'> & {
+  facturare: Pick<FamilieCheckInput, 'firma_denumire' | 'firma_cif' | 'firma_adresa'> | null
+}
+
+/** Aplatizează rândul citit cu FAMILIE_CHECKLIST_COLS (datele de firmă stau în satelit). */
+export function familieCheckRow<T extends FamilieChecklistRaw>(r: T) {
+  const { facturare, ...rest } = r
+  return {
+    ...rest,
+    firma_denumire: facturare?.firma_denumire ?? null,
+    firma_cif: facturare?.firma_cif ?? null,
+    firma_adresa: facturare?.firma_adresa ?? null,
+  }
+}
 
 export const FAMILIE_CHECKLIST: ChecklistSpec<FamilieCheckInput> = {
   entitate: 'familie',

@@ -15,13 +15,12 @@ import {
   FAMILIE_CHECKLIST,
   type SectiuneFamilie,
 } from '@/lib/checklist/specs/familie'
-import type { Familie } from '@/types/db'
-import { createFamilie, updateFamilie } from './api'
+import { createFamilie, updateFamilie, type FamilieCompleta } from './api'
 import { createPortalAccount, suggestPortalPassword } from '@/lib/portalAccount'
 
 type Props = {
   open: boolean
-  familie?: Familie | null
+  familie?: FamilieCompleta | null
   onClose: () => void
   /** Deschide formularul derulat la secțiunea unui câmp lipsă (din checklist). */
   focusSection?: SectiuneFamilie
@@ -40,7 +39,7 @@ type FormState = {
   fara_poze: boolean
 }
 
-function initialState(familie?: Familie | null): FormState {
+function initialState(familie?: FamilieCompleta | null): FormState {
   return {
     nume_familie: familie?.nume_familie ?? '',
     nume_reprezentant: familie?.nume_reprezentant ?? '',

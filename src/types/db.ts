@@ -18,6 +18,11 @@ export type Enums<T extends keyof Public['Enums']> = Public['Enums'][T]
 export type Client = Tables<'clienti'>
 export type Familie = Tables<'familii'>
 export type Teacher = Tables<'teacheri'>
+// Date sensibile în tabele satelit 1:1, doar pentru staff: RLS-ul nu poate ascunde
+// coloane, iar instructorul vede rândurile elevilor lui și ale colegilor.
+export type ClientFacturare = Tables<'clienti_facturare'>
+export type FamilieFacturare = Tables<'familii_facturare'>
+export type TeacherDetalii = Tables<'teacheri_detalii'>
 export type Curs = Tables<'cursuri'>
 export type Sala = Tables<'sali'>
 export type Locatie = Tables<'locatii'>

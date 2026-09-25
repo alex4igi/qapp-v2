@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
-import type { Client, InsertDto, UpdateDto, Enums, DocumentClient } from '@/types/db'
+import type { Client, ClientFacturare, InsertDto, UpdateDto, Enums, DocumentClient } from '@/types/db'
 
 export const PAGE_SIZE = 25
 
@@ -168,6 +168,34 @@ export async function updateClient(
     .single()
   if (error) throw error
   return data
+}
+
+// Numele/CNP-ul/adresa pentru factura PF alternativă stau în `clienti_facturare`
+// (doar staff) — instructorul vede fișa elevului, dar nu și CNP-ul de facturare.
+export async function getClientFacturarePf(clientId: string): Promise<
+  Pick<ClientFacturare, 'facturare_pf_nume' | 'facturare_pf_cnp' | 'facturare_pf_adresa'>
+> {
+  const { data, error } = await supabase
+    .from('clienti_facturare')
+    .select('facturare_pf_nume, facturare_pf_cnp, facturare_pf_adresa')
+    .eq('client_id', clientId)
+    .maybeSingle()
+  if (error) throw error
+  return {
+    facturare_pf_nume: data?.facturare_pf_nume ?? null,
+    facturare_pf_cnp: data?.facturare_pf_cnp ?? null,
+    facturare_pf_adresa: data?.facturare_pf_adresa ?? null,
+  }
+}
+
+export async function saveClientFacturarePf(
+  clientId: string,
+  pf: Pick<ClientFacturare, 'facturare_pf_nume' | 'facturare_pf_cnp' | 'facturare_pf_adresa'>,
+): Promise<void> {
+  const { error } = await supabase
+    .from('clienti_facturare')
+    .upsert({ client_id: clientId, ...pf }, { onConflict: 'client_id' })
+  if (error) throw error
 }
 
 export type ClientFamilia = {

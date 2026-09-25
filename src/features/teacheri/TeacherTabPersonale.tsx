@@ -10,7 +10,7 @@ import {
   resetUserPassword,
   deleteUser,
 } from '@/features/setari/utilizatoriApi'
-import type { Teacher } from '@/types/db'
+import type { TeacherComplet as Teacher } from './api'
 import { TeacherForm } from './TeacherForm'
 import { TeacherAccountDialog } from './TeacherAccountDialog'
 import { LinkTeacherAccountDialog } from './LinkTeacherAccountDialog'

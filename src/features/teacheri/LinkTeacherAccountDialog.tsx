@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, Select, Button } from '@/components/ui'
 import { listUsers, linkTeacherAccount } from '@/features/setari/utilizatoriApi'
-import type { Teacher } from '@/types/db'
+import type { TeacherComplet as Teacher } from './api'
 import { getLinkedAuthUserIds } from './api'
 
 type Props = {

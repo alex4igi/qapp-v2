@@ -1,4 +1,4 @@
-import type { Teacher, UpdateDto } from '@/types/db'
+import type { TeacherComplet as Teacher, TeacherWrite } from './api'
 import type { TeacherCheckInput } from '@/lib/checklist/specs/teacher'
 
 export type FormState = {
@@ -27,7 +27,7 @@ export function initialState(teacher?: Teacher | null): FormState {
   }
 }
 
-export type TeacherPayload = UpdateDto<'teacheri'> & { nume: string }
+export type TeacherPayload = TeacherWrite & { nume: string }
 
 // Extras din corpul mutației ca salvarea și checklistul live să evalueze exact
 // același obiect — altfel cele două se despart tăcut în timp.

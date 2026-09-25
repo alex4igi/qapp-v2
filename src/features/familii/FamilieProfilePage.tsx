@@ -17,7 +17,7 @@ import {
   FAMILIE_CHECKLIST,
   type SectiuneFamilie,
 } from '@/lib/checklist/specs/familie'
-import type { Client, Familie } from '@/types/db'
+import type { Client } from '@/types/db'
 import { useAuth } from '@/hooks/useAuth'
 import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import { humanizeError } from '@/lib/errorMessage'
@@ -28,6 +28,7 @@ import {
   getFamilieMembers,
   getFamilieInrolariSezon,
   updateFamilie,
+  type FamilieCompleta,
   type FamilieInrolareSezon,
 } from './api'
 import { listSezoane } from '@/features/plati/api'
@@ -477,7 +478,7 @@ function InrolariTab({
 // Tab: Detalii personale (read-only)
 // =====================================================================
 
-function DatePersonaleTab({ familie }: { familie: Familie }) {
+function DatePersonaleTab({ familie }: { familie: FamilieCompleta }) {
   return (
     <div className="space-y-4">
       <Section title="Bio">
@@ -543,7 +544,7 @@ function DatePersonaleTab({ familie }: { familie: Familie }) {
 // Datele de facturare pe firmă — introduse de familie din portal (Profil) sau de
 // recepție de aici. Când sunt active, TOATE facturile membrilor familiei ies pe firmă
 // (au prioritate față de datele PF de pe fișa clientului).
-function FirmaFacturareSection({ familie }: { familie: Familie }) {
+function FirmaFacturareSection({ familie }: { familie: FamilieCompleta }) {
   const { role } = useAuth()
   const canEdit = isFrontDeskOrHigher(role)
   const queryClient = useQueryClient()

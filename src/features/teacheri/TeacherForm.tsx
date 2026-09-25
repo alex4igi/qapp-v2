@@ -17,7 +17,7 @@ import {
   type SectiuneTeacher,
 } from '@/lib/checklist/specs/teacher'
 import { nivelTeacherOptions, marimeTricouOptions } from '@/lib/enums'
-import type { Teacher } from '@/types/db'
+import type { TeacherComplet as Teacher } from './api'
 import { createTeacher, updateTeacher } from './api'
 import {
   buildTeacherPayload,

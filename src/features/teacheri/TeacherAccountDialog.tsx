@@ -3,7 +3,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Modal, Field, TextInput, Select, Button } from '@/components/ui'
 import { locatiiOptions } from '@/lib/lookups'
-import type { Teacher } from '@/types/db'
+import type { TeacherComplet as Teacher } from './api'
 import { createTeacherAccount } from './api'
 
 type Props = {

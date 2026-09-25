@@ -1,15 +1,66 @@
 import { supabase } from '@/lib/supabase'
 import { recordAuditLog } from '@/lib/auditLog'
-import { applyWordSearch } from '@/lib/search'
+import { searchWords } from '@/lib/search'
 import type { SelectOption } from '@/components/ui'
 import type {
   Teacher,
+  TeacherDetalii,
   Curs,
   SalariuTeacher,
   VTeacherCursStats,
   InsertDto,
   UpdateDto,
 } from '@/types/db'
+
+// Datele private (contact, contract, salariu) stau în `teacheri_detalii`: fiecare
+// instructor vede numele colegilor, dar nu și telefonul sau modelul lor salarial.
+const DETALII_KEYS = [
+  'data_nasterii',
+  'telefon',
+  'email',
+  'link_contract',
+  'observatii',
+  'marime_tricou',
+  'model_salariu',
+] as const
+type DetaliiKey = (typeof DETALII_KEYS)[number]
+type DetaliiFields = Pick<TeacherDetalii, DetaliiKey>
+
+export type TeacherComplet = Omit<Teacher, DetaliiKey> & DetaliiFields
+export type TeacherWrite = Omit<UpdateDto<'teacheri'>, DetaliiKey> & Partial<DetaliiFields>
+
+const SELECT_COMPLET = '*, detalii:teacheri_detalii(*)'
+
+type TeacherRaw = Teacher & { detalii: TeacherDetalii | null }
+
+function aplatizeaza(r: TeacherRaw): TeacherComplet {
+  const { detalii, ...rest } = r
+  const det = Object.fromEntries(
+    DETALII_KEYS.map((k) => [k, detalii?.[k] ?? null]),
+  ) as DetaliiFields
+  return { ...rest, ...det }
+}
+
+function splitDetalii(dto: TeacherWrite) {
+  const base: Record<string, unknown> = {}
+  const det: Partial<DetaliiFields> = {}
+  for (const [k, v] of Object.entries(dto)) {
+    if ((DETALII_KEYS as readonly string[]).includes(k)) {
+      ;(det as Record<string, unknown>)[k] = v
+    } else {
+      base[k] = v
+    }
+  }
+  return { base: base as UpdateDto<'teacheri'>, det }
+}
+
+async function upsertDetalii(teacherId: string, det: Partial<DetaliiFields>) {
+  if (Object.keys(det).length === 0) return
+  const { error } = await supabase
+    .from('teacheri_detalii')
+    .upsert({ teacher_id: teacherId, ...det }, { onConflict: 'teacher_id' })
+  if (error) throw error
+}
 
 export type SalariuGrupa = {
   curs_id: string
@@ -47,16 +98,13 @@ export async function setModelSalariu(
   teacherId: string,
   model: ModelSalariu | null,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('teacheri')
-    .update({ model_salariu: model })
-    .eq('id', teacherId)
-  if (error) throw error
+  await upsertDetalii(teacherId, { model_salariu: model })
 }
 
 export const PAGE_SIZE = 25
 
-const SEARCH_FIELDS = ['nume', 'prenume', 'telefon', 'email'] as const
+const SEARCH_FIELDS = ['nume', 'prenume'] as const
+const SEARCH_FIELDS_DETALII = ['telefon', 'email'] as const
 
 export type TeacheriListParams = {
   search: string
@@ -68,7 +116,7 @@ export type TeacheriListParams = {
 }
 
 export type TeacheriListResult = {
-  rows: Teacher[]
+  rows: TeacherComplet[]
   total: number
 }
 
@@ -181,7 +229,7 @@ export async function listTeacheri({
 
   let query = supabase
     .from('teacheri')
-    .select('*', { count: 'exact' })
+    .select(SELECT_COMPLET, { count: 'exact' })
     .order('nume', { ascending: true })
     .range(from, to)
 
@@ -199,11 +247,26 @@ export async function listTeacheri({
     query = query.in('id', ids)
   }
 
-  query = applyWordSearch(query, search, SEARCH_FIELDS)
+  // Telefonul și emailul stau în satelit: pentru fiecare cuvânt, id-urile care-l
+  // conțin acolo intră ca a treia alternativă lângă nume/prenume.
+  for (const word of searchWords(search)) {
+    const { data: hit, error: hitErr } = await supabase
+      .from('teacheri_detalii')
+      .select('teacher_id')
+      .or(SEARCH_FIELDS_DETALII.map((f) => `${f}.ilike.%${word}%`).join(','))
+    if (hitErr) throw hitErr
+    const alternative = SEARCH_FIELDS.map((f) => `${f}.ilike.%${word}%`)
+    const ids = (hit ?? []).map((r) => r.teacher_id)
+    if (ids.length > 0) alternative.push(`id.in.(${ids.join(',')})`)
+    query = query.or(alternative.join(','))
+  }
 
   const { data, error, count } = await query
   if (error) throw error
-  return { rows: data ?? [], total: count ?? 0 }
+  return {
+    rows: ((data ?? []) as unknown as TeacherRaw[]).map(aplatizeaza),
+    total: count ?? 0,
+  }
 }
 
 // Auth user-id-urile deja legate de un instructor (ca să nu le re-legăm).
@@ -228,14 +291,14 @@ export async function deleteTeacher(id: string, force = false): Promise<void> {
   if (error) throw error
 }
 
-export async function getTeacher(id: string): Promise<Teacher> {
+export async function getTeacher(id: string): Promise<TeacherComplet> {
   const { data, error } = await supabase
     .from('teacheri')
-    .select('*')
+    .select(SELECT_COMPLET)
     .eq('id', id)
     .single()
   if (error) throw error
-  return data
+  return aplatizeaza(data as unknown as TeacherRaw)
 }
 
 export async function getTeacherCursuri(teacherId: string): Promise<Curs[]> {
@@ -310,29 +373,30 @@ export async function confirmaSalariuTeacher(
 }
 
 export async function createTeacher(
-  dto: InsertDto<'teacheri'>,
-): Promise<Teacher> {
+  dto: Omit<InsertDto<'teacheri'>, DetaliiKey> & Partial<DetaliiFields>,
+): Promise<TeacherComplet> {
+  const { base, det } = splitDetalii(dto)
   const { data, error } = await supabase
     .from('teacheri')
-    .insert(dto)
-    .select('*')
+    .insert(base as InsertDto<'teacheri'>)
+    .select('id')
     .single()
   if (error) throw error
-  return data
+  await upsertDetalii(data.id, det)
+  return getTeacher(data.id)
 }
 
 export async function updateTeacher(
   id: string,
-  dto: UpdateDto<'teacheri'>,
-): Promise<Teacher> {
-  const { data, error } = await supabase
-    .from('teacheri')
-    .update(dto)
-    .eq('id', id)
-    .select('*')
-    .single()
-  if (error) throw error
-  return data
+  dto: TeacherWrite,
+): Promise<TeacherComplet> {
+  const { base, det } = splitDetalii(dto)
+  if (Object.keys(base).length > 0) {
+    const { error } = await supabase.from('teacheri').update(base).eq('id', id)
+    if (error) throw error
+  }
+  await upsertDetalii(id, det)
+  return getTeacher(id)
 }
 
 // Arhivare/dezarhivare instructor (`arhivat = true/false`). Manager+.

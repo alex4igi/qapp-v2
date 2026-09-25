@@ -6,6 +6,7 @@ import {
 } from '@/lib/checklist/specs/curs'
 import {
   TEACHER_CHECKLIST_COLS,
+  teacherCheckRow,
   type TeacherCheckInput,
 } from '@/lib/checklist/specs/teacher'
 import {
@@ -14,6 +15,7 @@ import {
 } from '@/lib/checklist/specs/client'
 import {
   FAMILIE_CHECKLIST_COLS,
+  familieCheckRow,
   type FamilieCheckInput,
 } from '@/lib/checklist/specs/familie'
 
@@ -60,7 +62,9 @@ export async function listTeacheriPentruChecklist(): Promise<
       .eq('arhivat', false)
       .order('id', { ascending: true }),
   )
-  return data as unknown as TeacherChecklistRow[]
+  return (data as unknown as Parameters<typeof teacherCheckRow>[0][]).map(
+    teacherCheckRow,
+  ) as TeacherChecklistRow[]
 }
 
 export type ClientChecklistRow = ClientCheckInput & { id: string }
@@ -102,5 +106,7 @@ export async function listFamiliiPentruChecklist(): Promise<FamilieChecklistRow[
       .in('id', ids)
       .order('id', { ascending: true }),
   )
-  return data as unknown as FamilieChecklistRow[]
+  return (data as unknown as Parameters<typeof familieCheckRow>[0][]).map(
+    familieCheckRow,
+  ) as FamilieChecklistRow[]
 }

@@ -1,8 +1,51 @@
 import { supabase } from '@/lib/supabase'
 import { applyWordSearch } from '@/lib/search'
-import type { Familie, Client, InsertDto, UpdateDto } from '@/types/db'
+import type { Familie, FamilieFacturare, Client, InsertDto, UpdateDto } from '@/types/db'
 
 export const PAGE_SIZE = 25
+
+// Câmpurile care stau în `familii_facturare` (doar staff), nu în `familii`.
+const FACTURARE_KEYS = [
+  'firma_denumire',
+  'firma_cif',
+  'firma_reg_com',
+  'firma_adresa',
+  'firma_banca',
+  'firma_iban',
+  'observatii',
+] as const
+type FacturareKey = (typeof FACTURARE_KEYS)[number]
+type FacturareFields = Pick<FamilieFacturare, FacturareKey>
+
+export type FamilieCompleta = Omit<Familie, FacturareKey> & FacturareFields
+export type FamilieWrite = Omit<UpdateDto<'familii'>, FacturareKey> & Partial<FacturareFields>
+
+function cuFacturare(fac: FamilieFacturare | null | undefined): FacturareFields {
+  return Object.fromEntries(
+    FACTURARE_KEYS.map((k) => [k, fac?.[k] ?? null]),
+  ) as FacturareFields
+}
+
+function splitFacturare(dto: FamilieWrite) {
+  const base: Record<string, unknown> = {}
+  const fac: Partial<FacturareFields> = {}
+  for (const [k, v] of Object.entries(dto)) {
+    if ((FACTURARE_KEYS as readonly string[]).includes(k)) {
+      fac[k as FacturareKey] = v as string | null
+    } else {
+      base[k] = v
+    }
+  }
+  return { base: base as UpdateDto<'familii'>, fac }
+}
+
+async function upsertFacturare(familieId: string, fac: Partial<FacturareFields>) {
+  if (Object.keys(fac).length === 0) return
+  const { error } = await supabase
+    .from('familii_facturare')
+    .upsert({ familie_id: familieId, ...fac }, { onConflict: 'familie_id' })
+  if (error) throw error
+}
 
 const SEARCH_FIELDS = [
   'nume_familie',
@@ -19,7 +62,7 @@ export type FamiliiListParams = {
 }
 
 export type FamiliiListResult = {
-  rows: Familie[]
+  rows: FamilieCompleta[]
   total: number
 }
 
@@ -32,7 +75,7 @@ export async function listFamilii({
 
   let query = supabase
     .from('familii')
-    .select('*', { count: 'exact' })
+    .select('*, facturare:familii_facturare(*)', { count: 'exact' })
     .order('nume_familie', { ascending: true })
     .range(from, to)
 
@@ -40,17 +83,24 @@ export async function listFamilii({
 
   const { data, error, count } = await query
   if (error) throw error
-  return { rows: data ?? [], total: count ?? 0 }
+  type Raw = Familie & { facturare: FamilieFacturare | null }
+  return {
+    rows: ((data ?? []) as unknown as Raw[]).map(({ facturare, ...f }) => ({
+      ...f,
+      ...cuFacturare(facturare),
+    })),
+    total: count ?? 0,
+  }
 }
 
-export async function getFamilie(id: string): Promise<Familie> {
-  const { data, error } = await supabase
-    .from('familii')
-    .select('*')
-    .eq('id', id)
-    .single()
-  if (error) throw error
-  return data
+export async function getFamilie(id: string): Promise<FamilieCompleta> {
+  const [fam, fac] = await Promise.all([
+    supabase.from('familii').select('*').eq('id', id).single(),
+    supabase.from('familii_facturare').select('*').eq('familie_id', id).maybeSingle(),
+  ])
+  if (fam.error) throw fam.error
+  if (fac.error) throw fac.error
+  return { ...fam.data, ...cuFacturare(fac.data) }
 }
 
 export async function getFamilieMembers(familieId: string): Promise<Client[]> {
@@ -111,14 +161,16 @@ export async function assignClientiToFamilie(params: {
 }
 
 export async function createFamilie(
-  dto: InsertDto<'familii'>,
+  dto: Omit<InsertDto<'familii'>, FacturareKey> & Partial<FacturareFields>,
 ): Promise<Familie> {
+  const { base, fac } = splitFacturare(dto)
   const { data, error } = await supabase
     .from('familii')
-    .insert(dto)
+    .insert(base as InsertDto<'familii'>)
     .select('*')
     .single()
   if (error) throw error
+  if (Object.values(fac).some((v) => v != null)) await upsertFacturare(data.id, fac)
   return data
 }
 
@@ -138,16 +190,14 @@ export async function creeazaFamilieProprie(
 
 export async function updateFamilie(
   id: string,
-  dto: UpdateDto<'familii'>,
-): Promise<Familie> {
-  const { data, error } = await supabase
-    .from('familii')
-    .update(dto)
-    .eq('id', id)
-    .select('*')
-    .single()
-  if (error) throw error
-  return data
+  dto: FamilieWrite,
+): Promise<void> {
+  const { base, fac } = splitFacturare(dto)
+  if (Object.keys(base).length > 0) {
+    const { error } = await supabase.from('familii').update(base).eq('id', id)
+    if (error) throw error
+  }
+  await upsertFacturare(id, fac)
 }
 
 export type FamilieInrolareSezon = {

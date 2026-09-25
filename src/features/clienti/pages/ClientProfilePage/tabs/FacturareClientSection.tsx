@@ -5,64 +5,100 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
 import { humanizeError } from '@/lib/errorMessage'
-import { updateClient } from '../../../api'
+import { getClientFacturarePf, saveClientFacturarePf, updateClient } from '../../../api'
 import type { getClient } from '../../../api'
 
 type Client = Awaited<ReturnType<typeof getClient>>
+type FacturarePf = Awaited<ReturnType<typeof getClientFacturarePf>>
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
 
 // Facturare „la cerere": marcaj „vrea factură lunară" (încasările de la data activării
 // apar în /facturare → Clienți) + date PF alternative (factura iese pe alt nume + CNP).
 // Datele pot veni și din portal (profil membru) — aici recepția le vede și le editează.
+// Numele/CNP-ul/adresa PF stau în `clienti_facturare` (doar staff), nu pe fișa clientului.
 export function FacturareClientSection({ client }: { client: Client }) {
+  const pf = useQuery({
+    queryKey: ['client-facturare-pf', client.id],
+    queryFn: () => getClientFacturarePf(client.id),
+  })
+  if (pf.isLoading) return null
+  if (pf.error) {
+    return (
+      <p className="text-xs text-red-700">
+        {humanizeError(pf.error, 'Datele de facturare nu s-au putut încărca.')}
+      </p>
+    )
+  }
+  return <FacturareClientForm key={pf.dataUpdatedAt} client={client} pf={pf.data!} />
+}
+
+function FacturareClientForm({ client, pf }: { client: Client; pf: FacturarePf }) {
   const { role } = useAuth()
   const canEdit = isFrontDeskOrHigher(role)
   const queryClient = useQueryClient()
 
   const [facturaLunara, setFacturaLunara] = useState(client.factura_lunara ?? false)
   const [deLa, setDeLa] = useState(client.factura_lunara_de_la ?? '')
-  const [pfNume, setPfNume] = useState(client.facturare_pf_nume ?? '')
-  const [pfCnp, setPfCnp] = useState(client.facturare_pf_cnp ?? '')
-  const [pfAdresa, setPfAdresa] = useState(client.facturare_pf_adresa ?? '')
+  const [pfNume, setPfNume] = useState(pf.facturare_pf_nume ?? '')
+  const [pfCnp, setPfCnp] = useState(pf.facturare_pf_cnp ?? '')
+  const [pfAdresa, setPfAdresa] = useState(pf.facturare_pf_adresa ?? '')
   const [error, setError] = useState<string | null>(null)
 
   const firma = useQuery({
     queryKey: ['familie-firma', client.familia],
     enabled: !!client.familia,
     queryFn: async () => {
-      const { data, error: err } = await supabase
-        .from('familii')
-        .select('factura_pe_firma, firma_denumire, firma_cif')
-        .eq('id', client.familia!)
-        .maybeSingle()
-      if (err) throw err
-      return data
+      const [fam, fac] = await Promise.all([
+        supabase.from('familii').select('factura_pe_firma').eq('id', client.familia!).maybeSingle(),
+        supabase
+          .from('familii_facturare')
+          .select('firma_denumire, firma_cif')
+          .eq('familie_id', client.familia!)
+          .maybeSingle(),
+      ])
+      if (fam.error) throw fam.error
+      if (fac.error) throw fac.error
+      return {
+        factura_pe_firma: fam.data?.factura_pe_firma ?? false,
+        firma_denumire: fac.data?.firma_denumire ?? null,
+        firma_cif: fac.data?.firma_cif ?? null,
+      }
     },
   })
 
   const cnpTrimmed = pfCnp.trim()
   const cnpInvalid = cnpTrimmed !== '' && !/^\d{13}$/.test(cnpTrimmed)
 
-  const dirty =
+  const lunaraDirty =
     facturaLunara !== (client.factura_lunara ?? false) ||
-    (deLa || null) !== (client.factura_lunara_de_la ?? null) ||
-    pfNume.trim() !== (client.facturare_pf_nume ?? '') ||
-    cnpTrimmed !== (client.facturare_pf_cnp ?? '') ||
-    pfAdresa.trim() !== (client.facturare_pf_adresa ?? '')
+    (deLa || null) !== (client.factura_lunara_de_la ?? null)
+  const pfDirty =
+    pfNume.trim() !== (pf.facturare_pf_nume ?? '') ||
+    cnpTrimmed !== (pf.facturare_pf_cnp ?? '') ||
+    pfAdresa.trim() !== (pf.facturare_pf_adresa ?? '')
+  const dirty = lunaraDirty || pfDirty
 
   const save = useMutation({
-    mutationFn: () =>
-      updateClient(client.id, {
-        factura_lunara: facturaLunara,
-        factura_lunara_de_la: facturaLunara ? deLa || todayISO() : null,
-        facturare_pf_nume: pfNume.trim() || null,
-        facturare_pf_cnp: cnpTrimmed || null,
-        facturare_pf_adresa: pfAdresa.trim() || null,
-      }),
+    mutationFn: async () => {
+      if (lunaraDirty) {
+        await updateClient(client.id, {
+          factura_lunara: facturaLunara,
+          factura_lunara_de_la: facturaLunara ? deLa || todayISO() : null,
+        })
+      }
+      if (pfDirty) {
+        await saveClientFacturarePf(client.id, {
+          facturare_pf_nume: pfNume.trim() || null,
+          facturare_pf_cnp: cnpTrimmed || null,
+          facturare_pf_adresa: pfAdresa.trim() || null,
+        })
+      }
+    },
     onSuccess: () => {
       setError(null)
       void queryClient.invalidateQueries({ queryKey: ['client', client.id] })
+      void queryClient.invalidateQueries({ queryKey: ['client-facturare-pf', client.id] })
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
   })

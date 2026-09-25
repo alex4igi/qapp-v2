@@ -14,7 +14,7 @@ import {
   Badge,
   type Column,
 } from '@/components/ui'
-import type { Teacher } from '@/types/db'
+import type { TeacherComplet as Teacher } from './api'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist } from '@/lib/checklist'
 import { TEACHER_CHECKLIST } from '@/lib/checklist/specs/teacher'

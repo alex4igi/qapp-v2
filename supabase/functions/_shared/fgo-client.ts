@@ -13,6 +13,13 @@ export type FgoClientContext = {
   clientNume: string
 }
 
+// Satelitul 1:1 (clienti_facturare / familii_facturare) vine ca obiect din PostgREST,
+// dar clientul netipat îl vede ca listă — acceptăm ambele forme.
+export function unu<T>(v: T | T[] | null | undefined): T | null {
+  if (Array.isArray(v)) return v[0] ?? null
+  return v ?? null
+}
+
 function fullName(c: { nume?: string | null; prenume?: string | null } | null): string {
   if (!c) return ''
   return [c.nume, c.prenume].filter(Boolean).join(' ').trim()
@@ -28,7 +35,7 @@ export async function buildFgoClientForClient(
 
   const { data: client } = await admin
     .from('clienti')
-    .select('id, nume, prenume, familia, facturare_pf_nume, facturare_pf_cnp, facturare_pf_adresa')
+    .select('id, nume, prenume, familia, pf:clienti_facturare(facturare_pf_nume, facturare_pf_cnp, facturare_pf_adresa)')
     .eq('id', clientId)
     .maybeSingle()
 
@@ -38,18 +45,19 @@ export async function buildFgoClientForClient(
   if (client?.familia) {
     const { data: fam } = await admin
       .from('familii')
-      .select('id, nume_familie, factura_pe_firma, firma_denumire, firma_cif, firma_reg_com, firma_adresa')
+      .select('id, nume_familie, factura_pe_firma, firma:familii_facturare(firma_denumire, firma_cif, firma_reg_com, firma_adresa)')
       .eq('id', client.familia)
       .maybeSingle()
     familiaId = fam?.id ?? null
-    if (fam?.factura_pe_firma && fam.firma_cif) {
+    const firma = unu(fam?.firma)
+    if (fam?.factura_pe_firma && firma?.firma_cif) {
       return {
         fgoClient: {
           tip: 'PJ',
-          denumire: fam.firma_denumire || fam.nume_familie || 'Firmă',
-          cui: fam.firma_cif,
-          regCom: fam.firma_reg_com,
-          adresa: fam.firma_adresa,
+          denumire: firma.firma_denumire || fam.nume_familie || 'Firmă',
+          cui: firma.firma_cif,
+          regCom: firma.firma_reg_com,
+          adresa: firma.firma_adresa,
         },
         familiaId,
         clientNume,
@@ -57,13 +65,14 @@ export async function buildFgoClientForClient(
     }
   }
 
-  if (client?.facturare_pf_nume) {
+  const pf = unu(client?.pf)
+  if (pf?.facturare_pf_nume) {
     return {
       fgoClient: {
         tip: 'PF',
-        denumire: client.facturare_pf_nume,
-        cnp: client.facturare_pf_cnp,
-        adresa: client.facturare_pf_adresa,
+        denumire: pf.facturare_pf_nume,
+        cnp: pf.facturare_pf_cnp,
+        adresa: pf.facturare_pf_adresa,
       },
       familiaId,
       clientNume,

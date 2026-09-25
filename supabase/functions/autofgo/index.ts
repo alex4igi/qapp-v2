@@ -12,6 +12,7 @@ import { ADMIN_OR_OWNER, ALL_STAFF, requireStaffRole } from '../_shared/staffAut
 import { emitInvoice, type FgoClient, type FgoFirma } from '../_shared/fgo.ts'
 import { emitPortalInvoice } from '../_shared/portal-invoice.ts'
 import { emitClientInvoice } from '../_shared/client-invoice.ts'
+import { unu } from '../_shared/fgo-client.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -327,16 +328,17 @@ async function buildClient(admin: SupabaseClient, item: EmitItem): Promise<FgoCl
   if (item.familia_id) {
     const { data: fam } = await admin
       .from('familii')
-      .select('nume_familie, factura_pe_firma, firma_denumire, firma_cif, firma_reg_com, firma_adresa')
+      .select('nume_familie, factura_pe_firma, firma:familii_facturare(firma_denumire, firma_cif, firma_reg_com, firma_adresa)')
       .eq('id', item.familia_id)
       .maybeSingle()
-    if (fam?.factura_pe_firma && fam.firma_cif) {
+    const firma = unu(fam?.firma)
+    if (fam?.factura_pe_firma && firma?.firma_cif) {
       return {
         tip: 'PJ',
-        denumire: fam.firma_denumire || fam.nume_familie || item.client_nume,
-        cui: fam.firma_cif,
-        regCom: fam.firma_reg_com,
-        adresa: fam.firma_adresa,
+        denumire: firma.firma_denumire || fam.nume_familie || item.client_nume,
+        cui: firma.firma_cif,
+        regCom: firma.firma_reg_com,
+        adresa: firma.firma_adresa,
       }
     }
   }
