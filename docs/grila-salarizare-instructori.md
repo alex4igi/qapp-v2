@@ -543,6 +543,14 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 - Datele lipsă (rang, nivel, orar, capacitate) nu dau 0 lei: grupa e marcată „blocant", iar luna nu
   se poate confirma până nu se completează.
 - O lună se confirmă doar după ce s-a încheiat (retenția și ocuparea se numără pe toată luna).
+- **Cine vede (Alex, 26 sept. 2026):** salariile tuturor se văd de la admin în sus (owner/admin, pagina
+  `/salarizare`); fiecare om își vede doar salariul lui. Instructorii — prin „Salariul meu", doar lunile
+  confirmate. Managerii și recepția **nu au încă** ecranul lor: calculul și lunile confirmate
+  (`salarii_staff_componente`) sunt deocamdată doar pentru admin.
+- Lunile de dinainte de septembrie 2026 nu se mai pot calcula în aplicație (grila n-are parametri
+  pentru ele, RPC-ul refuză). Nicio lună nu fusese confirmată pe modelul vechi. Lista orientativă pe
+  modelul vechi (sept. 2025 – aug. 2026, plus sept. 2026 pentru comparație) și definiția funcției vechi
+  sunt salvate în `Management/Salarii instructori model vechi 2025-2026/`, în afara repo-ului.
 - Open Class și cursurile one-time nu intră; doar titularul (`cursuri.teacher`) e plătit.
 
 **Presupuneri de confirmat cu Alex până în iunie 2027** (nu schimbă nimic înainte de vară):

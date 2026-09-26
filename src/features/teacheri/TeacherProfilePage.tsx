@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Spinner, Tabs, Badge } from '@/components/ui'
 import { ProfileScaffold } from '@/components/layout/ProfileScaffold'
@@ -31,8 +31,10 @@ export function TeacherProfilePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { role, teacherId: ownTeacherId } = useAuth()
+  const [searchParams] = useSearchParams()
+  // Pagina de salarizare deschide profilul direct pe „Detalii salarii".
   const [tab, setTab] = useState<'cursuri' | 'salarii' | 'personale' | 'evaluari'>(
-    'cursuri',
+    () => (searchParams.get('tab') === 'salarii' ? 'salarii' : 'cursuri'),
   )
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)

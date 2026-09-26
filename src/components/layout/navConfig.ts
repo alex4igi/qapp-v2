@@ -92,6 +92,7 @@ export const navSections: NavSection[] = [
       { label: 'Start de sezon',   path: '/start-sezon' },
       { label: 'Scorecard CC',     path: '/scorecard' },
       { label: 'Raport KPI',       path: '/raport-kpi' },
+      { label: 'Salarizare',       path: '/salarizare' },
     ],
   },
   {

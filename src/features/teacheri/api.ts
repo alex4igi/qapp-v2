@@ -6,7 +6,6 @@ import type {
   Teacher,
   TeacherDetalii,
   Curs,
-  SalariuTeacher,
   VTeacherCursStats,
   InsertDto,
   UpdateDto,
@@ -21,7 +20,6 @@ const DETALII_KEYS = [
   'link_contract',
   'observatii',
   'marime_tricou',
-  'model_salariu',
 ] as const
 type DetaliiKey = (typeof DETALII_KEYS)[number]
 type DetaliiFields = Pick<TeacherDetalii, DetaliiKey>
@@ -60,45 +58,6 @@ async function upsertDetalii(teacherId: string, det: Partial<DetaliiFields>) {
     .from('teacheri_detalii')
     .upsert({ teacher_id: teacherId, ...det }, { onConflict: 'teacher_id' })
   if (error) throw error
-}
-
-export type SalariuGrupa = {
-  curs_id: string
-  curs_nume: string
-  tip: 'recurent' | 'facultativ' | 'trupa'
-  sedinte_per_sapt: number
-  nr_unitati: number | null
-  nr_prezente: number | null
-  prag_unitati_min: number | null
-  suma: number
-  manual: boolean
-  // Dual informativ: ambele modele calculate pentru orice grupă (snapshot-urile
-  // vechi n-au câmpurile → null/undefined, UI-ul tratează absența).
-  nr_cursanti?: number | null
-  suma_per_client?: number | null
-  prag_client_min?: number | null
-  suma_per_prezente?: number | null
-  prag_prezente_min?: number | null
-}
-
-export type ModelSalariu = 'per_client' | 'per_prezenta'
-
-export type SalariuPreview = {
-  teacher_id: string
-  anul: number
-  luna: number
-  total: number
-  total_prezente: number
-  model_salariu: ModelSalariu | null
-  grupe: SalariuGrupa[]
-}
-
-// Setează override-ul de model de salarizare per teacher (null = auto din facultativ).
-export async function setModelSalariu(
-  teacherId: string,
-  model: ModelSalariu | null,
-): Promise<void> {
-  await upsertDetalii(teacherId, { model_salariu: model })
 }
 
 export const PAGE_SIZE = 25
@@ -326,50 +285,6 @@ export async function getTeacherCursStats(
   const { data, error } = await query
   if (error) throw error
   return data ?? []
-}
-
-// Preview LIVE pentru salariu (nu persistă)
-export async function previewSalariuTeacher(
-  teacherId: string,
-  anul: number,
-  luna: number,
-): Promise<SalariuPreview> {
-  const { data, error } = await supabase.rpc('calculeaza_salariu_teacher', {
-    p_teacher: teacherId,
-    p_anul: anul,
-    p_luna: luna,
-  })
-  if (error) throw error
-  return data as unknown as SalariuPreview
-}
-
-// Snapshot-uri salarii confirmate (admin sau teacher pe profilul lui)
-export async function listSalariiTeacher(
-  teacherId: string,
-): Promise<SalariuTeacher[]> {
-  const { data, error } = await supabase
-    .from('salarii_teacher')
-    .select('*')
-    .eq('teacher', teacherId)
-    .order('anul', { ascending: false })
-    .order('luna', { ascending: false })
-  if (error) throw error
-  return data ?? []
-}
-
-// Admin: confirmă & persistă snapshot
-export async function confirmaSalariuTeacher(
-  teacherId: string,
-  anul: number,
-  luna: number,
-): Promise<SalariuTeacher> {
-  const { data, error } = await supabase.rpc('confirma_salariu_teacher', {
-    p_teacher: teacherId,
-    p_anul: anul,
-    p_luna: luna,
-  })
-  if (error) throw error
-  return data as unknown as SalariuTeacher
 }
 
 export async function createTeacher(

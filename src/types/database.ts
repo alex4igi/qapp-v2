@@ -8679,10 +8679,15 @@ export type Database = {
         Row: {
           anul: number
           breakdown: Json
+          confirmat_de: string | null
+          confirmat_la: string | null
+          corectat_la: string | null
           created: string
           data_plata: string | null
           id: string
           luna: number
+          nota: string | null
+          reguli: Json | null
           status: string
           teacher: string
           total: number
@@ -8691,10 +8696,15 @@ export type Database = {
         Insert: {
           anul: number
           breakdown?: Json
+          confirmat_de?: string | null
+          confirmat_la?: string | null
+          corectat_la?: string | null
           created?: string
           data_plata?: string | null
           id?: string
           luna: number
+          nota?: string | null
+          reguli?: Json | null
           status?: string
           teacher: string
           total?: number
@@ -8703,10 +8713,15 @@ export type Database = {
         Update: {
           anul?: number
           breakdown?: Json
+          confirmat_de?: string | null
+          confirmat_la?: string | null
+          corectat_la?: string | null
           created?: string
           data_plata?: string | null
           id?: string
           luna?: number
+          nota?: string | null
+          reguli?: Json | null
           status?: string
           teacher?: string
           total?: number
@@ -12180,6 +12195,7 @@ export type Database = {
         Args: { p_anul: number; p_luna: number; p_post: string; p_user: string }
         Returns: Json
       }
+      _grupa_matura: { Args: { p_curs: string; p_par: Json }; Returns: Json }
       _grupe_sub_minim: {
         Args: { p_curs?: string; p_la?: string; p_sezon?: string }
         Returns: {
@@ -12241,6 +12257,16 @@ export type Database = {
       }
       _sezon_curs_inchis: { Args: { p_curs: string }; Returns: boolean }
       _sezon_lunii: { Args: { p_luna: string }; Returns: string }
+      _staff_cu_confirmari: {
+        Args: {
+          p_anul: number
+          p_calc: Json
+          p_luna: number
+          p_post: string
+          p_user: string
+        }
+        Returns: Json
+      }
       _try_activate_gate: { Args: { p_gate_id: string }; Returns: undefined }
       _voucher_motiv_invalid: {
         Args: {
@@ -12471,10 +12497,15 @@ export type Database = {
         Returns: {
           anul: number
           breakdown: Json
+          confirmat_de: string | null
+          confirmat_la: string | null
+          corectat_la: string | null
           created: string
           data_plata: string | null
           id: string
           luna: number
+          nota: string | null
+          reguli: Json | null
           status: string
           teacher: string
           total: number
@@ -12532,6 +12563,37 @@ export type Database = {
           p_motiv: string
         }
         Returns: undefined
+      }
+      corecteaza_salariu_teacher: {
+        Args: {
+          p_anul: number
+          p_luna: number
+          p_motiv: string
+          p_teacher: string
+        }
+        Returns: {
+          anul: number
+          breakdown: Json
+          confirmat_de: string | null
+          confirmat_la: string | null
+          corectat_la: string | null
+          created: string
+          data_plata: string | null
+          id: string
+          luna: number
+          nota: string | null
+          reguli: Json | null
+          status: string
+          teacher: string
+          total: number
+          updated: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "salarii_teacher"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       create_campanie_reinscriere: {
         Args: {
@@ -13830,6 +13892,10 @@ export type Database = {
           skill_sincronizare: number
           stare: string
         }[]
+      }
+      get_salarizare_luna: {
+        Args: { p_anul: number; p_luna: number }
+        Returns: Json
       }
       get_scorecard_operatori: {
         Args: { p_from: string; p_locatie?: string; p_to: string }

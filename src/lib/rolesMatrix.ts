@@ -115,6 +115,9 @@ export const ROUTE_ACCESS = {
   // Raportul lunar de bonus: managerul PL îl completează și îl închide pentru
   // oamenii lui, dar nu poate atinge numerele grilei (vezi /grile-kpi).
   '/raport-kpi': PRIVILEGED,
+  // Salariile tuturor (instructori, manageri, recepție) și confirmarea lor:
+  // date sensibile, deci nici managerul nu le vede.
+  '/salarizare': ADMIN_OR_OWNER,
 } as const satisfies Record<string, readonly AppRole[]>
 
 export type AppRoute = keyof typeof ROUTE_ACCESS

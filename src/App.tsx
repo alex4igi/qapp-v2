@@ -85,6 +85,7 @@ const Absente21zPage = lazy(() => import('@/features/absente21z/Absente21zPage')
 const GrileKpiPage = lazy(() => import('@/features/grile-kpi/GrileKpiPage'))
 const GrilaEditorPage = lazy(() => import('@/features/grile-kpi/GrilaEditorPage'))
 const RaportKpiPage = lazy(() => import('@/features/raport-kpi/RaportKpiPage'))
+const SalarizarePage = lazy(() => import('@/features/salarizare/SalarizarePage'))
 const AnalyticsPage = lazy(() =>
   import('@/features/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
 )
@@ -423,6 +424,12 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/raport-kpi']} />}>
             <Route element={<AppLayout />}>
               <Route path="raport-kpi" element={<RaportKpiPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/salarizare']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="salarizare" element={<SalarizarePage />} />
             </Route>
           </Route>
 

@@ -3,8 +3,13 @@ import { useMemo, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
 import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
-import { listSalariiTeacher, previewSalariuTeacher } from '@/features/teacheri/api'
-import type { SalariuGrupa, SalariuPreview } from '@/features/teacheri/api'
+import { SalariuTeacherDetaliu } from '@/components/salarii/SalariuTeacherDetaliu'
+import {
+  calculDinSnapshot,
+  listSalariiTeacher,
+  previewSalariuTeacher,
+  type SalariuTeacherCalc,
+} from '@/lib/salariuTeacher'
 import { getSezonActiv } from '@/features/setari/api'
 import {
   cuLuniConfirmate,
@@ -22,13 +27,10 @@ const RO_LUNI = [
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie',
 ]
 
-// Estimările (preview live pentru lunile neconfirmate) rămân ASCUNSE cât timp
-// modelul de salarizare e în schimbare — teacherii n-ar trebui să vadă sume
-// calculate cu praguri care se modifică înainte de septembrie 2026 (vezi
-// memoria project_salariu_model_schimbare_sept). Când modelul e definit, pune
-// flag-ul pe `true`: pagina arată atunci și lunile neconfirmate, cu badge
-// „estimare". Garda de acces pe RPC (migrațiile 20260722210000/220000) rămâne
-// activă indiferent de flag.
+// Estimările (preview live pentru lunile neconfirmate) rămân ASCUNSE: grila
+// 2026-2027 e în test, iar instructorul vede doar lunile confirmate de admin.
+// Cu flag-ul pe `true` pagina arată și lunile neconfirmate, cu badge „estimare".
+// Garda de acces pe RPC rămâne activă indiferent de flag.
 const SHOW_ESTIMARI = false
 
 // O lună e ori snapshot confirmat de admin (imutabil, „plătit"), ori preview
@@ -36,18 +38,15 @@ const SHOW_ESTIMARI = false
 // salarii din profilul instructorului.
 type LunaItem =
   | { kind: 'snapshot'; anul: number; luna: number; data: SalariuTeacher }
-  | { kind: 'preview'; anul: number; luna: number; data: SalariuPreview }
+  | { kind: 'preview'; anul: number; luna: number; data: SalariuTeacherCalc }
 
-function grupeFor(item: LunaItem): SalariuGrupa[] {
-  if (item.kind === 'preview') return item.data.grupe ?? []
-  return Array.isArray(item.data.breakdown)
-    ? (item.data.breakdown as unknown as SalariuGrupa[])
-    : []
+function calculFor(item: LunaItem): SalariuTeacherCalc | null {
+  return item.kind === 'preview' ? item.data : calculDinSnapshot(item.data)
 }
 
 function SalariuCard({ item }: { item: LunaItem }) {
   const [open, setOpen] = useState(false)
-  const grupe = grupeFor(item)
+  const calc = calculFor(item)
   const total =
     item.kind === 'preview' ? item.data.total : Number(item.data.total)
 
@@ -82,49 +81,12 @@ function SalariuCard({ item }: { item: LunaItem }) {
 
       {open && (
         <div className="border-t border-quasar-gray-light px-4 py-3">
-          {grupe.length === 0 ? (
+          {calc ? (
+            <SalariuTeacherDetaliu calc={calc} />
+          ) : (
             <p className="text-sm text-quasar-gray">
               Fără desfășurare pe grupe pentru această lună.
             </p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-quasar-gray">
-                  <th className="py-1">Grupă</th>
-                  <th className="py-1">Tip</th>
-                  <th className="py-1 text-right">Unități</th>
-                  <th className="py-1 text-right">Sumă</th>
-                </tr>
-              </thead>
-              <tbody>
-                {grupe.map((g) => (
-                  <tr key={g.curs_id} className="border-t border-quasar-gray-light/60">
-                    <td className="py-1.5">{g.curs_nume}</td>
-                    <td className="py-1.5">
-                      <span className="capitalize">{g.tip}</span>
-                      {g.manual && (
-                        <span className="ml-1 text-xs text-quasar-gray">(manual)</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 text-right">
-                      {g.nr_unitati ?? '—'}
-                      {g.prag_unitati_min != null && g.prag_unitati_min > 0 && (
-                        <span className="text-xs text-quasar-gray">
-                          {' '}/ prag {g.prag_unitati_min}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-1.5 text-right font-medium">
-                      {g.manual ? (
-                        <span className="text-quasar-gray">manual</span>
-                      ) : (
-                        formatRON(g.suma ?? 0)
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           )}
         </div>
       )}
@@ -196,7 +158,7 @@ export function SalariulMeuPage() {
     )
   }
 
-  const previewByKey = new Map<string, SalariuPreview>()
+  const previewByKey = new Map<string, SalariuTeacherCalc>()
   monthsNeedingPreview.forEach((mo, idx) => {
     const d = previewQueries[idx]?.data
     if (d) previewByKey.set(`${mo.y}-${mo.m}`, d)

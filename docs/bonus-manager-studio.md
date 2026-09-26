@@ -98,6 +98,11 @@ suma cuprinde tot ce a intrat. Dacă și rata s-ar calcula pe tot ce a intrat, a
 
 ### 🔒 Notă internă — NU se publică în materialele pentru manageri
 
+> **Actualizat 25 sept. 2026 (Alex):** regula în sine **se publică** în materialele pentru manageri, cu
+> formularea lui: „începem cu un pool, iar dacă pe parcurs se mai adaugă o grupă, și-o asumă în pool până
+> la sfârșitul sezonului" (pagina de reguli a managerilor din artifact, §3). Rămâne intern doar
+> **motivul** de mai jos.
+
 **Pool-ul poate crește, dar nu poate scădea.** Dacă în timpul sezonului se închid grupe, capacitatea
 rămâne cea stabilită la începutul sezonului. Motivul, spus de Alex pe 17 sept. 2026 explicit ca notă
 internă: altfel managerul își urcă ocuparea **închizând grupe** — taie numitorul, deci pool-ul de
