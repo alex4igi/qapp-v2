@@ -16,17 +16,15 @@ export function CursulMeuGuard({ param, children }: { param: string; children: R
   const { role, teacherId, teacherLoading } = useAuth()
   const doarAleLui = isTeacher(role)
 
+  // Aceeași listă pe care o folosește RLS-ul (grupele lui din fereastra de sezoane):
+  // o grupă de-a lui din 2024-2025 e tot „nu predai aici", nu un roster gol.
   const preda = useQuery({
     queryKey: ['preda-la-grupa', teacherId, cursId],
     enabled: doarAleLui && Boolean(teacherId) && Boolean(cursId),
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('cursuri_teacheri')
-        .select('curs_id', { count: 'exact', head: true })
-        .eq('teacher_id', teacherId!)
-        .eq('curs_id', cursId!)
+      const { data, error } = await supabase.rpc('teacher_curs_ids')
       if (error) throw error
-      return (count ?? 0) > 0
+      return (data ?? []).includes(cursId!)
     },
   })
 

@@ -15069,6 +15069,13 @@ export type Database = {
       }
       sync_cursuri_suspendat: { Args: never; Returns: number }
       teacher_can_access_curs: { Args: { p_curs: string }; Returns: boolean }
+      teacher_client_ids: { Args: never; Returns: string[] }
+      teacher_curs_ids: { Args: never; Returns: string[] }
+      teacher_enrollment_ids: { Args: never; Returns: string[] }
+      teacher_familie_ids: { Args: never; Returns: string[] }
+      teacher_lead_ids: { Args: never; Returns: string[] }
+      teacher_open_sesiuni_ids: { Args: never; Returns: string[] }
+      teacher_sezoane_ids: { Args: never; Returns: string[] }
       tel9: { Args: { p_telefon: string }; Returns: string }
       trimite_aprobate: { Args: { p_sesiune: string }; Returns: number }
       update_profil_client: {
