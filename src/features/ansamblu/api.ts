@@ -40,7 +40,7 @@ export type OcupareLocatie = {
 
 // Procentul se rotunjește la 2 zecimale, nu la întreg: pragurile de 40/60/80%
 // se citesc direct pe cifră, iar 59,8% afișat ca „60%" ar părea atins.
-function procentOcupare(ocupate: number, capacitate: number): number {
+export function procentOcupare(ocupate: number, capacitate: number): number {
   return capacitate > 0 ? Math.round((10000 * ocupate) / capacitate) / 100 : 0
 }
 
@@ -119,25 +119,6 @@ export async function getConversieLeads(
     procent: 0,
     zile_medii: null,
   }) as ConversieLeadsRow
-}
-
-export type ProfitabilitateTeacherRow = {
-  teacher_id: string
-  teacher_nume: string
-  incasari: number
-  salariu: number
-  marja: number
-}
-
-// Doar owner+admin (RPC are guard is_admin()).
-export async function getProfitabilitateTeacher(
-  luni = 12,
-): Promise<ProfitabilitateTeacherRow[]> {
-  const { data, error } = await supabase.rpc('get_profitabilitate_teacher', {
-    p_luni: luni,
-  })
-  if (error) throw error
-  return (data ?? []) as ProfitabilitateTeacherRow[]
 }
 
 export type CrestereNetaRow = {

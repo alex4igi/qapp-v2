@@ -21,7 +21,7 @@ export type AbsentaRisc = {
   vine_la: string | null
 }
 
-// Pragul e în SĂPTĂMÂNI de tăcere — vezi getAbsenteConsecutive (analytics/api.ts).
+// Pragul e în SĂPTĂMÂNI de tăcere — același ca în RPC-ul get_absente_consecutive.
 export async function getAbsenteRisc(saptamani = 2): Promise<AbsentaRisc[]> {
   const { data, error } = await supabase.rpc('get_absente_risc_teacher', {
     p_saptamani: saptamani,

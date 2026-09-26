@@ -12147,6 +12147,31 @@ export type Database = {
     }
     Functions: {
       _adauga_grupe_noi_in_pool: { Args: { p_sezon?: string }; Returns: number }
+      _analytics_acoperire: {
+        Args: {
+          p_de: string
+          p_locatie: string
+          p_pana: string
+          p_sezon: string
+        }
+        Returns: number
+      }
+      _analytics_indicatori: {
+        Args: { p_cu_restante: boolean; p_locatie: string }
+        Returns: Json
+      }
+      _analytics_locuri_fara_prezenta: {
+        Args: { p_cursuri: string[]; p_la: string }
+        Returns: {
+          fara_prezenta: number
+          locuri: number
+        }[]
+      }
+      _analytics_plata_in_luna: {
+        Args: { p_de: string; p_locatie: string; p_pana: string }
+        Returns: number
+      }
+      _analytics_prag: { Args: { p_test: string }; Returns: number }
       _anunt_staff_recipients: {
         Args: { p_target_locatie_ids: string[]; p_target_roles: string[] }
         Returns: string[]
@@ -12169,6 +12194,18 @@ export type Database = {
           sezon_in_curs: boolean
           stare: string
           teacher_nume: string
+        }[]
+      }
+      _inrolari_platite: {
+        Args: {
+          p_cursuri: string[]
+          p_de: string
+          p_pana: string
+          p_sedinta_30_zile: boolean
+        }
+        Returns: {
+          client: string
+          curs_id: string
         }[]
       }
       _is_anunt_expeditor: { Args: { p_anunt: string }; Returns: boolean }
@@ -12771,6 +12808,7 @@ export type Database = {
           teacher_nume: string
         }[]
       }
+      get_analytics_sezon: { Args: { p_locatie?: string }; Returns: Json }
       get_anunturi_client: {
         Args: never
         Returns: {
@@ -12944,6 +12982,18 @@ export type Database = {
           schedule: string
           start_time: string
           status: string
+        }[]
+      }
+      get_cursanti_lunar: {
+        Args: { p_locatie?: string }
+        Returns: {
+          acoperire: number
+          cursanti: number
+          in_curs: boolean
+          incomplet: boolean
+          luna: string
+          sezon_id: string
+          sezon_nume: string
         }[]
       }
       get_cursanti_multi_stil: {

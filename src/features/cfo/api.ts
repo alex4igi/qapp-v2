@@ -64,3 +64,23 @@ export async function getColectareDso(i: Interval, locatieId: string | null = nu
     dso_zile: row?.dso_zile != null ? Number(row.dso_zile) : null,
   }
 }
+
+// ── Durată medie înscriere + LTV (total ȘI recurent) ─────────────────────────
+export type DurataLtv = {
+  durata_medie_luni: number | null
+  ltv_total: number | null
+  ltv_recurent: number | null
+}
+
+export async function getDurataMedieLtv(locatieId: string | null): Promise<DurataLtv> {
+  const { data, error } = await supabase.rpc('get_durata_medie_ltv', {
+    p_locatie: locatieId ?? undefined,
+  })
+  if (error) throw error
+  const row = (data ?? [])[0]
+  return {
+    durata_medie_luni: row?.durata_medie_luni != null ? Number(row.durata_medie_luni) : null,
+    ltv_total: row?.ltv_total != null ? Number(row.ltv_total) : null,
+    ltv_recurent: row?.ltv_recurent != null ? Number(row.ltv_recurent) : null,
+  }
+}

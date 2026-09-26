@@ -30,7 +30,7 @@ export function Section2Achizitie({ interval, scope, locatieId, locatieLabel, co
 
   return (
     <section>
-      <SectionTitle sub="Intrarea în pâlnie, nu doar rezultatul.">2 · Pâlnia de achiziție</SectionTitle>
+      <SectionTitle sub="Ultimele 12 luni: pâlnia leadurilor și leadurile pe lună.">Leaduri</SectionTitle>
       {funnelQ.isLoading ? (
         <Spinner />
       ) : (

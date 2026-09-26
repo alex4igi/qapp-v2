@@ -10,7 +10,7 @@ import {
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { isPrivileged, isAdminOrHigher } from '@/lib/rolesMatrix'
+import { isPrivileged } from '@/lib/rolesMatrix'
 import { getSezonActiv, lunaCurenta, lunaCuOffset, type Interval } from './api'
 import { TeacherOverviewSection } from './TeacherOverviewSection'
 import { SectionKpiFinanciar } from './sections/SectionKpiFinanciar'
@@ -25,7 +25,6 @@ import { SectionTrendPrezente } from './sections/SectionTrendPrezente'
 import { SectionOcupare } from './sections/SectionOcupare'
 import { SectionTotalClienti } from './sections/SectionTotalClienti'
 import { SectionConversieLeads } from './sections/SectionConversieLeads'
-import { SectionProfitTeacheri } from './sections/SectionProfitTeacheri'
 
 const TABS = [
   { id: 'financiar',   label: 'Financiar' },
@@ -174,11 +173,6 @@ export function StatisticiPage() {
       {tab === 'instructori' && (
         <div className="flex flex-col gap-8">
           <TeacherOverviewSection />
-          {isAdminOrHigher(role) && (
-            <LazySection>
-              <SectionProfitTeacheri />
-            </LazySection>
-          )}
         </div>
       )}
     </div>

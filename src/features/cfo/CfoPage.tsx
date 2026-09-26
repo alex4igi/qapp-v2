@@ -6,10 +6,8 @@ import { formatRON } from '@/lib/format'
 import { locatiiOptions } from '@/lib/lookups'
 import { KpiCard } from '@/features/statistici/KpiCard'
 import { getSezonActiv, lunaCurenta, lunaCuOffset, type Interval } from '@/features/statistici/api'
-import { getDurataMedieLtv, getRentabilitateGrupa } from '@/features/analytics/api'
-import { getMrrTrend, getColectareDso } from './api'
+import { getMrrTrend, getColectareDso, getDurataMedieLtv } from './api'
 import { MrrTrendChart } from './MrrTrendChart'
-import { BreakEvenTable } from './BreakEvenTable'
 
 // Pagină dedicată CFO — izolată de operațional/strategic (/analytics) ca să nu
 // aglomereze qapp. Doar owner+admin (rută ADMIN_OR_OWNER + RPC is_admin()).
@@ -30,7 +28,6 @@ export function CfoPage() {
   const mrrQ = useQuery({ queryKey: ['cfo', 'mrr', interval, scope], queryFn: () => getMrrTrend(interval, scope) })
   const colectareQ = useQuery({ queryKey: ['cfo', 'colectare', interval, scope], queryFn: () => getColectareDso(interval, scope) })
   const ltvQ = useQuery({ queryKey: ['cfo', 'ltv', scope], queryFn: () => getDurataMedieLtv(scope) })
-  const rentabQ = useQuery({ queryKey: ['cfo', 'rentab-grupa', interval, scope], queryFn: () => getRentabilitateGrupa(interval, scope) })
 
   const mrrCurent = mrrQ.data?.length ? mrrQ.data[mrrQ.data.length - 1].mrr_recurent : null
 
@@ -141,20 +138,12 @@ export function CfoPage() {
           </div>
         </section>
 
-        {/* Prag de rentabilitate */}
-        <section>
-          <h2 className="mb-1 text-base font-bold text-quasar-black">Prag de rentabilitate per grupă</h2>
-          <p className="mb-3 text-xs text-quasar-gray">
-            Câți cursanți acoperă costul instructorului. Sub prag = grupă de
-            scrutinizat/comasat.
-          </p>
-          {rentabQ.isLoading ? <Spinner /> : <BreakEvenTable rows={rentabQ.data ?? []} />}
-        </section>
-
         <p className="text-xs text-quasar-gray">
           Notă: MRR exclude one-off (bilete/merch/per-ședință). CAC + payback period
           se activează când introducem bugetul de marketing — momentan parcate, ca
-          să nu aglomerăm.
+          să nu aglomerăm. Pragul de rentabilitate pe grupă revine când în sistem
+          există costuri: azi salariile și cheltuielile lipsesc, iar marja ar ieși
+          egală cu încasările.
         </p>
       </div>
     </div>

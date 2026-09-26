@@ -5,8 +5,7 @@ import { getMixMetode, getMixCategoriiIncasari, type Interval } from '@/features
 import { OverviewDonut } from '@/features/statistici/OverviewDonut'
 import { CategorieChart } from '@/features/statistici/CategorieChart'
 import { MetodePlataChart } from '@/features/statistici/MetodePlataChart'
-import { getArpuTrend, getMixRecurentOneoff } from '../api'
-import { ArpuTrendChart } from '../ArpuTrendChart'
+import { getMixRecurentOneoff } from '../api'
 import { ANALYTICS_QO, SectionTitle } from './shared'
 
 const CATEG_INCASARI_PALETTE: Record<string, string> = {
@@ -20,7 +19,6 @@ const CATEG_INCASARI_PALETTE: Record<string, string> = {
 }
 
 export function Section5Venituri({ interval, scope }: { interval: Interval; scope: string | null }) {
-  const arpuQ = useQuery({ queryKey: ['an', 'arpu', interval, scope], queryFn: () => getArpuTrend(interval, scope), ...ANALYTICS_QO })
   const recurentQ = useQuery({ queryKey: ['an', 'recurent', interval, scope], queryFn: () => getMixRecurentOneoff(interval, scope), ...ANALYTICS_QO })
   const metodeQ = useQuery({ queryKey: ['an', 'metode', interval, scope], queryFn: () => getMixMetode(interval, scope), ...ANALYTICS_QO })
   const categIncQ = useQuery({ queryKey: ['an', 'categ-inc', interval, scope], queryFn: () => getMixCategoriiIncasari(interval, scope), ...ANALYTICS_QO })
@@ -35,16 +33,7 @@ export function Section5Venituri({ interval, scope }: { interval: Interval; scop
 
   return (
     <section>
-      <SectionTitle sub="ARPU, mix recurent vs one-off, distribuție pe metode/categorii.">
-        5 · Calitatea veniturilor
-      </SectionTitle>
-      <div className="mb-4">
-        <h3 className="mb-2 text-sm font-semibold text-quasar-black">
-          Venit mediu per client (ARPU) pe lună
-          <span className="ml-2 font-normal text-quasar-gray">— venit ÷ clienți activi</span>
-        </h3>
-        {arpuQ.isLoading ? <Spinner /> : <ArpuTrendChart rows={arpuQ.data ?? []} />}
-      </div>
+      <SectionTitle sub="Ultimele 12 luni: recurent vs one-off, metode de plată, categorii.">Venituri</SectionTitle>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {recurentQ.isLoading ? (
           <Spinner />

@@ -13,3 +13,7 @@ export async function getVacanteForData(data: string): Promise<Vacanta[]> {
   if (error) throw error
   return rows ?? []
 }
+
+// Iulie–august: sezonul de vară are doar grupe facultative, deci lunile astea nu
+// se compară cu o lună de școală (retenție, fluxuri, grafice pe sezon).
+export const LUNI_VACANTA = [7, 8]

@@ -2,11 +2,9 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
 import { formatRON } from '@/lib/format'
-import { sezonActiv, saliWithLocatie } from '@/lib/lookups'
-import { useAuth } from '@/hooks/useAuth'
+import { LUNI_VACANTA } from '@/lib/vacante'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { KpiCard } from '@/features/statistici/KpiCard'
 import {
   getRataPrezentaLuna,
@@ -14,9 +12,6 @@ import {
   getVenitLunaComparat,
   lunaCuOffset,
 } from '@/features/statistici/api'
-import { getAbsente21zCount } from '@/features/absente21z/api'
-import { getDatoriiDashboard, restTotal, sumDatorii } from '@/features/datorii/api'
-import { getGrupeSubMinim, subMinimLunaAsta } from '@/features/cursuri/api'
 import {
   getClientiActivi,
   getClientiInscrisiSezon,
@@ -28,7 +23,8 @@ import {
   type SituatieRow,
 } from './SituatieLocatiiTable'
 import { PrezentaRetentieCard } from './PrezentaRetentieCard'
-import { DeUrmarit, type RandDeUrmarit } from './DeUrmarit'
+import { DeUrmarit } from './DeUrmarit'
+import { useDeUrmarit } from './useDeUrmarit'
 
 const INFO_INSCRISI = (
   <>
@@ -94,47 +90,6 @@ const INFO_OCUPARE = (
   </>
 )
 
-const INFO_ABSENTE = (
-  <>
-    <p className="font-semibold">Ce numără</p>
-    <p className="mt-1">
-      Cazurile deschise din lista de recuperare: cursanți fără prezență de 21+
-      zile, încă necontactați și nereactivați, din sezonul curent.
-    </p>
-  </>
-)
-
-const INFO_GRUPE = (
-  <>
-    <p className="font-semibold">Ce numără</p>
-    <p className="mt-1">
-      Grupele sub minimul sălii (8 cursanți plătitori, 6 în SCM Studio 2): cele
-      sub minim <strong>luna asta</strong>, plus cele care au închis deja luni sub
-      minim.
-    </p>
-    <p className="mt-1.5">
-      La 3 luni încheiate la rând sub minim grupa e <strong>propusă</strong> pentru
-      suspendare — decizia rămâne a managerului. Luna în curs e doar avertizare:
-      grupa încă se poate umple, iar luna lansării nu se numără.
-    </p>
-  </>
-)
-
-const INFO_DATORII = (
-  <>
-    <p className="font-semibold">Ce numără</p>
-    <p className="mt-1">
-      Clienții cu sold restant și totalul restanței cumulate, fără sumele
-      prescrise.
-    </p>
-    <p className="mt-1.5">
-      Pe tot clubul, un client cu restanțe la două locații se numără la fiecare.
-    </p>
-  </>
-)
-
-const LUNI_VACANTA = [7, 8]
-
 function numeLuna(luna: string): string {
   const [y, m] = luna.split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('ro-RO', {
@@ -144,12 +99,8 @@ function numeLuna(luna: string): string {
 }
 
 export function AnsambluPage() {
-  const { role } = useAuth()
   const isMobile = useIsMobile()
   const { locatieId, locatieNume, ready } = useWorkingLocatie()
-  // Pragul minim al grupei e o decizie de management: RPC-ul refuză front_desk-ul,
-  // deci rândul nici nu se cere.
-  const privileged = isManagerOrHigher(role)
 
   const inscrisiQ = useQuery({
     queryKey: ['ansamblu', 'inscrisi'],
@@ -178,35 +129,6 @@ export function AnsambluPage() {
     queryFn: () => getRetentieLuna(locatieId),
     enabled: ready,
   })
-  const sezonQ = useQuery({
-    queryKey: ['lookup', 'sezon-activ-detaliu'],
-    queryFn: sezonActiv,
-  })
-  const sezon = sezonQ.data ?? null
-
-  const absenteQ = useQuery({
-    queryKey: ['ansamblu', 'absente-21z', locatieId, sezon?.data_incepere ?? null],
-    queryFn: () => getAbsente21zCount(locatieId, sezon?.data_incepere ?? null),
-    enabled: ready && !!sezon,
-  })
-  const datoriiQ = useQuery({
-    queryKey: ['ansamblu', 'datorii', locatieId],
-    queryFn: () => getDatoriiDashboard(locatieId),
-    enabled: ready,
-  })
-  const grupeQ = useQuery({
-    queryKey: ['ansamblu', 'grupe-sub-minim', sezon?.id ?? null],
-    queryFn: () => getGrupeSubMinim({ sezonId: sezon!.id }),
-    enabled: privileged && !!sezon,
-  })
-  // `get_grupe_sub_minim` n-are p_locatie — pragul e al sălii, deci scopăm prin
-  // maparea sală → locație.
-  const saliQ = useQuery({
-    queryKey: ['lookup', 'sali-cu-locatie'],
-    queryFn: saliWithLocatie,
-    enabled: privileged && !!locatieId,
-  })
-
   const situatie = useMemo<SituatieRow[]>(() => {
     const map = new Map<string, SituatieRow>()
     const upsert = (id: string, nume: string) => {
@@ -286,69 +208,8 @@ export function AnsambluPage() {
   const lunaLa = lunaCuOffset(-1)
 
   const venit = venitQ.data ?? null
-  const datorii = datoriiQ.data ? sumDatorii(datoriiQ.data) : null
 
-  const grupeScop = useMemo(() => {
-    const rows = grupeQ.data ?? []
-    if (!locatieId) return rows
-    const salaLocatie = new Map((saliQ.data ?? []).map((s) => [s.nume, s.locatie]))
-    return rows.filter((g) => g.salaNume && salaLocatie.get(g.salaNume) === locatieId)
-  }, [grupeQ.data, saliQ.data, locatieId])
-
-  const randuri = useMemo<RandDeUrmarit[]>(() => {
-    const out: RandDeUrmarit[] = []
-
-    if (absenteQ.data) {
-      out.push({
-        key: 'absente',
-        valoare: absenteQ.data,
-        tone: 'danger',
-        text: 'cursanți tăcuți de 21+ zile, necontactați',
-        to: '/absente-21z',
-        info: INFO_ABSENTE,
-      })
-    }
-
-    if (privileged) {
-      const inCurs = grupeScop.filter((g) => g.sezonInCurs)
-      const deSuspendat = inCurs.filter((g) => g.stare === 'de_suspendat').length
-      const inObservatie = inCurs.filter((g) => g.stare === 'in_observatie').length
-      const lunaAsta = inCurs.filter(subMinimLunaAsta).length
-      const total = deSuspendat + inObservatie + lunaAsta
-      if (total > 0) {
-        const hint = [
-          deSuspendat > 0 && `${deSuspendat} propuse pentru suspendare`,
-          inObservatie > 0 && `${inObservatie} în observație`,
-          lunaAsta > 0 && `${lunaAsta} doar luna asta — încă se pot umple`,
-        ]
-          .filter(Boolean)
-          .join(' · ')
-        out.push({
-          key: 'grupe',
-          valoare: total,
-          tone: deSuspendat > 0 ? 'danger' : 'warn',
-          text: 'grupe sub minimul sălii',
-          hint,
-          to: '/cursuri',
-          info: INFO_GRUPE,
-        })
-      }
-    }
-
-    if (datorii && datorii.nr_datornici > 0) {
-      out.push({
-        key: 'datorii',
-        valoare: datorii.nr_datornici,
-        tone: 'danger',
-        text: 'clienți cu restanțe',
-        hint: `${formatRON(restTotal(datorii))} restant, fără prescrise`,
-        to: '/datorii',
-        info: INFO_DATORII,
-      })
-    }
-
-    return out
-  }, [absenteQ.data, privileged, grupeScop, datorii])
+  const { randuri } = useDeUrmarit(locatieId, ready)
 
   const headcountLoading = inscrisiQ.isLoading || activiQ.isLoading
 
