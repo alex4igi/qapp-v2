@@ -24,7 +24,7 @@ import {
 } from '@/lib/lookups'
 import { formatOrar } from '@/features/cursuri/program'
 import { listSezoane } from '@/features/setari/api'
-import { formatRON } from '@/lib/format'
+import { formatDate, formatRON } from '@/lib/format'
 import type { Curs, Enrollment, Enums } from '@/types/db'
 import { getClientEligibilityContext } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
@@ -47,6 +47,7 @@ import {
   getOpenSesiuneByDate,
   hasActiveEnrollmentOnCurs,
   listCursuriPentruInrolare,
+  nextSessionDate,
   previewPoolDiscount,
   registerPlataFifo,
   rezervaBonusOpen,
@@ -221,6 +222,32 @@ export function EnrollmentForm({
   })
   const sesiunePlina =
     sesiuneQ.data != null && sesiuneQ.data.ocupate >= sesiuneQ.data.capacitate
+
+  // Același gard ca în tab-ul Open class: recepția încasează în avans pentru
+  // următoarea ședință, dar data pornea de la „azi" → sesiune-fantomă pe o zi
+  // fără curs, iar omul lipsea din rosterul ședinței reale.
+  // La ieșirea din „Per ședință" data precompletată revine la azi, ca o înrolare
+  // „Per lună" să nu aterizeze în luna următoare.
+  const zileKey = (cursSelectat?.zile ?? []).join(',')
+  const autoDataRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (isFacultativPerSedinta && zileKey) {
+      const next = nextSessionDate(zileKey.split(','), todayIso())
+      if (next) {
+        autoDataRef.current = next
+        setDataIncepere(next)
+      }
+    } else if (autoDataRef.current) {
+      const auto = autoDataRef.current
+      autoDataRef.current = null
+      setDataIncepere((prev) => (prev === auto ? todayIso() : prev))
+    }
+  }, [cursId, zileKey, isFacultativPerSedinta])
+  const ziFaraCurs =
+    isFacultativPerSedinta &&
+    Boolean(dataIncepere) &&
+    Boolean(cursSelectat?.zile?.length) &&
+    dataIncepere !== nextSessionDate(cursSelectat!.zile, dataIncepere)
 
   // Tip plata permis în funcție de tipul derivat din curs.
   // Default (fără curs ales) = setul recurent (cel mai comun).
@@ -890,6 +917,12 @@ export function EnrollmentForm({
                 value={dataIncepere}
                 onChange={(e) => setDataIncepere(e.target.value)}
               />
+              {ziFaraCurs && (
+                <p className="mt-1 text-xs font-medium text-danger">
+                  ⚠ {formatDate(dataIncepere)} nu e zi de curs (
+                  {(cursSelectat?.zile ?? []).join(', ')}) — se creează o sesiune nouă.
+                </p>
+              )}
             </Field>
           </div>
 

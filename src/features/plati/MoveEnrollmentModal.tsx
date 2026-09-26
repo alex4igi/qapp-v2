@@ -119,6 +119,10 @@ export function MoveEnrollmentModal({ enrollmentId, open, onClose }: Props) {
       // altfel cursantul mutat rămâne afișat din cache în grupa veche.
       void queryClient.invalidateQueries({ queryKey: ['grupa-dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['prezente'] })
+      // O ședință OPEN mută și rezervarea pe sesiunea grupei noi.
+      void queryClient.invalidateQueries({ queryKey: ['open-sesiune'] })
+      void queryClient.invalidateQueries({ queryKey: ['open-sesiuni'] })
+      void queryClient.invalidateQueries({ queryKey: ['open-rezervari'] })
       onClose()
     },
     onError: (e: unknown) =>

@@ -87,6 +87,10 @@ export function CorecteazaDataModal({ enrollmentId, open, onClose }: Props) {
       // Rosterul + ocuparea grupei depind de data înrolării.
       void queryClient.invalidateQueries({ queryKey: ['grupa-dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['prezente'] })
+      // La OPEN „Per ședință" RPC-ul mută și rezervarea pe sesiunea zilei noi.
+      void queryClient.invalidateQueries({ queryKey: ['open-sesiune'] })
+      void queryClient.invalidateQueries({ queryKey: ['open-sesiuni'] })
+      void queryClient.invalidateQueries({ queryKey: ['open-rezervari'] })
       onClose()
     },
     onError: (e: unknown) =>
