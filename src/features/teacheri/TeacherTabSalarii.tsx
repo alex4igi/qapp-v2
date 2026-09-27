@@ -4,7 +4,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import { Badge, Button, Spinner } from '@/components/ui'
 import { SalariuTeacherDetaliu } from '@/components/salarii/SalariuTeacherDetaliu'
 import { useAuth } from '@/hooks/useAuth'
-import { formatRON } from '@/lib/format'
+import { formatLocuri, formatRON } from '@/lib/format'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import {
   calculDinSnapshot,
@@ -84,7 +84,7 @@ function LunaAccordion({
             <span className="text-xs text-muted">
               {calc.perioada === 'vara'
                 ? `${calc.total_prezente} prezențe de vară`
-                : `${cursanti} cursanți plătitori`}
+                : `${formatLocuri(cursanti)} cursanți plătitori`}
             </span>
           )}
           <span className="font-display text-base font-bold text-ink">{formatRON(total)}</span>

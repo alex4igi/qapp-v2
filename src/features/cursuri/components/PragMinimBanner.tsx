@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui'
+import { formatLocuri } from '@/lib/format'
 import {
   LUNI_PANA_LA_PROPUNERE,
   eLunaLansarii,
@@ -24,7 +25,7 @@ export function PragMinimBanner({ grupa, onSuspenda }: Props) {
     return (
       <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
         <p className="text-sm font-bold text-amber-900">
-          Sub minimul de cursanți luna asta: {grupa.cursantiLunaCurenta} din{' '}
+          Sub minimul de cursanți luna asta: {formatLocuri(grupa.cursantiLunaCurenta)} din{' '}
           {grupa.minim}
         </p>
         <p className="mt-0.5 text-sm text-amber-800">
@@ -45,7 +46,7 @@ export function PragMinimBanner({ grupa, onSuspenda }: Props) {
   const luniRamase = LUNI_PANA_LA_PROPUNERE - grupa.luniSubConsecutive
   const lunaAsta =
     grupa.cursantiLunaCurenta != null
-      ? `luna asta ${grupa.cursantiLunaCurenta}/${grupa.minim}`
+      ? `luna asta ${formatLocuri(grupa.cursantiLunaCurenta)}/${grupa.minim}`
       : null
   const detalii = [
     `minim ${grupa.minim}${grupa.salaNume ? ` în ${grupa.salaNume}` : ''}`,

@@ -1,7 +1,9 @@
 import { supabase } from '@/lib/supabase'
+import { formatLocuri } from '@/lib/format'
 
 // Pragul minim de existență al grupei: 8 cursanți plătitori (6 în SCM Studio 2),
-// stocat pe sală. Trei luni încheiate la rând sub prag ⇒ grupa e propusă pentru
+// stocat pe sală; la facultative, locuri echivalente (abonatul = 1, ședința = o parte
+// din lună). Trei luni încheiate la rând sub prag ⇒ grupa e propusă pentru
 // suspendare; decizia rămâne a managerului. Toată regula stă în DB
 // (`_grupe_sub_minim`, migrația 20260914110000) — cronul lunar și UI-ul citesc
 // același răspuns.
@@ -73,7 +75,7 @@ export function lunaScurta(luna: string): string {
 export function serieSubMinim(g: GrupaPragMinim): string {
   return g.luni
     .slice(-g.luniSubConsecutive)
-    .map((l) => `${lunaScurta(l.luna)} ${l.cursanti ?? 0}`)
+    .map((l) => `${lunaScurta(l.luna)} ${formatLocuri(l.cursanti)}`)
     .join(' · ')
 }
 

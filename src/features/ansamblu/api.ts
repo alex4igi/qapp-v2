@@ -45,7 +45,8 @@ export function procentOcupare(ocupate: number, capacitate: number): number {
 }
 
 // Locuri ocupate azi / capacitatea tuturor grupelor, pe locație. O ședință ține
-// locul 30 de zile — regula stă în RPC.
+// locul 30 de zile; la facultative, doar o parte din el (loc echivalent) — regula
+// stă în RPC, iar cifra poate avea zecimale.
 export async function getOcuparePeLocatii(): Promise<{
   total: OcupareLocatie
   perLocatie: OcupareLocatie[]
@@ -79,7 +80,7 @@ export type OcupareRow = {
   locatie_nume: string | null
   teacher_nume: string | null
   facultativ: boolean
-  // Locuri ocupate azi — o ședință ține locul 30 de zile (locuri_ocupate).
+  // Locuri ocupate azi (locuri_ocupate); la facultative, echivalente, cu zecimale.
   activi: number
   capacitate: number | null
   procent: number | null

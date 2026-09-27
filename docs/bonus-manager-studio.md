@@ -83,9 +83,15 @@ suma cuprinde tot ce a intrat. Dacă și rata s-ar calcula pe tot ce a intrat, a
   ele în capacitate.
 - **O grupă nouă deschisă pe parcurs se adaugă la pool**, din luna în care pornește (Alex, 17 sept.).
   O grupă închisă pe parcurs **nu scade pool-ul** — vezi nota internă de mai jos.
-- **Open Class** intră ca orice curs facultativ: fiecare rezervare plătită se numără în luna ședinței,
-  iar capacitatea lui (30) intră la capacitate. Regula veche — media participanților pe ședință — a
-  fost înlocuită pe 15 sept.
+- ⭐ **La grupele facultative, loc echivalent** (Alex, 26 sept. 2026, aliniat cu grila
+  instructorilor §5.1): abonatul = 1 loc; cine plătește pe ședință = ședințele lui / ședințele ținute
+  de grupă în lună (orarul fără vacanțe și suspendări, plus zilele cu ședințe plătite), cel mult 1.
+  Cine a venit o dată dintr-o lună cu 8 ședințe ține 1/8 din loc. Locurile pot avea zecimale
+  (Nicolina, sept. 2026: 207,17 locuri × 2 lei = 414,34 lei) și nu se rotunjesc.
+- **Open Class** intră ca orice curs facultativ, deci tot pe loc echivalent: fără abonați, locurile lui
+  ies cât media celor veniți pe ședință. Capacitatea lui (30) intră la capacitate. (Pe 15 sept. media
+  pe ședință fusese înlocuită cu „fiecare rezervare = un loc"; din 26 sept. revine, prin regula
+  generală a facultativelor.)
 - Intră trupele și cursurile facultative. Cursurile one-time nu intră.
 - Același număr de clienți se folosește și la ocupare, și la înmulțirea cu leii din treaptă.
 

@@ -1,3 +1,4 @@
+import { formatLocuri } from '@/lib/format'
 import type { OcupareRow } from './api'
 
 function barColor(procent: number | null): string {
@@ -60,7 +61,7 @@ export function OcupareList({ rows }: { rows: OcupareRow[] }) {
               </td>
               <td className="w-28 whitespace-nowrap px-3 py-2 text-right">
                 <span className="font-semibold text-quasar-black">
-                  {r.activi}
+                  {formatLocuri(r.activi)}
                   {r.capacitate != null && (
                     <span className="text-quasar-gray">/{r.capacitate}</span>
                   )}

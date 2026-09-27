@@ -1,4 +1,4 @@
-import { formatRON } from '@/lib/format'
+import { formatLocuri, formatRON } from '@/lib/format'
 import { procentOcupare } from '@/features/ansamblu/api'
 import type { Prag } from '@/features/scorecard/api'
 import { praguriRata, semaforRataRestante } from '@/features/datorii/semafor'
@@ -20,7 +20,8 @@ const INFO_CURSANTI = (
       intră și cei cu rate scadente neachitate — vezi rândul de sub ea.
     </p>
     <p className="mt-1.5">
-      Aceeași regulă ca ocuparea, pragul minim al grupei și grilele de salarizare.
+      Aceeași regulă de loc cu taxă ca ocuparea. Diferența: aici se numără oameni, iar
+      la ocupare facultativele intră în locuri echivalente.
     </p>
   </>
 )
@@ -60,6 +61,10 @@ const INFO_OCUPARE = (
     <p className="mt-1">
       Locuri ocupate azi împărțit la capacitatea maximă a grupelor din sezon —
       aceeași cifră ca pe /overview.
+    </p>
+    <p className="mt-1.5">
+      La facultative, abonatul ține un loc, iar cine plătește pe ședință ține o parte
+      din loc: ședințele lui din ultimele 30 de zile / ședințele ținute de grupă.
     </p>
     <p className="mt-1.5">
       Comparația folosește grupele și locurile de la aceeași dată de anul trecut.
@@ -165,7 +170,7 @@ export function SezonKpis({ d, grupe, praguri }: Props) {
         value={`${ocupareAzi.toLocaleString('ro-RO')}%`}
         sub={
           <>
-            {o.ocupate.toLocaleString('ro-RO')} din {o.capacitate.toLocaleString('ro-RO')} locuri
+            {formatLocuri(o.ocupate)} din {o.capacitate.toLocaleString('ro-RO')} locuri
             {grupe && grupe.lunaAsta + grupe.inObservatie + grupe.deSuspendat > 0
               ? ` · ${grupe.total} grupe sub minim`
               : ''}

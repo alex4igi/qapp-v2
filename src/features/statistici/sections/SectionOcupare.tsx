@@ -20,7 +20,8 @@ export function SectionOcupare() {
         Grad de ocupare cursuri
       </h2>
       <p className="mb-3 text-xs text-quasar-gray">
-        Locuri ocupate azi / capacitate. O ședință ține locul 30 de zile.{' '}
+        Locuri ocupate azi / capacitate. O ședință ține locul 30 de zile; la
+        facultative, doar o parte din el (ședințele omului / ședințele ținute).{' '}
         <span className="text-green-700">verde</span> bine ocupat ·{' '}
         <span className="text-amber-600">galben</span> loc disponibil ·{' '}
         <span className="text-red-600">roșu</span> peste capacitate.

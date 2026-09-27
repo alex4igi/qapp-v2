@@ -33,6 +33,20 @@ export type OcupareGrupa = {
   suma: number
 }
 
+/**
+ * Locul echivalent al unei grupe facultative: abonatul = 1, cine plătește pe ședință
+ * = ședințele lui / ședințele lunii (cel mult 1). `n` = abonati + din_sedinte. Lipsă
+ * la grupele recurente și în calculele înghețate înainte de 26 sept. 2026.
+ */
+export type LocEchivalent = {
+  n: number
+  abonati?: number
+  din_sedinte?: number
+  oameni_pe_sedinta?: number
+  sedinte_platite?: number
+  sedinte_luna?: number | null
+}
+
 export type MaturitateGrupa = {
   matur: boolean
   serie_max: number
@@ -50,6 +64,7 @@ export type SalariuGrupaV2 = {
   factor: number
   cursanti: number
   capacitate?: number | null
+  loc_echivalent?: LocEchivalent | null
   baza: number
   retentie: RetentieGrupa | null
   ocupare: OcupareGrupa | null

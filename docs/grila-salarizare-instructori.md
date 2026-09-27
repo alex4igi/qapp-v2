@@ -367,6 +367,41 @@ Un client se numără la grupa C în luna X dacă are în `enrollments` un rând
 > ⚠️ `.in()` din supabase-js **taie tăcut la 1000 de rânduri**. `enrollments` are 42.798 rânduri —
 > numărătoarea se face paginat cu `.range()`, per curs.
 
+### 5.1 Grupele facultative: loc echivalent (Alex, 26 sept. 2026)
+
+„Nu ar fi corect să dăm pentru capacitate maximă când un client a venit o singură dată în acea
+lună." La grupele **facultative** omul nu mai valorează automat un loc întreg:
+
+| Cine | Cât cântărește |
+|---|---|
+| abonatul lunar (orice plată care nu e „Per sedinta") | **1 loc**, oricâte ședințe face |
+| cine plătește pe ședință | **ședințele lui / ședințele ținute de grupă**, cel mult 1 loc |
+
+**Ședințele ținute** = zilele din orar (`cursuri.zile`) în perioada grupei, **fără vacanțele
+sezonului** (`vacante`) și fără lunile de suspendare, **plus** orice zi în care s-a plătit efectiv o
+ședință (sesiune ținută în afara orarului). Numitorul se schimbă de la lună la lună: într-o lună cu
+vacanță o ședință cântărește mai mult (Alex: „ca uneori suntem în vacanță"). Pe lună fereastra e
+luna; pe zi (Overview, liste, agenda) sunt ultimele 30 de zile.
+
+Exemplu, **N K-Pop SD, septembrie 2026** (capacitate 20, prag standard 12): 8 abonați + 6 oameni
+pe ședință cu 10 ședințe plătite, din 6 ședințe ținute (sezonul a început pe 12) ⇒ 8 + 10/6 =
+**9,67 locuri, 48% ⇒ sub standard**. Înainte se numărau 14 (70% ⇒ standard, 120 lei). Septembrie
+se plătește oricum la standard (regula lunii), deci diferența în bani apare din octombrie.
+
+Același număr intră **peste tot unde se măsoară ocuparea**: bonusul de ocupare al instructorului,
+**pragul minim de 8** (propunerea de suspendare), maturitatea pentru baza de vară, bonusul de
+ocupare al managerului, Overview, /statistici, /analytics, lista și fișa cursului, notificarea de
+grupă plină. Recurentele și trupele rămân pe un loc întreg per om. **Nu se rotunjește** (9,67, nu
+10): pragurile se compară pe valoarea exactă.
+
+**Nu s-a schimbat:** retenția (se numără pe oameni — de discutat separat, Alex 26 sept.) și
+numărătorile de oameni („Cursanți plătitori" din /analytics, „Clienți activi").
+
+În SQL: `_locuri_ponderate` (ponderea pe om) → `_locuri_ocupate` (suma pe grupă, numeric). Predicatul de
+rând plătit stă o singură dată în `_inrolari_platite_randuri`. Migrația `20260926190000`. Fișa de salariu
+arată la grupa facultativă „8 abonați + 1,67 din ședințe · 10 ședințe plătite de 6 oameni · 6 ținute în lună"
+(`loc_echivalent` în calcul).
+
 ## 6. Rezultatul simulării (orar 2026-2027: 12 instructori, 56 de grupe cu titular, 10 trupe)
 
 Recalculat la **23 septembrie 2026**, după prima săptămână și jumătate de sezon: **691 de cursanți
@@ -530,7 +565,8 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 | Cifrele grilei (bază, praguri, sume, vara, maturitate, voucher) | `salarizare_grila` (post `instructor`, `valabil_de_la` 2026-09-01), jsonb — o sumă schimbată nu cere deploy |
 | Regula de septembrie, pe sezon | `salarizare_sezon.mod_ocupare_instructori` (`masurat` / `standard_fix` / `standard_podea` / `campanie`), doar în luna septembrie |
 | Calculul lunii | `calculeaza_salariu_teacher(teacher, an, luna)` — migrația `20260925170500` |
-| Cursantul plătitor (și lista lui, pentru retenție) | `_inrolari_platite` — același nucleu ca `_locuri_ocupate` (migrația `20260925154812`) |
+| Cursantul plătitor (și lista lui, pentru retenție) | `_inrolari_platite` — proiecția lui `_inrolari_platite_randuri`, unde stă predicatul (migrațiile `20260925154812`, `20260926190000`) |
+| Locul echivalent la facultative (ocupare, prag minim, maturitate) | `_locuri_ponderate` → `_locuri_ocupate` (numeric); defalcarea pe grupă în `loc_echivalent` din calcul (§5.1, migrația `20260926190000`) |
 | Testul de maturitate | `_grupa_matura(curs, parametri)` |
 | Confirmarea (înghețare) | `confirma_salariu_teacher` — refuză o lună deja confirmată, o lună în curs sau cu date lipsă |
 | Corecția unei luni confirmate | `corecteaza_salariu_teacher(…, motiv)` — doar owner, cu urmă în `audit_log` |

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui'
+import { formatLocuri } from '@/lib/format'
 import {
   LUNI_PANA_LA_PROPUNERE,
   eLunaLansarii,
@@ -160,12 +161,12 @@ function GrupaRand({
         )}
         {!timpuriu && g.cursantiLunaCurenta != null && (
           <span>
-            luna asta {g.cursantiLunaCurenta}/{g.minim}
+            luna asta {formatLocuri(g.cursantiLunaCurenta)}/{g.minim}
           </span>
         )}
         <Badge tone={tone}>
           {timpuriu
-            ? `${g.cursantiLunaCurenta}/${g.minim}`
+            ? `${formatLocuri(g.cursantiLunaCurenta)}/${g.minim}`
             : g.luniSubConsecutive === 1
               ? '1 lună'
               : `${g.luniSubConsecutive} luni`}

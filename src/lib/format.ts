@@ -3,6 +3,13 @@ export function formatRON(value: number | null | undefined): string {
   return `${n.toLocaleString('ro-RO')} RON`
 }
 
+// Locuri ocupate: la facultative sunt echivalente (abonatul = 1, ședința = o parte din
+// lună), deci pot avea zecimale. Două, cât ține DB-ul: cu una, 11,96 ar apărea „12"
+// lângă un prag de 12.
+export function formatLocuri(value: number | null | undefined): string {
+  return (value ?? 0).toLocaleString('ro-RO', { maximumFractionDigits: 2 })
+}
+
 // Formatterele de dată standard ale aplicației. Null/undefined → '—'.
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—'

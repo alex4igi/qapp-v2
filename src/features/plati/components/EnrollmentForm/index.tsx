@@ -24,7 +24,7 @@ import {
 } from '@/lib/lookups'
 import { formatOrar } from '@/features/cursuri/program'
 import { listSezoane } from '@/features/setari/api'
-import { formatDate, formatRON } from '@/lib/format'
+import { formatDate, formatLocuri, formatRON } from '@/lib/format'
 import type { Curs, Enrollment, Enums } from '@/types/db'
 import { getClientEligibilityContext } from '@/features/vouchere/api'
 import { applyVoucher } from '@/features/vouchere/calc'
@@ -1042,7 +1042,7 @@ export function EnrollmentForm({
 
           {cursPlin && ocupareQ.data && (
             <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              ⚠️ Curs plin ({ocupareQ.data.activi}/{ocupareQ.data.capacitate}).
+              ⚠️ Curs plin ({formatLocuri(ocupareQ.data.activi)}/{ocupareQ.data.capacitate}).
               Mai vrei să înscrii?
             </p>
           )}

@@ -1,11 +1,32 @@
 import { Badge, type BadgeTone } from '@/components/ui'
-import { formatRON } from '@/lib/format'
+import { formatLocuri, formatRON } from '@/lib/format'
 import {
   BANDA_ETICHETA,
   NIVEL_PLATA_ETICHETA,
   type BandaSalariu,
+  type LocEchivalent,
   type SalariuTeacherCalc,
 } from '@/lib/salariuTeacher'
+
+// Grupa facultativă: din ce se compune numărul de locuri.
+function LocEchivalentDetaliu({ loc }: { loc: LocEchivalent }) {
+  const abonati = loc.abonati ?? 0
+  const oameni = loc.oameni_pe_sedinta ?? 0
+  return (
+    <div className="mt-0.5 text-xs text-muted">
+      <div>
+        {abonati} {abonati === 1 ? 'abonat' : 'abonați'}
+        {oameni > 0 && ` + ${formatLocuri(loc.din_sedinte)} din ședințe`}
+      </div>
+      {oameni > 0 && (
+        <div>
+          {loc.sedinte_platite} ședințe plătite de {oameni} {oameni === 1 ? 'om' : 'oameni'}
+          {loc.sedinte_luna ? ` · ${loc.sedinte_luna} ținute în lună` : ''}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const TON: Record<BandaSalariu, BadgeTone> = {
   peste: 'success',
@@ -72,8 +93,9 @@ export function SalariuTeacherDetaliu({ calc }: { calc: SalariuTeacherCalc }) {
                     {g.blocant && <div className="mt-1 text-xs text-danger">{g.blocant}</div>}
                   </td>
                   <td className="py-2 pr-3 text-ink">
-                    {g.cursanti}
+                    {formatLocuri(g.cursanti)}
                     {g.capacitate ? <span className="text-muted"> / {g.capacitate}</span> : null}
+                    {g.loc_echivalent && <LocEchivalentDetaliu loc={g.loc_echivalent} />}
                   </td>
                   <td className="py-2 pr-3 text-right text-ink">{formatRON(g.baza)}</td>
                   {!vara && (
@@ -99,7 +121,7 @@ export function SalariuTeacherDetaliu({ calc }: { calc: SalariuTeacherCalc }) {
                           suma={g.ocupare.suma}
                           detaliu={
                             g.ocupare.mod === 'standard_fix'
-                              ? `septembrie: standard la toți · măsurat ${g.ocupare.cursanti}/${g.ocupare.capacitate}`
+                              ? `septembrie: standard la toți · măsurat ${formatLocuri(g.ocupare.cursanti)}/${g.ocupare.capacitate}`
                               : `standard de la ${g.ocupare.prag_standard} · peste de la ${g.ocupare.prag_peste}`
                           }
                         />

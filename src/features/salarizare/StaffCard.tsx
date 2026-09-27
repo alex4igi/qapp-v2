@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, type BadgeTone } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { humanizeError } from '@/lib/errorMessage'
-import { formatRON } from '@/lib/format'
+import { formatLocuri, formatRON } from '@/lib/format'
 import { confirmaSalariuStaff, corecteazaComponenta } from './api'
 import type {
   Componenta, ManagerLuna, ReceptieLuna, RezultatConfirmare, StareComponenta,
@@ -151,7 +151,7 @@ export function StaffCard({
           <div>
             <div className="text-xs font-semibold uppercase tracking-wide text-muted">Ocupare · {l.locatie_nume}</div>
             <div className="text-ink">
-              {l.ocupare.locuri} / {l.ocupare.capacitate} locuri · {l.ocupare.procent ?? '—'}% ·{' '}
+              {formatLocuri(l.ocupare.locuri)} / {l.ocupare.capacitate} locuri · {l.ocupare.procent ?? '—'}% ·{' '}
               {TREAPTA[l.ocupare.treapta] ?? l.ocupare.treapta} · {l.ocupare.lei_pe_loc} lei/loc
             </div>
             <div className="text-xs text-muted">

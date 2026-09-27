@@ -9,6 +9,7 @@ import {
 } from '@/components/ui'
 import { EvaluariCountdown } from '@/features/evaluari/components/EvaluariCountdown'
 import { formatStele, TREPTE_MAX } from '@/features/evaluari/scale'
+import { formatLocuri } from '@/lib/format'
 import {
   getHubData,
   type GrupaProgres,
@@ -131,7 +132,7 @@ function GrupeTable({ rows }: { rows: GrupaProgres[] }) {
       header: 'Cursanți',
       cell: (g) => (
         <span className="text-ink">
-          {g.activi}
+          {formatLocuri(g.activi)}
           {g.capacitate ? (
             <span className="text-muted"> / {g.capacitate}</span>
           ) : null}
@@ -226,8 +227,9 @@ function GrupeTable({ rows }: { rows: GrupaProgres[] }) {
         emptyMessage="Nicio grupă activă în sezonul curent."
       />
       <p className="mt-2 text-xs text-muted">
-        „Ocupare" = locuri ocupate azi / capacitate (o ședință ține locul 30 de
-        zile). „Prezență" = rata medie pe
+        „Ocupare" = locuri ocupate azi / capacitate. La facultative, abonatul ține un
+        loc, iar cine plătește pe ședință ține o parte din loc (ședințele lui din
+        ultimele 30 de zile / ședințele ținute). „Prezență" = rata medie pe
         ultimele săptămâni. „Reînscriere" apare doar la grupele cu sursă în
         sezonul anterior.
       </p>

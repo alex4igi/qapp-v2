@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader, Spinner } from '@/components/ui'
-import { formatRON } from '@/lib/format'
+import { formatLocuri, formatRON } from '@/lib/format'
 import { LUNI_VACANTA } from '@/lib/vacante'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
@@ -83,7 +83,13 @@ const INFO_OCUPARE = (
         Un loc = un cursant cu plată la grupă. Un copil la 2 grupe ocupă 2 locuri.
       </li>
       <li>
-        Abonamentul ține locul cât e valabil. O ședință plătită îl ține 30 de zile.
+        Abonamentul ține locul cât e valabil. La cursurile recurente, o ședință
+        plătită îl ține 30 de zile.
+      </li>
+      <li>
+        La facultative, cine plătește pe ședință ține o parte din loc: ședințele lui
+        din ultimele 30 de zile împărțite la ședințele ținute de grupă (fără
+        vacanțe). Cine a venit o dată dintr-o lună cu 8 ședințe ține 1/8 din loc.
       </li>
       <li>Rezilierile și rezervările anulate nu se numără.</li>
     </ul>
@@ -267,7 +273,7 @@ export function AnsambluPage() {
               }
               hint={
                 scopOcupare
-                  ? `${scopOcupare.ocupate} din ${scopOcupare.capacitate} locuri · ${scopLabel}`
+                  ? `${formatLocuri(scopOcupare.ocupate)} din ${scopOcupare.capacitate} locuri · ${scopLabel}`
                   : undefined
               }
               info={INFO_OCUPARE}

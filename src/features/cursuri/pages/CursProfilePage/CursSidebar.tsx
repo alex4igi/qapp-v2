@@ -1,5 +1,6 @@
 import { ChecklistCard } from '@/components/checklist'
 import type { Rezultat, StareItem } from '@/lib/checklist'
+import { formatLocuri } from '@/lib/format'
 
 type Props = {
   initials: string
@@ -44,13 +45,13 @@ export function CursSidebar({
         <div className="mt-4 rounded-xl border border-line bg-surface p-4 text-center">
           <p className="text-xs font-medium text-muted">Ocupare</p>
           <p className={`mt-1 font-display text-2xl font-bold ${color}`}>
-            {activi} / {cap ?? '—'}
+            {formatLocuri(activi)} / {cap ?? '—'}
           </p>
           {libere != null && (
             <p className="mt-0.5 text-[11px] font-medium text-muted">
               {libere === 0
                 ? 'fără locuri libere'
-                : `${libere} ${libere === 1 ? 'loc liber' : 'locuri libere'}`}
+                : `${formatLocuri(libere)} ${libere === 1 ? 'loc liber' : 'locuri libere'}`}
             </p>
           )}
         </div>

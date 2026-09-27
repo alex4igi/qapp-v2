@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { formatLocuri } from '@/lib/format'
 import type { PrimeTimeRow } from './api'
 
 // Ocupare pe slot orar: prime-time (17-20) vs ore moarte. Decizia de extindere
@@ -45,7 +46,7 @@ export function OcuparePrimeTimeChart({ rows }: { rows: PrimeTimeRow[] }) {
             <Tooltip
               formatter={(v, _n, item) => {
                 const p = item?.payload as (typeof data)[number]
-                return [`${v}% · ${p.activi}/${p.capacitate} · ${p.grupe} grupe`, 'Ocupare']
+                return [`${v}% · ${formatLocuri(p.activi)}/${p.capacitate} · ${p.grupe} grupe`, 'Ocupare']
               }}
             />
             <Bar dataKey="Ocupare" fill="#1d4ed8" radius={[3, 3, 0, 0]}>

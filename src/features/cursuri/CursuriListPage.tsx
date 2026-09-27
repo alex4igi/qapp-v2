@@ -38,6 +38,7 @@ import {
 } from './api'
 import { PragMinimPanel } from './components/PragMinimPanel'
 import { formatOra } from './program'
+import { formatLocuri } from '@/lib/format'
 
 const FARA_LOCATIE = '— Fără locație —'
 
@@ -101,15 +102,15 @@ const makeColumns = (
     header: 'Înscriși',
     cell: (c) => {
       const inscrisi = c.capacitate_maxima
-        ? `${c.inscrisi}/${c.capacitate_maxima}`
-        : c.inscrisi
+        ? `${formatLocuri(c.inscrisi)}/${c.capacitate_maxima}`
+        : formatLocuri(c.inscrisi)
       const prag = c.id ? pragMinimById.get(c.id) : undefined
       if (prag && subMinimLunaAsta(prag)) {
         return (
           <span className="flex flex-col items-start gap-0.5">
             <span>{inscrisi}</span>
             <Badge tone="warn">
-              luna asta {prag.cursantiLunaCurenta}/{prag.minim}
+              luna asta {formatLocuri(prag.cursantiLunaCurenta)}/{prag.minim}
             </Badge>
           </span>
         )

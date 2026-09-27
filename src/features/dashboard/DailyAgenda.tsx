@@ -113,7 +113,7 @@ function GroupBarCard({
     course
   // Inel = rata de prezență a zilei (prezenți / înscriși).
   const attPct = enrolled > 0 ? Math.min(100, Math.round((prezenti / enrolled) * 100)) : 0
-  // Bară = rata de ocupare (locuri ocupate / capacitate, o ședință ține locul 30 de zile).
+  // Bară = rata de ocupare (locuri ocupate / capacitate; la facultative, loc echivalent).
   const occPct =
     capacitate && capacitate > 0
       ? Math.min(100, Math.round((ocupate / capacitate) * 100))
