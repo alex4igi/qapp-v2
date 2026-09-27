@@ -13,10 +13,15 @@ export type NivelPlata = 'incepator' | 'intermediar' | 'trupa' | 'trupa_ca_inter
 
 export type RetentieGrupa = {
   banda: BandaSalariu
+  /** La facultative (`ponderat`): locuri echivalente din luna trecută, nu oameni. */
   n_luna_trecuta: number
   pastrati: number
   procent: number | null
   suma: number
+  /** Grupă facultativă: omul cântărește cât loc a ocupat luna trecută (27 sept. 2026). */
+  ponderat?: boolean
+  oameni_luna_trecuta?: number | null
+  oameni_pastrati?: number | null
 }
 
 export type OcupareGrupa = {

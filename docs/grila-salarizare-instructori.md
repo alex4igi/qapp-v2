@@ -94,6 +94,9 @@ Iulie și august au propriul indicator, **6 lei de fiecare prezență** — vezi
 Banda 80–81% de la ocupare, semnalată ca gaură în versiunea anterioară, s-a închis: peste standard
 înseamnă acum **> 80%**. Trupele NU au ocupare — creșterea lor se măsoară în evenimente.
 
+La grupele **facultative**, ocuparea și retenția se numără în **locuri echivalente**, nu în oameni
+(abonatul = 1, ședința = o parte din lună) — vezi §5.1 și §5.2.
+
 ### Sumele de ocupare — pe mărimea grupei (Alex, 12 sept.)
 
 | Mărimea grupei | Sub standard | În standard | Peste standard |
@@ -394,13 +397,45 @@ ocupare al managerului, Overview, /statistici, /analytics, lista și fișa cursu
 grupă plină. Recurentele și trupele rămân pe un loc întreg per om. **Nu se rotunjește** (9,67, nu
 10): pragurile se compară pe valoarea exactă.
 
-**Nu s-a schimbat:** retenția (se numără pe oameni — de discutat separat, Alex 26 sept.) și
-numărătorile de oameni („Cursanți plătitori" din /analytics, „Clienți activi").
+**Nu s-a schimbat:** numărătorile de oameni („Cursanți plătitori" din /analytics, „Clienți activi").
+Retenția la facultative a primit regula ei a doua zi — §5.2.
 
 În SQL: `_locuri_ponderate` (ponderea pe om) → `_locuri_ocupate` (suma pe grupă, numeric). Predicatul de
 rând plătit stă o singură dată în `_inrolari_platite_randuri`. Migrația `20260926190000`. Fișa de salariu
 arată la grupa facultativă „8 abonați + 1,67 din ședințe · 10 ședințe plătite de 6 oameni · 6 ținute în lună"
 (`loc_echivalent` în calcul).
+
+### 5.2 Retenția la grupele facultative (Alex, 27 sept. 2026)
+
+**Retenție = locurile de luna trecută care au revenit / locurile de luna trecută.** Fiecare om din
+luna M-1 cântărește cât loc a ocupat atunci (§5.1: abonatul 1, ședința = a lui / cele ținute) și e
+**păstrat dacă a revenit în M, în orice formă și oricât de des**. Pragurile (85% / 95%), sumele și
+regula „prima lună = standard" rămân. La recurente și trupe ponderea e 1, deci rezultatul e identic cu
+numărătoarea pe oameni.
+
+De ce așa, nu altfel — simulat pe 2025-2026, 100 de luni-grupă facultative (oct.–iun., fără Open Class):
+
+| Variantă | sub | standard | peste | fără date | mediana |
+|---|---|---|---|---|---|
+| Pe oameni (regula veche) | 41 | 13 | 20 | 26 | 82,6% |
+| Doar abonații | 27 | 10 | 31 | 32 | 89,5% |
+| Ponderat strict (și cât de des vine) | 50 | 8 | 16 | 26 | 73,7% |
+| **Revenit, ponderat pe luna trecută (ALES)** | **34** | **11** | **29** | **26** | **87,6%** |
+
+- Cine a trecut o dată și n-a mai venit costă cât locul lui (ex. 1/8), nu un om întreg.
+- „Păstrat" e da/nu, nu cât de des: varianta strictă tăia lunile cu vacanță (S SD Kpop, apr. 2026:
+  61,5% strict vs 94,8% ales, aproape toți reveniseră, doar mai rar).
+- Merge și la grupele fără abonați (Zumba, Adulți); „doar abonații" le-ar fi dat standard gratuit.
+- Abonatul trecut pe ședințe a rămas în grupă; scăderea plății se vede la ocupare, nu aici.
+
+⚠️ Și așa, facultativele ies sub prag mai des decât recurentele (46% din luni sub 85%, față de 23%).
+Pragurile s-au păstrat la fel; **de revăzut după 2–3 luni de date** dacă trebuie coborâte doar la
+facultative.
+
+În SQL: `calculeaza_salariu_teacher` sumează `_locuri_ponderate` din M-1, cu păstrarea din
+`_inrolari_platite` în M (migrația `20260927100000`). Fișa de salariu arată „21,11 din 24,11 locuri
+au revenit (18 din 20 oameni) · 87,55%"; câmpurile `ponderat`, `oameni_luna_trecuta`,
+`oameni_pastrati` din `retentie`.
 
 ## 6. Rezultatul simulării (orar 2026-2027: 12 instructori, 56 de grupe cu titular, 10 trupe)
 
@@ -567,6 +602,7 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 | Calculul lunii | `calculeaza_salariu_teacher(teacher, an, luna)` — migrația `20260925170500` |
 | Cursantul plătitor (și lista lui, pentru retenție) | `_inrolari_platite` — proiecția lui `_inrolari_platite_randuri`, unde stă predicatul (migrațiile `20260925154812`, `20260926190000`) |
 | Locul echivalent la facultative (ocupare, prag minim, maturitate) | `_locuri_ponderate` → `_locuri_ocupate` (numeric); defalcarea pe grupă în `loc_echivalent` din calcul (§5.1, migrația `20260926190000`) |
+| Retenția la facultative (ponderată pe luna trecută, păstrat = a revenit) | `calculeaza_salariu_teacher`, blocul `v_ret` (§5.2, migrația `20260927100000`) |
 | Testul de maturitate | `_grupa_matura(curs, parametri)` |
 | Confirmarea (înghețare) | `confirma_salariu_teacher` — refuză o lună deja confirmată, o lună în curs sau cu date lipsă |
 | Corecția unei luni confirmate | `corecteaza_salariu_teacher(…, motiv)` — doar owner, cu urmă în `audit_log` |

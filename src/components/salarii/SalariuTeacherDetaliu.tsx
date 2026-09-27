@@ -107,7 +107,9 @@ export function SalariuTeacherDetaliu({ calc }: { calc: SalariuTeacherCalc }) {
                           detaliu={
                             g.retentie.banda === 'prima_luna'
                               ? 'fără lună anterioară'
-                              : `${g.retentie.pastrati} din ${g.retentie.n_luna_trecuta} au rămas · ${g.retentie.procent}%`
+                              : g.retentie.ponderat
+                                ? `${formatLocuri(g.retentie.pastrati)} din ${formatLocuri(g.retentie.n_luna_trecuta)} locuri au revenit (${g.retentie.oameni_pastrati ?? 0} din ${g.retentie.oameni_luna_trecuta ?? 0} oameni) · ${formatLocuri(g.retentie.procent)}%`
+                                : `${g.retentie.pastrati} din ${g.retentie.n_luna_trecuta} au rămas · ${formatLocuri(g.retentie.procent)}%`
                           }
                         />
                       )}
