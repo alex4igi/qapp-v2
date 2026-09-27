@@ -122,6 +122,12 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}))
     const action = body?.action as string
 
+    // Întrerupătorul de incident (docs/runbook-incident.md): oprește intrarea și
+    // reîmprospătarea sesiunilor fără redeploy. Tokenurile deja emise mor în ACCESS_TTL_SEC.
+    if (Deno.env.get('PORTAL_LOGIN_DISABLED') === '1' && action !== 'logout') {
+      return json({ error: 'Portalul este temporar indisponibil. Revino în câteva ore.' }, 503)
+    }
+
     const grupPlafon = action === 'change_temporary_password' ? 'login' : action
     const plafon = PLAFOANE[grupPlafon]
     if (plafon) {

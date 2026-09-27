@@ -3,7 +3,8 @@
 //    - Luni-Vineri → reminder "AZI" pentru programările zilei
 //    - dacă mâine e Sâmbătă/Duminică → reminder "MAINE" (deci Vineri trimite
 //      AZI + MAINE, Sâmbătă trimite doar MAINE pentru Duminică)
-// Plus lista de sunat de luni și regula celor 50 de zile (email către manageri).
+// Plus lista de sunat de luni, regula celor 50 de zile (email către manageri) și
+// digestul de securitate (email către owner/admin, doar în zilele cu semnale).
 // Followup-ul, confirmarea înrolării și post_demo pleacă din cron-afternoon, la
 // 16:00, când e cineva la sală să răspundă (decizie 2026-09-15).
 import { createClient } from 'jsr:@supabase/supabase-js@2'
@@ -16,6 +17,7 @@ import {
 import { leaduriProtejate } from '../_shared/leadNurture.ts'
 import { sendEmail } from '../_shared/messaging.ts'
 import { refuzaApelStrain } from '../_shared/cronAuth.ts'
+import { trimiteDigestSecuritate } from '../_shared/digestSecuritate.ts'
 
 function startOfDay(date: Date) {
   const d = new Date(date)
@@ -396,8 +398,10 @@ Deno.serve(async (req) => {
     }
   }
 
+  const emailuriSecuritate = await trimiteDigestSecuritate(supabase, APP_URL, errors)
+
   console.log(
-    `[cron/morning] remindere: ${sent.length}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, securitate: ${emailuriSecuritate}, erori: ${errors.length}`,
   )
   return Response.json({
     sent,
@@ -405,6 +409,7 @@ Deno.serve(async (req) => {
     aVenitNurtured,
     suspendati50z: suspendati,
     emailuriSuspendari: emailuriTrimise,
+    emailuriSecuritate,
     errors,
     rulatLa: now.toISOString(),
   })
