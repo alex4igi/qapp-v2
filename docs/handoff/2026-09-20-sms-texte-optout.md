@@ -22,9 +22,8 @@ Rămas deschis:
   la 5 minute după conversie (`enqueue_confirmare_review`). Momentul exact nu fusese confirmat.
 - ⏳ **Tab „Șabloane” în /sms** (declanșator, oră, categorie, caractere/segmente) și previzualizarea inline
   pentru contract / contul de membru — neîncepute. Previzualizarea bulk arată doar numărul de caractere.
-- ⚠️ **„Nu a venit”:** decizia de aici era „parcat, nu șters”, dar SMS-ul fusese deja **șters** pe 19 sept.
-  (`ab81c4a`, înlocuit cu apel telefonic) — codul de trimitere există doar în istoricul git. Textul nou propus
-  nu e implementat nicăieri. De confirmat cu Alex dacă rămâne așa.
+- ✅ **„Nu a venit”:** SMS-ul fusese deja **șters** pe 19 sept. (`ab81c4a`, înlocuit cu apel telefonic), deci
+  nu „parcat” cum scrie mai jos. **Confirmat de Alex (27 sept.): rămâne așa** — fără SMS; textul propus nu se implementează.
 
 ---
 
