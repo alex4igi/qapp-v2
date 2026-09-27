@@ -759,6 +759,44 @@ export type Database = {
         }
         Relationships: []
       }
+      campanii_recomandare: {
+        Row: {
+          created: string
+          data_limita: string
+          data_start: string
+          id: string
+          nume: string
+          recompensa_lei: number
+          sezon_id: string
+        }
+        Insert: {
+          created?: string
+          data_limita: string
+          data_start: string
+          id?: string
+          nume: string
+          recompensa_lei: number
+          sezon_id: string
+        }
+        Update: {
+          created?: string
+          data_limita?: string
+          data_start?: string
+          id?: string
+          nume?: string
+          recompensa_lei?: number
+          sezon_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanii_recomandare_sezon_id_fkey"
+            columns: ["sezon_id"]
+            isOneToOne: false
+            referencedRelation: "sezoane"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campanii_reinscriere: {
         Row: {
           created: string
@@ -1140,6 +1178,7 @@ export type Database = {
       }
       clienti: {
         Row: {
+          anonimizat_la: string | null
           auth_user_id: string | null
           created: string
           data_nasterii: string | null
@@ -1172,6 +1211,7 @@ export type Database = {
           updated: string
         }
         Insert: {
+          anonimizat_la?: string | null
           auth_user_id?: string | null
           created?: string
           data_nasterii?: string | null
@@ -1204,6 +1244,7 @@ export type Database = {
           updated?: string
         }
         Update: {
+          anonimizat_la?: string | null
           auth_user_id?: string | null
           created?: string
           data_nasterii?: string | null
@@ -1920,6 +1961,130 @@ export type Database = {
           },
         ]
       }
+      credit_familie_miscari: {
+        Row: {
+          actor_id: string | null
+          created: string
+          datorie_id: string | null
+          enrollment_id: string | null
+          familie: string
+          id: string
+          motiv: string | null
+          recomandare_id: string | null
+          suma: number
+          tip: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created?: string
+          datorie_id?: string | null
+          enrollment_id?: string | null
+          familie: string
+          id?: string
+          motiv?: string | null
+          recomandare_id?: string | null
+          suma: number
+          tip: string
+        }
+        Update: {
+          actor_id?: string | null
+          created?: string
+          datorie_id?: string | null
+          enrollment_id?: string | null
+          familie?: string
+          id?: string
+          motiv?: string | null
+          recomandare_id?: string | null
+          suma?: number
+          tip?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_familie_miscari_datorie_id_fkey"
+            columns: ["datorie_id"]
+            isOneToOne: false
+            referencedRelation: "datorii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_datorie_id_fkey"
+            columns: ["datorie_id"]
+            isOneToOne: false
+            referencedRelation: "datorii_rest"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_inrolare"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_familie_fkey"
+            columns: ["familie"]
+            isOneToOne: false
+            referencedRelation: "familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_familie_fkey"
+            columns: ["familie"]
+            isOneToOne: false
+            referencedRelation: "lista_familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_familie_fkey"
+            columns: ["familie"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_familie_fkey"
+            columns: ["familie"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_recomandare_id_fkey"
+            columns: ["recomandare_id"]
+            isOneToOne: false
+            referencedRelation: "recomandari"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       curs_lectii_override: {
         Row: {
           curs_id: string
@@ -2618,6 +2783,7 @@ export type Database = {
           categorie: Database["public"]["Enums"]["categorie_incasare"]
           client: string
           created: string
+          credit_recomandare: number
           descriere: string | null
           id: string
           locatie: string | null
@@ -2633,6 +2799,7 @@ export type Database = {
           categorie: Database["public"]["Enums"]["categorie_incasare"]
           client: string
           created?: string
+          credit_recomandare?: number
           descriere?: string | null
           id?: string
           locatie?: string | null
@@ -2648,6 +2815,7 @@ export type Database = {
           categorie?: Database["public"]["Enums"]["categorie_incasare"]
           client?: string
           created?: string
+          credit_recomandare?: number
           descriere?: string | null
           id?: string
           locatie?: string | null
@@ -3013,6 +3181,7 @@ export type Database = {
           activ: boolean
           client: string | null
           created: string
+          credit_recomandare: number
           cursul: string | null
           data_final: string | null
           data_incepere: string | null
@@ -3038,6 +3207,7 @@ export type Database = {
           activ?: boolean
           client?: string | null
           created?: string
+          credit_recomandare?: number
           cursul?: string | null
           data_final?: string | null
           data_incepere?: string | null
@@ -3063,6 +3233,7 @@ export type Database = {
           activ?: boolean
           client?: string | null
           created?: string
+          credit_recomandare?: number
           cursul?: string | null
           data_final?: string | null
           data_incepere?: string | null
@@ -4452,6 +4623,7 @@ export type Database = {
       }
       familii: {
         Row: {
+          anonimizat_la: string | null
           auth_user_id: string | null
           created: string
           doreste_sa_apara_in_poze: boolean
@@ -4472,6 +4644,7 @@ export type Database = {
           updated: string
         }
         Insert: {
+          anonimizat_la?: string | null
           auth_user_id?: string | null
           created?: string
           doreste_sa_apara_in_poze?: boolean
@@ -4492,6 +4665,7 @@ export type Database = {
           updated?: string
         }
         Update: {
+          anonimizat_la?: string | null
           auth_user_id?: string | null
           created?: string
           doreste_sa_apara_in_poze?: boolean
@@ -4873,6 +5047,57 @@ export type Database = {
             referencedColumns: ["id_familie"]
           },
         ]
+      }
+      gdpr_config: {
+        Row: {
+          actualizat: string
+          ceas_de_la: string
+          id: boolean
+          prag_ani: number
+        }
+        Insert: {
+          actualizat?: string
+          ceas_de_la?: string
+          id?: boolean
+          prag_ani?: number
+        }
+        Update: {
+          actualizat?: string
+          ceas_de_la?: string
+          id?: boolean
+          prag_ani?: number
+        }
+        Relationships: []
+      }
+      gdpr_fisiere_de_sters: {
+        Row: {
+          bucket: string | null
+          cale: string
+          client_id: string | null
+          creat: string
+          familie_id: string | null
+          id: number
+          sters_la: string | null
+        }
+        Insert: {
+          bucket?: string | null
+          cale: string
+          client_id?: string | null
+          creat?: string
+          familie_id?: string | null
+          id?: never
+          sters_la?: string | null
+        }
+        Update: {
+          bucket?: string | null
+          cale?: string
+          client_id?: string | null
+          creat?: string
+          familie_id?: string | null
+          id?: never
+          sters_la?: string | null
+        }
+        Relationships: []
       }
       incasari: {
         Row: {
@@ -8174,19 +8399,331 @@ export type Database = {
         Row: {
           cheie: string
           fereastra: string
+          limita: number | null
           n: number
         }
         Insert: {
           cheie: string
           fereastra: string
+          limita?: number | null
           n?: number
         }
         Update: {
           cheie?: string
           fereastra?: string
+          limita?: number | null
           n?: number
         }
         Relationships: []
+      }
+      recomandari: {
+        Row: {
+          campanie_id: string
+          canal: string
+          client_recomandator: string | null
+          created: string
+          credit_pierdut: number
+          curs_recomandator: string | null
+          enrollment_calificant: string | null
+          familie_recomandatoare: string | null
+          id: string
+          invitat_client_id: string | null
+          lead_id: string
+          motiv_anulare: string | null
+          nume_declarat: string | null
+          recompensat_la: string | null
+          status: string
+          updated: string
+          verificat_de: string | null
+          verificat_la: string | null
+        }
+        Insert: {
+          campanie_id: string
+          canal: string
+          client_recomandator?: string | null
+          created?: string
+          credit_pierdut?: number
+          curs_recomandator?: string | null
+          enrollment_calificant?: string | null
+          familie_recomandatoare?: string | null
+          id?: string
+          invitat_client_id?: string | null
+          lead_id: string
+          motiv_anulare?: string | null
+          nume_declarat?: string | null
+          recompensat_la?: string | null
+          status?: string
+          updated?: string
+          verificat_de?: string | null
+          verificat_la?: string | null
+        }
+        Update: {
+          campanie_id?: string
+          canal?: string
+          client_recomandator?: string | null
+          created?: string
+          credit_pierdut?: number
+          curs_recomandator?: string | null
+          enrollment_calificant?: string | null
+          familie_recomandatoare?: string | null
+          id?: string
+          invitat_client_id?: string | null
+          lead_id?: string
+          motiv_anulare?: string | null
+          nume_declarat?: string | null
+          recompensat_la?: string | null
+          status?: string
+          updated?: string
+          verificat_de?: string | null
+          verificat_la?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recomandari_campanie_id_fkey"
+            columns: ["campanie_id"]
+            isOneToOne: false
+            referencedRelation: "campanii_recomandare"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_client_recomandator_fkey"
+            columns: ["client_recomandator"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_client_recomandator_fkey"
+            columns: ["client_recomandator"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_client_recomandator_fkey"
+            columns: ["client_recomandator"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "recomandari_client_recomandator_fkey"
+            columns: ["client_recomandator"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "recomandari_client_recomandator_fkey"
+            columns: ["client_recomandator"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_client_recomandator_fkey"
+            columns: ["client_recomandator"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "recomandari_client_recomandator_fkey"
+            columns: ["client_recomandator"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "recomandari_curs_recomandator_fkey"
+            columns: ["curs_recomandator"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
+          {
+            foreignKeyName: "recomandari_enrollment_calificant_fkey"
+            columns: ["enrollment_calificant"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_enrollment_calificant_fkey"
+            columns: ["enrollment_calificant"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_inrolare"]
+          },
+          {
+            foreignKeyName: "recomandari_enrollment_calificant_fkey"
+            columns: ["enrollment_calificant"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "recomandari_enrollment_calificant_fkey"
+            columns: ["enrollment_calificant"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_enrollment_calificant_fkey"
+            columns: ["enrollment_calificant"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_enrollment"]
+          },
+          {
+            foreignKeyName: "recomandari_familie_recomandatoare_fkey"
+            columns: ["familie_recomandatoare"]
+            isOneToOne: false
+            referencedRelation: "familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_familie_recomandatoare_fkey"
+            columns: ["familie_recomandatoare"]
+            isOneToOne: false
+            referencedRelation: "lista_familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_familie_recomandatoare_fkey"
+            columns: ["familie_recomandatoare"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "recomandari_familie_recomandatoare_fkey"
+            columns: ["familie_recomandatoare"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "recomandari_invitat_client_id_fkey"
+            columns: ["invitat_client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_invitat_client_id_fkey"
+            columns: ["invitat_client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_invitat_client_id_fkey"
+            columns: ["invitat_client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "recomandari_invitat_client_id_fkey"
+            columns: ["invitat_client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "recomandari_invitat_client_id_fkey"
+            columns: ["invitat_client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recomandari_invitat_client_id_fkey"
+            columns: ["invitat_client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "recomandari_invitat_client_id_fkey"
+            columns: ["invitat_client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "recomandari_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reconcilieri_cash: {
         Row: {
@@ -9025,6 +9562,30 @@ export type Database = {
           scorat?: boolean
           unitate?: string
           updated?: string
+        }
+        Relationships: []
+      }
+      securitate_digest: {
+        Row: {
+          continut: Json
+          creat: string
+          de_trimis: boolean
+          trimis_la: string | null
+          zi: string
+        }
+        Insert: {
+          continut: Json
+          creat?: string
+          de_trimis: boolean
+          trimis_la?: string | null
+          zi: string
+        }
+        Update: {
+          continut?: Json
+          creat?: string
+          de_trimis?: boolean
+          trimis_la?: string | null
+          zi?: string
         }
         Relationships: []
       }
@@ -10495,6 +11056,42 @@ export type Database = {
           unique_clients: number | null
         }
         Relationships: []
+      }
+      credit_familie_sold: {
+        Row: {
+          familie: string | null
+          sold: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_familie_miscari_familie_fkey"
+            columns: ["familie"]
+            isOneToOne: false
+            referencedRelation: "familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_familie_fkey"
+            columns: ["familie"]
+            isOneToOne: false
+            referencedRelation: "lista_familii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_familie_fkey"
+            columns: ["familie"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id_familie"]
+          },
+          {
+            foreignKeyName: "credit_familie_miscari_familie_fkey"
+            columns: ["familie"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_familie"]
+          },
+        ]
       }
       datorii_rest: {
         Row: {
@@ -12195,6 +12792,14 @@ export type Database = {
         Args: { p_anul: number; p_luna: number; p_post: string; p_user: string }
         Returns: Json
       }
+      _credit_familie_pe_rand: {
+        Args: { p_datorie: string; p_enrollment: string }
+        Returns: string
+      }
+      _evalueaza_recomandari_client: {
+        Args: { p_client: string }
+        Returns: undefined
+      }
       _grupa_matura: { Args: { p_curs: string; p_par: Json }; Returns: Json }
       _grupe_sub_minim: {
         Args: { p_curs?: string; p_la?: string; p_sezon?: string }
@@ -12344,6 +12949,11 @@ export type Database = {
           functie: string
         }[]
       }
+      anonimizeaza_client: {
+        Args: { p_client: string; p_motiv: string }
+        Returns: undefined
+      }
+      anonimizeaza_clienti_inactivi: { Args: never; Returns: number }
       anuleaza_contract: { Args: { p_contract_id: string }; Returns: undefined }
       anuleaza_exceptie_evaluare: {
         Args: { p_client: string; p_curs: string; p_sesiune: string }
@@ -12351,6 +12961,10 @@ export type Database = {
       }
       anuleaza_inscriere_demo: {
         Args: { p_client?: string; p_eveniment: string; p_lead?: string }
+        Returns: undefined
+      }
+      anuleaza_recomandare: {
+        Args: { p_id: string; p_motiv: string }
         Returns: undefined
       }
       anuleaza_rezervare_open: {
@@ -12385,6 +12999,16 @@ export type Database = {
           reprezentant: string
           sursa_reprezentant: string
         }[]
+      }
+      atribuie_recomandare: {
+        Args: {
+          p_canal?: string
+          p_client_recomandator: string
+          p_curs?: string
+          p_lead: string
+          p_nume_declarat?: string
+        }
+        Returns: string
       }
       audit_bani_report: { Args: never; Returns: Json }
       audit_digest_dispatch_weekly: { Args: never; Returns: number }
@@ -12457,6 +13081,24 @@ export type Database = {
         Args: { p_anul: number; p_luna: number; p_teacher: string }
         Returns: Json
       }
+      campanie_recomandare_activa: {
+        Args: never
+        Returns: {
+          created: string
+          data_limita: string
+          data_start: string
+          id: string
+          nume: string
+          recompensa_lei: number
+          sezon_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "campanii_recomandare"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_discount_familie_restant: { Args: never; Returns: number }
       cancel_netopia_order: {
         Args: { p_order_ref: string }
@@ -12470,6 +13112,7 @@ export type Database = {
         Args: { p_entity: string; p_id: string }
         Returns: undefined
       }
+      client_are_recomandare: { Args: { p_client: string }; Returns: boolean }
       client_in_trupa: { Args: { p_client: string }; Returns: boolean }
       client_member_ids: { Args: never; Returns: string[] }
       clienti_activi_la: {
@@ -12548,6 +13191,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      consuma_credit_familie: {
+        Args: {
+          p_datorie?: string
+          p_enrollment?: string
+          p_familie: string
+          p_suma: number
+        }
+        Returns: undefined
       }
       conversii_ads_de_trimis: {
         Args: { p_from?: string; p_limit?: number }
@@ -12738,6 +13390,7 @@ export type Database = {
           zile_tacere: number
         }[]
       }
+      digest_securitate_zilnic: { Args: never; Returns: Json }
       drepturi_tabele_report: { Args: never; Returns: Json }
       duplica_program: {
         Args: { p_nume?: string; p_program: string }
@@ -12782,6 +13435,7 @@ export type Database = {
         }[]
       }
       evaluare_in_locatia_mea: { Args: { p_curs: string }; Returns: boolean }
+      evalueaza_recomandare: { Args: { p_id: string }; Returns: undefined }
       exclude_cursant_evaluare: {
         Args: {
           p_client: string
@@ -12826,6 +13480,17 @@ export type Database = {
         Args: { p_bucati?: number; p_eveniment: string; p_suma: number }
         Returns: Json
       }
+      gdpr_blocaj: { Args: { p_client: string }; Returns: string }
+      gdpr_clienti_de_anonimizat: {
+        Args: never
+        Returns: {
+          blocaj: string
+          client_id: string
+          nume: string
+          ultima_activitate: string
+        }[]
+      }
+      gdpr_ultima_activitate: { Args: { p_client: string }; Returns: string }
       genereaza_familii_lipsa: {
         Args: { p_client_ids: string[] }
         Returns: {
@@ -14930,6 +15595,39 @@ export type Database = {
       proceseaza_cozi_sms: { Args: never; Returns: undefined }
       proceseaza_sesiuni_evaluare: { Args: never; Returns: Json }
       prune_expired_leads: { Args: never; Returns: Json }
+      raport_recomandari: {
+        Args: { p_campanie?: string }
+        Returns: {
+          canal: string
+          created: string
+          credit_acordat: number
+          credit_pierdut: number
+          curs_ales: string
+          curs_recomandator: string
+          data_limita: string
+          familie_id: string
+          familie_nume: string
+          id: string
+          invitat_client_id: string
+          invitat_nume: string
+          invitat_tip: string
+          lead_id: string
+          lead_nume: string
+          lead_status: string
+          lead_telefon: string
+          locatie: string
+          motiv_anulare: string
+          nume_declarat: string
+          platit_luna1: boolean
+          platit_luna2: boolean
+          prezente_luna1: number
+          prezente_luna2: number
+          prima_plata: string
+          proba: boolean
+          recomandator_nume: string
+          status: string
+        }[]
+      }
       rate_limit_hit: {
         Args: { p_cheie: string; p_fereastra_sec: number; p_limita: number }
         Returns: {

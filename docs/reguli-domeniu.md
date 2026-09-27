@@ -119,3 +119,17 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **O migrație aplicată pe remote e LIVE imediat**, înainte de push-ul frontendului — dacă schimbă un calcul, cifrele
   se schimbă pe loc pentru toată lumea.
 - În septembrie rosterul se schimbă sub tine (recepția înrolează live) — nu compara două cifre luate la ore diferite.
+
+## 9. Păstrarea datelor (GDPR)
+
+- **Clientul inactiv e ANONIMIZAT, nu șters** (decizie Alex, 28 sept. 2026): prag **5 ani** fără prezență, plată,
+  înscriere, rezervare OPEN, contact logat, contract semnat sau bilet. **Ceasul pornește de la 1 ian. 2026** —
+  istoricul 2017–2024 a venit la import în bloc și nu se poate separa, deci primele anonimizări vin în 2031.
+  Pragul și data stau în `gdpr_config` (un rând), nu în cod.
+- `clienti.created` și `leads.created` **nu** sunt „activitate": la import au primit toți data importului (sept. 2025).
+- Nu se anonimizează cine are **datorie neachitată** sau **înscriere în curs** (`data_reziliere` nul și `data_final` ≥ azi).
+- Rândul rămâne (`nume = 'Anonim'`, `prenume = '#<id>'`, `anonimizat_la` setat): încasările, prezențele și înscrierile
+  se numără în continuare. Din data nașterii rămâne doar anul. Familia se anonimizează abia când toți membrii sunt anonimizați.
+- Orice numărătoare sau listă de contact nouă trebuie să ignore clienții cu `anonimizat_la` (n-au telefon/email oricum).
+- Cererile „ștergeți-mi datele" trec prin `anonimizeaza_client(id, motiv)` (owner/admin). Fișierele (PDF-uri de contract,
+  documente, link-uri Drive) nu se pot șterge din SQL: ajung în `gdpr_fisiere_de_sters` și se șterg separat.

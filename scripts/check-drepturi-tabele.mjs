@@ -19,6 +19,8 @@ const DOAR_SERVER = new Set([
   'contract_tokens', // tokenurile linkurilor de semnare
   'rate_limit_hits', // plafonul de cereri pe endpointurile publice
   'securitate_digest', // digestul zilnic de securitate, scris de cron-morning
+  'gdpr_config', // pragul de retenție (anonimizare)
+  'gdpr_fisiere_de_sters', // fișierele clienților anonimizați, de șters din Storage/Drive
 ])
 
 const env = Object.fromEntries(
