@@ -42,3 +42,6 @@ Surse exemple/
 # Liste de lucru cu date personale (nume/telefoane de membri) — se regenerează cu scripts/export-emailuri-lipsa.mjs
 docs/emailuri-lipsa-portal-receptie.*
 provision-*.csv
+
+# Config local Codex — conține chei API (Stitch)
+.codex/
