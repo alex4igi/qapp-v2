@@ -222,7 +222,7 @@ Ce lipsește:
 | K3 | fără poarta de 48 h din șablonul MOA (grila nu o cere) |
 | Partea fixă | `salarizare_receptie` pe om (normă, facturare, fidelitate, abonament, bonusuri ocazionale) + sumele din `salarizare_grila` (post `receptie`) |
 | Salariul lunii | `calculeaza_salariu_receptie(user, an, lună)`; confirmarea pe componente (`confirma_salariu_staff`): fixul oricând, bonusul KPI după finalul lunii, K2 după finalul lunii M+1 |
-| Ecrane | `/salarizare` → tab „Recepție"; detaliul indicatorilor în `/raport-kpi` |
+| Ecrane | `/salarizare` → tab „Recepție"; detaliul indicatorilor în `/raport-kpi`; omul își vede doar lunile lui confirmate în „Salariul meu" (politica `salarii_staff_self_select`, migrația `20260926163900`) |
 
 ⭐ **Indicatorul care nu se poate măsura se plătește la STANDARD** (Alex, 25 sept. 2026), fără
 redistribuire pe ceilalți. Motivul: K3 n-are încă niciun caz în jurnal, iar redistribuirea motorului

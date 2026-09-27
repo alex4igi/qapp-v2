@@ -16,7 +16,10 @@ import {
   monthRange,
   primaLunaSalarii,
 } from '@/features/teacheri/lunileSalariilor'
-import { formatRON } from '@/lib/format'
+import { formatMonth, formatRON } from '@/lib/format'
+import { useAuth } from '@/hooks/useAuth'
+import { hasTeacherLens, ROLURI_CU_SALARIU_STAFF } from '@/lib/rolesMatrix'
+import { listSalariiStaffProprii, type ComponentaProprie } from '@/features/salarizare/api'
 import type { SalariuTeacher } from '@/types/db'
 
 // Identitate stabilă: `?? []` ar face un array nou la fiecare render.
@@ -94,10 +97,7 @@ function SalariuCard({ item }: { item: LunaItem }) {
   )
 }
 
-export function SalariulMeuPage() {
-  // Profilul vine din context (rezolvat o dată la login) — nu depinde de rol,
-  // deci pagina merge și pentru un manager care predă.
-  const { teacherId: myTeacherId, loading: teacherLoading } = useCurrentTeacherId()
+function SectiuneInstructor({ myTeacherId }: { myTeacherId: string | null }) {
   const teacherId = myTeacherId ?? ''
 
   const today = new Date()
@@ -145,16 +145,12 @@ export function SalariulMeuPage() {
     })),
   })
 
-  if (teacherLoading) return <Spinner />
   if (!myTeacherId) {
     return (
-      <div>
-        <PageHeader title="Salariul meu" />
-        <p className="text-sm text-quasar-gray">
-          Contul tău nu e legat de un profil de instructor. Cere managerului să
-          legăm contul.
-        </p>
-      </div>
+      <p className="text-sm text-quasar-gray">
+        Contul tău nu e legat de un profil de instructor. Cere managerului să
+        legăm contul.
+      </p>
     )
   }
 
@@ -185,11 +181,6 @@ export function SalariulMeuPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Salariul meu"
-        subtitle="Desfă o lună pentru detaliul pe grupe"
-      />
-
       {loading ? (
         <Spinner />
       ) : error ? (
@@ -219,6 +210,128 @@ export function SalariulMeuPage() {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+const POST_ETICHETA: Record<string, string> = {
+  manager: 'Manager de studio',
+  receptie: 'Recepție',
+}
+
+type LunaStaff = {
+  cheie: string
+  anul: number
+  luna: number
+  post: string
+  componente: ComponentaProprie[]
+}
+
+function grupeazaPeLuna(rows: ComponentaProprie[]): LunaStaff[] {
+  const luni = new Map<string, LunaStaff>()
+  for (const r of rows) {
+    const cheie = `${r.anul}-${r.luna}-${r.post}`
+    const l = luni.get(cheie) ?? { cheie, anul: r.anul, luna: r.luna, post: r.post, componente: [] }
+    l.componente.push(r)
+    luni.set(cheie, l)
+  }
+  return [...luni.values()]
+}
+
+// Doar componentele confirmate (tabelul nu ține altceva), ca la instructori.
+function SectiuneStaff({ userId }: { userId: string }) {
+  const q = useQuery({
+    queryKey: ['my-salarii-staff', userId],
+    queryFn: () => listSalariiStaffProprii(userId),
+  })
+
+  if (q.isLoading) return <Spinner />
+  if (q.error) return <p className="text-sm text-red-600">Eroare: {humanizeError(q.error)}</p>
+
+  const luni = grupeazaPeLuna(q.data ?? [])
+  if (luni.length === 0) {
+    return (
+      <p className="text-sm text-quasar-gray">Salariul apare aici după ce e confirmată luna.</p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-quasar-gray">
+        Bonusurile care depind de luna următoare (încasările, rata de încasare) se confirmă
+        separat, după ce se încheie și ea, și apar aici atunci.
+      </p>
+      {luni.map((l) => {
+        const total = l.componente.reduce((s, c) => s + Number(c.suma), 0)
+        const platitIn = l.componente.find((c) => c.platit_in_luna)?.platit_in_luna
+        return (
+          <article key={l.cheie} className="rounded-lg border border-quasar-gray-light bg-white">
+            <div className="flex items-center gap-4 px-4 py-3 max-md:flex-wrap max-md:gap-x-3 max-md:gap-y-1">
+              <span className="w-40 font-medium text-quasar-black max-md:w-auto">
+                {RO_LUNI[l.luna - 1]} {l.anul}
+              </span>
+              <strong className="w-32 text-right text-quasar-black max-md:ml-auto max-md:w-auto">
+                {formatRON(total)}
+              </strong>
+              <span className="text-sm text-quasar-gray max-md:w-full">
+                {POST_ETICHETA[l.post] ?? l.post}
+                {platitIn ? ` · se plătește în ${formatMonth(platitIn)}` : ''}
+              </span>
+            </div>
+            <ul className="divide-y divide-quasar-gray-light border-t border-quasar-gray-light px-4 text-sm">
+              {l.componente.map((c) => (
+                <li key={c.id} className="flex justify-between gap-3 py-1.5">
+                  <span>
+                    {c.eticheta}
+                    {c.stare === 'corectat' && (
+                      <span className="ml-2 text-xs text-amber-700">corectat</span>
+                    )}
+                  </span>
+                  <span className="tabular-nums">{formatRON(Number(c.suma))}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        )
+      })}
+    </div>
+  )
+}
+
+export function SalariulMeuPage() {
+  // Profilul vine din context (rezolvat o dată la login) — nu depinde de rol,
+  // deci pagina merge și pentru un manager care predă.
+  const { role, user } = useAuth()
+  const { teacherId, loading } = useCurrentTeacherId()
+  if (loading) return <Spinner />
+
+  const areInstructor = hasTeacherLens(role, teacherId)
+  const areStaff = ROLURI_CU_SALARIU_STAFF.includes(role)
+  const titlu = (text: string) =>
+    areInstructor && areStaff ? (
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-quasar-gray">{text}</h2>
+    ) : null
+
+  return (
+    <div>
+      <PageHeader
+        title="Salariul meu"
+        subtitle={areInstructor ? 'Desfă o lună pentru detaliul pe grupe' : undefined}
+      />
+      <div className="space-y-6">
+        {areInstructor && (
+          <section>
+            {titlu('Instructor')}
+            <SectiuneInstructor myTeacherId={teacherId} />
+          </section>
+        )}
+        {areStaff && user && (
+          <section>
+            {titlu(role === 'manager' ? 'Manager de studio' : 'Recepție')}
+            <SectiuneStaff userId={user.id} />
+          </section>
+        )}
+      </div>
     </div>
   )
 }

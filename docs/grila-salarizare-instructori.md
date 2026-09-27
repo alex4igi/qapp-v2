@@ -581,8 +581,10 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 - O lună se confirmă doar după ce s-a încheiat (retenția și ocuparea se numără pe toată luna).
 - **Cine vede (Alex, 26 sept. 2026):** salariile tuturor se văd de la admin în sus (owner/admin, pagina
   `/salarizare`); fiecare om își vede doar salariul lui. Instructorii — prin „Salariul meu", doar lunile
-  confirmate. Managerii și recepția **nu au încă** ecranul lor: calculul și lunile confirmate
-  (`salarii_staff_componente`) sunt deocamdată doar pentru admin.
+  confirmate. Managerii și recepția — în aceeași pagină, secțiunea lor: doar componentele confirmate
+  din `salarii_staff_componente`, fiecare pe rândurile lui (politica `salarii_staff_self_select`,
+  migrația `20260926163900`). Pagina se deschide pentru profilul de instructor sau rolurile
+  `manager` / `front_desk` (`hasSalariulMeu` în `rolesMatrix.ts`).
 - Lunile de dinainte de septembrie 2026 nu se mai pot calcula în aplicație (grila n-are parametri
   pentru ele, RPC-ul refuză). Nicio lună nu fusese confirmată pe modelul vechi. Lista orientativă pe
   modelul vechi (sept. 2025 – aug. 2026, plus sept. 2026 pentru comparație) și definiția funcției vechi

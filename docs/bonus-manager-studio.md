@@ -246,7 +246,7 @@ nu 2. Diferența până la standard: 47 de locuri ocupate în plus.
 | Pool-ul de capacitate | `capacitate_pool` — capacitatea și locația copiate la adăugare; rândurile nu se șterg. Umplut pe 2026-2027 cu grupele care au funcționat în septembrie (Ștefan 612, Nicolina 420, Q4K 105); cronul `capacitate-pool-zilnic` adaugă grupele noi. Corecție doar prin `corecteaza_pool_capacitate` (owner, cu motiv) |
 | Calculul lunii | `calculeaza_salariu_manager(user, an, lună)` |
 | Confirmarea pe componente | `confirma_salariu_staff` → `salarii_staff_componente`. Baza se confirmă oricând, ocuparea după finalul lunii, încasarea după finalul lunii M+1 |
-| Ecran | `/salarizare` → tab „Manageri" (owner/admin) |
+| Ecran | `/salarizare` → tab „Manageri" (owner/admin); managerul își vede doar lunile lui confirmate în „Salariul meu" (politica `salarii_staff_self_select`, migrația `20260926163900`) |
 
 🔒 Nota internă din §3 rămâne valabilă: faptul că pool-ul **nu scade** nu se publică în materialele
 pentru manageri.

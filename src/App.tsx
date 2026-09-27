@@ -182,7 +182,7 @@ const SituatieZilnicaPage = lazy(() =>
 const OptOutListPage = lazy(() =>
   import('@/features/opt-out/OptOutListPage').then((m) => ({ default: m.OptOutListPage })),
 )
-import { ROUTE_ACCESS } from '@/lib/rolesMatrix'
+import { ROUTE_ACCESS, hasSalariulMeu } from '@/lib/rolesMatrix'
 
 function App() {
   return (
@@ -202,12 +202,13 @@ function App() {
           </Route>
 
           {/* Rutele „mele" de instructor — gardate pe profilul legat, nu pe rol,
-              ca un manager care predă să le vadă. */}
+              ca un manager care predă să le vadă. „Salariul meu" e deschis și
+              managerilor și recepției (grilele lor). */}
           <Route
             element={
               <ProtectedRoute
                 allowedRoles={ROUTE_ACCESS['/salariul-meu']}
-                requiresTeacherProfile
+                allow={hasSalariulMeu}
               />
             }
           >

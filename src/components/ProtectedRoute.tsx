@@ -8,19 +8,22 @@ type Props = {
   allowedRoles?: readonly AppRole[]
   /** Rută „a mea" de instructor: cere în plus un profil `teacheri` legat de cont. */
   requiresTeacherProfile?: boolean
+  /** Condiție pe rol + profil (ex. `hasSalariulMeu`); așteaptă și ea profilul. */
+  allow?: (role: AppRole, teacherId: string | null) => boolean
 }
 
 export function ProtectedRoute({
   requireRole,
   allowedRoles,
   requiresTeacherProfile,
+  allow,
 }: Props) {
   const { session, role, loading, bootSlow, teacherId, teacherLoading } = useAuth()
   const landing = useLandingRoute()
 
   // Profilul de instructor se rezolvă asincron după login — fără gardul ăsta un
   // manager care predă ar fi aruncat afară de pe /grupele-mele la refresh.
-  if (loading || (requiresTeacherProfile && teacherLoading)) {
+  if (loading || ((requiresTeacherProfile || allow) && teacherLoading)) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-2 text-quasar-gray">
         <span>Se încarcă…</span>
@@ -42,6 +45,10 @@ export function ProtectedRoute({
   }
 
   if (requiresTeacherProfile && !hasTeacherLens(role, teacherId)) {
+    return <Navigate to={landing} replace />
+  }
+
+  if (allow && !allow(role, teacherId)) {
     return <Navigate to={landing} replace />
   }
 

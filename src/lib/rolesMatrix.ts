@@ -99,7 +99,8 @@ export const ROUTE_ACCESS = {
   '/opt-out': PRIVILEGED,
   // Rutele „mele" de instructor: deschise oricărui rol, dar condiționate de
   // existența unui profil legat (vezi REQUIRES_TEACHER_PROFILE). Un manager care
-  // predă le vede; un manager care nu predă, nu.
+  // predă le vede; un manager care nu predă, nu. „Salariul meu" are regula ei
+  // (hasSalariulMeu): managerii și recepția sunt plătiți pe grile proprii.
   '/salariul-meu': WITH_TEACHER,
   '/grupele-mele': WITH_TEACHER,
   '/pontaj-staff': PRIVILEGED,
@@ -126,9 +127,13 @@ export type AppRoute = keyof typeof ROUTE_ACCESS
 // „predatul" ortogonal rolului: aceleași pagini pentru un teacher pur și pentru
 // un manager care predă.
 export const REQUIRES_TEACHER_PROFILE = new Set<AppRoute>([
-  '/salariul-meu',
   '/grupele-mele',
 ])
+
+// Rolurile plătite pe grila de manager / recepție (docs/bonus-manager-studio.md,
+// docs/grila-front-desk.md). Salariile tuturor le vede doar admin+ (/salarizare);
+// fiecare om își vede doar salariul lui.
+export const ROLURI_CU_SALARIU_STAFF: readonly AppRole[] = ['manager', 'front_desk']
 
 /**
  * Discriminantul canonic pentru „arată-i datele lui de instructor".
@@ -144,12 +149,18 @@ export function hasTeacherLens(
   return isTeacher(role) || Boolean(teacherId)
 }
 
+/** „Salariul meu": partea de instructor (profil legat) și/sau cea de manager / recepție. */
+export function hasSalariulMeu(role: AppRole, teacherId: string | null): boolean {
+  return hasTeacherLens(role, teacherId) || ROLURI_CU_SALARIU_STAFF.includes(role)
+}
+
 export function canAccessRoute(
   role: AppRole,
   path: AppRoute,
   teacherId: string | null = null,
 ): boolean {
   if (!(ROUTE_ACCESS[path] as readonly AppRole[]).includes(role)) return false
+  if (path === '/salariul-meu') return hasSalariulMeu(role, teacherId)
   if (REQUIRES_TEACHER_PROFILE.has(path)) return hasTeacherLens(role, teacherId)
   return true
 }

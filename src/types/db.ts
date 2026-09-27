@@ -52,6 +52,7 @@ export type EvaluareExceptie = Tables<'evaluari_exceptii'>
 export type SituatieSms = Tables<'situatie_sms_uri'>
 export type ParametruAplicatie = Tables<'parametri_aplicatie'>
 export type SalariuTeacher = Tables<'salarii_teacher'>
+export type SalariuStaffComponenta = Tables<'salarii_staff_componente'>
 export type ReconciliereCash = Tables<'reconcilieri_cash'>
 export type OpenSesiune = Tables<'open_sesiuni'>
 export type OpenRezervare = Tables<'open_rezervari'>
