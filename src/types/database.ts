@@ -12224,6 +12224,21 @@ export type Database = {
           curs_id: string
         }[]
       }
+      _inrolari_platite_randuri: {
+        Args: {
+          p_cursuri: string[]
+          p_de: string
+          p_pana: string
+          p_sedinta_30_zile: boolean
+        }
+        Returns: {
+          client: string
+          curs_id: string
+          data_incepere: string
+          sfarsit: string
+          tip: string
+        }[]
+      }
       _is_anunt_expeditor: { Args: { p_anunt: string }; Returns: boolean }
       _is_anunt_recipient: { Args: { p_anunt: string }; Returns: boolean }
       _locuri_ocupate: {
@@ -12236,6 +12251,22 @@ export type Database = {
         Returns: {
           curs_id: string
           ocupate: number
+        }[]
+      }
+      _locuri_ponderate: {
+        Args: {
+          p_cursuri: string[]
+          p_de: string
+          p_pana: string
+          p_sedinta_30_zile: boolean
+        }
+        Returns: {
+          client: string
+          curs_id: string
+          fel: string
+          pondere: number
+          sedinte_platite: number
+          sedinte_tinute: number
         }[]
       }
       _luni_achitate_curs: {
@@ -15010,6 +15041,13 @@ export type Database = {
         }[]
       }
       rls_parinte_gap_report: {
+        Args: never
+        Returns: {
+          problema: string
+          tabel: string
+        }[]
+      }
+      rls_teacher_gap_report: {
         Args: never
         Returns: {
           problema: string
