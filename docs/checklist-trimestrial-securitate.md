@@ -35,6 +35,11 @@
 - [ ] Cererile de acces/ștergere primite au fost rezolvate în 30 de zile.
 - [ ] Exporturile cu date reale nu stau în repo (`git status --short --untracked-files=all`) și nici în Downloads.
 - [ ] `securitate_digest`: nicio zi cu semnale rămase neverificate.
+- [ ] **TODO anonimizare (până în nov. 2030):** cron-ul lunar `gdpr-anonimizare-lunar` anonimizează în tăcere —
+      prima rulare cu clienți e pe **1 ian. 2031** (prag 5 ani, ceas de la 2026-01-01, `gdpr_config`). Înainte de
+      atunci de construit: email către owner/admin cu 60 de zile înainte (cine intră, cine e blocat și de ce) +
+      raport după fiecare rulare cu anonimizări + un memento anual pe 1 ian. Se face pe digestul de securitate.
+      Până atunci, verifică doar că `select count(*) from gdpr_clienti_de_anonimizat()` e 0.
 
 ## Plăți
 - [ ] Nicio comandă Netopia „pending" mai veche de o zi.
