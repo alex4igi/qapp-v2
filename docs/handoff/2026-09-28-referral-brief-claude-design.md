@@ -119,7 +119,7 @@ Varianta funcțională e deja live pe site (quasardance.ro/recomandari). Designu
 - **Ora gratuită:** prima oră de curs e gratuită, cu programare confirmată de recepție.
 - **Cine poate fi invitat:** oricine nu e înscris în sezonul acesta, inclusiv foștii cursanți; orice grupă.
 - **Prima lună:** se plătește întreagă, iar diferența se scade din luna următoare (exemplul 15 oct. → 280 / 98 lei).
-- **Pentru familia care te-a invitat:** 60 lei credit după plata integrală a primei luni. Se folosește la abonament, OPEN class, ședințe, workshopuri și concursuri; nu la merch, bilete sau închirieri.
+- **Pentru familia care te-a invitat:** un credit Quasar (fără sumă pe pagină — confirmat de Alex) după plata integrală a primei luni. Se folosește la abonament, OPEN class, ședințe, workshopuri și concursuri; nu la merch, bilete sau închirieri.
 - **Cine te-a invitat:** se confirmă la recepție; în cazurile neclare decide managerul.
 - **Termen:** 27 octombrie 2026.
 
