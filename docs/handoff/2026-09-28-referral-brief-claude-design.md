@@ -1,16 +1,18 @@
-# Brief pentru design — campania „Recomandări toamna 2026”
+# Brief pentru design — campania „DANCE WITH ME”
 
 **Stare:** gata de predat la design — 2026-09-28. Toate regulile și datele de mai jos sunt confirmate de Alex.
 
 Ai de făcut patru lucruri:
 1. biletul fizic;
-2. landing page-ul `quasardance.ro/recomandari`;
+2. landing page-ul `quasardance.ro/dance-with-me`;
 3. câmpul „Cine te-a invitat?” din celelalte formulare de pe site;
 4. materialele pentru instructori și recepție (anunțul la curs și imaginea pentru WhatsApp).
 
 ---
 
 ## Campania, pe scurt (sursa pentru toate textele)
+
+- **Confirmat de Alex (28.09):** campania se numește **DANCE WITH ME** — numele apare pe bilet, pe pagină și în materiale, scris așa, cu majuscule.
 
 - **Confirmat de Alex:** un cursant Quasar invită prieteni. Fiecare prieten are **prima oră gratuită**.
 - **Confirmat de Alex:** prietenul se înscrie și **achită prima lună întreagă**. Atunci familia care l-a invitat primește **60 lei credit** în contul ei Quasar, integral și o singură dată pentru fiecare prieten. **Nu există limită**: 3 prieteni înscriși înseamnă 180 lei.
@@ -25,7 +27,7 @@ Ai de făcut patru lucruri:
 - **Confirmat de Alex:** poate fi invitat oricine **nu e înscris în sezonul acesta**, deci și un fost cursant care revine. Prietenul poate alege orice grupă.
 - **Confirmat de Alex:** dacă prietenul începe în mijlocul lunii, prima lună se plătește întreagă, iar diferența se scade din luna a doua. Exemplu: începe pe 15 octombrie, plătește 280 lei în octombrie și 98 lei în noiembrie. Totalul e același; doar prima plată e întreagă.
 - **Confirmat de Alex:** campania durează **până la începutul primei vacanțe**: vacanța de toamnă începe pe **28 octombrie 2026**, deci ultima zi este **27 octombrie 2026**. Până atunci trebuie făcute **toate**: proba, înscrierea și plata primei luni. Campania nu continuă în noiembrie.
-- **Confirmat de Alex:** biletele sunt identice pentru toată lumea. Nu au cod unic pe copil sau nume pretipărit; numele celui care invită se scrie de mână. Toate biletele au **același QR**, către `quasardance.ro/recomandari`.
+- **Confirmat de Alex:** biletele sunt identice pentru toată lumea. Nu au cod unic pe copil sau nume pretipărit; numele celui care invită se scrie de mână. Toate biletele au **același QR**, către `quasardance.ro/dance-with-me`.
 - **Confirmat de Alex:** campania se anunță la toate grupele. Accentul vizual și de ton cade pe **Teens și Varsity**, adolescenți și tineri, fără imagini cu copii mici.
 
 ## Identitate
@@ -43,7 +45,7 @@ Ai de făcut patru lucruri:
 **Pe fiecare bilet, în ordinea importanței:**
 1. mesajul principal (vezi direcțiile de mai jos);
 2. „M-a invitat: ________________”, spațiu de scris de mână, suficient de lat pentru nume și prenume;
-3. QR mare, cu margine albă, lizibil pe hârtie și din poză; sub el, URL-ul scris: **quasardance.ro/recomandari**;
+3. QR mare, cu margine albă, lizibil pe hârtie și din poză; sub el, URL-ul scris: **quasardance.ro/dance-with-me**;
 4. telefoanele recepției (vezi mai jos);
 5. subsolul cu condițiile;
 6. „Valabil până pe 27 octombrie 2026”.
@@ -55,22 +57,24 @@ Ai de făcut patru lucruri:
 | Ștefan cel Mare | 0730 534 172 |
 | Nicolina (și Quasar for Kids) | 0770 227 580 |
 
-### Direcția A — „Vino cu mine” (recomandată pentru Teens și Varsity)
+Ambele direcții poartă numele campaniei, **DANCE WITH ME**, ca element vizual principal.
+
+### Direcția A — „DANCE WITH ME” ca invitație (recomandată pentru Teens și Varsity)
 Aspect energic, aerisit, tipografie mare. Arată ca o invitație între prieteni, nu ca un cupon.
-- **Titlu:** „Vino cu mine la dans.”
+- **Titlu:** „DANCE WITH ME” (dedesubt, mai mic: „Vino cu mine la dans.”)
 - **Subtitlu:** „Prima oră e gratuită.”
 - **Câmp:** „M-a invitat: ______”
 - **CTA:** „Scanează și cere ora gratuită”
 
 ### Direcția B — „Crew pass”
 Inspirată de biletele de eveniment: un „01” mare pentru prima oră, contrast puternic, sentiment de apartenență la grup. Fără aspect de voucher valoric.
-- **Titlu:** „Ai loc în crew.”
+- **Titlu:** „DANCE WITH ME” + „Ai loc în crew.”
 - **Subtitlu:** „Prima oră, din partea noastră.”
 - **Câmp:** „Invitat de: ______”
 - **CTA:** „Rezervă-ți locul”
 
 ### Subsol / verso (comun ambelor direcții)
-> Prima oră e gratuită, cu programare confirmată de recepție. După ce te înscrii și achiți prima lună, familia care te-a invitat primește 60 lei credit Quasar. Ceri ora scanând codul, la telefon sau direct la recepție. Ora gratuită, înscrierea și plata: până pe 27 octombrie 2026. Detalii: quasardance.ro/recomandari
+> Prima oră e gratuită, cu programare confirmată de recepție. După ce te înscrii și achiți prima lună, familia care te-a invitat primește 60 lei credit Quasar. Ceri ora scanând codul, la telefon sau direct la recepție. Ora gratuită, înscrierea și plata: până pe 27 octombrie 2026. Detalii: quasardance.ro/dance-with-me
 
 Pe bilet nu apar formula de pro-rata, lista cu ce acoperă creditul sau alte condiții lungi. Toate acestea stau pe landing page.
 
@@ -78,13 +82,13 @@ Pe bilet nu apar formula de pro-rata, lista cu ce acoperă creditul sau alte con
 
 ---
 
-## 2. Landing page `quasardance.ro/recomandari`
+## 2. Landing page `quasardance.ro/dance-with-me`
 
 Majoritatea vin de pe telefon, după ce au scanat biletul. Pagina se desenează **mobile-first**, apoi desktop. Tonul e direct, pentru părinți și adolescenți. Pagina e scurtă, iar formularul se vede imediat.
 
 **Confirmat de Alex (28.09): pagina e pentru INVITAT.** Pe ea intră prietenul care a scanat biletul, deci pagina vinde **ora gratuită și cursurile Quasar**. Creditul de 60 lei al familiei care invită **nu** apare în față: stă în regulament, într-o fereastră pop-up deschisă de linkul „Regulamentul campaniei”.
 
-Varianta funcțională e deja live pe site (quasardance.ro/recomandari). Designul o poate rafina, păstrând structura de mai jos.
+Varianta funcțională e deja live pe site (quasardance.ro/dance-with-me). Designul o poate rafina, păstrând structura de mai jos.
 
 ### Secțiuni, în ordine
 

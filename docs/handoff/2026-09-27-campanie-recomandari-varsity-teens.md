@@ -90,6 +90,7 @@ Toți pașii de mai jos sunt **propuneri**, nu funcționalități existente/conf
 - Creditul se folosește și la OPEN class, ședințe (K-pop), workshopuri, concursuri.
 - Anulare: creditul nefolosit se anulează; cel folosit rămâne, cu semnal pentru manager.
 - Landing page dedicat `quasardance.ro/recomandari`; câmpul „Cine te-a invitat?" și în celelalte formulare cât e activă campania.
+- Numele campaniei: **DANCE WITH ME**; pagina `quasardance.ro/dance-with-me`, orientată către invitat (creditul familiei doar în regulament, fără sumă).
 - Telefoane pe bilet: Ștefan cel Mare 0730 534 172 și Nicolina 0770 227 580 (răspunde și pentru Quasar for Kids).
 
 **Implementat:** vezi `docs/reguli-domeniu.md` §10 — reguli și locul lor în cod.

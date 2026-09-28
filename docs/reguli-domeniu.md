@@ -138,10 +138,10 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   `gdpr_export_client(id, motiv)` dă un JSON cu tot ce ține de client; exportul lasă urmă în `audit_log`.
   Tabel nou cu date despre client ⇒ intră și în export, și în `anonimizeaza_client`.
 
-## 10. Recomandări (campania toamna 2026)
+## 10. Recomandări (campania DANCE WITH ME, toamna 2026)
 
 Decizii Alex, 28 sept. 2026. Brief: `handoff/2026-09-27-campanie-recomandari-varsity-teens.md`; cod: migrația
-`20260928140000_campanie_recomandari.sql`, `src/features/recomandari/`, `/recomandari`.
+`20260928140000_campanie_recomandari.sql`, `src/features/recomandari/`, `/recomandari` (aplicație) · pe site `quasardance.ro/dance-with-me` (vechiul `/recomandari` face redirect). Numele campaniei stă în `campanii_recomandare.nume` și trebuie să fie identic cu `CAMPANIE_RECOMANDARI` din site (`lib/recomandari.ts`) și cu `campanii_promovare.nume`.
 
 - **Recompensa:** 60 lei credit pe familia care invită, pentru fiecare prieten care face ora gratuită, se înscrie și
   **achită integral prima lună întreagă**. Fără plafon pe familie; un invitat aduce o singură recompensă. O plată
