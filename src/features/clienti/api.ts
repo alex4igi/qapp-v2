@@ -333,3 +333,22 @@ export async function getClientRestanteToate(
   if (error) throw error
   return (data ?? []) as unknown as ClientRestantaRow[]
 }
+
+// GDPR: cererea de acces (art. 15/20) și cea de ștergere (art. 17). Ambele RPC-uri
+// cer owner/admin, motiv, și lasă urmă în audit_log.
+export async function exportDateClient(clientId: string, motiv: string): Promise<unknown> {
+  const { data, error } = await supabase.rpc('gdpr_export_client', {
+    p_client: clientId,
+    p_motiv: motiv,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function anonimizeazaClient(clientId: string, motiv: string): Promise<void> {
+  const { error } = await supabase.rpc('anonimizeaza_client', {
+    p_client: clientId,
+    p_motiv: motiv,
+  })
+  if (error) throw error
+}

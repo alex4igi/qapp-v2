@@ -132,7 +132,11 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   se numără în continuare. Din data nașterii rămâne doar anul. Familia se anonimizează abia când toți membrii sunt anonimizați.
 - Orice numărătoare sau listă de contact nouă trebuie să ignore clienții cu `anonimizat_la` (n-au telefon/email oricum).
 - Cererile „ștergeți-mi datele" trec prin `anonimizeaza_client(id, motiv)` (owner/admin). Fișierele (PDF-uri de contract,
-  documente, link-uri Drive) nu se pot șterge din SQL: ajung în `gdpr_fisiere_de_sters` și se șterg separat.
+  documente, link-uri Drive) nu se pot șterge din SQL: ajung în `gdpr_fisiere_de_sters`. Cele din Storage le șterge
+  `cron-morning` zilnic; link-urile Drive (`bucket` nul) se șterg de mână.
+- Cererea de acces / copie a datelor (art. 15/20): butonul **GDPR** din fișa clientului (owner/admin, desktop) →
+  `gdpr_export_client(id, motiv)` dă un JSON cu tot ce ține de client; exportul lasă urmă în `audit_log`.
+  Tabel nou cu date despre client ⇒ intră și în export, și în `anonimizeaza_client`.
 
 ## 10. Recomandări (campania toamna 2026)
 

@@ -18,6 +18,7 @@ import { leaduriProtejate } from '../_shared/leadNurture.ts'
 import { sendEmail } from '../_shared/messaging.ts'
 import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 import { trimiteDigestSecuritate } from '../_shared/digestSecuritate.ts'
+import { stergeFisiereGdpr } from '../_shared/gdprFisiere.ts'
 
 function startOfDay(date: Date) {
   const d = new Date(date)
@@ -399,9 +400,10 @@ Deno.serve(async (req) => {
   }
 
   const emailuriSecuritate = await trimiteDigestSecuritate(supabase, APP_URL, errors)
+  const fisiereGdpr = await stergeFisiereGdpr(supabase, errors)
 
   console.log(
-    `[cron/morning] remindere: ${sent.length}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, securitate: ${emailuriSecuritate}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, securitate: ${emailuriSecuritate}, fisiereGdpr: ${fisiereGdpr}, erori: ${errors.length}`,
   )
   return Response.json({
     sent,
@@ -410,6 +412,7 @@ Deno.serve(async (req) => {
     suspendati50z: suspendati,
     emailuriSuspendari: emailuriTrimise,
     emailuriSecuritate,
+    fisiereGdpr,
     errors,
     rulatLa: now.toISOString(),
   })

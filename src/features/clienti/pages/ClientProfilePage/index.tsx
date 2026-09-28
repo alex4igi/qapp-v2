@@ -26,7 +26,7 @@ import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentS
 import { ConvertSedinteAbonamentModal } from '@/features/plati/ConvertSedinteAbonamentModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import { isAdminOrHigher, isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist, type StareItem } from '@/lib/checklist'
 import {
@@ -49,6 +49,7 @@ import { ClientSidebar } from './ClientSidebar'
 import { RestanteAlteSezoaneBanner } from './RestanteAlteSezoaneBanner'
 import { ConfirmReziliereModal } from './ConfirmReziliereModal'
 import { ConfirmDeleteInrolareModal } from './ConfirmDeleteInrolareModal'
+import { GdprModal } from './GdprModal'
 import { calcAge, getInitials } from './helpers'
 import { InrolariSezonTab } from './tabs/InrolariSezonTab'
 import { PrezenteSezonTab } from './tabs/PrezenteSezonTab'
@@ -92,6 +93,7 @@ export function ClientProfilePage() {
   const [convertAbonamentId, setConvertAbonamentId] = useState<string | null>(null)
   const [deleteRow, setDeleteRow] = useState<ClientInrolareSezon | null>(null)
   const [motivStergere, setMotivStergere] = useState('')
+  const [gdprOpen, setGdprOpen] = useState(false)
 
   const clientQuery = useQuery({
     queryKey: ['client', id],
@@ -389,6 +391,11 @@ export function ClientProfilePage() {
                 Contract
               </Button>
             )}
+            {isAdminOrHigher(role) && !isMobile && !client.anonimizat_la && (
+              <Button variant="ghost" onClick={() => setGdprOpen(true)}>
+                GDPR
+              </Button>
+            )}
             {/* Teacherul citește profilul dar nu-l modifică (RLS blochează oricum
                 UPDATE pe clienti) — butonul rămâne vizibil, dezactivat. */}
             <Button
@@ -672,6 +679,19 @@ export function ClientProfilePage() {
             })
           }
           onClose={closeReziliereModal}
+        />
+      )}
+
+      {gdprOpen && (
+        <GdprModal
+          open
+          clientId={client.id}
+          numeClient={`${client.nume} ${client.prenume ?? ''}`.trim()}
+          onClose={() => setGdprOpen(false)}
+          onAnonimizat={() => {
+            setGdprOpen(false)
+            queryClient.invalidateQueries({ queryKey: ['client', id] })
+          }}
         />
       )}
     </>

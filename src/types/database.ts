@@ -13490,6 +13490,10 @@ export type Database = {
           ultima_activitate: string
         }[]
       }
+      gdpr_export_client: {
+        Args: { p_client: string; p_motiv: string }
+        Returns: Json
+      }
       gdpr_ultima_activitate: { Args: { p_client: string }; Returns: string }
       genereaza_familii_lipsa: {
         Args: { p_client_ids: string[] }
