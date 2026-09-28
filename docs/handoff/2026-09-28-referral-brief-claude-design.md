@@ -82,14 +82,21 @@ Pe bilet nu apar formula de pro-rata, lista cu ce acoperă creditul sau alte con
 
 Majoritatea vin de pe telefon, după ce au scanat biletul. Pagina se desenează **mobile-first**, apoi desktop. Tonul e direct, pentru părinți și adolescenți. Pagina e scurtă, iar formularul se vede imediat.
 
+**Confirmat de Alex (28.09): pagina e pentru INVITAT.** Pe ea intră prietenul care a scanat biletul, deci pagina vinde **ora gratuită și cursurile Quasar**. Creditul de 60 lei al familiei care invită **nu** apare în față: stă în regulament, într-o fereastră pop-up deschisă de linkul „Regulamentul campaniei”.
+
+Varianta funcțională e deja live pe site (quasardance.ro/recomandari). Designul o poate rafina, păstrând structura de mai jos.
+
 ### Secțiuni, în ordine
 
 **A. Hero**
-- Titlu: „Ai fost invitat la Quasar. Prima oră e gratuită.”
-- Subtitlu: „Spune-ne cine te-a invitat și îți găsim o grupă.”
-- Buton: „Vreau ora gratuită”. Face scroll la formular; pe mobil, formularul poate veni imediat după hero.
+- Titlu: „Un prieten te-a invitat la dans. Prima oră e gratuită.”
+- Subtitlu: „Vino să vezi cum e la Quasar: Street Dance, KPOP, gimnastică acrobatică — în grupe pe vârste, cu instructori care te iau de la zero.”
+- Buton: „Vreau ora gratuită” (duce la formular).
+- Sub buton, mic: „Valabil până pe 27 octombrie 2026 · Regulamentul campaniei” (linkul deschide pop-up-ul).
 
-**B. Formularul de probă**
+**Secțiunile cu beneficiile cursurilor**, preluate de pe prima pagină a site-ului: tipurile de cursuri, de ce aleg părinții Quasar, grupele pe vârste (cu Teens și Varsity vizibile), ce ne face diferiți, testimoniale.
+
+**B. Formularul de probă** (după secțiunile cu beneficii; în stânga: „Rezervă-ți ora gratuită” + 4 bife de beneficii)
 
 | Câmp | Tip | Obligatoriu |
 |---|---|---|
@@ -108,24 +115,15 @@ Majoritatea vin de pe telefon, după ce au scanat biletul. Pagina se desenează 
 - **Stări de desenat:** câmp gol / eroare / se trimite / trimis cu succes / eroare de rețea.
 - Textul ajutător sub „Cine te-a invitat?”: „Scrie numele colegului, cum apare pe bilet. Așa ajunge creditul la familia potrivită.”
 
-**C. Cum funcționează** (3 pași, cu iconițe sau numere mari)
-1. „Ceri ora gratuită: aici, la telefon sau la recepție.”
-2. „Vii la probă, într-o grupă potrivită vârstei și nivelului tău.”
-3. „Te înscrii și plătești prima lună. Familia care te-a invitat primește 60 lei credit.”
+**C. Pop-up „Regulamentul campaniei”** (nu e secțiune pe pagină)
+- **Ora gratuită:** prima oră de curs e gratuită, cu programare confirmată de recepție.
+- **Cine poate fi invitat:** oricine nu e înscris în sezonul acesta, inclusiv foștii cursanți; orice grupă.
+- **Prima lună:** se plătește întreagă, iar diferența se scade din luna următoare (exemplul 15 oct. → 280 / 98 lei).
+- **Pentru familia care te-a invitat:** 60 lei credit după plata integrală a primei luni. Se folosește la abonament, OPEN class, ședințe, workshopuri și concursuri; nu la merch, bilete sau închirieri.
+- **Cine te-a invitat:** se confirmă la recepție; în cazurile neclare decide managerul.
+- **Termen:** 27 octombrie 2026.
 
-**D. Pentru familia care invită** (secțiune separată, vizibil diferită)
-- „Pentru fiecare prieten care se înscrie și achită prima lună, familia ta primește 60 lei credit. Fără limită de prieteni.”
-- „Creditul se folosește la abonament, OPEN class, ședințe, workshopuri și concursuri, pentru orice membru al familiei.”
-
-**E. Întrebări frecvente** (acordeon)
-- *Cine poate fi invitat?* „Oricine nu e înscris la Quasar în sezonul acesta, inclusiv foștii cursanți care revin.”
-- *Trebuie să aleg aceeași grupă cu prietenul meu?* „Nu. Alegi grupa care ți se potrivește.”
-- *Dacă încep la mijlocul lunii?* „Prima lună se plătește întreagă, iar diferența se scade din luna următoare. De exemplu: începi pe 15 octombrie, plătești 280 lei în octombrie și 98 lei în noiembrie.” (Suma e doar un exemplu; se scrie așa.)
-- *Când primește familia creditul?* „După ce prietenul achită integral prima lună. Creditul se vede la recepție și se folosește la următoarea plată.”
-- *Până când e valabilă campania?* „Până pe 27 octombrie 2026, înainte de vacanța de toamnă. Până atunci trebuie să faci ora gratuită, să te înscrii și să plătești prima lună.”
-- *Pot folosi creditul pe merch sau bilete la spectacol?* „Nu. Creditul e pentru dans: abonament, OPEN class, ședințe, workshopuri, concursuri.”
-
-**F. Contact:** cele trei locații cu adresele lor și două telefoane, Ștefan cel Mare 0730 534 172 și Nicolina / Quasar for Kids 0770 227 580, plus un buton „Sună” pe mobil.
+**D. Contact:** cele trei locații cu adresele lor și două telefoane, Ștefan cel Mare 0730 534 172 și Nicolina / Quasar for Kids 0770 227 580, plus un buton „Sună” pe mobil.
 
 ### După termen
 Din **28 octombrie 2026**, pagina nu se mai afișează: cine scanează un bilet vechi ajunge pe pagina obișnuită de programare. Pentru această stare nu e nevoie de design.
