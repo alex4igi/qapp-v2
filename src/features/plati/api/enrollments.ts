@@ -142,6 +142,9 @@ export type CreateInrolariParams = {
   // fix pe sezon; se încheie doar odată cu locul (reziliere) — vezi
   // docs/reguli-preturi-reduceri.md.
   esteReinscriere?: boolean
+  // Invitat din campania de recomandări (Alex, 28.09.2026): prima rată e întreagă,
+  // iar pro-rata lunii de start se mută pe luna a doua. Totalul rămâne același.
+  prorataInLunaDoi?: boolean
 }
 
 async function getVoucherById(id: string): Promise<Voucher> {
@@ -498,6 +501,17 @@ function buildRecurentPerLuna(
         este_reinscriere: esteReinscriere,
       })
     }
+  }
+  // Invitat din recomandare: rata 1 și rata 2 își schimbă sumele. Voucherul rămâne pe
+  // rata 1, ca la toată lumea; dacă e o singură lună, nu e nimic de mutat.
+  if (params.prorataInLunaDoi && aplicProrata && sumaLunara != null && inserts.length > 1) {
+    const prorata = inserts[0].suma_baza ?? null
+    inserts[0] = {
+      ...inserts[0],
+      suma_baza: sumaLunara,
+      suma: sumaCuVoucher(sumaLunara, voucher),
+    }
+    inserts[1] = { ...inserts[1], suma_baza: prorata, suma: sumaCuVoucher(prorata, null) }
   }
   return inserts
 }

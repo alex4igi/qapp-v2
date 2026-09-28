@@ -42,6 +42,9 @@ export const ROUTE_ACCESS = {
   '/absente-21z': ALL_STAFF,
   // păstrat doar pentru redirectul guardat /recuperare → /datorii
   '/recuperare': ALL_STAFF,
+  // Campania de recomandări: recepția confirmă cine a invitat pe cine; creditul îl
+  // acordă DB-ul la plată. Anularea e gardată la manager+ în RPC.
+  '/recomandari': ALL_STAFF,
   '/sms': ALL_STAFF,
   '/feedback': ALL_STAFF,
   '/feedback-app': WITH_TEACHER,

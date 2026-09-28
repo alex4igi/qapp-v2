@@ -1,8 +1,12 @@
 // Edge Function: intake lead din formularul de pe quasardance.ro.
 // Formularul face POST cu:
 //   { nume, prenume?, nume_parinte?, telefon, email?, data_nasterii?,
-//     interes?, grupa_varsta?, locatia?, mesaj?, campanie?,
+//     interes?, grupa_varsta?, locatia?, mesaj?, campanie?, invitat_de?,
 //     utm_source?, utm_medium?, utm_campaign?, gclid?, campaign_id? }.
+// `invitat_de` = „Cine te-a invitat?" din campania de recomandări: se înregistrează în
+// `recomandari` doar cât campania e activă, și la telefon duplicat.
+// GET → starea campaniei de recomandări ({ activa, nume, data_limita, recompensa_lei }),
+// pentru serverul site-ului: afișează /recomandari și câmpul doar cât e activă.
 // `gclid` = click id-ul Google Ads (îl pune Google în URL-ul de landing). E
 // precondiția pentru upload de conversii offline înapoi în Google Ads — site-ul
 // trebuie să-l preia din query string și să-l trimită aici.
@@ -30,6 +34,8 @@ import {
   isValidRoMobile,
   isValidEmail,
   logIntake,
+  campanieRecomandareActiva,
+  inregistreazaRecomandare,
 } from '../_shared/intake.ts'
 import { clientIp, raspuns429, verificaPlafon } from '../_shared/rateLimit.ts'
 
@@ -66,6 +72,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     if (REQUIRE_SECRET) return json({ error: 'Doar POST' }, 405)
     return new Response('ok', { headers: cors })
+  }
+  // Starea campaniei e informație publică (termen, sumă) — fără date personale.
+  if (req.method === 'GET') {
+    const c = await campanieRecomandareActiva(serviceClient())
+    return json(c
+      ? { activa: true, nume: c.nume, data_limita: c.data_limita, recompensa_lei: c.recompensa_lei }
+      : { activa: false })
   }
   if (req.method !== 'POST') return json({ error: 'Doar POST' }, 405)
 
@@ -162,6 +175,11 @@ Deno.serve(async (req) => {
       sursaId,
       { canal: 'website', detalii: urma },
     )
+
+    const invitatDe = cap(body.invitat_de, MAX_SCURT)
+    if (invitatDe && result.leadId) {
+      await inregistreazaRecomandare(supabase, result.leadId, invitatDe)
+    }
 
     console.log(
       `[intake/website] ${result.created ? 'creat' : 'skip'} ${result.reason ?? ''}`,

@@ -27,6 +27,11 @@ import {
   type Tender,
 } from './MetodaPlataField'
 import { articolDatorie, articolInrolare } from '@/features/facturare/articolResolver'
+import {
+  consumaCreditFamilie,
+  getCreditFamilie,
+  getFamilieClient,
+} from '@/features/recomandari/api'
 import type { FacturaLinie } from '@/features/facturare/types'
 
 type Props = {
@@ -43,6 +48,10 @@ type Props = {
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
+
+// Creditul de recomandare (pe familie) merge pe orice rată de înrolare și pe datoriile
+// de workshop / concurs — nu pe merch, bilete la spectacol sau închirieri (Alex, 28.09).
+const CATEGORII_CREDIT_PROMO = new Set(['Workshop', 'Auditie'])
 
 // Împarte lista de tenders (Cash/Card) în două felii: prima însumând `firstAmount`
 // (înrolări), restul (datorii). Taie ultimul tender la graniță dacă e nevoie.
@@ -89,6 +98,8 @@ export function DatoriiUnificateTab({
   const [card, setCard] = useState('')
   const [useCreditOn, setUseCreditOn] = useState(false)
   const [useCreditAmt, setUseCreditAmt] = useState('')
+  const [usePromoOn, setUsePromoOn] = useState(false)
+  const [usePromoAmt, setUsePromoAmt] = useState('')
   const [integralOn, setIntegralOn] = useState(false)
   const [dataPlatii, setDataPlatii] = useState(defaultData ?? todayIso())
   const [error, setError] = useState<string | null>(null)
@@ -159,6 +170,19 @@ export function DatoriiUnificateTab({
   })
   const credit = creditQ.data ?? 0
 
+  const familieQ = useQuery({
+    queryKey: ['client-familie', clientId],
+    queryFn: () => getFamilieClient(clientId),
+    enabled: Boolean(clientId),
+  })
+  const familieId = familieQ.data ?? null
+  const promoQ = useQuery({
+    queryKey: ['credit-familie', familieId],
+    queryFn: () => getCreditFamilie(familieId!),
+    enabled: Boolean(familieId),
+  })
+  const promoSold = promoQ.data?.sold ?? 0
+
   const curentRows = useMemo(() => inrolariQ.data ?? [], [inrolariQ.data])
   const anteriorRows = useMemo(() => inrolariAntQ.data ?? [], [inrolariAntQ.data])
   // Sursă unică pentru FIFO/totaluri/plată: anterioare + curente (curs distinct ⇒
@@ -196,9 +220,21 @@ export function DatoriiUnificateTab({
     : partial.trim()
       ? Number(partial) || 0
       : total
+  const promoEligibil = round2(
+    totalEnroll +
+      checkedDatRows
+        .filter((r) => CATEGORII_CREDIT_PROMO.has(String(r.categorie)))
+        .reduce((a, r) => a + Number(r.rest ?? 0), 0),
+  )
+  const promoWanted = integralActiv ? 0 : usePromoOn ? Number(usePromoAmt) || 0 : 0
+  const promoApplied = round2(
+    Math.max(Math.min(promoWanted, promoSold, promoEligibil, poolDisplay), 0),
+  )
   const creditWanted = integralActiv ? 0 : useCreditOn ? Number(useCreditAmt) || 0 : 0
-  const creditApplied = round2(Math.min(creditWanted, credit, Math.max(poolDisplay, 0)))
-  const cashPool = round2(Math.max(poolDisplay - creditApplied, 0))
+  const creditApplied = round2(
+    Math.min(creditWanted, credit, Math.max(poolDisplay - promoApplied, 0)),
+  )
+  const cashPool = round2(Math.max(poolDisplay - promoApplied - creditApplied, 0))
 
   const toggleEnroll = (r: VPlatiInrolari) => {
     if (!r.id_enrollment) return
@@ -261,6 +297,8 @@ export function DatoriiUnificateTab({
     setCard('')
     setUseCreditOn(false)
     setUseCreditAmt('')
+    setUsePromoOn(false)
+    setUsePromoAmt('')
     setIntegralOn(false)
     setError(null)
   }
@@ -317,18 +355,62 @@ export function DatoriiUnificateTab({
       }
       const pool = partialNum != null ? partialNum : total
 
-      // Linii pentru factură (FGO): alocarea pool-ului pe itemele bifate, în ordine
+      // Faza 0 — creditul de recomandare al familiei (nu e încasare: scade suma datorată
+      // a rândului). Întâi ratele, apoi datoriile de workshop / concurs.
+      const promoWant = usePromoOn ? Number(usePromoAmt) || 0 : 0
+      const promoE = new Map<string, number>()
+      const promoD = new Map<string, number>()
+      let promoRem = round2(Math.min(promoWant, promoSold, pool))
+      for (const r of checkedEnrollOrdered) {
+        if (promoRem <= 0.004) break
+        const take = round2(Math.min(promoRem, Number(r.rest ?? 0)))
+        if (take <= 0.004) continue
+        promoE.set(String(r.id_enrollment), take)
+        promoRem = round2(promoRem - take)
+      }
+      for (const r of checkedDatRows) {
+        if (promoRem <= 0.004) break
+        if (!CATEGORII_CREDIT_PROMO.has(String(r.categorie))) continue
+        const take = round2(Math.min(promoRem, Number(r.rest ?? 0)))
+        if (take <= 0.004) continue
+        promoD.set(String(r.id), take)
+        promoRem = round2(promoRem - take)
+      }
+      if ((promoE.size || promoD.size) && !familieId) {
+        throw new Error('Cursantul nu are familie — creditul de recomandare nu se poate folosi.')
+      }
+      for (const [id, suma] of promoE) {
+        await consumaCreditFamilie({ familieId: familieId!, suma, enrollmentId: id })
+      }
+      for (const [id, suma] of promoD) {
+        await consumaCreditFamilie({ familieId: familieId!, suma, datorieId: id })
+      }
+      const promoApply = round2(
+        [...promoE.values(), ...promoD.values()].reduce((a, v) => a + v, 0),
+      )
+      const rowsE = checkedEnrollOrdered.map((r) => ({
+        ...r,
+        rest: round2(Number(r.rest ?? 0) - (promoE.get(String(r.id_enrollment)) ?? 0)),
+      }))
+      const rowsD = checkedDatRows.map((r) => ({
+        ...r,
+        rest: round2(Number(r.rest ?? 0) - (promoD.get(String(r.id)) ?? 0)),
+      }))
+      const totE = round2(rowsE.reduce((a, r) => a + Number(r.rest ?? 0), 0))
+      const poolEff = round2(pool - promoApply)
+
+      // Linii pentru factură (FGO): alocarea pool-ului (fără creditul de recomandare) pe itemele bifate, în ordine
       // FIFO (întâi înrolări, apoi datorii), fiecare → { articol derivat, suma alocată }.
       const linii: FacturaLinie[] = []
-      let remLine = pool
-      for (const r of checkedEnrollOrdered) {
+      let remLine = poolEff
+      for (const r of rowsE) {
         if (remLine <= 0.004) break
         const s = round2(Math.min(Number(r.rest ?? 0), remLine))
         if (s <= 0.004) continue
         linii.push({ articol: articolInrolare(r), suma: s })
         remLine = round2(remLine - s)
       }
-      for (const r of checkedDatRows) {
+      for (const r of rowsD) {
         if (remLine <= 0.004) break
         const s = round2(Math.min(Number(r.rest ?? 0), remLine))
         if (s <= 0.004) continue
@@ -336,19 +418,19 @@ export function DatoriiUnificateTab({
         remLine = round2(remLine - s)
       }
 
-      // Împart pool-ul: întâi din credit (dacă activ), apoi Cash/Card. Ambele
+      // Împart poolEff-ul: întâi din credit (dacă activ), apoi Cash/Card. Ambele
       // acoperă întâi înrolările, apoi datoriile one-off.
       const creditUse = useCreditOn ? Number(useCreditAmt) || 0 : 0
-      const creditApply = round2(Math.min(creditUse, credit, pool))
-      const cashAmt = round2(pool - creditApply)
-      const creditEnroll = round2(Math.min(creditApply, totalEnroll))
+      const creditApply = round2(Math.min(creditUse, credit, poolEff))
+      const cashAmt = round2(poolEff - creditApply)
+      const creditEnroll = round2(Math.min(creditApply, totE))
       const creditDat = round2(creditApply - creditEnroll)
 
       // Cât credit alocăm pe fiecare rând bifat (FIFO), reținut pentru a reduce
       // rest-ul trecut motorului Cash/Card.
       const creditByEnroll = new Map<string, number>()
       let remCredE = creditEnroll
-      for (const r of checkedEnrollOrdered) {
+      for (const r of rowsE) {
         if (remCredE <= 0.004) break
         const take = round2(Math.min(remCredE, Number(r.rest ?? 0)))
         if (take <= 0.004) continue
@@ -357,7 +439,7 @@ export function DatoriiUnificateTab({
       }
       const creditByDat = new Map<string, number>()
       let remCredD = creditDat
-      for (const r of checkedDatRows) {
+      for (const r of rowsD) {
         if (remCredD <= 0.004) break
         const take = round2(Math.min(remCredD, Number(r.rest ?? 0)))
         if (take <= 0.004) continue
@@ -368,7 +450,7 @@ export function DatoriiUnificateTab({
       // Faza 1 — alocă creditul pe fiecare țintă (RPC-ul acceptă o țintă/apel).
       // Doar mută bani existenți: dacă Cash-ul de mai jos eșuează, ce s-a alocat
       // aici rămâne valid (a redus datoria real).
-      for (const r of checkedEnrollOrdered) {
+      for (const r of rowsE) {
         const amt = creditByEnroll.get(String(r.id_enrollment)) ?? 0
         if (amt > 0.004) {
           await useClientCredit({
@@ -380,7 +462,7 @@ export function DatoriiUnificateTab({
           })
         }
       }
-      for (const r of checkedDatRows) {
+      for (const r of rowsD) {
         const amt = creditByDat.get(String(r.id)) ?? 0
         if (amt > 0.004) {
           await useClientCredit({
@@ -396,15 +478,15 @@ export function DatoriiUnificateTab({
       // Faza 2 — Cash/Card pe restul, cu rest-ul redus post-credit.
       if (cashAmt > 0.004) {
         const tenders = resolveTenders({ metoda, total: cashAmt, cash, card })
-        const enrollmentPay = round2(Math.min(cashAmt, round2(totalEnroll - creditEnroll)))
+        const enrollmentPay = round2(Math.min(cashAmt, round2(totE - creditEnroll)))
         const datoriiPay = round2(cashAmt - enrollmentPay)
         const [enrollTenders, datTenders] = splitTenders(tenders, enrollmentPay)
 
-        if (enrollmentPay > 0.004 && checkedEnrollOrdered.length) {
+        if (enrollmentPay > 0.004 && rowsE.length) {
           await registerPlataFifo({
             clientId,
-            enrollmentIds: checkedEnrollOrdered.map((r) => String(r.id_enrollment)),
-            remaining: checkedEnrollOrdered.map((r) =>
+            enrollmentIds: rowsE.map((r) => String(r.id_enrollment)),
+            remaining: rowsE.map((r) =>
               round2(Number(r.rest ?? 0) - (creditByEnroll.get(String(r.id_enrollment)) ?? 0)),
             ),
             partialAmount: enrollmentPay,
@@ -415,11 +497,11 @@ export function DatoriiUnificateTab({
           })
         }
 
-        if (datoriiPay > 0.004 && checkedDatRows.length) {
+        if (datoriiPay > 0.004 && rowsD.length) {
           try {
             await registerPlataDatoriiFifo({
               clientId,
-              datorii: checkedDatRows.map((r) => ({
+              datorii: rowsD.map((r) => ({
                 id: String(r.id),
                 rest: round2(Number(r.rest ?? 0) - (creditByDat.get(String(r.id)) ?? 0)),
                 categorie: (r.categorie ?? 'Taxa') as Enums<'categorie_incasare'>,
@@ -450,6 +532,7 @@ export function DatoriiUnificateTab({
       void queryClient.invalidateQueries({ queryKey: ['plati'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['client-credit'] })
+      void queryClient.invalidateQueries({ queryKey: ['credit-familie'] })
       void queryClient.invalidateQueries({ queryKey: ['surplus-targets'] })
       void queryClient.invalidateQueries({ queryKey: ['plati-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['client-inrolari-sezon'] })
@@ -732,6 +815,44 @@ export function DatoriiUnificateTab({
             )}
           </div>
 
+          {/* Creditul de recomandare al familiei — nu e încasare, scade suma datorată */}
+          {promoSold > 0 && (
+            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+              <label className="flex items-center gap-2 font-medium">
+                <input
+                  type="checkbox"
+                  disabled={integralActiv}
+                  className="h-4 w-4 rounded accent-amber-600 disabled:opacity-40"
+                  checked={usePromoOn}
+                  onChange={(e) => {
+                    setUsePromoOn(e.target.checked)
+                    if (e.target.checked && !usePromoAmt) {
+                      setUsePromoAmt(String(round2(Math.min(promoSold, promoEligibil || promoSold))))
+                    }
+                  }}
+                />
+                🎁 Folosește creditul de recomandare al familiei — disponibil {formatRON(promoSold)}
+              </label>
+              {usePromoOn && (
+                <div className="flex flex-wrap items-center gap-3 pl-6">
+                  <div className="w-40">
+                    <TextInput
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={usePromoAmt}
+                      onChange={(e) => setUsePromoAmt(e.target.value)}
+                    />
+                  </div>
+                  <span className="text-xs text-amber-800">
+                    Se acoperă {formatRON(promoApplied)} din credit (nu intră în încasări). Merge pe
+                    abonament, OPEN class, ședințe, workshop și concurs — nu pe merch, bilete sau închirieri.
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Credit în favoarea clientului — acoperă (parțial/total) selecția */}
           {credit > 0 && (
             <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900">
@@ -824,6 +945,11 @@ export function DatoriiUnificateTab({
               Sezon integral, reducere aplicată: −{formatRON(planIntegral.discount)}
             </span>
           )}
+          {promoApplied > 0.004 && (
+            <span className="text-xs text-amber-800">
+              Din creditul de recomandare: {formatRON(promoApplied)}
+            </span>
+          )}
           {creditApplied > 0.004 && (
             <span className="text-xs text-blue-800">
               Din credit: {formatRON(creditApplied)} · De încasat: {formatRON(cashPool)}
@@ -835,7 +961,10 @@ export function DatoriiUnificateTab({
         </Button>
         <Button
           onClick={() => submit.mutate()}
-          disabled={submit.isPending || (creditApplied <= 0.004 && cashPool <= 0.004)}
+          disabled={
+            submit.isPending ||
+            (promoApplied <= 0.004 && creditApplied <= 0.004 && cashPool <= 0.004)
+          }
         >
           {submit.isPending
             ? 'Se înregistrează…'

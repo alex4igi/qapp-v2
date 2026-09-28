@@ -133,3 +133,35 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - Orice numărătoare sau listă de contact nouă trebuie să ignore clienții cu `anonimizat_la` (n-au telefon/email oricum).
 - Cererile „ștergeți-mi datele" trec prin `anonimizeaza_client(id, motiv)` (owner/admin). Fișierele (PDF-uri de contract,
   documente, link-uri Drive) nu se pot șterge din SQL: ajung în `gdpr_fisiere_de_sters` și se șterg separat.
+
+## 10. Recomandări (campania toamna 2026)
+
+Decizii Alex, 28 sept. 2026. Brief: `handoff/2026-09-27-campanie-recomandari-varsity-teens.md`; cod: migrația
+`20260928140000_campanie_recomandari.sql`, `src/features/recomandari/`, `/recomandari`.
+
+- **Recompensa:** 60 lei credit pe familia care invită, pentru fiecare prieten care face ora gratuită, se înscrie și
+  **achită integral prima lună întreagă**. Fără plafon pe familie; un invitat aduce o singură recompensă. O plată
+  parțială nu aduce nimic, iar recompensa nu se proratează.
+- **La invitați, pro-rata trece în luna a doua:** prima rată e rata lunară întreagă, luna a doua are suma prorată a
+  lunii de start (15 oct. → 280 lei în octombrie, 98 în noiembrie). Doar la înrolările unui client cu recomandare
+  vie (`client_are_recomandare`); restul înscrierilor păstrează prima rată prorată. Dacă invitatul pleacă după
+  prima lună, rata întreagă rămâne a școlii.
+- **Cine poate fi invitat:** oricine **nu e înscris în sezonul campaniei** (nicio înrolare în sezon făcută înainte de
+  recomandare), deci și un fost cursant. Nu din aceeași familie cu cel care invită.
+- **Termen:** ziua dinaintea primei vacanțe a sezonului (2026: **27 octombrie**) — proba, înscrierea și plata primei
+  luni, toate până atunci. Nu există prelungire în noiembrie. `campanii_recomandare.data_limita` e sursa unică:
+  după ea, site-ul ascunde `/recomandari` și câmpul „Cine te-a invitat?", iar intake-ul nu mai înregistrează nimic.
+- **Atribuirea:** invitatul declară un nume; recepția confirmă cursantul (→ familia lui) în fișa leadului, înainte de
+  proba gratuită. Fără familie confirmată creditul nu se acordă (starea `eligibil` = a plătit, lipsește confirmarea).
+  Proba contează din `programari_leads.prezenta = 'prezent'` sau dintr-o prezență în roster.
+- **Creditul NU e încasare** (nu apare în `incasari`, în FGO, în bonusuri): se scade din suma datorată a rândului pe
+  care e folosit (`enrollments.credit_recomandare`, `datorii.credit_recomandare`), cu urmă în `credit_familie_miscari`
+  și `audit_log`. Orice cod care rescrie `enrollments.suma` o scrie brută din preț — triggerul
+  `trg_enrollment_pastreaza_credit` scade creditul la loc; dacă rata ajunge sub credit, diferența se întoarce familiei.
+  ⚠️ Un cod care ar scrie `suma = suma` (valoarea netă) ar scădea creditul de două ori.
+- **Pe ce se folosește:** orice rată de înrolare (abonament, OPEN class, ședințe) și datoriile `Workshop` / `Auditie`.
+  Nu pe merch, bilete la spectacol, închirieri. Workshopurile plătite direct prin bilet (fără rând în `datorii`) nu pot
+  primi încă credit.
+- **Anulare:** dacă dispar banii de pe rata care a calificat (ștergere, restituire), creditul nefolosit se anulează
+  singur; cel deja folosit rămâne folosit (nu se cere înapoi) și apare în raport ca „consumat înainte de anulare".
+  Plecarea ulterioară a invitatului nu anulează nimic. Managerul poate anula manual, cu motiv.

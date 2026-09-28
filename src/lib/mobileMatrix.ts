@@ -29,6 +29,7 @@ export const MOBILE_ROUTES = [
   '/leads',
   '/datorii',
   '/absente-21z',
+  '/recomandari',
   '/eveniment',
   '/situatie-zilnica',
   // Management: doar cifrele (pagina își ascunde singură graficele pe telefon)

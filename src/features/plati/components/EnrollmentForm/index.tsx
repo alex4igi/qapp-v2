@@ -64,6 +64,7 @@ import {
 } from './helpers'
 import { PriceSummary, type MotivPolitica } from './PriceSummary'
 import { RecurentPreview } from './RecurentPreview'
+import { clientAreRecomandare } from '@/features/recomandari/api'
 
 type Props = {
   open: boolean
@@ -451,6 +452,14 @@ export function EnrollmentForm({
 
   // Același queryKey ca în EligibilityAlerts → react-query servește din cache,
   // fără request în plus. Recepția trebuie să poată spune DE CE se aplică −10%.
+  const recomandareQ = useQuery({
+    queryKey: ['client-are-recomandare', clientId],
+    queryFn: () => clientAreRecomandare(clientId),
+    enabled: Boolean(clientId) && tipInrolare === 'recurent-grupa' && tipPlata === 'Per luna',
+  })
+  const prorataInLunaDoi =
+    recomandareQ.data === true && tipInrolare === 'recurent-grupa' && tipPlata === 'Per luna'
+
   const eligibilityQ = useQuery({
     queryKey: ['client-eligibility', clientId],
     queryFn: () => getClientEligibilityContext(clientId ?? ''),
@@ -560,6 +569,7 @@ export function EnrollmentForm({
         forceReinrolare: isAdmin ? forceReinrolare : false,
         voucherId: voucherId || null,
         esteReinscriere: aplicPromo,
+        prorataInLunaDoi,
       })
     },
     onSuccess: async (result) => {
@@ -1019,6 +1029,7 @@ export function EnrollmentForm({
               preview={previewRecurent}
               cursSelectat={cursSelectat}
               blockantPretLipsa={blockantPretLipsa}
+              prorataInLunaDoi={prorataInLunaDoi}
             />
           )}
 

@@ -82,6 +82,7 @@ const DatoriiPage = lazy(() =>
   import('@/features/datorii/DatoriiPage').then((m) => ({ default: m.DatoriiPage })),
 )
 const Absente21zPage = lazy(() => import('@/features/absente21z/Absente21zPage'))
+const RecomandariPage = lazy(() => import('@/features/recomandari/RecomandariPage'))
 const GrileKpiPage = lazy(() => import('@/features/grile-kpi/GrileKpiPage'))
 const GrilaEditorPage = lazy(() => import('@/features/grile-kpi/GrilaEditorPage'))
 const RaportKpiPage = lazy(() => import('@/features/raport-kpi/RaportKpiPage'))
@@ -285,6 +286,7 @@ function App() {
               {/* /recuperare a fost absorbit de hub-ul /datorii */}
               <Route path="recuperare" element={<Navigate to="/datorii" replace />} />
               <Route path="absente-21z" element={<Absente21zPage />} />
+              <Route path="recomandari" element={<RecomandariPage />} />
               <Route path="sms" element={<NotificariSmsPage />} />
               <Route path="facturare" element={<FacturarePage />} />
               <Route path="feedback" element={<FeedbackListPage />} />

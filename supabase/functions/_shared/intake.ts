@@ -436,3 +436,41 @@ export async function insertLead(
   }
   return { created: true, leadId: data.id }
 }
+
+// Campania de recomandări în curs (null dacă nu e niciuna). Termenul e ziua dinaintea
+// primei vacanțe — după el câmpul „Cine te-a invitat?" dispare de pe site și nu se mai
+// înregistrează nimic, chiar dacă un formular vechi din cache îl trimite.
+export async function campanieRecomandareActiva(
+  supabase: SupabaseClient,
+): Promise<{ id: string; nume: string; data_limita: string; recompensa_lei: number } | null> {
+  const { data, error } = await supabase.rpc('campanie_recomandare_activa')
+  if (error) {
+    console.error('[recomandare] campania activă:', error.message)
+    return null
+  }
+  const c = data as { id: string | null; nume: string; data_limita: string; recompensa_lei: number } | null
+  return c?.id ? { id: c.id, nume: c.nume, data_limita: c.data_limita, recompensa_lei: c.recompensa_lei } : null
+}
+
+// Declarația „Cine te-a invitat?" se păstrează și când telefonul era deja în CRM —
+// insertLead nu atinge leadul existent, deci recomandarea stă în registrul ei.
+// Prima declarație rămâne (atribuirea contestată o decide recepția).
+export async function inregistreazaRecomandare(
+  supabase: SupabaseClient,
+  leadId: string,
+  numeDeclarat: string,
+): Promise<boolean> {
+  const campanie = await campanieRecomandareActiva(supabase)
+  if (!campanie) return false
+  const { error } = await supabase
+    .from('recomandari')
+    .upsert(
+      { campanie_id: campanie.id, lead_id: leadId, nume_declarat: numeDeclarat, canal: 'site' },
+      { onConflict: 'campanie_id,lead_id', ignoreDuplicates: true },
+    )
+  if (error) {
+    console.error('[recomandare] insert eșuat:', error.message)
+    return false
+  }
+  return true
+}

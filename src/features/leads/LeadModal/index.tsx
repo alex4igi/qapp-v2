@@ -61,6 +61,7 @@ import { ContactatSection } from './sections/ContactatSection'
 import { PierdutSection } from './sections/PierdutSection'
 import { DateContactSection, type DupHit } from './sections/DateContactSection'
 import { ProfilInteresSection } from './sections/ProfilInteresSection'
+import { RecomandareLeadSection } from '@/features/recomandari/components/RecomandareLeadSection'
 import { PasUrmatorSection } from './sections/PasUrmatorSection'
 
 type Props = {
@@ -692,6 +693,14 @@ export function LeadModal({
                     onStartConvert={() => setConvertFlow(true)}
                     readOnly={!canEditLeads(role)}
                   />
+
+                  {isEdit && lead && (
+                    <RecomandareLeadSection
+                      leadId={lead.id}
+                      canEdit={canEditLeads(role)}
+                      canCancel={isManagerOrHigher(role)}
+                    />
+                  )}
 
                   {form.status === 'convertit' && (
                     <ConvertitSection

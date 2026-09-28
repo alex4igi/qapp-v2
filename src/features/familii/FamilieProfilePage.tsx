@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { CreditRecomandareBanner } from '@/features/recomandari/components/CreditRecomandareBanner'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
@@ -223,6 +224,7 @@ export function FamilieProfilePage() {
         />
 
         <div className="mt-4">
+          {tab === 'inrolari' && <CreditRecomandareBanner familieId={familie.id} />}
           {tab === 'inrolari' && (
             <InrolariTab
               loading={inrolariQuery.isLoading}

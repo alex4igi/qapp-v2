@@ -17,6 +17,7 @@ import { EnrollmentForm } from '@/features/plati/EnrollmentForm'
 import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { PriceAdjustmentModal } from '@/features/plati/PriceAdjustmentModal'
 import { UseCreditModal } from '@/features/plati/UseCreditModal'
+import { CreditRecomandareBanner } from '@/features/recomandari/components/CreditRecomandareBanner'
 import { MoveEnrollmentModal } from '@/features/plati/MoveEnrollmentModal'
 import { MutaIncasareModal } from '@/features/plati/modals/MutaIncasareModal'
 import { CorecteazaDataModal } from '@/features/plati/CorecteazaDataModal'
@@ -439,6 +440,9 @@ export function ClientProfilePage() {
 
           {isMobile && tabCurent === 'fisa' && sidebarEl}
 
+          {!teacherMode && tabCurent === 'inrolari' && (
+            <CreditRecomandareBanner familieId={client.familia} />
+          )}
           {!teacherMode && tabCurent === 'inrolari' && (
             <InrolariSezonTab
               loading={inrolariSezonQuery.isLoading}
