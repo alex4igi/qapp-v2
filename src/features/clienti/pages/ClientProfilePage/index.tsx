@@ -26,7 +26,7 @@ import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentS
 import { ConvertSedinteAbonamentModal } from '@/features/plati/ConvertSedinteAbonamentModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { isAdminOrHigher, isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import { isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist, type StareItem } from '@/lib/checklist'
 import {
@@ -391,7 +391,7 @@ export function ClientProfilePage() {
                 Contract
               </Button>
             )}
-            {isAdminOrHigher(role) && !isMobile && !client.anonimizat_la && (
+            {!teacherMode && isFrontDeskOrHigher(role) && !isMobile && !client.anonimizat_la && (
               <Button variant="ghost" onClick={() => setGdprOpen(true)}>
                 GDPR
               </Button>
