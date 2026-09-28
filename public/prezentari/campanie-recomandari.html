@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qapp — Campania de recomandări · Quasar Dance</title>
+<style>
+  :root{
+    --galben:#FFD600; --negru:#111; --gri:#6b7280; --gri2:#9aa0aa;
+    --linie:#2a2a2a; --bg:#0e0e0e; --card:#1a1a1a; --accent:#FFD600;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:24px}
+  html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased;line-height:1.55}
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--galben);z-index:50}
+
+  .layout{max-width:1180px;margin:0 auto;padding:54px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:44px;align-items:start}
+
+  nav.toc{position:sticky;top:30px;max-height:calc(100vh - 60px);overflow:auto;border-right:1px solid var(--linie);padding-right:18px}
+  nav.toc .logo{font-weight:900;letter-spacing:4px;color:var(--accent);font-size:12px;margin-bottom:18px}
+  nav.toc .grp{color:var(--gri2);font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin:18px 0 8px}
+  nav.toc a{display:block;color:#cfcfcf;text-decoration:none;font-size:13.5px;padding:5px 10px;border-radius:8px;border-left:2px solid transparent}
+  nav.toc a:hover{background:#1c1c1c;color:#fff;border-left-color:var(--accent)}
+
+  main{min-width:0}
+  .hero{margin-bottom:30px}
+  .hero .logo{font-weight:900;letter-spacing:5px;color:var(--accent);font-size:13px;margin-bottom:18px}
+  h1{font-size:clamp(30px,4.5vw,48px);line-height:1.05;margin:0 0 14px;font-weight:800}
+  h1 span{color:var(--accent)}
+  .hero .sub{color:var(--gri2);font-size:clamp(15px,1.7vw,19px);max-width:62ch}
+
+  section.block{scroll-margin-top:24px;background:var(--card);border:1px solid var(--linie);border-radius:18px;padding:26px 28px;margin:22px 0}
+  section.block > h2{font-size:clamp(21px,2.6vw,30px);margin:0 0 6px;font-weight:800;display:flex;align-items:center;gap:12px}
+  section.block > h2 .ic{font-size:1.05em}
+  .eyebrow{color:var(--accent);font-weight:800;letter-spacing:2px;font-size:11.5px;text-transform:uppercase;margin-bottom:14px}
+  .intro{color:#d6d6d6;font-size:16px;margin:0 0 14px;max-width:78ch}
+
+  .stat{border-top:1px solid #262626;padding:15px 0 4px}
+  .stat:first-of-type{border-top:none}
+  .stat h3{font-size:16.5px;font-weight:800;margin:0 0 8px;color:#fff;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .stat .pair{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font-size:14.8px}
+  .stat .pair .k{color:var(--accent);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;padding-top:2px}
+  .stat .pair .v{color:#d8d8d8}
+  .stat .v b{color:#fff}
+
+  .note{margin-top:18px;background:#1c1a0e;border:1px dashed #6b5e18;border-radius:12px;padding:13px 17px;color:#f0e6b0;font-size:14.5px;max-width:82ch}
+  .note .lbl{display:block;color:var(--accent);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .note b{color:var(--accent)}
+  .lock{background:#241312;border-color:#6b2c28;color:#ffd9d4}
+  .lock .lbl{color:#ff9b8f}
+  .lock b{color:#ffb4a8}
+
+  code{background:#222;border:1px solid var(--linie);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#ffe98a}
+  a.inl{color:var(--accent);text-decoration:none}
+  a.inl:hover{text-decoration:underline}
+  .tagm{font-size:11px;font-weight:800;background:#10271b;color:#5ee0a0;border:1px solid #1f5135;padding:2px 9px;border-radius:999px;letter-spacing:.4px}
+  .tagn{font-size:11px;font-weight:800;background:#2a2410;color:#ffd600;border:1px solid #6b5e18;padding:2px 9px;border-radius:999px;letter-spacing:.4px}
+
+  footer{text-align:center;color:var(--gri);font-size:13px;margin-top:50px}
+  footer b{color:var(--gri2)}
+  .toplink{display:block;text-align:right;margin-top:14px;color:var(--gri);font-size:12.5px;text-decoration:none}
+  .toplink:hover{color:var(--accent)}
+
+  @media(max-width:880px){
+    .layout{grid-template-columns:1fr;gap:0}
+    nav.toc{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--linie);padding:0 0 18px;margin-bottom:28px}
+    nav.toc .cols{columns:2;gap:18px}
+    .stat .pair{grid-template-columns:1fr}
+    .stat .pair .k{padding-top:8px}
+  }
+
+  ol.steps{margin:6px 0 0;padding:0;list-style:none;counter-reset:s}
+  ol.steps li{counter-increment:s;position:relative;padding:12px 0 12px 46px;border-top:1px solid #262626;color:#d8d8d8;font-size:15px}
+  ol.steps li:first-child{border-top:none}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:11px;width:30px;height:30px;border-radius:50%;background:var(--galben);color:#111;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:14px}
+  ol.steps li b{color:#fff}
+  .quote{background:#141414;border-left:4px solid var(--galben);border-radius:10px;padding:14px 18px;color:#f3f3f3;font-size:16px;font-style:italic;margin:10px 0}
+  table.st{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:8px}
+  table.st td{border-top:1px solid #262626;padding:10px 8px;vertical-align:top;color:#d8d8d8}
+  table.st td:first-child{white-space:nowrap;font-weight:800;color:#fff;width:1%}
+  ul.big{margin:6px 0 0;padding-left:20px;color:#d8d8d8;font-size:15px}
+  ul.big li{margin:6px 0}
+  ul.big b{color:#fff}
+</style>
+</head>
+<body>
+<a href="/" style="position:fixed;top:14px;right:14px;z-index:100;display:inline-flex;align-items:center;gap:7px;background:#FFD600;color:#111;font-weight:800;font-size:13.5px;text-decoration:none;padding:9px 15px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4)">← Înapoi în aplicație</a>
+<span id="top"></span>
+<div class="layout">
+
+  <nav class="toc">
+    <div class="logo">QUASAR DANCE</div>
+    <div class="cols">
+      <div class="grp">Campania</div>
+      <a href="#pe-scurt">Pe scurt</a>
+      <a href="#reguli">Regulile</a>
+      <div class="grp">Instructori</div>
+      <a href="#instructor">La curs</a>
+      <div class="grp">Recepție</div>
+      <a href="#receptie">Pas cu pas</a>
+      <a href="#stari">Stările recomandării</a>
+      <a href="#credit">Folosirea creditului</a>
+      <a href="#cazuri">Cazuri speciale</a>
+      <div class="grp">Manageri</div>
+      <a href="#manager">Raport și anulare</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div class="logo">QUASAR DANCE · CAMPANIE</div>
+      <h1>Campania de <span>recomandări</span></h1>
+      <p class="sub">Toamna 2026. Ce spune instructorul la curs, ce face recepția în aplicație și ce face aplicația singură. Valabilă până pe <b>27 octombrie 2026</b>.</p>
+    </div>
+
+    <section class="block" id="pe-scurt">
+      <div class="eyebrow">Pe scurt</div>
+      <h2><span class="ic">🎟️</span> Cum funcționează</h2>
+      <p class="intro">Cursanții primesc bilete pe care le dau prietenilor. Prietenul vine la o <b>oră gratuită</b>. Dacă se înscrie și plătește <b>prima lună întreagă</b>, familia care l-a invitat primește <b>60 lei credit</b> în contul ei Quasar.</p>
+      <ol class="steps">
+        <li><b>Instructorul</b> anunță campania și împarte biletele. Cursantul își scrie numele pe bilet („M-a invitat: ___”).</li>
+        <li><b>Prietenul</b> cere ora gratuită: scanează QR-ul (pagina quasardance.ro/recomandari), sună sau vine la recepție. Spune cine l-a invitat.</li>
+        <li><b>Recepția</b> confirmă în aplicație cine l-a invitat (cursantul → familia lui), <b>înainte de ora gratuită</b>, și programează proba ca de obicei.</li>
+        <li><b>Prietenul</b> vine la probă, se înscrie și plătește prima lună întreagă până pe 27 octombrie.</li>
+        <li><b>Aplicația</b> dă singură cei 60 lei familiei care l-a invitat. Recepția nu apasă nimic.</li>
+      </ol>
+    </section>
+
+    <section class="block" id="reguli">
+      <div class="eyebrow">Regulile</div>
+      <h2><span class="ic">📋</span> Ce contează și ce nu</h2>
+      <div class="stat"><h3>Cine primește</h3><div class="pair"><div class="k">Credit</div><div class="v"><b>Familia care invită</b>, 60 lei pentru fiecare prieten înscris și achitat. Fără limită de prieteni. Nu e o reducere pentru prieten.</div></div></div>
+      <div class="stat"><h3>Cine poate fi invitat</h3><div class="pair"><div class="k">Invitat</div><div class="v">Oricine <b>nu e înscris în sezonul acesta</b>, inclusiv un fost cursant care revine. Nu din aceeași familie cu cel care invită. Poate alege <b>orice grupă</b>.</div></div></div>
+      <div class="stat"><h3>Când se dă creditul</h3><div class="pair"><div class="k">Condiție</div><div class="v">Ora gratuită făcută (bifată „A venit” sau prezența în roster) + înscriere + <b>prima lună plătită integral</b>. Plată parțială = nimic încă. Creditul e mereu 60 lei întregi, nu se proratează.</div></div></div>
+      <div class="stat"><h3>Prima lună</h3><div class="pair"><div class="k">La invitați</div><div class="v">Prima lună se plătește <b>întreagă</b>, chiar dacă începe la mijlocul lunii; diferența se scade din luna a doua. Ex.: începe pe 15 oct. → 280 lei în octombrie, 98 lei în noiembrie. Aplicația calculează singură.</div></div></div>
+      <div class="stat"><h3>Termen</h3><div class="pair"><div class="k">27.10.2026</div><div class="v">Proba, înscrierea și plata primei luni, <b>toate până pe 27 octombrie</b> (înainte de vacanța de toamnă). Nu continuă în noiembrie. Din 28 octombrie pagina de pe site și câmpul „Cine te-a invitat?” dispar singure.</div></div></div>
+      <div class="stat"><h3>Pe ce se folosește creditul</h3><div class="pair"><div class="k">Da / Nu</div><div class="v"><b>Da:</b> abonament, OPEN class, ședințe (ex. K-pop), workshopuri, concursuri — pentru orice membru al familiei. <b>Nu:</b> merch, bilete la spectacol, închirieri.</div></div></div>
+      <div class="note"><span class="lbl">Important</span>Creditul <b>nu e încasare</b>: nu apare în încasări, nici pe factură, nici în bonusuri. Rata pe care e folosit apare doar mai mică.</div>
+    </section>
+
+    <section class="block" id="instructor">
+      <div class="eyebrow">Pentru instructori</div>
+      <h2><span class="ic">🕺</span> La curs</h2>
+      <ol class="steps">
+        <li><b>Anunță campania</b> la final de oră (20 de secunde). Poți citi textul de mai jos.</li>
+        <li><b>Dă fiecărui cursant o coală cu bilete</b>. Biletele sunt la fel pentru toată lumea — nu au cod pe copil.</li>
+        <li><b>Spune-le să-și scrie numele</b> pe fiecare bilet, la „M-a invitat”. Așa știm a cui familie primește creditul.</li>
+        <li>Când vine un <b>invitat la ora gratuită</b>, îl bifezi în roster ca pe orice probă. Fără prezență, creditul nu se dă.</li>
+      </ol>
+      <div class="quote">„Avem o campanie pentru voi: fiecare primește bilete pentru prieteni. Prietenul vostru vine la o oră gratuită, iar dacă se înscrie, familia voastră primește 60 lei credit, pentru fiecare prieten. Scrieți-vă numele pe bilet ca să știm că e invitatul vostru. E valabil până pe 27 octombrie.”</div>
+      <div class="note"><span class="lbl">Dacă te întreabă</span>„Trebuie să vină în grupa mea?” — <b>Nu</b>, poate alege orice grupă. · „Primește prietenul reducere?” — <b>Nu</b>, prietenul are ora gratuită; creditul e pentru familia care invită. · Restul întrebărilor → recepția sau pagina <b>quasardance.ro/recomandari</b>.</div>
+      <div class="note"><span class="lbl">Accent</span>Campania se anunță la <b>toate grupele</b>, cu prioritate la grupele cu puțini cursanți, mai ales <b>Teens și Varsity</b>.</div>
+    </section>
+
+    <section class="block" id="receptie">
+      <div class="eyebrow">Pentru recepție</div>
+      <h2><span class="ic">🧾</span> Pas cu pas în aplicație</h2>
+      <ol class="steps">
+        <li><b>Cererea vine de pe site</b> (a scanat QR-ul): apare automat în <b>Clienți → Recomandări</b>, tab „De confirmat”, cu numele pe care l-a scris („A declarat: …”). Leadul e și în Kanban, ca orice lead nou.</li>
+        <li><b>Cererea vine la telefon sau direct</b>: întreabă <b>„Cine te-a invitat?”</b>. Creezi leadul ca de obicei (+ Lead, salvezi), apoi în fișa leadului, secțiunea galbenă <b>Recomandare</b> → „Adaugă recomandare”, alegi canalul (Telefon / Direct la recepție).</li>
+        <li><b>Confirmă cine l-a invitat</b>: în secțiunea Recomandare → „Confirmă cine l-a invitat” → cauți cursantul după nume sau telefon → Salvează. Familia apare singură. Fă asta <b>înainte de ora gratuită</b>. Dacă numele nu e clar (două Marii la Teens), întreabă invitatul sau familia; în caz de dispută decide managerul.</li>
+        <li><b>Programează ora gratuită</b> ca la orice lead (Programat → dată + grupă). După probă: „A venit” (sau instructorul bifează prezența în roster).</li>
+        <li><b>Înscrierea</b>: conversia și înrolarea ca de obicei. În formularul de înrolare apare mesajul 🎁 <b>„Invitat prin recomandare: prima rată e întreagă…”</b> — aplicația a calculat deja ratele, nu modifici nimic.</li>
+        <li><b>Plata</b>: încasezi prima lună întreagă ca de obicei, <b>până pe 27 octombrie</b>. În momentul în care rata e achitată integral, aplicația dă cei 60 lei familiei care a invitat. În Recomandări, starea devine „Credit acordat”.</li>
+      </ol>
+      <div class="note"><span class="lbl">De reținut</span>Recepția <b>nu acordă</b> creditul manual și nu face încasări „de 60 lei”. Singurul lucru de făcut este confirmarea familiei — restul face aplicația.</div>
+    </section>
+
+    <section class="block" id="stari">
+      <div class="eyebrow">Recomandări → stări</div>
+      <h2><span class="ic">🚦</span> Ce înseamnă fiecare stare</h2>
+      <table class="st">
+        <tr><td>De verificat</td><td>A declarat cine l-a invitat, dar familia nu e confirmată. <b>Confirm-o înainte de probă.</b></td></tr>
+        <tr><td>Familie confirmată</td><td>Știm familia. Urmează ora gratuită.</td></tr>
+        <tr><td>A făcut proba</td><td>A venit la ora gratuită (bifat „A venit” sau prezent în roster).</td></tr>
+        <tr><td>Înscris, neachitat</td><td>Are înrolare, prima lună nu e plătită integral încă.</td></tr>
+        <tr><td>Achitat — familie neconfirmată</td><td>A plătit, dar lipsește confirmarea familiei sau prezența la probă. <b>Rezolvă și creditul se dă imediat.</b></td></tr>
+        <tr><td>Credit acordat</td><td>Familia a primit cei 60 lei. Gata.</td></tr>
+        <tr><td>Anulată</td><td>Anulată de manager sau pentru că plata invitatului a fost ștearsă. Motivul apare dedesubt.</td></tr>
+      </table>
+    </section>
+
+    <section class="block" id="credit">
+      <div class="eyebrow">Plată nouă</div>
+      <h2><span class="ic">🎁</span> Folosirea creditului</h2>
+      <ol class="steps">
+        <li>În <b>fișa clientului</b> (tab Înrolări) și în <b>fișa familiei</b> apare banda „Credit de recomandare al familiei: X lei”, cu istoricul (acordat / folosit).</li>
+        <li>La plată: <b>Plată nouă</b> → alegi cursantul (orice membru al familiei) → bifezi ce plătește → bifa galbenă <b>„🎁 Folosește creditul de recomandare al familiei”</b> → suma (implicit tot creditul, până la cât e de plată).</li>
+        <li>Restul se încasează normal (Cash / Card…). Pe factură și în încasări apare <b>doar restul</b>.</li>
+      </ol>
+      <div class="note"><span class="lbl">Merge / nu merge</span><b>Merge</b> pe rate de abonament, OPEN class, ședințe și pe workshopurile / concursurile trecute ca datorie. <b>Nu merge</b> pe merch, bilete la spectacol, închirieri. Workshopurile plătite direct pe bilet nu pot primi încă credit.</div>
+    </section>
+
+    <section class="block" id="cazuri">
+      <div class="eyebrow">Cazuri speciale</div>
+      <h2><span class="ic">🧩</span> Ce faci când…</h2>
+      <ul class="big">
+        <li><b>Telefonul e deja în aplicație</b> (a mai fost lead): nu se creează lead nou, dar recomandarea apare oricum în „De confirmat”, legată de leadul existent. Scoate leadul din Nurture / Pierdut dacă e cazul.</li>
+        <li><b>Invitatul e deja înscris în sezonul acesta</b>: nu se califică (a fost deja client în sezon). Aplicația nu dă creditul.</li>
+        <li><b>E din aceeași familie</b> (frate, soră): nu se califică. Aplicația refuză confirmarea sau, dacă familia se leagă abia la înscriere, nu dă creditul.</li>
+        <li><b>A plătit doar o parte din prima lună</b>: creditul vine când restul e achitat, dacă asta se întâmplă până pe 27 octombrie.</li>
+        <li><b>Pleacă după prima lună</b>: prima lună plătită rămâne a școlii, creditul familiei rămâne dat.</li>
+        <li><b>Plata invitatului se șterge sau se restituie</b>: creditul se anulează singur, dacă familia nu l-a folosit; dacă l-a folosit deja, rămâne folosit și managerul vede un semnal în raport.</li>
+        <li><b>Vine după 27 octombrie</b> cu bilet: face ora gratuită ca orice lead nou, dar nu mai e în campanie (secțiunea Recomandare nu mai apare).</li>
+      </ul>
+    </section>
+
+    <section class="block" id="manager">
+      <div class="eyebrow">Pentru manageri</div>
+      <h2><span class="ic">📊</span> Raport și anulare</h2>
+      <ul class="big">
+        <li><b>Clienți → Recomandări</b>: câte recomandări, câte de confirmat, câți lei acordați. Tab „Toate”: canal (site / telefon / recepție), cine a invitat și din ce grupă, invitat nou sau fost cursant, grupa aleasă, proba, prima plată și urmărirea pe <b>două luni</b> (prezențe și plăți în noiembrie și decembrie).</li>
+        <li><b>Anulare</b> (manager+): în fișa leadului → secțiunea Recomandare → „Anulează”, cu motiv obligatoriu (ex. atribuire greșită, recomandare între aceleași persoane). Creditul nefolosit se retrage; totul rămâne în jurnal.</li>
+        <li><b>Dispute</b> („eu l-am invitat, nu ea”): contează prima recomandare documentată; managerul decide cazurile neclare.</li>
+      </ul>
+    </section>
+
+    <a class="toplink" href="#top">↑ sus</a>
+    <footer>Campania de recomandări · toamna 2026 · <b>Quasar Dance</b></footer>
+  </main>
+</div>
+</body>
+</html>
