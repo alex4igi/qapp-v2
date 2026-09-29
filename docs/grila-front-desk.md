@@ -59,7 +59,7 @@ instructori. Se plătește în cele 10 luni de sezon.
 
 | KPI | Ce măsoară | Sub standard | În standard | Peste standard |
 |---|---|---|---|---|
-| **K1** Încasare la termen | până în ziua 20 a lunii | < 70% → 0 | 70–76% → **100** | > 76% → **240** |
+| **K1** Încasare la termen | până la scadență + 5 zile (ziua 20; 25 sept.; 12 iunie) | < 70% → 0 | 70–76% → **100** | > 76% → **240** |
 | **K2** Rata de încasare | ratele lunii plătite până la finalul lunii următoare | < 92% → 0 | 92–95% → **90** | > 95% → **300** |
 | **K3** Reactivare absenți 21 zile | % din cazurile deschise | < 32% → 0 | 32–39% → **120** | > 39% → **280** |
 | **K4** Răspuns sub 24 de ore | rata de răspuns la mesaje | < 85% → 0 | 85–95% → **60** | > 95% → **140** |
@@ -69,7 +69,11 @@ instructori. Se plătește în cele 10 luni de sezon.
 ### ⭐ K1 — baza pe `data_reziliere` (29 sept. 2026)
 
 K1 = din abonamentele lunare care încep în luna M pe locația omului (nereziliate înainte de ziua 1 — aceeași
-regulă ca K2), cât s-a încasat până în ziua 20, în lei. Până pe 29 sept. baza se filtra pe steagul
+regulă ca K2), cât s-a încasat până la termen, în lei. **Termenul = scadența ratei + 5 zile de grație**
+(Alex, 29 sept.): ziua 20 în lunile obișnuite (scadența 15), dar **25 septembrie** în prima lună a sezonului
+(scadența 20 sept.) și **12 iunie** în ultima (scadența 7 iunie) — din `scadenta_rata()`. Cu termenul de 25
+sept., septembrie 2026 iese Ștefan 72,9% și Nicolina 71,5% (standard), față de 61,2% / 53,4% pe ziua 20.
+Migrația `20260929160000`. Până pe 29 sept. baza se filtra pe steagul
 `reziliat`, pus și pe lunile încheiate normal — recalculul unei luni vechi pierdea jumătate din bază.
 Septembrie 2026 nu se mișcă (Ștefan 61,2%, Nicolina 53,4%); istoricul se mișcă câteva puncte (Ștefan,
 martie 2026: 68,1% → 71,0%). Migrația `20260929150000`.

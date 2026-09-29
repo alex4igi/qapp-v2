@@ -33,7 +33,7 @@ function drillDown(l: LinieRaport): [string, string][] {
 
   if (l.cheie === 'incasare_la_termen') {
     out.push(['Scadent în lună', lei('numitor')])
-    out.push([`Încasat până în ziua ${n('zi_termen') ?? '20'}`, lei('numarator')])
+    out.push([`Încasat până la termen (${n('termen') ?? `ziua ${n('zi_termen') ?? '20'}`}, scadența + ${n('zile_dupa_scadenta') ?? '5'} zile)`, lei('numarator')])
     out.push(['Rata finală a lunii (informativ)', n('rata_finala') ? `${n('rata_finala')}%` : null])
     out.push(['Înrolări în bază', n('nr_inrolari')])
   } else if (l.cheie === 'rata_incasare_m1') {
