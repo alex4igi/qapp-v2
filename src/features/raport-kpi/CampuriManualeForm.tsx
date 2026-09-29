@@ -11,15 +11,6 @@ type Intrare = {
   ajutor?: string
 }
 
-const AJUTOR_K4_TELEFON =
-  'Completează în fiecare luni. Telefon: compară apelurile pierdute notate în Situația zilnică ' +
-  'cu istoricul telefonului recepției. Leadurile și apelurile se adună singure; fără bifa de ' +
-  'telefon K4 nu se plătește.'
-const ajutorK4Meta = (toleranta: number) =>
-  'Meta: în Business Suite → Inbox (Messenger, Instagram, Facebook comments, Instagram comments) ' +
-  'numără mesajele și comentariile-întrebare rămase fără răspuns peste 24 h, de la 1 ale lunii până azi. ' +
-  `Peste ${toleranta} pe lună, K4 coboară o treaptă. `
-
 /**
  * Ce trebuie completat de om se DEDUCE din configurație, nu se scrie în cod:
  * indicatorii manuali din grilă plus cei automați care au câmpuri proprii
@@ -46,19 +37,13 @@ function intrari(raport: RaportKpi, campuri: CampManual[]): Intrare[] {
 
   return toate
     .map<Intrare | null>((x) => {
-      // K4 pe grila recepției cere doar mesajele Meta omise (unde omul răspunde în Meta)
-      // și verificarea telefonului; rata, timpul mediu și sondajul sunt ale șablonului MOA.
+      // K4 pe grila recepției nu are câmpuri aici: telefonul și Meta se introduc zilnic,
+      // în cardul „Interacțiuni zilnice"; rata, timpul mediu și sondajul sunt ale MOA.
       const receptie = x.cheie === 'raspuns_24h' && x.parametri?.rata_peste != null
-      const cuMeta = Number(x.parametri?.include_meta ?? 0) === 1
-      const proprii = (dupaKpi.get(x.kpi_id) ?? []).filter((c) =>
-        receptie
-          ? c.cheie === 'telefon_verificat' || (cuMeta && c.cheie === 'meta_omise')
-          : !['meta_omise', 'telefon_verificat'].includes(c.cheie),
-      )
+      const proprii = receptie ? [] : (dupaKpi.get(x.kpi_id) ?? [])
       if (proprii.length > 0) {
         return {
           kpiId: x.kpi_id, cheie: x.cheie, denumire: x.denumire, campuri: proprii, simplu: null,
-          ajutor: receptie ? (cuMeta ? ajutorK4Meta(Number(x.parametri?.toleranta_meta ?? 5)) : '') + AJUTOR_K4_TELEFON : undefined,
         }
       }
       if (x.sursa !== 'manual') return null
@@ -88,6 +73,8 @@ export function CampuriManualeForm({
 }: Props) {
   const lista = intrari(raport, campuri)
   const sug = raport.zile.sugestie
+  // Grila recepției n-are nimic de completat aici (K4 are cardul lui, pro-rata nu se folosește).
+  if (lista.length === 0 && raport.zile.prag === 0) return null
 
   return (
     <div className="rounded-xl border border-line bg-card p-4">

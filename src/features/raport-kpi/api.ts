@@ -106,3 +106,37 @@ export async function getCampuriManuale(): Promise<CampManual[]> {
   if (error) throw error
   return (data ?? []) as CampManual[]
 }
+
+export type PunctK4 = { locatie_id: string; locatie_nume: string; cu_meta: boolean }
+export type CanalK4 = 'telefon' | 'meta'
+export type InteractiuneK4 = {
+  locatie_id: string
+  zi: string
+  canal: CanalK4
+  intrate: number
+  cu_raspuns: number
+}
+
+/** Locațiile cu grilă de recepție activă și dacă acolo se răspunde și în Meta. */
+export async function getPuncteK4(): Promise<PunctK4[]> {
+  const { data, error } = await supabase.rpc('k4_puncte_interactiuni')
+  if (error) throw error
+  return (data ?? []) as PunctK4[]
+}
+
+export async function getInteractiuniK4(de: string, panaLa: string): Promise<InteractiuneK4[]> {
+  const { data, error } = await supabase
+    .from('k4_interactiuni_zi')
+    .select('locatie_id, zi, canal, intrate, cu_raspuns')
+    .gte('zi', de)
+    .lte('zi', panaLa)
+  if (error) throw error
+  return (data ?? []) as InteractiuneK4[]
+}
+
+export async function salveazaInteractiuniK4(randuri: InteractiuneK4[]): Promise<void> {
+  const { error } = await supabase
+    .from('k4_interactiuni_zi')
+    .upsert(randuri, { onConflict: 'locatie_id,zi,canal' })
+  if (error) throw error
+}

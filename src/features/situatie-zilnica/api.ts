@@ -146,23 +146,3 @@ export async function upsertReconciliere(
   if (error) throw error
   return data
 }
-
-export type ApeluriZi = { pierdute: number; returnate: number }
-
-export async function getApeluriZi(zi: string, locatieId: string): Promise<ApeluriZi | null> {
-  const { data, error } = await supabase
-    .from('apeluri_pierdute_zi')
-    .select('pierdute, returnate')
-    .eq('zi', zi)
-    .eq('locatie_id', locatieId)
-    .maybeSingle()
-  if (error) throw error
-  return data
-}
-
-export async function upsertApeluriZi(zi: string, locatieId: string, v: ApeluriZi): Promise<void> {
-  const { error } = await supabase
-    .from('apeluri_pierdute_zi')
-    .upsert({ zi, locatie_id: locatieId, ...v }, { onConflict: 'locatie_id,zi' })
-  if (error) throw error
-}

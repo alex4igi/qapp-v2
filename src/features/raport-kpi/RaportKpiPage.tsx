@@ -14,6 +14,7 @@ import {
 import { CampuriManualeForm } from './CampuriManualeForm'
 import { EliminatoriiCard } from './EliminatoriiCard'
 import { InchideLunaModal } from './InchideLunaModal'
+import { InteractiuniK4Card } from './InteractiuniK4Card'
 import { KpiSectiune } from './KpiSectiune'
 import { printRaportKpi } from './print/printRaportKpi'
 import { LUNI_LUNG, ponderaConteaza, type CampManual, type RandLista, type ValoriManuale } from './types'
@@ -93,6 +94,8 @@ export default function RaportKpiPage() {
         title="Raport KPI lunar"
         subtitle="Bonusul pe indicatori, pe angajat. Se calculează din grila lui și se închide o dată pe lună."
       />
+
+      <InteractiuniK4Card />
 
       <div className="mb-4 max-w-xs">
         <MonthPicker value={luna} onChange={setLuna} />

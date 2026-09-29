@@ -19,7 +19,6 @@ import {
   type IncasareRow,
 } from './api'
 import { ReconciliereCashCard } from './ReconciliereCashCard'
-import { ApeluriPierduteCard } from './ApeluriPierduteCard'
 
 function todayIso(): string {
   const d = new Date()
@@ -207,18 +206,15 @@ export function SituatieZilnicaPage() {
         </div>
 
         {locatieId && locatieNume ? (
-          <>
-            <ApeluriPierduteCard data={ziua} locatieId={locatieId} locatieNume={locatieNume} />
-            <ReconciliereCashCard
-              data={ziua}
-              locatieId={locatieId}
-              locatieNume={locatieNume}
-              cashSistem={sumar.cash}
-            />
-          </>
+          <ReconciliereCashCard
+            data={ziua}
+            locatieId={locatieId}
+            locatieNume={locatieNume}
+            cashSistem={sumar.cash}
+          />
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-quasar-gray">
-            Selectează o locație pentru apelurile pierdute și reconcilierea cash zilnică.
+            Selectează o locație pentru a face reconcilierea cash zilnică.
           </div>
         )}
       </div>

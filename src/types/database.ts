@@ -418,76 +418,6 @@ export type Database = {
           },
         ]
       }
-      apeluri_pierdute_zi: {
-        Row: {
-          completat_de: string | null
-          locatie_id: string
-          pierdute: number
-          returnate: number
-          updated_at: string
-          zi: string
-        }
-        Insert: {
-          completat_de?: string | null
-          locatie_id: string
-          pierdute: number
-          returnate: number
-          updated_at?: string
-          zi: string
-        }
-        Update: {
-          completat_de?: string | null
-          locatie_id?: string
-          pierdute?: number
-          returnate?: number
-          updated_at?: string
-          zi?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "apeluri_pierdute_zi_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
-            referencedRelation: "incasari_locatie_luna"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "apeluri_pierdute_zi_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
-            referencedRelation: "locatii"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "apeluri_pierdute_zi_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
-            referencedRelation: "plati_inrolari"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "apeluri_pierdute_zi_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
-            referencedRelation: "plati_inrolari_toate"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "apeluri_pierdute_zi_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
-            referencedRelation: "raport_financiar"
-            referencedColumns: ["id_locatie"]
-          },
-          {
-            foreignKeyName: "apeluri_pierdute_zi_locatie_id_fkey"
-            columns: ["locatie_id"]
-            isOneToOne: false
-            referencedRelation: "restante_locatie_luna"
-            referencedColumns: ["id_locatie"]
-          },
-        ]
-      }
       app_feedback: {
         Row: {
           autor_client_id: string | null
@@ -5766,6 +5696,79 @@ export type Database = {
           {
             foreignKeyName: "fk_inventar_locatie"
             columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+        ]
+      }
+      k4_interactiuni_zi: {
+        Row: {
+          canal: string
+          completat_de: string | null
+          cu_raspuns: number
+          intrate: number
+          locatie_id: string
+          updated_at: string
+          zi: string
+        }
+        Insert: {
+          canal: string
+          completat_de?: string | null
+          cu_raspuns: number
+          intrate: number
+          locatie_id: string
+          updated_at?: string
+          zi: string
+        }
+        Update: {
+          canal?: string
+          completat_de?: string | null
+          cu_raspuns?: number
+          intrate?: number
+          locatie_id?: string
+          updated_at?: string
+          zi?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "k4_interactiuni_zi_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "k4_interactiuni_zi_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "k4_interactiuni_zi_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "k4_interactiuni_zi_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "k4_interactiuni_zi_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "k4_interactiuni_zi_locatie_id_fkey"
+            columns: ["locatie_id"]
             isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
@@ -15039,6 +15042,14 @@ export type Database = {
           p_ref_date?: string
         }
         Returns: Json
+      }
+      k4_puncte_interactiuni: {
+        Args: never
+        Returns: {
+          cu_meta: boolean
+          locatie_id: string
+          locatie_nume: string
+        }[]
       }
       kpi_atribuie_grila: {
         Args: {

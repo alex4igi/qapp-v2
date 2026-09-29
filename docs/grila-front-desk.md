@@ -79,10 +79,13 @@ la Q4K.
 31 octombrie). De aceea în grilă K2 e linie forfetară (pondere 0), iar restul bonusului se poate
 confirma la finalul lunii fără el.
 
-### ⭐ K4 — răspuns la cereri, din trei surse (decis 28 sept. 2026)
+### ⭐ K4 — răspuns la cereri: leaduri automat, telefon și Meta de la manager (decis 28–29 sept. 2026)
 
-K4 = **media simplă** a surselor care au date în luna respectivă (o sursă goală nu intră în medie; fără
-nicio sursă → „fără date = standard"):
+⭐ **Recepția nu se autoevaluează** (Alex, 29 sept.): tot ce nu se măsoară automat introduce **managerul,
+zilnic**, într-un singur loc — `/raport-kpi` → cardul „Interacțiuni zilnice · K4 recepție". Recepția nu
+completează nimic și nu vede tabelul (`k4_interactiuni_zi`, RLS doar owner/admin/manager).
+
+K4 = **media simplă** a surselor care au date în luna respectivă:
 
 1. **Leaduri din aplicație (automat)** — cererile noi ale lunii de pe locația recepției, atinse de un om
    (contact notat, mutare de card, notă, SMS, sau lead creat de om) până la termenul de prim apel, pe
@@ -90,23 +93,23 @@ nicio sursă → „fără date = standard"):
    (un lead de vineri seara / weekend are termen luni 12:00), Theo L–D. Nu intră: cei deja clienți,
    leadurile create direct în Nurture (foști clienți puși automat în pool-ul de reactivare) și cele cu
    termenul încă deschis. Locația: a leadului → a ultimei programări → a grupei la care s-a înscris.
-2. **Meta** — rata de răspuns copiată lunar de manager din Meta Business Suite (Inbox → Statistici).
-3. **Telefon** — recepția notează seara în `/situatie-zilnica` apelurile pierdute ale zilei și câte a
-   sunat înapoi în aceeași zi (`apeluri_pierdute_zi`); o zi completată cu 0 pierdute = 100%.
+2. **Telefon (manager, zilnic, toate locațiile cu recepție)** — din istoricul telefonului recepției:
+   apeluri **intrate** (inclusiv pierdute) și câte au primit **răspuns** sau au fost sunate înapoi în 24 h.
+3. **Meta (manager, zilnic, doar Ștefan)** — din Business Suite → Inbox, toate cele patru tab-uri
+   (Messenger, Instagram, comentarii Facebook și Instagram): mesaje și comentarii-întrebare **intrate** și
+   câte au primit **răspuns** în 24 h. Meta e comună pentru toată școala, dar **răspunde doar Petruța** →
+   linia K4 a Petruței are `include_meta` = 1, a lui Theo 0.
 
-**Completare de către manager (Alex, 29 sept. 2026, ⏳ în lucru):**
-- **Săptămânal, cumulat pe lună**: în fiecare luni managerul trece cifrele de la 1 ale lunii până azi; ultima
-  completare după finalul lunii = cifra lunii. Nu se lasă totul la final.
-- **Meta e comună pentru toată școala și răspunde doar Petruța** → rata din Meta (Messenger + DM Instagram)
-  intră doar în K4-ul Petruței. K4-ul lui Theo = leadurile din aplicație + telefonul de la Nicolina.
-- **Telefonul**: recepția notează zilnic; managerul verifică săptămânal notările cu istoricul de apeluri.
-- **Meta = o singură sursă** în medie: media ratei de răspuns Messenger și a celei de pe DM Instagram
-  (procentele din Business Suite → Inbox → Statistici, perioada 1 ale lunii → azi).
-- **Comentariile** (Meta nu le măsoară; managerii spun că e greu să le numere pe toate): managerul numără
-  doar **comentariile-întrebare rămase fără răspuns peste 24 h**. **Toleranță 5 pe lună**: de la al 6-lea
-  omis, K4 coboară o treaptă (peste → standard, standard → sub). Doar la Petruța, ca și Meta.
+Rata unui canal = Σ cu răspuns / Σ intrate pe lună; o zi introdusă cu 0 intrate = nimeni fără răspuns.
+**Un canal fără nicio zi introdusă** (telefonul, și Meta unde se cere) → K4 „necompletat": contează 0 și
+blochează închiderea lunii — asta obligă managerul să completeze.
 
-Implementare: `kpi_k4_receptie` (migrația `20260929110000`); MOA rămâne pe `kpi_k4`.
+De ce nu statistica Meta: cardul „Conversations" din Insights arăta 0 conversații și „Response rate: --"
+pe septembrie, cu inboxul plin — numără doar o parte din conversații. Variantele intermediare din 29 sept.
+(completare săptămânală cumulată, toleranță de 5 mesaje omise, bifă „telefon verificat", notare zilnică de
+către recepție) au fost înlocuite de varianta de mai sus.
+
+Implementare: `kpi_k4_receptie` (migrațiile `20260929110000` și `20260929130000`); MOA rămâne pe `kpi_k4`.
 Pe septembrie (doar leadurile): Ștefan 67%, Nicolina 62%, Q4K 68% — sub pragul de 85%; după
 procedura din 17 sept. Ștefan urcă la 77%. ⏳ Pragurile de 85 / 95 sunt de revăzut după octombrie.
 
@@ -288,7 +291,7 @@ Ce lipsește:
 | Linii | K1 30% · K2 **0% (forfetar)** · K3 35% · K4 17,5% · K5 17,5%; „fără date = standard" pe toate; sumele pe trepte ca în §3; „peste X%" = X,01 (motorul compară cu ≥); bonus doar septembrie–iunie; fără eliminatorii; `cota_manager` 0 |
 | K2 | cheia nouă `rata_incasare_m1` → `kpi_rata_incasare` (aceeași ca la manager); marcată „provizoriu" până la finalul lunii M+1 — luna nu se poate închide în raportul KPI până atunci |
 | Partea amânată | liniile care își declară `final_la` (K2, K3) formează componenta „Bonus KPI — luna următoare", separat de bonusul lunii **indiferent dacă sunt încă provizorii** — altfel, după ce se definitivează, suma lor ar trece în bonusul deja confirmat și s-ar pierde (reparat pe 29 sept., migrația `20260929100000`) |
-| K4 | mod „doar rata" (`rata_standard` 85, `rata_peste` 95,01): contează doar rata de răspuns, completată manual. Necompletată = blochează închiderea lunii |
+| K4 | `rata_standard` 85, `rata_peste` 95,01; media leaduri (automat) + telefon + Meta (introduse zilnic de manager în `/raport-kpi`, tabelul `k4_interactiuni_zi`); canal fără nicio zi introdusă = blochează închiderea lunii (vezi §3) |
 | K3 | fără poarta de 48 h din șablonul MOA (grila nu o cere) |
 | Partea fixă | `salarizare_receptie` pe om (normă, facturare, fidelitate, abonament, bonusuri ocazionale) + sumele din `salarizare_grila` (post `receptie`) |
 | Salariul lunii | `calculeaza_salariu_receptie(user, an, lună)`; confirmarea pe componente (`confirma_salariu_staff`): fixul oricând, bonusul KPI după finalul lunii, K2 după finalul lunii M+1 |
