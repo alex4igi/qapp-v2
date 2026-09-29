@@ -2,7 +2,7 @@
 // Apelată din staff app (JWT staff). Notificarea merge pe UN SINGUR canal —
 // SMS dacă familia are telefon, altfel email — vezi ../_shared/contractNotify.ts.
 import { mesajContract, notificaContract } from '../_shared/contractNotify.ts'
-import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
+import { linkSemnare, logEvent, serviceClient, type TemplateField } from '../_shared/contracte.ts'
 import { requireStaffRole } from '../_shared/staffAuth.ts'
 
 // Aceleași roluri ca ROUTE_ACCESS['/contracte'] (ALL_STAFF, recepția inclusă) și
@@ -28,6 +28,29 @@ type Target = {
   // pentru actul adițional de reînscriere: leagă contractul de poarta campaniei
   campanieId?: string | null
   cursTintaId?: string | null
+  // câmpurile cu source 'staff', completate de recepție pentru acest destinatar
+  valori?: Record<string, unknown> | null
+}
+
+const MAX_VALOARE_STAFF = 300
+
+// Doar cheile câmpurilor 'staff' ale șablonului intră în contract; restul se ignoră.
+function valoriStaff(
+  fields: TemplateField[],
+  primite: Record<string, unknown> | null | undefined,
+): { valori: Record<string, string> } | { error: string } {
+  const valori: Record<string, string> = {}
+  for (const f of fields) {
+    if (f.source !== 'staff') continue
+    const v = String(primite?.[f.key] ?? '').trim()
+    if (!v) {
+      if (f.required) return { error: `Completează „${f.label}" înainte de trimitere.` }
+      continue
+    }
+    if (v.length > MAX_VALOARE_STAFF) return { error: `„${f.label}" e prea lung.` }
+    valori[f.key] = v
+  }
+  return { valori }
 }
 
 Deno.serve(async (req) => {
@@ -49,7 +72,7 @@ Deno.serve(async (req) => {
 
     const { data: tpl, error: tplErr } = await admin
       .from('contract_templates')
-      .select('id, tip, nume, activ, valabilitate_zile, locked_at')
+      .select('id, tip, nume, activ, valabilitate_zile, locked_at, fields')
       .eq('id', templateId)
       .single()
     if (tplErr || !tpl) return json({ error: 'Template inexistent' }, 404)
@@ -77,6 +100,12 @@ Deno.serve(async (req) => {
       }
       if (!familie.telefon && !familie.email) {
         results.push({ familieId: t.familieId, ok: false, error: 'familie fără telefon și email' })
+        continue
+      }
+
+      const staff = valoriStaff((tpl.fields ?? []) as TemplateField[], t.valori)
+      if ('error' in staff) {
+        results.push({ familieId: t.familieId, ok: false, error: staff.error })
         continue
       }
 
@@ -158,6 +187,7 @@ Deno.serve(async (req) => {
           gate_id: gateId,
           campanie_id: t.campanieId ?? null,
           status: 'trimis',
+          valori: staff.valori,
           token_expira_la: expiraLa,
           trimis_la: new Date().toISOString(),
           created_by: auth.userId,

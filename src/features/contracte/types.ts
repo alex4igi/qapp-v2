@@ -16,6 +16,7 @@ export type TemplateField = {
     | 'copil.nume'
     | 'manual'
     | 'azi'
+    | 'staff'
   required?: boolean
   editable?: boolean
   page: number
@@ -36,6 +37,7 @@ export const FIELD_TYPE_OPTIONS: SelectOption[] = [
 
 export const FIELD_SOURCE_OPTIONS: SelectOption[] = [
   { value: 'manual', label: 'Manual (completează familia)' },
+  { value: 'staff', label: 'Completează recepția la trimitere' },
   { value: 'azi', label: 'Data de azi (automat)' },
   { value: 'familie.reprezentant', label: 'Nume reprezentant' },
   { value: 'familie.cnp', label: 'CNP reprezentant' },

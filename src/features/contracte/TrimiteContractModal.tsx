@@ -13,7 +13,13 @@ import {
   type ClientPentruContract,
 } from '@/features/clienti/api'
 import { calcAge } from '@/features/clienti/pages/ClientProfilePage/helpers'
-import { listTemplates, mesajRetrimitere, retrimiteLink, sendContracte } from './api'
+import {
+  campuriStaff,
+  listTemplates,
+  mesajRetrimitere,
+  retrimiteLink,
+  sendContracte,
+} from './api'
 import { CONTRACT_TIP_LABEL } from './constants'
 
 type Props = {
@@ -49,6 +55,8 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
   const [seReprezintaSingur, setSeReprezintaSingur] = useState(true)
   const [clientId, setClientId] = useState(client?.id ?? '')
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+  // câmpurile pe care le scrie recepția pentru destinatarul ăsta (ex. nr. contract la reziliere)
+  const [valoriStaff, setValoriStaff] = useState<Record<string, string>>({})
   // contractul nesemnat care a blocat trimiterea ca dublură — i se poate retrimite
   // linkul, cât timp selecția (șablon + familie + cursant) e tot cea refuzată
   const [dublura, setDublura] = useState<{ contractId: string; cheie: string } | null>(null)
@@ -90,6 +98,12 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
     [templates],
   )
 
+  const deCompletat = useMemo(
+    () => campuriStaff(templates?.find((t) => t.id === templateId)),
+    [templates, templateId],
+  )
+  const lipsaStaff = deCompletat.some((f) => f.required && !valoriStaff[f.key]?.trim())
+
   const varsta = faraFamilie ? calcAge(faraFamilie.data_nasterii) : null
   const contactFaraFamilie = faraFamilie
     ? faraFamilie.telefon
@@ -130,7 +144,7 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
       }
       const results = await sendContracte({
         templateId,
-        targets: [{ familieId: familie!.id, clientId: vizat }],
+        targets: [{ familieId: familie!.id, clientId: vizat, valori: valoriStaff }],
       })
       return { r: results[0], familieCreata, cheie: `${templateId}|${familie!.id}|${vizat ?? ''}` }
     },
@@ -192,12 +206,14 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
     setSelFamilie(null)
     setFaraFamilie(null)
     setClientId('')
+    setValoriStaff({})
     setResult(null)
   }
 
   function close() {
     setResult(null)
     setSearch('')
+    setValoriStaff({})
     if (!blocat) {
       setSelFamilie(null)
       setFaraFamilie(null)
@@ -216,7 +232,10 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
         <Field label="Template">
           <Select
             value={templateId}
-            onChange={(e) => setTemplateId(e.target.value)}
+            onChange={(e) => {
+              setTemplateId(e.target.value)
+              setValoriStaff({})
+            }}
             placeholder="Alege template…"
             options={templateOptions}
           />
@@ -366,6 +385,33 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
           </Field>
         )}
 
+        {deCompletat.length > 0 && (
+          <div className="space-y-3 rounded-xl border border-line bg-surface p-3">
+            <p className="text-sm font-medium">De completat înainte de trimitere</p>
+            <p className="text-xs text-muted-2">
+              Apar pe document așa cum le scrii; părintele le vede, dar nu le poate modifica.
+            </p>
+            {deCompletat.map((f) => (
+              <Field
+                key={f.key}
+                label={f.required ? `${f.label} *` : f.label}
+                htmlFor={`staff-${f.key}`}
+              >
+                <TextInput
+                  id={`staff-${f.key}`}
+                  type={f.type === 'date' ? 'date' : 'text'}
+                  maxLength={300}
+                  value={valoriStaff[f.key] ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setValoriStaff((prev) => ({ ...prev, [f.key]: v }))
+                  }}
+                />
+              </Field>
+            ))}
+          </div>
+        )}
+
         {result && (
           <p className={result.ok ? 'text-green-700 text-sm' : 'text-red-600 text-sm'}>
             {result.text}
@@ -383,7 +429,9 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
           ) : (
             <Button
               onClick={() => send.mutate()}
-              disabled={!templateId || !(selFamilie || poateCreaFamilia) || send.isPending}
+              disabled={
+                !templateId || !(selFamilie || poateCreaFamilia) || lipsaStaff || send.isPending
+              }
             >
               {send.isPending ? 'Se trimite…' : 'Trimite la semnat'}
             </Button>

@@ -16,6 +16,7 @@ type Props = {
 }
 
 const FONT_SIZE_TYPES: TemplateField['type'][] = ['text', 'date', 'copii_table']
+const STAFF_TYPES: TemplateField['type'][] = ['text', 'date']
 
 export function FieldInspector({ field, pageCount, readOnly, onChange, onDelete }: Props) {
   if (!field) {
@@ -26,6 +27,7 @@ export function FieldInspector({ field, pageCount, readOnly, onChange, onDelete 
     )
   }
 
+  const staffFilled = field.source === 'staff'
   const pageOptions = Array.from({ length: pageCount }, (_, i) => ({
     value: String(i + 1),
     label: `Pagina ${i + 1}`,
@@ -54,7 +56,11 @@ export function FieldInspector({ field, pageCount, readOnly, onChange, onDelete 
           id="fi-type"
           value={field.type}
           disabled={readOnly}
-          options={FIELD_TYPE_OPTIONS}
+          options={
+            staffFilled
+              ? FIELD_TYPE_OPTIONS.filter((o) => STAFF_TYPES.includes(o.value as TemplateField['type']))
+              : FIELD_TYPE_OPTIONS
+          }
           onChange={(e) => onChange({ type: e.target.value as TemplateField['type'] })}
         />
       </Field>
@@ -64,7 +70,17 @@ export function FieldInspector({ field, pageCount, readOnly, onChange, onDelete 
           value={field.source}
           disabled={readOnly}
           options={FIELD_SOURCE_OPTIONS}
-          onChange={(e) => onChange({ source: e.target.value as TemplateField['source'] })}
+          onChange={(e) => {
+            const source = e.target.value as TemplateField['source']
+            // Valoarea recepției e fixă pentru părinte; bifă/semnătură n-au ce valoare să primească.
+            if (source === 'staff') {
+              onChange({
+                source,
+                editable: false,
+                ...(STAFF_TYPES.includes(field.type) ? {} : { type: 'text' as const }),
+              })
+            } else onChange({ source })
+          }}
         />
       </Field>
       <div className="flex gap-4">
@@ -74,13 +90,21 @@ export function FieldInspector({ field, pageCount, readOnly, onChange, onDelete 
           disabled={readOnly}
           onChange={(e) => onChange({ required: e.target.checked })}
         />
-        <Checkbox
-          label="Editabil în portal"
-          checked={!!field.editable}
-          disabled={readOnly}
-          onChange={(e) => onChange({ editable: e.target.checked })}
-        />
+        {!staffFilled && (
+          <Checkbox
+            label="Editabil în portal"
+            checked={!!field.editable}
+            disabled={readOnly}
+            onChange={(e) => onChange({ editable: e.target.checked })}
+          />
+        )}
       </div>
+      {staffFilled && (
+        <p className="text-xs text-muted-2">
+          Recepția scrie valoarea la trimitere, pentru fiecare client. Părintele o vede, dar nu o poate
+          modifica. Eticheta e ce vede recepția în formular (ex. „Nr. contract").
+        </p>
+      )}
       <Field label="Pagina" htmlFor="fi-page">
         <Select
           id="fi-page"

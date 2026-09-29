@@ -28,6 +28,7 @@ export const FIELD_TYPE_LABEL: Record<string, string> = {
 
 export const FIELD_SOURCE_LABEL: Record<string, string> = {
   manual: 'Manual',
+  staff: 'Recepția, la trimitere',
   azi: 'Data de azi',
   'familie.reprezentant': 'Nume reprezentant',
   'familie.cnp': 'CNP reprezentant',

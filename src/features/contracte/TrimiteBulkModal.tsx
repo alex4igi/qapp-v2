@@ -6,6 +6,7 @@ import {
   listCampaniiDeschise,
   listTargetsCampanie,
   listTemplates,
+  needsStaffInput,
   sendContracte,
   type CampanieTarget,
 } from './api'
@@ -130,7 +131,7 @@ export function TrimiteBulkModal({ open, onClose }: Props) {
             onChange={(e) => setTemplateId(e.target.value)}
             placeholder="Alege template…"
             options={(templates ?? [])
-              .filter((t) => t.tip === 'act_aditional')
+              .filter((t) => t.tip === 'act_aditional' && !needsStaffInput(t))
               .map((t) => ({
                 value: t.id,
                 label: `${t.nume} (${CONTRACT_TIP_LABEL[t.tip] ?? t.tip})`,

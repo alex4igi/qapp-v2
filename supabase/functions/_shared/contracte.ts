@@ -94,6 +94,8 @@ export type TemplateField = {
     | 'copil.nume'
     | 'manual'
     | 'azi'
+    // completat de recepție la trimitere, per contract (ex. nr. contractului la o reziliere)
+    | 'staff'
   required?: boolean
   editable?: boolean
   page: number

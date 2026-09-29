@@ -19,6 +19,7 @@ import {
   listContracteActivePeTemplate,
   listTargetsContracte,
   listTemplates,
+  needsStaffInput,
   sendContracte,
   type ContractTarget,
   type SendTarget,
@@ -338,7 +339,7 @@ export function TrimiteBulkClientiModal({ open, onClose }: Props) {
               value={templateId}
               onChange={(e) => onFilterChange(() => setTemplateId(e.target.value))}
               placeholder="Alege șablonul…"
-              options={(templates ?? []).map((t) => ({
+              options={(templates ?? []).filter((t) => !needsStaffInput(t)).map((t) => ({
                 value: t.id,
                 label: `${t.nume} (${CONTRACT_TIP_LABEL[t.tip] ?? t.tip})`,
               }))}

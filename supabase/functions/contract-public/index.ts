@@ -161,6 +161,7 @@ async function buildPrefill(
         break
       }
       case 'azi': prefill[f.key] = new Date().toISOString().slice(0, 10); break
+      case 'staff': prefill[f.key] = contract.valori?.[f.key] ?? ''; break
       case 'manual': break
     }
   }
@@ -365,6 +366,11 @@ Deno.serve(async (req) => {
       }
 
       await completeazaMascate(admin, contract, fields, valori)
+      // Ce a scris recepția la trimitere (ex. nr. contractului) nu se ia din payload:
+      // părintele nu îl poate schimba, iar `valori` e rescris integral mai jos.
+      for (const f of fields) {
+        if (f.source === 'staff') valori[f.key] = contract.valori?.[f.key] ?? ''
+      }
 
       for (const f of fields) {
         if (f.type === 'signature' || f.type === 'copii_table') continue

@@ -51,6 +51,17 @@ export type SendTarget = {
   clientId?: string | null
   campanieId?: string | null
   cursTintaId?: string | null
+  // valorile câmpurilor „completează recepția la trimitere", pe cheia câmpului
+  valori?: Record<string, string>
+}
+
+export function campuriStaff(t: Pick<ContractTemplate, 'fields'> | null | undefined): TemplateField[] {
+  return ((t?.fields ?? []) as unknown as TemplateField[]).filter((f) => f.source === 'staff')
+}
+
+// Valoarea e per destinatar (nr. contract), deci șablonul nu se poate trimite în masă.
+export function needsStaffInput(t: Pick<ContractTemplate, 'fields'>): boolean {
+  return campuriStaff(t).some((f) => f.required)
 }
 
 // `ok` = contractul s-a creat; `notificat` = linkul a plecat efectiv pe `canal`.
