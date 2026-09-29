@@ -99,7 +99,14 @@ export function InteractiuniK4Card() {
     },
   })
 
-  if (puncte.isLoading || (puncte.data ?? []).length === 0) return null
+  if (puncte.isLoading) return null
+  if ((puncte.data ?? []).length === 0) {
+    return (
+      <p className="mb-6 text-sm text-muted">
+        Nu ești manager pe nicio locație cu recepție, deci n-ai interacțiuni de introdus.
+      </p>
+    )
+  }
 
   const set = (r: Rand, camp: 'intrate' | 'cu_raspuns', v: string) =>
     setValori((prev) => ({
@@ -119,7 +126,7 @@ export function InteractiuniK4Card() {
         </div>
       </div>
       <p className="mb-3 text-xs text-muted">
-        Le completează managerul, în fiecare zi. <b>Telefon</b>: din istoricul de apeluri al
+        Le completează managerul locației, în fiecare zi. <b>Telefon</b>: din istoricul de apeluri al
         telefonului recepției — apelurile primite (inclusiv cele pierdute) și câte au primit răspuns
         sau au fost sunate înapoi în 24 h. <b>Meta</b>: din Business Suite → Inbox, toate cele patru
         tab-uri (Messenger, Instagram, comentarii Facebook și Instagram) — mesajele și

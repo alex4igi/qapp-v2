@@ -15285,6 +15285,7 @@ export type Database = {
       }
       locatie_label_match: { Args: { a: string; b: string }; Returns: boolean }
       locatie_norm: { Args: { p: string }; Returns: string }
+      locatii_manager_curent: { Args: never; Returns: string[] }
       locuri_ocupate: {
         Args: { p_cursuri: string[]; p_de: string; p_pana: string }
         Returns: {

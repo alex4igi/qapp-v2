@@ -94,7 +94,7 @@ confirma la finalul lunii fără el.
 ### ⭐ K4 — răspuns la cereri: leaduri automat, telefon și Meta de la manager (decis 28–29 sept. 2026)
 
 ⭐ **Recepția nu se autoevaluează** (Alex, 29 sept.): tot ce nu se măsoară automat introduce **managerul,
-zilnic**, într-un singur loc — **Rapoarte → Interacțiuni K4** (`/interactiuni-k4`, merge și pe telefon; același card apare și sus în `/raport-kpi`). Recepția nu
+zilnic**, într-un singur loc — **Rapoarte → Interacțiuni K4** (`/interactiuni-k4`, merge și pe telefon; același card apare și sus în `/raport-kpi`). **Managerul vede și scrie doar locația lui** (`manageri_locatii` valabil azi, prin RLS — Alin Nicolina, Andrei Ștefan); owner/admin toate. Recepția nu
 completează nimic și nu vede tabelul (`k4_interactiuni_zi`, RLS doar owner/admin/manager).
 
 K4 = **media simplă** a surselor care au date în luna respectivă:
