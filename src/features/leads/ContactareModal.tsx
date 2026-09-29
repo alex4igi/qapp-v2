@@ -10,6 +10,7 @@ import {
   type CanalContact,
   type LeadForm,
 } from './api'
+import { DejaClientBanner } from './DejaClientBanner'
 
 type Props = {
   open: boolean
@@ -129,6 +130,7 @@ export function ContactareModal({ open, lead, onClose }: Props) {
       }
     >
       <form id="contactare-form" onSubmit={handleSubmit} className="space-y-3">
+        <DejaClientBanner lead={lead} />
         {lead && (
           <p className="text-sm text-quasar-gray">
             Contactare pentru{' '}

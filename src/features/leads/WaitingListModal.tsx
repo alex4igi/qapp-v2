@@ -5,6 +5,7 @@ import { Modal, Field, TextArea, Select, Button } from '@/components/ui'
 import type { Lead, GrupaLead } from '@/types/db'
 import { prependObservatie, INTERESE, GRUPE, GRUPA_LABELS } from './constants'
 import { updateLead, type LeadForm } from './api'
+import { DejaClientBanner, useClientExistent, ceraConfirmareClient } from './DejaClientBanner'
 
 type Props = {
   open: boolean
@@ -18,6 +19,10 @@ export function WaitingListModal({ open, lead, onClose }: Props) {
   const [grupa, setGrupa] = useState('')
   const [detalii, setDetalii] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [clientConfirmat, setClientConfirmat] = useState(false)
+  const clientExistentQ = useClientExistent(open ? lead : null)
+  const confirmareClient =
+    lead && lead.status !== 'waiting_list' ? ceraConfirmareClient(lead, clientExistentQ) : 'nu'
 
   useEffect(() => {
     if (!open) return
@@ -25,6 +30,7 @@ export function WaitingListModal({ open, lead, onClose }: Props) {
     setGrupa(lead?.grupa_varsta ?? '')
     setDetalii('')
     setError(null)
+    setClientConfirmat(false)
   }, [open, lead])
 
   const mutation = useMutation({
@@ -62,6 +68,14 @@ export function WaitingListModal({ open, lead, onClose }: Props) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (confirmareClient === 'se_verifica') {
+      setError('Se verifică fișa clientului — încearcă din nou.')
+      return
+    }
+    if (confirmareClient === 'da' && !clientConfirmat) {
+      setError('E deja client înscris — bifează că ai vorbit cu el și vrea ceva nou.')
+      return
+    }
     mutation.mutate()
   }
 
@@ -86,6 +100,10 @@ export function WaitingListModal({ open, lead, onClose }: Props) {
       }
     >
       <form id="waiting-form" onSubmit={handleSubmit} className="space-y-3">
+        <DejaClientBanner
+          lead={lead}
+          confirmare={{ checked: clientConfirmat, onChange: setClientConfirmat }}
+        />
         {lead && (
           <p className="text-sm text-quasar-gray">
             Pe lista de așteptare:{' '}

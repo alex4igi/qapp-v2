@@ -123,6 +123,7 @@ export function LeadsMobileView({ poateEdita }: { poateEdita: boolean }) {
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-ink">
+                    {l.deja_client && <span title="Deja client">⭐ </span>}
                     {[l.prenume, l.nume].filter(Boolean).join(' ') || '—'}
                   </span>
                   <span className="block truncate text-xs text-muted">

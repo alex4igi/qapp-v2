@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { applyWordSearch } from '@/lib/search'
 import { clientIdRegistru, familiaIdRegistru } from './alocari'
 import type {
   Alocare,
@@ -278,11 +279,7 @@ export async function searchClienti(term: string): Promise<MatchSuggestion[]> {
   if (UUID_RE.test(trimmed)) {
     query = query.eq('id', trimmed)
   } else {
-    // .or() repetat se combină cu AND: fiecare cuvânt trebuie să apară în una din coloane
-    for (const tok of trimmed.split(/\s+/)) {
-      const t = `%${tok.replace(/[,()]/g, '')}%`
-      query = query.or(`nume.ilike.${t},prenume.ilike.${t},telefon.ilike.${t}`)
-    }
+    query = applyWordSearch(query, trimmed, ['nume', 'prenume', 'telefon'])
   }
   const { data, error } = await query.limit(25)
   if (error) throw error

@@ -10,6 +10,7 @@ import type {
   UpdateDto,
 } from '@/types/db'
 import { normalizeTelefon } from '@/lib/phone'
+import { applyWordSearch } from '@/lib/search'
 import { triggerLeadSms } from '../sms'
 
 export type LeadForm = {
@@ -198,12 +199,11 @@ export async function searchNurtureByTerm(
 ): Promise<Pick<Lead, 'id' | 'prenume' | 'nume' | 'telefon'>[]> {
   const t = term.trim()
   if (t.length < 2) return []
-  const { data, error } = await supabase
-    .from('leads')
-    .select('id, prenume, nume, telefon')
-    .eq('status', 'nurture')
-    .or(`prenume.ilike.%${t}%,nume.ilike.%${t}%,telefon.ilike.%${t}%`)
-    .limit(25)
+  const { data, error } = await applyWordSearch(
+    supabase.from('leads').select('id, prenume, nume, telefon').eq('status', 'nurture'),
+    t,
+    ['prenume', 'nume', 'telefon'],
+  ).limit(25)
   if (error) throw error
   return data ?? []
 }

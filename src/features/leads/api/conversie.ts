@@ -213,3 +213,52 @@ export async function getLeadConversionInfo(
     dataIncepere: (enr?.data_incepere as string | null) ?? null,
   }
 }
+
+// Clientul de care e legat un lead „deja client", pentru bannerul din fișă și din
+// modalele de contact. `inscris` = încă al nostru (Activ/Inactiv sau o înrolare
+// care n-a expirat) — atunci un apel de vânzare e o greșeală, nu o oportunitate.
+export type ClientExistent = {
+  clientId: string
+  nume: string
+  status: string | null
+  cursuri: string[]
+  inscris: boolean
+}
+
+export async function getClientExistent(clientId: string): Promise<ClientExistent | null> {
+  const azi = new Date().toISOString().slice(0, 10)
+  const [clientRes, enrRes] = await Promise.all([
+    supabase.from('clienti').select('id, nume, prenume, status').eq('id', clientId).maybeSingle(),
+    // Rezilierea reală e `data_reziliere`; `reziliat` e bifat și pe lunile încheiate.
+    supabase
+      .from('enrollments')
+      .select('cursul(numele)')
+      .eq('client', clientId)
+      .or(`data_final.is.null,data_final.gte.${azi}`)
+      .or(`data_reziliere.is.null,data_reziliere.gt.${azi}`),
+  ])
+  if (clientRes.error) throw clientRes.error
+  if (enrRes.error) throw enrRes.error
+  const client = clientRes.data
+  if (!client) return null
+
+  const cursuri = [
+    ...new Set(
+      (enrRes.data ?? [])
+        .map((e) => {
+          const raw = e.cursul as unknown
+          const c = (Array.isArray(raw) ? raw[0] : raw) as { numele: string } | null
+          return c?.numele ?? null
+        })
+        .filter((n): n is string => Boolean(n)),
+    ),
+  ]
+  const status = (client.status as string | null) ?? null
+  return {
+    clientId: client.id as string,
+    nume: [client.prenume, client.nume].filter(Boolean).join(' ').trim(),
+    status,
+    cursuri,
+    inscris: cursuri.length > 0 || status === 'Activ' || status === 'Inactiv',
+  }
+}

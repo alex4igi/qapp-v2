@@ -63,6 +63,7 @@ import { DateContactSection, type DupHit } from './sections/DateContactSection'
 import { ProfilInteresSection } from './sections/ProfilInteresSection'
 import { RecomandareLeadSection } from '@/features/recomandari/components/RecomandareLeadSection'
 import { PasUrmatorSection } from './sections/PasUrmatorSection'
+import { DejaClientBanner, useClientExistent, ceraConfirmareClient } from '../DejaClientBanner'
 
 type Props = {
   open: boolean
@@ -108,6 +109,7 @@ export function LeadModal({
   // Reprogramare peste o programare încă activă: recepția confirmă înlocuirea,
   // altfel nu află că exista una (un lead are o singură programare).
   const [inlocuireConfirmata, setInlocuireConfirmata] = useState(false)
+  const [clientConfirmat, setClientConfirmat] = useState(false)
   // Valorile programării la deschidere — ca să nu re-creăm o programare la edituri
   // care nu schimbă data/cursul.
   const [initial, setInitial] = useState<{ data: string; selectie: string }>({
@@ -145,6 +147,18 @@ export function LeadModal({
       open && form.status === 'convertit' && Boolean(lead?.id_client),
   })
 
+  const clientExistentQ = useClientExistent(open ? lead : null)
+  // Un client încă înscris nu intră pe tăcute în vânzare: pe 12.09 un astfel de
+  // lead a fost mutat în Waiting list și a ieșit din grupul „Clienți care au cerut ceva".
+  const mutareInVanzare =
+    isEdit &&
+    Boolean(lead?.deja_client) &&
+    (form.status === 'programat' || form.status === 'waiting_list') &&
+    form.status !== lead?.status
+  const confirmareClient = mutareInVanzare
+    ? ceraConfirmareClient(lead, clientExistentQ)
+    : 'nu'
+
   useEffect(() => {
     if (!open) return
     const base = lead
@@ -162,6 +176,7 @@ export function LeadModal({
     setIgnoreVarsta(false)
     setPlinDinServer(false)
     setInlocuireConfirmata(false)
+    setClientConfirmat(false)
     setInitial({ data: lead?.data_programare?.slice(0, 10) ?? '', selectie: '' })
   }, [open, lead, defaultStatus, startScheduling])
 
@@ -486,6 +501,14 @@ export function LeadModal({
       setEditMode(true)
       return
     }
+    if (confirmareClient === 'se_verifica') {
+      setError('Se verifică fișa clientului — încearcă din nou.')
+      return
+    }
+    if (confirmareClient === 'da' && !clientConfirmat) {
+      setError('E deja client înscris — bifează în bannerul galben că ai vorbit cu el și vrea ceva nou.')
+      return
+    }
     // Programare: dacă statusul e „Programat", data + curs/eveniment sunt
     // obligatorii (altfel leadul n-ar ajunge în rosterul unei grupe).
     if (form.status === 'programat') {
@@ -693,6 +716,19 @@ export function LeadModal({
                     onStartConvert={() => setConvertFlow(true)}
                     readOnly={!canEditLeads(role)}
                   />
+
+                  {isEdit && lead?.deja_client && (
+                    <div style={{ marginTop: '14px' }}>
+                      <DejaClientBanner
+                        lead={lead}
+                        confirmare={
+                          mutareInVanzare
+                            ? { checked: clientConfirmat, onChange: setClientConfirmat }
+                            : undefined
+                        }
+                      />
+                    </div>
+                  )}
 
                   {isEdit && lead && (
                     <RecomandareLeadSection

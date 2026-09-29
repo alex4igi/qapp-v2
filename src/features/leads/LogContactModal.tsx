@@ -5,6 +5,7 @@ import { Modal, Field, TextArea, DateInput, Button } from '@/components/ui'
 import type { Lead } from '@/types/db'
 import { dataPesteZile, dataUrmatoareiIncercari, type ModMotiv } from './constants'
 import { logContact, type CanalContact } from './api'
+import { DejaClientBanner } from './DejaClientBanner'
 
 // Ce se întâmplă mai departe, când omul A RĂSPUNS. Obligatoriu de ales: până
 // acum „Reușit" golea sub-statusul și lăsa leadul în „Contactat" fără nicio
@@ -133,6 +134,7 @@ export function LogContactModal({
       }
     >
       <div className="space-y-4">
+        <DejaClientBanner lead={lead} />
         <Field label="Canal">
           <div className="flex flex-wrap gap-2">
             {CANALE.map((c) => (

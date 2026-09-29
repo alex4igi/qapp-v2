@@ -134,6 +134,8 @@ gen:ghid` înseamnă că omul primește și mesaj, și telefon, pentru aceeași 
 | Un lead = o singură programare | RPC `inlocuieste_programari_lead` |
 | Conversia (client + înrolare) | `src/features/leads/api/conversie.ts` + trigger `enrollment_marcheaza_lead_convertit` |
 | Gardul „clientul e activ, nu-l nurtura" | `leaduriProtejate()`, `supabase/functions/_shared/leadNurture.ts` |
+| „Deja client": banner în fișă + la contact; mutarea unui client **încă înscris** (Activ/Inactiv sau înrolare neexpirată) în Programat / Waiting list cere bifa „am vorbit cu el, vrea ceva nou" — foștii clienți (EXclient) trec fără bifă (29.09.2026) | `DejaClientBanner.tsx` + `getClientExistent()` în `api/conversie.ts` |
+| Căutarea după telefon ignoră prefixul (`+40` / `0` / spații → ultimele 9 cifre) | `searchWords()` / `applyWordSearch()` / `matchesWords()`, `src/lib/search.ts` |
 
 ## Toate drumurile către Nurture
 
