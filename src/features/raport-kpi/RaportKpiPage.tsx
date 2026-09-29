@@ -16,7 +16,7 @@ import { EliminatoriiCard } from './EliminatoriiCard'
 import { InchideLunaModal } from './InchideLunaModal'
 import { KpiSectiune } from './KpiSectiune'
 import { printRaportKpi } from './print/printRaportKpi'
-import { LUNI_LUNG, type CampManual, type RandLista, type ValoriManuale } from './types'
+import { LUNI_LUNG, ponderaConteaza, type CampManual, type RandLista, type ValoriManuale } from './types'
 
 function lunaCurenta(): string {
   // Raportul se închide la începutul lunii următoare, deci deschidem pe luna
@@ -246,6 +246,7 @@ function RaportDetaliu({
     : raport.data
   if (!r) return null
   const readOnly = r.stare_raport === 'inchis'
+  const cuPondere = ponderaConteaza(r.linii)
 
   return (
     <>
@@ -323,7 +324,7 @@ function RaportDetaliu({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-3 ${cuPondere ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
           <div className="rounded-xl border border-line bg-card p-3">
             <div className="text-xs text-muted">Bonus titular</div>
             <div className="text-xl font-bold text-ink">{formatRON(r.bonus_titular)}</div>
@@ -336,15 +337,17 @@ function RaportDetaliu({
             <div className="text-xs text-muted">Sumă brută a liniilor</div>
             <div className="text-xl font-bold text-ink">{formatRON(r.bonus_brut)}</div>
           </div>
-          <div className="rounded-xl border border-line bg-card p-3">
-            <div className="text-xs text-muted">Pondere evaluată</div>
-            <div className="text-xl font-bold text-ink">
-              {r.pondere_evaluata}% / {r.pondere_luna}%
+          {cuPondere && (
+            <div className="rounded-xl border border-line bg-card p-3">
+              <div className="text-xs text-muted">Pondere evaluată</div>
+              <div className="text-xl font-bold text-ink">
+                {r.pondere_evaluata}% / {r.pondere_luna}%
+              </div>
+              {r.factor_redistribuire > 1.0001 && (
+                <div className="text-xs text-muted">redistribuire ×{r.factor_redistribuire}</div>
+              )}
             </div>
-            {r.factor_redistribuire > 1.0001 && (
-              <div className="text-xs text-muted">redistribuire ×{r.factor_redistribuire}</div>
-            )}
-          </div>
+          )}
         </div>
 
         {r.zile.sub_prag && (
@@ -374,7 +377,7 @@ function RaportDetaliu({
 
         <div className="space-y-3">
           {r.linii.map((l) => (
-            <KpiSectiune key={l.kpi_id} linie={l} />
+            <KpiSectiune key={l.kpi_id} linie={l} cuPondere={cuPondere} />
           ))}
         </div>
 

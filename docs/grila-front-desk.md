@@ -24,6 +24,10 @@
 | **Petruța** (`pnitisor16@gmail.com`) | Galeriile Ștefan cel Mare | — |
 | **Theo Todica** (`todicatheodora@gmail.com`) | Nicolina | instructor Junior, 2 grupe la Nicolina |
 
+**Programul de lucru** (Alex, 28 sept. 2026): **Petruța luni–vineri, Theo luni–duminică.** Contează la
+termenele de răspuns (K4): un lead intrat vineri seara sau în weekend la Ștefan are termen luni.
+**Zilele lucrate / pro-rata nu se folosesc la recepție** — câmpul din raportul KPI e moștenit din șablonul MOA.
+
 **KPI-urile se calculează pe locația la care lucrează omul**, nu pe toată școala (decizie Alex,
 23 sept.). Locația de măsurare stă pe grila KPI a omului (`kpi_grila_locatii`), nu pe cont —
 `app_metadata.locatie_id` nu e necesar.
@@ -74,6 +78,71 @@ la Q4K.
 **Consecința de calendar:** K2 al lunii M se definitivează abia după finalul lunii M+1 (septembrie →
 31 octombrie). De aceea în grilă K2 e linie forfetară (pondere 0), iar restul bonusului se poate
 confirma la finalul lunii fără el.
+
+### ⭐ K4 — răspuns la cereri, din trei surse (decis 28 sept. 2026)
+
+K4 = **media simplă** a surselor care au date în luna respectivă (o sursă goală nu intră în medie; fără
+nicio sursă → „fără date = standard"):
+
+1. **Leaduri din aplicație (automat)** — cererile noi ale lunii de pe locația recepției, atinse de un om
+   (contact notat, mutare de card, notă, SMS, sau lead creat de om) până la termenul de prim apel, pe
+   programul omului: azi până la 23:59, după 18:00 → următoarea zi de lucru la 12:00. Petruța L–V
+   (un lead de vineri seara / weekend are termen luni 12:00), Theo L–D. Nu intră: cei deja clienți,
+   leadurile create direct în Nurture (foști clienți puși automat în pool-ul de reactivare) și cele cu
+   termenul încă deschis. Locația: a leadului → a ultimei programări → a grupei la care s-a înscris.
+2. **Meta** — rata de răspuns copiată lunar de manager din Meta Business Suite (Inbox → Statistici).
+3. **Telefon** — recepția notează seara în `/situatie-zilnica` apelurile pierdute ale zilei și câte a
+   sunat înapoi în aceeași zi (`apeluri_pierdute_zi`); o zi completată cu 0 pierdute = 100%.
+
+**Completare de către manager (Alex, 29 sept. 2026, ⏳ în lucru):**
+- **Săptămânal, cumulat pe lună**: în fiecare luni managerul trece cifrele de la 1 ale lunii până azi; ultima
+  completare după finalul lunii = cifra lunii. Nu se lasă totul la final.
+- **Meta e comună pentru toată școala și răspunde doar Petruța** → rata din Meta (Messenger + DM Instagram)
+  intră doar în K4-ul Petruței. K4-ul lui Theo = leadurile din aplicație + telefonul de la Nicolina.
+- **Telefonul**: recepția notează zilnic; managerul verifică săptămânal notările cu istoricul de apeluri.
+- **Meta = o singură sursă** în medie: media ratei de răspuns Messenger și a celei de pe DM Instagram
+  (procentele din Business Suite → Inbox → Statistici, perioada 1 ale lunii → azi).
+- **Comentariile** (Meta nu le măsoară; managerii spun că e greu să le numere pe toate): managerul numără
+  doar **comentariile-întrebare rămase fără răspuns peste 24 h**. **Toleranță 5 pe lună**: de la al 6-lea
+  omis, K4 coboară o treaptă (peste → standard, standard → sub). Doar la Petruța, ca și Meta.
+
+Implementare: `kpi_k4_receptie` (migrația `20260929110000`); MOA rămâne pe `kpi_k4`.
+Pe septembrie (doar leadurile): Ștefan 67%, Nicolina 62%, Q4K 68% — sub pragul de 85%; după
+procedura din 17 sept. Ștefan urcă la 77%. ⏳ Pragurile de 85 / 95 sunt de revăzut după octombrie.
+
+### ⭐ K3 — orice revenire contează, definitivat luna următoare (Alex, 29 sept. 2026)
+
+Cronul de noapte deschide un caz pentru fiecare copil care n-a mai venit 21 de zile la o grupă care a
+ținut ședințe; după 30 de zile cazul e „reactivat" dacă a revenit la curs și n-are restanță scadentă pe
+luna revenirii. **Contează orice revenire**, nu doar cea după telefonul recepției (Alex: „rămâne așa").
+K3 al lunii M = cazurile intrate în M; ultimul primește verdictul ~30 de zile mai târziu, deci **K3 se
+definitivează la finalul lunii M+1, ca K2**. În salariu, K2 și K3 stau în componenta
+„Bonus KPI — luna următoare", care se confirmă după acea dată; restul bonusului se confirmă la finalul
+lunii M. Migrația `20260929100000`. Primele cazuri din sezon apar la începutul lui octombrie — septembrie
+e „fără date = standard" (120 lei).
+
+### ⭐ K5 — conversie = orice plată pe o înrolare (confirmat de Alex, 29 sept. 2026)
+
+„Orice plată înseamnă conversie — OPEN, K-pop, studenți, abonamente — adică o înrolare." Deci K5 rămâne
+cum e implementat (`kpi_k5`): leadul din luna M−1 e convertit dacă clientul are o încasare > 0 în 30 de
+zile de la lead. Nu se restrânge la abonamentul lunar (la Ștefan, cohorta august: 25 convertiți, dintre
+care 16 pe abonament; restul pe cursurile de vară plătite pe ședință).
+
+**De unde vin pragurile 28 / 36%:** din specificația CBC pentru „Responsabil Relații Clienți" (1 sept. 2026,
+`CBC - GM Masterclass/Specificatie qapp - Raport Lunar KPI RRC - v1.md` §4.5): „baseline derivat Ștefan cel
+Mare 28–36%, Nicolina 17–24%", calculat pe vara 2026, pe o **fereastră de 60 de zile**, marcat
+**provizoriu, de recalibrat în ianuarie 2027**. Grila a preluat intervalul de la Ștefan ca prag unic pentru
+toate locațiile, iar aplicația măsoară pe 30 de zile (mai strict decât baza din care vin pragurile).
+
+Pe datele reale (30 de zile, orice plată): Ștefan iul. 58,6% (17/29) · aug. 45,5% (25/55); Nicolina
+iul. 42,1% (8/19) · aug. 17,4% (4/23). Cohorta septembrie (prima din sezon) se închide pe 30 oct.
+
+⭐ **Decizie Alex, 29 sept. 2026: 28 / 36% rămâne pentru amândouă locațiile până în ianuarie 2027**, când
+se recalibrează pe cohortele septembrie–decembrie. ⏰ La recalibrare de discutat:
+- **Nicolina** — consultantul propusese 17–24%; cu pragul unic, K5 iese de regulă 0 lei la Theo.
+- **Abonamentul plătit după 30 de zile nu se numără.** Nicolina, cohorta august: 7 înscriși pe abonament
+  în fereastră, doar 4 au plătit în 30 de zile. Alternativa: conversie numărată după data înrolării
+  (cu sumă, nereziliată), nu după data plății.
 
 ### Istoric: pragurile din schița inițială erau inversate
 
@@ -218,11 +287,13 @@ Ce lipsește:
 | Grila KPI | șablonul **„Recepție 2026-2027"** + câte o grilă activă pe om, de la 2026-09-01: Petruța → Galeriile Ștefan cel Mare, Theo → Nicolina. Șablonul vechi „Responsabil Relații Clienți" (MOA) a rămas neatins |
 | Linii | K1 30% · K2 **0% (forfetar)** · K3 35% · K4 17,5% · K5 17,5%; „fără date = standard" pe toate; sumele pe trepte ca în §3; „peste X%" = X,01 (motorul compară cu ≥); bonus doar septembrie–iunie; fără eliminatorii; `cota_manager` 0 |
 | K2 | cheia nouă `rata_incasare_m1` → `kpi_rata_incasare` (aceeași ca la manager); marcată „provizoriu" până la finalul lunii M+1 — luna nu se poate închide în raportul KPI până atunci |
+| Partea amânată | liniile care își declară `final_la` (K2, K3) formează componenta „Bonus KPI — luna următoare", separat de bonusul lunii **indiferent dacă sunt încă provizorii** — altfel, după ce se definitivează, suma lor ar trece în bonusul deja confirmat și s-ar pierde (reparat pe 29 sept., migrația `20260929100000`) |
 | K4 | mod „doar rata" (`rata_standard` 85, `rata_peste` 95,01): contează doar rata de răspuns, completată manual. Necompletată = blochează închiderea lunii |
 | K3 | fără poarta de 48 h din șablonul MOA (grila nu o cere) |
 | Partea fixă | `salarizare_receptie` pe om (normă, facturare, fidelitate, abonament, bonusuri ocazionale) + sumele din `salarizare_grila` (post `receptie`) |
 | Salariul lunii | `calculeaza_salariu_receptie(user, an, lună)`; confirmarea pe componente (`confirma_salariu_staff`): fixul oricând, bonusul KPI după finalul lunii, K2 după finalul lunii M+1 |
 | Ecrane | `/salarizare` → tab „Recepție"; detaliul indicatorilor în `/raport-kpi`; omul își vede doar lunile lui confirmate în „Salariul meu" (politica `salarii_staff_self_select`, migrația `20260926163900`) |
+| Ponderea | nu se afișează în `/raport-kpi`, în print și în editorul grilei când toate liniile au „fără date = standard" — atunci nu se redistribuie nimic și ponderea nu schimbă suma (28 sept. 2026). Rămâne vizibilă pe MOA și oriunde suma ponderilor nu dă 100% |
 
 ⭐ **Indicatorul care nu se poate măsura se plătește la STANDARD** (Alex, 25 sept. 2026), fără
 redistribuire pe ceilalți. Motivul: K3 n-are încă niciun caz în jurnal, iar redistribuirea motorului

@@ -35,6 +35,10 @@ export default function GrilaEditorPage() {
         .reduce((s, l) => s + (Number(l.pondere) || 0), 0),
     [linii],
   )
+  // Activarea cere în continuare Σ = 100%: dacă nu dă, ponderea rămâne vizibilă ca să poată fi reparată.
+  const cuPondere =
+    linii.some((l) => l.activ && !l.eliminatoriu && !l.na_standard) ||
+    Math.abs(ponderea - 100) > 0.01
 
   const save = useMutation({
     mutationFn: () => salveazaLinii(grilaId, linii),
@@ -94,12 +98,14 @@ export default function GrilaEditorPage() {
         <Badge tone={g.stare === 'activa' ? 'success' : g.stare === 'ciorna' ? 'warn' : 'neutral'}>
           {g.stare}
         </Badge>
-        <span
-          className={`text-sm ${Math.abs(ponderea - 100) > 0.01 ? 'text-warn' : 'text-muted'}`}
-        >
-          Suma ponderilor: <strong>{ponderea}%</strong>
-          {Math.abs(ponderea - 100) > 0.01 && ' — grila nu poate fi activată până nu dă 100%'}
-        </span>
+        {cuPondere && (
+          <span
+            className={`text-sm ${Math.abs(ponderea - 100) > 0.01 ? 'text-warn' : 'text-muted'}`}
+          >
+            Suma ponderilor: <strong>{ponderea}%</strong>
+            {Math.abs(ponderea - 100) > 0.01 && ' — grila nu poate fi activată până nu dă 100%'}
+          </span>
+        )}
         <span className="text-sm text-muted">
           Cota managerului: {Math.round(g.cota_manager * 100)}%
         </span>
@@ -129,6 +135,7 @@ export default function GrilaEditorPage() {
               linie={linie}
               definitie={def}
               readOnly={Boolean(readOnly)}
+              cuPondere={cuPondere}
               onChange={(patch) =>
                 setLinii((prev) =>
                   prev.map((l, k) => (k === i ? { ...l, ...patch } : l)),

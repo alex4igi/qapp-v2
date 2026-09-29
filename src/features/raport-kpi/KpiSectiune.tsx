@@ -63,6 +63,21 @@ function drillDown(l: LinieRaport): [string, string][] {
     out.push(['Excluși: erau deja clienți', n('deja_clienti')])
     // Cifra asta separă „a lucrat slab" de „leadurile n-au fost atribuite".
     out.push(['Leaduri fără punct de lucru (pe club)', n('fara_locatie')])
+  } else if (l.cheie === 'raspuns_24h' && d.mod === 'trei_surse') {
+    out.push(['Leaduri din aplicație, atinse în termen',
+      d.rata_leaduri == null ? 'fără leaduri' : `${n('leaduri_in_termen')} din ${n('leaduri_numitor')} · ${n('rata_leaduri')}%`])
+    out.push(['Leaduri cu termenul încă deschis (nu intră)', n('leaduri_in_asteptare')])
+    out.push(['Program de lucru', d.zile_lucru_saptamana === 5 ? 'luni–vineri' : d.zile_lucru_saptamana === 7 ? 'luni–duminică' : `${n('zile_lucru_saptamana')} zile/săpt.`])
+    out.push(['Telefon, sunate înapoi în aceeași zi',
+      d.rata_telefon == null ? 'nicio zi completată' : `${n('apeluri_returnate_luna')} din ${n('apeluri_pierdute_luna')} · ${n('rata_telefon')}% (${n('apeluri_zile')} zile completate)`])
+    out.push(['Telefon verificat de manager', d.telefon_verificat ? 'da' : 'nu'])
+    out.push(['K4 = media surselor cu date', n('surse') ? `${n('surse')} surse` : null])
+    if (d.include_meta) {
+      out.push(['Meta: mesaje și comentarii fără răspuns (de la manager)',
+        d.meta_omise == null ? 'necompletat' : `${n('meta_omise')} · tolerate ${n('toleranta_meta')}`])
+      if (d.coborat_meta) out.push(['Peste toleranță', 'K4 coborât o treaptă'])
+    }
+    out.push(['Leaduri din lună fără locație (la nimeni)', n('leaduri_fara_locatie')])
   } else if (l.cheie === 'raspuns_24h') {
     out.push(['Timp mediu de răspuns', n('timp_mediu') ? `${n('timp_mediu')} ore` : null])
     out.push(['Apeluri pierdute fără revenire', n('apeluri_pierdute')])
@@ -72,7 +87,7 @@ function drillDown(l: LinieRaport): [string, string][] {
   return out.filter((x): x is [string, string] => x[1] != null)
 }
 
-export function KpiSectiune({ linie }: { linie: LinieRaport }) {
+export function KpiSectiune({ linie, cuPondere }: { linie: LinieRaport; cuPondere: boolean }) {
   const [deschis, setDeschis] = useState(false)
   const detalii = drillDown(linie)
 
@@ -86,7 +101,7 @@ export function KpiSectiune({ linie }: { linie: LinieRaport }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-ink">{linie.denumire}</span>
-            <Badge tone="neutral">{linie.pondere}%</Badge>
+            {cuPondere && <Badge tone="neutral">{linie.pondere}%</Badge>}
             {!linie.aplicabil && <Badge tone="neutral">nu se aplică luna asta</Badge>}
             {linie.sursa === 'manual' && <Badge tone="neutral">manual</Badge>}
             {linie.provizoriu && <Badge tone="warn">provizoriu</Badge>}

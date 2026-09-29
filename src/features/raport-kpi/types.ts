@@ -129,3 +129,12 @@ export const ETICHETA_BANDA: Record<Banda, string> = {
   peste: 'peste standard',
   na: 'nemăsurabil',
 }
+
+/**
+ * Ponderea lucrează doar la redistribuire. Când toate liniile plătesc standardul
+ * în lipsa datelor (grila recepției), nu se redistribuie nimic și ponderea n-are
+ * ce căuta pe ecran.
+ */
+export function ponderaConteaza(linii: Pick<LinieRaport, 'na_standard'>[]): boolean {
+  return linii.some((l) => !l.na_standard)
+}

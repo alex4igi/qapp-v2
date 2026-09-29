@@ -1,4 +1,4 @@
-import { ETICHETA_BANDA, LUNI_LUNG, type RaportKpi } from '../types'
+import { ETICHETA_BANDA, LUNI_LUNG, ponderaConteaza, type RaportKpi } from '../types'
 
 export type VariantaPrint = 'intern' | 'titular' | 'salarizare'
 
@@ -64,7 +64,7 @@ function randuri(r: RaportKpi, cuSume: boolean): string {
           : ''
       return `<tr>
   <td><span class="kpi">${esc(l.denumire)}</span>${cond}${poarta}</td>
-  <td class="num">${l.pondere}%</td>
+  ${ponderaConteaza(r.linii) ? `<td class="num">${l.pondere}%</td>` : ''}
   <td class="num">${esc(val)}</td>
   <td class="num">${esc(prag)}</td>
   <td class="num"><span class="banda b-${l.banda}">${esc(ETICHETA_BANDA[l.banda])}</span></td>
@@ -129,7 +129,7 @@ ${
   } else if (varianta === 'titular') {
     corp = `${antet(r, 'Raport lunar de performanță')}
 <table>
-  <thead><tr><th>Indicator</th><th class="num">Pondere</th><th class="num">Realizat</th>
+  <thead><tr><th>Indicator</th>${ponderaConteaza(r.linii) ? '<th class="num">Pondere</th>' : ''}<th class="num">Realizat</th>
   <th class="num">Prag</th><th class="num">Treaptă</th></tr></thead>
   <tbody>${randuri(r, false)}</tbody>
 </table>
@@ -147,16 +147,20 @@ nu doar cifra. Generat la ${esc(azi)}.</div>`
   } else {
     corp = `${antet(r, 'Raport KPI — intern')}
 <table>
-  <thead><tr><th>Indicator</th><th class="num">Pondere</th><th class="num">Realizat</th>
+  <thead><tr><th>Indicator</th>${ponderaConteaza(r.linii) ? '<th class="num">Pondere</th>' : ''}<th class="num">Realizat</th>
   <th class="num">Prag</th><th class="num">Treaptă</th><th class="num">Sumă</th></tr></thead>
   <tbody>${randuri(r, true)}</tbody>
 </table>
 ${eliminatorii(r)}
 <table><tbody>
   <tr><td>Sumă brută a liniilor</td><td class="num">${lei(r.bonus_brut)}</td></tr>
-  <tr><td>Redistribuire (pondere evaluată ${r.pondere_evaluata}% din ${
-    r.pondere_luna
-  }%)</td><td class="num">×${r.factor_redistribuire}</td></tr>
+  ${
+    ponderaConteaza(r.linii)
+      ? `<tr><td>Redistribuire (pondere evaluată ${r.pondere_evaluata}% din ${
+          r.pondere_luna
+        }%)</td><td class="num">×${r.factor_redistribuire}</td></tr>`
+      : ''
+  }
   ${
     r.zile.lucrate != null
       ? `<tr><td>Pro-rata zile lucrate (${r.zile.lucrate}/${
@@ -175,9 +179,9 @@ ${
     ? `<div class="nota">${r.avertismente.map((a) => esc(a)).join('<br>')}</div>`
     : ''
 }
-<div class="nota">Σ ponderi configurate: ${r.pondere_totala_configurata}%. Generat la ${esc(
-      azi,
-    )}.</div>`
+<div class="nota">${
+      ponderaConteaza(r.linii) ? `Σ ponderi configurate: ${r.pondere_totala_configurata}%. ` : ''
+    }Generat la ${esc(azi)}.</div>`
   }
 
   w.document.write(`<!doctype html><html lang="ro"><head><meta charset="utf-8">

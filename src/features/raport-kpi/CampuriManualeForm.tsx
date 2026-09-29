@@ -8,7 +8,17 @@ type Intrare = {
   campuri: CampManual[]
   /** KPI fără câmpuri proprii: o singură valoare, sub cheia `valoare`. */
   simplu: 'bifa' | 'numar' | null
+  ajutor?: string
 }
+
+const AJUTOR_K4_TELEFON =
+  'Completează în fiecare luni. Telefon: compară apelurile pierdute notate în Situația zilnică ' +
+  'cu istoricul telefonului recepției. Leadurile și apelurile se adună singure; fără bifa de ' +
+  'telefon K4 nu se plătește.'
+const ajutorK4Meta = (toleranta: number) =>
+  'Meta: în Business Suite → Inbox (Messenger, Instagram, Facebook comments, Instagram comments) ' +
+  'numără mesajele și comentariile-întrebare rămase fără răspuns peste 24 h, de la 1 ale lunii până azi. ' +
+  `Peste ${toleranta} pe lună, K4 coboară o treaptă. `
 
 /**
  * Ce trebuie completat de om se DEDUCE din configurație, nu se scrie în cod:
@@ -36,12 +46,20 @@ function intrari(raport: RaportKpi, campuri: CampManual[]): Intrare[] {
 
   return toate
     .map<Intrare | null>((x) => {
-      // K4 în modul „doar rata" (grila recepției) cere numai rata de răspuns; apelurile
-      // pierdute, timpul mediu și sondajul sunt ale șablonului MOA.
-      const doarRata = x.cheie === 'raspuns_24h' && x.parametri?.rata_peste != null
-      const proprii = (dupaKpi.get(x.kpi_id) ?? []).filter((c) => !doarRata || c.cheie === 'rata_meta')
+      // K4 pe grila recepției cere doar mesajele Meta omise (unde omul răspunde în Meta)
+      // și verificarea telefonului; rata, timpul mediu și sondajul sunt ale șablonului MOA.
+      const receptie = x.cheie === 'raspuns_24h' && x.parametri?.rata_peste != null
+      const cuMeta = Number(x.parametri?.include_meta ?? 0) === 1
+      const proprii = (dupaKpi.get(x.kpi_id) ?? []).filter((c) =>
+        receptie
+          ? c.cheie === 'telefon_verificat' || (cuMeta && c.cheie === 'meta_omise')
+          : !['meta_omise', 'telefon_verificat'].includes(c.cheie),
+      )
       if (proprii.length > 0) {
-        return { kpiId: x.kpi_id, cheie: x.cheie, denumire: x.denumire, campuri: proprii, simplu: null }
+        return {
+          kpiId: x.kpi_id, cheie: x.cheie, denumire: x.denumire, campuri: proprii, simplu: null,
+          ajutor: receptie ? (cuMeta ? ajutorK4Meta(Number(x.parametri?.toleranta_meta ?? 5)) : '') + AJUTOR_K4_TELEFON : undefined,
+        }
       }
       if (x.sursa !== 'manual') return null
       return {
@@ -141,11 +159,14 @@ export function CampuriManualeForm({
                     </Field>
                   ),
                 )}
+                {i.ajutor && <p className="text-xs text-muted">{i.ajutor}</p>}
               </div>
             )}
           </div>
         ))}
 
+        {/* Prag 0 = grila nu folosește pro-rata (recepția). */}
+        {raport.zile.prag > 0 && (
         <div className="rounded-lg border border-line p-3">
           <div className="mb-2 text-sm font-medium text-ink">Zile lucrate (pro-rata)</div>
           <p className="mb-2 text-xs text-muted">
@@ -192,6 +213,7 @@ export function CampuriManualeForm({
             </p>
           )}
         </div>
+        )}
       </div>
     </div>
   )

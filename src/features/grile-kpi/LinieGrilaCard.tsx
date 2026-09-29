@@ -6,6 +6,7 @@ type Props = {
   linie: LinieGrila
   definitie: KpiDefinitie
   readOnly: boolean
+  cuPondere: boolean
   onChange: (patch: Partial<LinieGrila>) => void
 }
 
@@ -15,7 +16,7 @@ const num = (v: string) => (v === '' ? null : Number(v))
  * Fișa unui bonus: pondere, condiții descriptive, praguri (procentuale sau
  * afirmative) și sume. Tot ce vede și discută angajatul la evaluare.
  */
-export function LinieGrilaCard({ linie, definitie, readOnly, onChange }: Props) {
+export function LinieGrilaCard({ linie, definitie, readOnly, cuPondere, onChange }: Props) {
   const eComision = linie.mod_calcul === 'comision'
   const eAfirmativ = linie.tip_prag === 'afirmativ'
 
@@ -40,7 +41,7 @@ export function LinieGrilaCard({ linie, definitie, readOnly, onChange }: Props) 
           )}
         </div>
 
-        {!linie.eliminatoriu && (
+        {cuPondere && !linie.eliminatoriu && (
           <label className="text-xs text-muted">
             <span className="mb-0.5 block">Pondere (%)</span>
             <TextInput
