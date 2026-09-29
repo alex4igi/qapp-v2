@@ -66,6 +66,14 @@ instructori. Se plătește în cele 10 luni de sezon.
 | **K5** Conversie lead → client | din leadurile lunii trecute | < 28% → 0 | 28–36% → **60** | > 36% → **140** |
 | **TOTAL LUNAR** | | **0** | **430** | **1.100** |
 
+### ⭐ K1 — baza pe `data_reziliere` (29 sept. 2026)
+
+K1 = din abonamentele lunare care încep în luna M pe locația omului (nereziliate înainte de ziua 1 — aceeași
+regulă ca K2), cât s-a încasat până în ziua 20, în lei. Până pe 29 sept. baza se filtra pe steagul
+`reziliat`, pus și pe lunile încheiate normal — recalculul unei luni vechi pierdea jumătate din bază.
+Septembrie 2026 nu se mișcă (Ștefan 61,2%, Nicolina 53,4%); istoricul se mișcă câteva puncte (Ștefan,
+martie 2026: 68,1% → 71,0%). Migrația `20260929150000`.
+
 ### ⭐ K2 — rata de încasare a managerului (decis 25 sept. 2026)
 
 K2 măsoară **exact ce măsoară managerul la bonusul pe încasări**: cât din ratele lunii M (înrolările
