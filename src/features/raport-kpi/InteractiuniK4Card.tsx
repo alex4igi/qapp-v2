@@ -127,47 +127,41 @@ export function InteractiuniK4Card() {
         salvează cu 0.
       </p>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted">
-              <th className="py-1 pr-3 font-medium">Canal</th>
-              <th className="py-1 pr-3 font-medium">Intrate</th>
-              <th className="py-1 pr-3 font-medium">Cu răspuns în 24 h</th>
-              <th className="py-1 font-medium">Zile completate luna asta</th>
-            </tr>
-          </thead>
-          <tbody>
-            {randuri.map((r) => (
-              <tr key={cheie(r)} className="border-t border-line">
-                <td className="py-2 pr-3 text-ink">
-                  {ETICHETA[r.canal]} · {r.locatie_nume}
-                </td>
-                <td className="py-2 pr-3">
-                  <TextInput
-                    type="number"
-                    min={0}
-                    step={1}
-                    className="w-24"
-                    value={valori[cheie(r)]?.intrate ?? ''}
-                    onChange={(e) => set(r, 'intrate', e.target.value)}
-                  />
-                </td>
-                <td className="py-2 pr-3">
-                  <TextInput
-                    type="number"
-                    min={0}
-                    step={1}
-                    className="w-24"
-                    value={valori[cheie(r)]?.cu_raspuns ?? ''}
-                    onChange={(e) => set(r, 'cu_raspuns', e.target.value)}
-                  />
-                </td>
-                <td className="py-2 text-muted">{zileCompletate(r)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {randuri.map((r) => (
+          <div key={cheie(r)} className="rounded-lg border border-line p-3">
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <span className="text-sm font-medium text-ink">
+                {ETICHETA[r.canal]} · {r.locatie_nume}
+              </span>
+              <span className="shrink-0 text-xs text-muted">{zileCompletate(r)} zile luna asta</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-xs text-muted">
+                <span className="mb-0.5 block">Intrate</span>
+                <TextInput
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step={1}
+                  value={valori[cheie(r)]?.intrate ?? ''}
+                  onChange={(e) => set(r, 'intrate', e.target.value)}
+                />
+              </label>
+              <label className="text-xs text-muted">
+                <span className="mb-0.5 block">Cu răspuns în 24 h</span>
+                <TextInput
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step={1}
+                  value={valori[cheie(r)]?.cu_raspuns ?? ''}
+                  onChange={(e) => set(r, 'cu_raspuns', e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+        ))}
       </div>
 
       {mesaj && <p className="mt-2 text-xs text-success">{mesaj}</p>}

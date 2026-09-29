@@ -119,6 +119,9 @@ export const ROUTE_ACCESS = {
   // Raportul lunar de bonus: managerul PL îl completează și îl închide pentru
   // oamenii lui, dar nu poate atinge numerele grilei (vezi /grile-kpi).
   '/raport-kpi': PRIVILEGED,
+  // K4 la recepție: telefonul și Meta le introduce managerul zilnic, și de pe telefon.
+  // Recepția nu se autoevaluează, deci nu e FRONT_DESK.
+  '/interactiuni-k4': PRIVILEGED,
   // Salariile tuturor (instructori, manageri, recepție) și confirmarea lor:
   // date sensibile, deci nici managerul nu le vede.
   '/salarizare': ADMIN_OR_OWNER,

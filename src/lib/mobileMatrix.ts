@@ -34,6 +34,8 @@ export const MOBILE_ROUTES = [
   '/situatie-zilnica',
   // Management: doar cifrele (pagina își ascunde singură graficele pe telefon)
   '/overview',
+  // Verificarea zilnică a recepției (K4), făcută de manager
+  '/interactiuni-k4',
   // ⚠️ `/analytics` a fost SCOS intenționat: RPC-ul `get_pachet_luni` depășește
   // timeout-ul de 8s al PostgREST pentru un cont autentificat și întoarce 500,
   // iar React Query îl reîncearcă de 3 ori — 30+ secunde de așteptare pentru un
