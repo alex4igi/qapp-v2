@@ -14,7 +14,7 @@ const GRUPA_VALUES = new Set([
 
 // Numele câmpului: lowercase + fără diacritice + underscore/`?` → spațiu, ca să
 // prindem 'varsta'/'locatie' indiferent de cum scrie formularul întrebarea.
-function foldName(s: string): string {
+export function foldName(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')
@@ -48,7 +48,7 @@ export type ParsedLead = {
 
 // Extrage din field_data shape-ul de lead. Convenția formularelor Quasar:
 //   `full name`        = cel care completează (de regulă părintele) → nume
-//   `nume_participant` = copilul                                     → prenume
+//   `nume_participant` / `care_este_numele_lui/ei_?` = copilul       → prenume
 export function parseLeadFields(fields: FieldDatum[]): ParsedLead {
   let fullName: string | null = null
   let participant: string | null = null
@@ -70,7 +70,7 @@ export function parseLeadFields(fields: FieldDatum[]): ParsedLead {
 
     if (name === 'full name' || name === 'name' || name === 'nume') {
       fullName = value
-    } else if (name.includes('participant')) {
+    } else if (name.includes('participant') || name.includes('numele lui')) {
       participant = value
     } else if (name === 'first name' || name === 'prenume') {
       firstName = value

@@ -13,8 +13,19 @@
 //     pages_show_list, pages_read_engagement, pages_manage_ads, ads_management).
 //   META_PULL_DAYS (opțional) — fereastra de timp în zile (default 3).
 //   CRON_SECRET (opțional) — dacă e setat, cere Authorization: Bearer <secret>.
-import { serviceClient, lazyCampanie, insertLead } from '../_shared/intake.ts'
-import { GRAPH, implicitDinFormular, parseLeadFields, type FieldDatum } from '../_shared/meta.ts'
+//
+// Recuperare manuală (același secret ca cron-ul), body JSON opțional:
+//   { zile: 30, formular: 'teatru', simulare: true }  → doar lista leadurilor, nu scrie nimic
+//   { zile: 30, formular: 'teatru', doar: ['<lead id>', …] } → inserează numai ID-urile date
+// Cron-ul trimite `{}` ⇒ comportamentul de mai sus nu se schimbă.
+import { serviceClient, lazyCampanie, insertLead, normalizeTelefon } from '../_shared/intake.ts'
+import {
+  foldName,
+  GRAPH,
+  implicitDinFormular,
+  parseLeadFields,
+  type FieldDatum,
+} from '../_shared/meta.ts'
 import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 type GraphLead = {
@@ -49,7 +60,19 @@ Deno.serve(async (req) => {
   if (!token) {
     return Response.json({ error: 'META_SYSTEM_USER_TOKEN lipsește' }, { status: 500 })
   }
-  const days = Number(Deno.env.get('META_PULL_DAYS') ?? '3')
+  const opt = (await req.json().catch(() => ({}))) as {
+    zile?: number
+    formular?: string
+    simulare?: boolean
+    doar?: string[]
+  }
+  const days = opt.zile
+    ? Math.min(Math.max(Number(opt.zile), 1), 60)
+    : Number(Deno.env.get('META_PULL_DAYS') ?? '3')
+  const formFilter = opt.formular ? foldName(opt.formular) : null
+  const doar = opt.doar?.length ? new Set(opt.doar) : null
+  const simulare = opt.simulare === true
+  const candidati: Record<string, unknown>[] = []
   const sinceTs = Math.floor((Date.now() - days * 86_400_000) / 1000)
 
   const supabase = serviceClient()
@@ -130,6 +153,7 @@ Deno.serve(async (req) => {
       pagini.push(`${page.name ?? page.id} (${formList.length})`)
 
       for (const form of formList) {
+        if (formFilter && !foldName(form.name ?? '').includes(formFilter)) continue
         forms++
         // Fereastră pe time_created → payload mic; restul prinde dedup-ul.
         const filtering = encodeURIComponent(
@@ -149,7 +173,7 @@ Deno.serve(async (req) => {
           const leads = (page2.data ?? []) as GraphLead[]
 
           for (const lead of leads) {
-            if (seen.has(lead.id)) {
+            if (seen.has(lead.id) || (doar && !doar.has(lead.id))) {
               skipped++
               continue
             }
@@ -157,10 +181,29 @@ Deno.serve(async (req) => {
 
             const parsed = parseLeadFields(lead.field_data ?? [])
             const implicit = implicitDinFormular(form.name)
+            if (simulare) {
+              candidati.push({
+                id: lead.id,
+                created_time: lead.created_time,
+                formular: form.name,
+                nume: parsed.nume,
+                prenume: parsed.prenume,
+                telefon: parsed.telefon ? normalizeTelefon(parsed.telefon) : null,
+                email: parsed.email,
+              })
+              continue
+            }
             // Doar răspunsurile nemapate din formular — alea sunt despre om.
             // Identificatorii reclamei stau în coloanele lor (atribuire), NU în
             // observații: `observatii` rămâne notița recepției.
             const note: string[] = [...parsed.notes]
+            // Leadul recuperat intră cu data de azi (`created`); recepția trebuie
+            // să știe că omul a aplicat de fapt mai demult.
+            const aplicat = lead.created_time ? new Date(lead.created_time) : null
+            if (aplicat && Date.now() - aplicat.getTime() > 86_400_000) {
+              const zi = aplicat.toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })
+              note.push(`Aplicat pe Meta la ${zi} (recuperat ulterior)`)
+            }
 
             const result = await insertLead(
               supabase,
@@ -205,5 +248,12 @@ Deno.serve(async (req) => {
   console.log(
     `[pull/meta] create: ${created}, skip: ${skipped}, forms: ${forms}, erori: ${errors.length}, pagini: ${pagini.join('; ')}`,
   )
-  return Response.json({ created, skipped, forms, pagini, errors })
+  return Response.json({
+    created,
+    skipped,
+    forms,
+    pagini,
+    errors,
+    ...(simulare ? { candidati } : {}),
+  })
 })
