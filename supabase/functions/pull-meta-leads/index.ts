@@ -14,7 +14,7 @@
 //   META_PULL_DAYS (opțional) — fereastra de timp în zile (default 3).
 //   CRON_SECRET (opțional) — dacă e setat, cere Authorization: Bearer <secret>.
 import { serviceClient, lazyCampanie, insertLead } from '../_shared/intake.ts'
-import { GRAPH, parseLeadFields, type FieldDatum } from '../_shared/meta.ts'
+import { GRAPH, implicitDinFormular, parseLeadFields, type FieldDatum } from '../_shared/meta.ts'
 import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
 type GraphLead = {
@@ -56,6 +56,9 @@ Deno.serve(async (req) => {
   let created = 0
   let skipped = 0
   let forms = 0
+  // Doar numele paginilor și numărul de formulare — ca din log să se vadă imediat
+  // dacă o pagină (ex. cea pe care rulează reclamele de teatru) lipsește.
+  const pagini: string[] = []
   const errors: string[] = []
 
   try {
@@ -85,22 +88,46 @@ Deno.serve(async (req) => {
 
     const sursa = lazyCampanie(supabase, 'Meta Ads')
 
+    // Al cui e tokenul și ce pagini acoperă: un token de System User poate fi
+    // restrâns la anumite pagini la generare, iar atribuirea ulterioară a unei
+    // pagini în Business Manager NU îl lărgește (teatrul Q4K, 2026-09-29).
+    try {
+      const me = await graphGet(`${GRAPH}/me?fields=id,name&access_token=${token}`)
+      const dbg = await graphGet(
+        `${GRAPH}/debug_token?input_token=${token}&access_token=${token}`,
+      )
+      const d = (dbg.data ?? {}) as {
+        app_id?: string
+        granular_scopes?: { scope: string; target_ids?: string[] }[]
+      }
+      const tinte = (d.granular_scopes ?? [])
+        .filter((g) => ['pages_show_list', 'leads_retrieval'].includes(g.scope))
+        .map((g) => `${g.scope}=${g.target_ids?.join(',') ?? 'toate'}`)
+      console.log(
+        `[pull/meta] token: ${me.name ?? '?'} (${me.id ?? '?'}), app ${d.app_id ?? '?'}, ${tinte.join('; ')}`,
+      )
+    } catch (e) {
+      console.log(`[pull/meta] token: nu am putut citi (${(e as Error).message})`)
+    }
+
     // Paginile accesibile System User-ului + page token-ul fiecăreia.
     const accounts = await graphGet(
       `${GRAPH}/me/accounts?fields=id,name,access_token&limit=100&access_token=${token}`,
     )
-    const pages = (accounts.data ?? []) as { id: string; access_token: string }[]
+    const pages = (accounts.data ?? []) as { id: string; name?: string; access_token: string }[]
 
     for (const page of pages) {
       const pageToken = page.access_token
       // Formularele paginii — sărim cele goale (leads_count===0) ca să nu irosim apeluri.
       const formsResp = await graphGet(
-        `${GRAPH}/${page.id}/leadgen_forms?fields=id,leads_count,status&limit=200&access_token=${pageToken}`,
+        `${GRAPH}/${page.id}/leadgen_forms?fields=id,name,leads_count,status&limit=200&access_token=${pageToken}`,
       )
       const formList = ((formsResp.data ?? []) as {
         id: string
+        name?: string
         leads_count?: number
       }[]).filter((f) => (f.leads_count ?? 0) > 0)
+      pagini.push(`${page.name ?? page.id} (${formList.length})`)
 
       for (const form of formList) {
         forms++
@@ -129,6 +156,7 @@ Deno.serve(async (req) => {
             seen.add(lead.id)
 
             const parsed = parseLeadFields(lead.field_data ?? [])
+            const implicit = implicitDinFormular(form.name)
             // Doar răspunsurile nemapate din formular — alea sunt despre om.
             // Identificatorii reclamei stau în coloanele lor (atribuire), NU în
             // observații: `observatii` rămâne notița recepției.
@@ -141,8 +169,8 @@ Deno.serve(async (req) => {
                 prenume: parsed.prenume,
                 telefon: parsed.telefon,
                 email: parsed.email,
-                interes: parsed.interes,
-                locatia: parsed.locatia,
+                interes: parsed.interes ?? implicit.interes,
+                locatia: parsed.locatia ?? implicit.locatia,
                 grupa_varsta: parsed.grupa_varsta,
                 data_nasterii: parsed.data_nasterii,
                 observatii: note.join('\n'),
@@ -175,7 +203,7 @@ Deno.serve(async (req) => {
   }
 
   console.log(
-    `[pull/meta] create: ${created}, skip: ${skipped}, forms: ${forms}, erori: ${errors.length}`,
+    `[pull/meta] create: ${created}, skip: ${skipped}, forms: ${forms}, erori: ${errors.length}, pagini: ${pagini.join('; ')}`,
   )
-  return Response.json({ created, skipped, forms, errors })
+  return Response.json({ created, skipped, forms, pagini, errors })
 })

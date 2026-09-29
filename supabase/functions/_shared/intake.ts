@@ -120,14 +120,18 @@ const INTERES_ALIASES: Record<string, string> = {
   'gimnastica acrobatica': 'Acrobatică',
   'zumba': 'Zumba',
   'zumba (adulti)': 'Zumba',
+  'teatru': 'Teatru',
   'nu stiu inca': 'Nu știu încă',
   'altceva': 'Nu știu încă',
   'quasar for kids': 'Nu știu încă',
 }
 
-// 'Quasar for Kids' / 'Orice locație' lipsesc intenționat — nu sunt locații de
-// lead; valoarea brută ajunge în observații (vezi insertLead).
+// 'Quasar for Kids' / 'Orice locație' lipsesc intenționat — pe site sunt
+// răspunsuri vagi, nu alegeri de locație; valoarea brută ajunge în observații.
+// 'quasar 4 kids' (forma canonică) vine doar din formularele Meta de teatru,
+// unde locația e implicită (teatrul se ține numai acolo) — vezi meta.ts.
 const LOCATIE_ALIASES: Record<string, string> = {
+  'quasar 4 kids': 'Quasar 4 Kids',
   'stefan cel mare': 'Ștefan cel Mare',
   'quasar centru': 'Ștefan cel Mare',
   'centru': 'Ștefan cel Mare',

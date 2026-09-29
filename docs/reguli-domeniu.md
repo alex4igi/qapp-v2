@@ -99,6 +99,10 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   Potrivirea se face normalizat (`locatie_label_match` în SQL), niciodată cu `=`. Cursuri „S …" = Ștefan, „N …" = Nicolina.
 - **Săli la Ștefan:** `SCM Studio 1`, `SCM Studio 2`.
 - **Disciplina (`cursuri.stil`):** `Street Dance` · `Gimnastica` · `K-Pop` · `Teatru` · `Zumba` · `Open` — lista din `src/lib/enums.ts`.
+- **Gimnastica se ține doar la Nicolina, teatrul doar la Quasar 4 Kids** (sezonul 2026-2027). Formularele Meta
+  de gimnastică/teatru n-au întrebare de locație: leadul primește locația și interesul din numele formularului
+  (`implicitDinFormular`, `supabase/functions/_shared/meta.ts`). Dacă una din discipline se deschide și în altă
+  locație, regula de acolo devine greșită.
 - **Grupe de vârstă publice:** Tiny 4-6, Junior 7-10, Varsity 11-14, Teens 15-18, Students 19-24, Adults 25+.
   Enum-ul `varsta_curs` din DB are încă intervalele vechi — nu le afișa public.
 - **Unități de învățământ:** catalog canonic `unitati_invatamant`, cu trigger de canonicalizare pe `clienti`.
