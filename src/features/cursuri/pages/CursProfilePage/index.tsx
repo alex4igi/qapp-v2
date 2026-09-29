@@ -35,6 +35,7 @@ import {
   getCursFaraPrezenteRecente,
   getCursIstoric,
   getCursLuni,
+  cursantiLabel,
   getCursTeacheri,
   getSuspendareDeschisa,
   getGrupeSubMinim,
@@ -256,11 +257,12 @@ export function CursProfilePage() {
   })
 
   const lunaLabel = formatMonth(`${luna}-01`)
+  const facultativ = Boolean(cursQuery.data?.facultativ)
   const lunaOptions = useMemo(() => {
     const luni = luniQuery.data ?? []
     const optiuni = luni.map((l) => ({
       value: l.luna,
-      label: `${formatMonth(`${l.luna}-01`)} · ${l.cursanti} cursanți`,
+      label: `${formatMonth(`${l.luna}-01`)} · ${cursantiLabel(l, facultativ)}`,
     }))
     // Luna curentă (și cea aleasă manual) rămân selectabile chiar dacă grupa
     // n-are pe nimeni în ele — altfel nu se mai poate reveni „la azi".
@@ -273,7 +275,7 @@ export function CursProfilePage() {
       }
     }
     return optiuni
-  }, [luniQuery.data, luna])
+  }, [luniQuery.data, luna, facultativ])
 
   if (cursQuery.isLoading) return <Spinner />
   if (cursQuery.isError || !cursQuery.data) {
@@ -366,7 +368,7 @@ export function CursProfilePage() {
             />
           )}
           <div className="mb-4 flex flex-wrap items-end gap-3">
-            <div className="w-64">
+            <div className="w-80 max-w-full">
               <Field label="Luna" htmlFor="curs-luna">
                 <Select
                   id="curs-luna"

@@ -27,7 +27,7 @@ import { formatRON, formatDate, formatMonth } from '@/lib/format'
 import { vineLaLabel } from '@/lib/ultimaPrezenta'
 import { waLink, waGroupLink } from '@/lib/phone'
 import { listSezoane } from '@/features/plati/api'
-import { getCursDatorii, getCursLuni } from '@/features/cursuri/api'
+import { cursantiLabel, getCursDatorii, getCursLuni } from '@/features/cursuri/api'
 import { RestantieriTab } from '@/features/cursuri/pages/CursProfilePage/tabs/RestantieriTab'
 import {
   getGrupaDashboard,
@@ -532,11 +532,13 @@ function RosterIstoric({
   luna,
   sedinte,
   rows,
+  facultativ,
   navigate,
 }: {
   luna: string
   sedinte: number
   rows: GrupaIstoricRow[]
+  facultativ: boolean
   navigate: (to: string) => void
 }) {
   if (rows.length === 0) {
@@ -549,7 +551,11 @@ function RosterIstoric({
   return (
     <>
       <div className="mb-3 text-xs text-muted">
-        {rows.length} cursanți · {sedinte} ședințe cu catalog făcut în{' '}
+        {cursantiLabel(
+          { cursanti: rows.length, peSedinta: rows.filter((r) => r.peSedinta).length },
+          facultativ,
+        )}{' '}
+        · {sedinte} ședințe cu catalog făcut în{' '}
         {formatMonth(`${luna}-01`)}
       </div>
       <div className="overflow-x-auto rounded-2xl border border-line bg-card">
@@ -574,6 +580,11 @@ function RosterIstoric({
                 <td className="px-3 py-2 text-right text-muted">{i + 1}.</td>
                 <td className="px-3 py-2 font-medium text-ink">
                   {[r.nume, r.prenume].filter(Boolean).join(' ')}
+                  {facultativ && r.peSedinta && (
+                    <Badge tone="neutral" className="ml-2">
+                      pe ședință
+                    </Badge>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-right text-ink">{r.prezente}</td>
                 <td className="px-3 py-2 text-right text-muted">{r.absente}</td>
@@ -677,11 +688,12 @@ export function GrupaDashboardPage() {
     enabled: Boolean(cursId) && esteIstoric,
   })
 
+  const facultativ = Boolean(data?.facultativ)
   const lunaOptions = useMemo(() => {
     const luni = luniQ.data ?? []
     const optiuni = luni.map((l) => ({
       value: l.luna,
-      label: `${formatMonth(`${l.luna}-01`)} · ${l.cursanti} cursanți`,
+      label: `${formatMonth(`${l.luna}-01`)} · ${cursantiLabel(l, facultativ)}`,
     }))
     for (const l of [lunaActiva, lunaDeLucru]) {
       if (!optiuni.some((o) => o.value === l)) {
@@ -692,7 +704,7 @@ export function GrupaDashboardPage() {
       }
     }
     return optiuni
-  }, [luniQ.data, lunaActiva, lunaDeLucru])
+  }, [luniQ.data, lunaActiva, lunaDeLucru, facultativ])
 
   // Restanțele se citesc pe sezonul CURSULUI, nu pe cel care conține ziua de azi:
   // o grupă din 2025-2026 raporta zero restanțieri, pentru că fereastra căutată
@@ -846,6 +858,8 @@ export function GrupaDashboardPage() {
     data.cursNume.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() ||
     '?'
   const present = data.counters.prezenti
+  const istoricRows = istoricQ.data?.rows ?? []
+  const istoricPeSedinta = facultativ ? istoricRows.filter((r) => r.peSedinta).length : 0
   const enrolled =
     data.counters.prezenti + data.counters.absenti + data.counters.programati
   const occPct = enrolled > 0 ? Math.min(100, Math.round((present / enrolled) * 100)) : 0
@@ -925,8 +939,19 @@ export function GrupaDashboardPage() {
                 {formatMonth(`${lunaActiva}-01`)}
               </div>
               <div className="fnum mt-1 font-display text-2xl font-bold">
-                {istoricQ.data?.rows.length ?? 0}{' '}
-                <span className="text-base text-rail-soft">cursanți</span>
+                {istoricPeSedinta > 0 ? (
+                  <>
+                    {istoricRows.length - istoricPeSedinta}{' '}
+                    <span className="text-base text-rail-soft">
+                      abonați + {istoricPeSedinta} pe ședință
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    {istoricRows.length}{' '}
+                    <span className="text-base text-rail-soft">cursanți</span>
+                  </>
+                )}
               </div>
               <div className="mt-2 text-[12px] text-rail-soft">
                 {istoricQ.data?.sedinte ?? 0} ședințe cu catalog
@@ -952,7 +977,7 @@ export function GrupaDashboardPage() {
       </div>
 
       <div hidden={todayOnly} className="mt-5 flex flex-wrap items-end gap-3">
-        <div className="w-56">
+        <div className="w-80 max-w-full">
           <Field label="Luna" htmlFor="grupa-luna">
             <Select
               id="grupa-luna"
@@ -1003,6 +1028,7 @@ export function GrupaDashboardPage() {
               luna={lunaActiva}
               sedinte={istoricQ.data?.sedinte ?? 0}
               rows={istoricQ.data?.rows ?? []}
+              facultativ={facultativ}
               navigate={(to) => navigate(to)}
             />
           )}

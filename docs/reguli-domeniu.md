@@ -43,6 +43,10 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   de grupă (orar minus `vacante` și luni suspendate), max 1. Nu se rotunjește (9,67). Se aplică la bonusuri, prag minim,
   Overview, statistici. Retenția și numărătorile de OAMENI rămân neatinse (retenția la facultative = subiect deschis).
   Pe lună, o ședință se numără o singură dată, în luna în care s-a ținut; fereastra de 30 de zile e doar pentru ocuparea pe ZI.
+- **Facultative: oamenii se afișează separat — „6 abonați + 7 pe ședință", nu „13 cursanți" (29.09).** Abonat = are în
+  luna aia un rând lunar/anual real; cine are și abonament și ședințe e abonat. **Abonamentul reziliat la 0 lei nu e
+  abonat** — e o conversie în plată pe ședință (rândul lunar se reziliază în aceeași clipă în care se creează ședințele)
+  sau o anulare. Cod: `esteAbonamentReal` / `cursantiLabel` în `src/features/cursuri/api/profile.ts`.
 - **Drop-in-ul poate depăși capacitatea** — nu se plafonează, se notifică (16.09).
 - **Prag minim de existență (14.09):** 8 cursanți plătitori (SCM Studio 2: 6), din `sali.minim_cursanti`.
   3 luni ÎNCHEIATE sub prag (după luna lansării) ⇒ propusă suspendarea. **Suspendarea nu e automată** — decide managerul.

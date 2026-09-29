@@ -1,6 +1,7 @@
 // Query-uri pentru tab-urile profilului unui curs: clienți activi, inactivi,
 // datorii, fără prezență, ocupare (vs capacitate).
 import { supabase } from '@/lib/supabase'
+import type { Enums } from '@/types/db'
 import { fetchAllRows } from '@/lib/fetchAll'
 import { fetchVineLaByClient, type VineLa } from '@/lib/ultimaPrezenta'
 
@@ -553,7 +554,30 @@ export async function getCursFaraPrezenteRecente(params: {
 // Lunile grupei (selectorul „Luna" din fișa cursului + pagina grupei)
 // ============================================================
 
-export type CursLuna = { luna: string; cursanti: number }
+// `peSedinta` = cei care în luna aia au venit DOAR cu plată pe ședință (facultative).
+// Cine are și abonament lunar e abonat, nu dublu numărat.
+export type CursLuna = { luna: string; cursanti: number; peSedinta: number }
+
+// Abonament reziliat la 0 lei = convertit în plată pe ședință sau anulat (rândul lunar
+// e reziliat în aceeași clipă în care se creează ședințele), nu un abonat real.
+// Nu ne uităm doar la `reziliat`: e bifat în masă pe lunile încheiate.
+export function esteAbonamentReal(e: {
+  tip_plata: Enums<'tip_plata'> | null
+  reziliat: boolean
+  suma: number | string | null
+}): boolean {
+  return e.tip_plata !== 'Per sedinta' && !(e.reziliat && Number(e.suma ?? 0) === 0)
+}
+
+// La facultative, un singur număr amestecă abonații cu copiii veniți o dată-de două ori
+// pe ședință — „13 cursanți" pe o grupă cu 6 abonați.
+export function cursantiLabel(
+  c: { cursanti: number; peSedinta: number },
+  facultativ: boolean,
+): string {
+  if (!facultativ || c.peSedinta === 0) return `${c.cursanti} cursanți`
+  return `${c.cursanti - c.peSedinta} abonați + ${c.peSedinta} pe ședință`
+}
 
 // Un rând de înrolare acoperă un interval, nu doar luna lui de început: plata
 // integrală pe sezon are `data_final` peste ~10 luni. Plafonul e o plasă de
@@ -589,6 +613,9 @@ type IstoricEnrollmentRow = {
   id: string
   data_incepere: string | null
   data_final: string | null
+  tip_plata: Enums<'tip_plata'> | null
+  reziliat: boolean
+  suma: number | null
   client: { id: string; nume: string; prenume: string | null } | null
 }
 
@@ -598,7 +625,7 @@ async function fetchAllEnrollmentsForCurs(
   return fetchAllRows<IstoricEnrollmentRow>(() =>
     supabase
       .from('enrollments')
-      .select('id, data_incepere, data_final, client:clienti(id, nume, prenume)')
+      .select('id, data_incepere, data_final, tip_plata, reziliat, suma, client:clienti(id, nume, prenume)')
       .eq('cursul', cursId)
       .order('id'),
   ) as unknown as Promise<IstoricEnrollmentRow[]>
@@ -608,21 +635,25 @@ async function fetchAllEnrollmentsForCurs(
 // de lună — oferă doar luni care chiar întorc un roster, nu un calendar gol.
 export async function getCursLuni(cursId: string): Promise<CursLuna[]> {
   const rows = await fetchAllEnrollmentsForCurs(cursId)
-  const byLuna = new Map<string, Set<string>>()
+  type Acc = { clienti: Set<string>; abonati: Set<string>; sedinta: Set<string> }
+  const byLuna = new Map<string, Acc>()
   for (const r of rows) {
     if (!r.client || !r.data_incepere) continue
     for (const luna of monthsCovered(r.data_incepere, r.data_final)) {
-      let set = byLuna.get(luna)
-      if (!set) {
-        set = new Set<string>()
-        byLuna.set(luna, set)
+      let acc = byLuna.get(luna)
+      if (!acc) {
+        acc = { clienti: new Set(), abonati: new Set(), sedinta: new Set() }
+        byLuna.set(luna, acc)
       }
-      set.add(r.client.id)
+      acc.clienti.add(r.client.id)
+      if (r.tip_plata === 'Per sedinta') acc.sedinta.add(r.client.id)
+      else if (esteAbonamentReal(r)) acc.abonati.add(r.client.id)
     }
   }
-  return Array.from(byLuna, ([luna, clienti]) => ({
+  return Array.from(byLuna, ([luna, { clienti, abonati, sedinta }]) => ({
     luna,
     cursanti: clienti.size,
+    peSedinta: [...sedinta].filter((id) => !abonati.has(id)).length,
   })).sort((a, b) => b.luna.localeCompare(a.luna))
 }
 

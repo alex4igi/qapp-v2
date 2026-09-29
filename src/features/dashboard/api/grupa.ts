@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
 import { endOfMonth } from '@/features/plati/api/calendar'
+import { esteAbonamentReal } from '@/features/cursuri/api'
 import { fetchAllRows } from '@/lib/fetchAll'
 import { fetchVineLaByClient, type VineLa } from '@/lib/ultimaPrezenta'
 import { isoDaysAgo } from './helpers'
@@ -677,6 +678,8 @@ export type GrupaIstoricRow = {
   absente: number
   ultimaPrezenta: string | null
   restanta: number
+  // Facultative: a venit în luna aia doar cu plată pe ședință, fără abonament.
+  peSedinta: boolean
 }
 
 export type GrupaIstoricLuna = {
@@ -702,7 +705,7 @@ export async function getGrupaIstoricLuna(params: {
   const { data: enrData, error: enrErr } = await supabase
     .from('enrollments')
     .select(
-      'id, suma, client:clienti(id, nume, prenume, foto, telefon)',
+      'id, suma, tip_plata, reziliat, client:clienti(id, nume, prenume, foto, telefon)',
     )
     .eq('cursul', params.cursId)
     .lte('data_incepere', monthEnd)
@@ -712,6 +715,8 @@ export async function getGrupaIstoricLuna(params: {
   const enrollments = (enrData ?? []) as unknown as Array<{
     id: string
     suma: number | null
+    tip_plata: Enums<'tip_plata'> | null
+    reziliat: boolean
     client: {
       id: string
       nume: string
@@ -784,6 +789,14 @@ export async function getGrupaIstoricLuna(params: {
 
   // Un cursant poate avea mai multe înrolări pe lună (ex. rând lunar + bonus) —
   // restanța se adună, restul se deduplică pe client.
+  const cuSedinta = new Set<string>()
+  const cuAbonament = new Set<string>()
+  for (const e of enrollments) {
+    if (!e.client) continue
+    if (e.tip_plata === 'Per sedinta') cuSedinta.add(e.client.id)
+    else if (esteAbonamentReal(e)) cuAbonament.add(e.client.id)
+  }
+
   const byClient = new Map<string, GrupaIstoricRow>()
   for (const e of enrollments) {
     if (!e.client) continue
@@ -803,6 +816,7 @@ export async function getGrupaIstoricLuna(params: {
       absente: absenteByClient.get(e.client.id) ?? 0,
       ultimaPrezenta: ultimaByClient.get(e.client.id) ?? null,
       restanta: rest,
+      peSedinta: cuSedinta.has(e.client.id) && !cuAbonament.has(e.client.id),
     })
   }
 

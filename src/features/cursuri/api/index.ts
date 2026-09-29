@@ -40,6 +40,8 @@ export {
   getCursFaraPrezenteRecente,
   getCursLuni,
   getCursIstoric,
+  cursantiLabel,
+  esteAbonamentReal,
   lunaCurenta,
 } from './profile'
 
