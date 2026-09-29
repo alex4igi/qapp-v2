@@ -5,7 +5,7 @@ import type { Lead } from '@/types/db'
 import { waLink } from '@/lib/phone'
 import { InteresBadge, SubStatusBadge } from './Badges'
 import { CardTooltip } from './StatusTooltip'
-import { GRUPA_LABELS, isToday, waLeadMessage, ziScurta } from './constants'
+import { GRUPA_LABELS, isToday, waLeadMessage, ziScurta, esteRezolvatDejaClient, ETICHETA_REZOLVAT_DEJA_CLIENT } from './constants'
 
 type Props = {
   lead: Lead
@@ -258,6 +258,14 @@ export function LeadCard({
               </span>
             </div>
           )}
+
+      {esteRezolvatDejaClient(lead) && (
+        <div className="mt-2" {...listeners}>
+          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+            ✓ {ETICHETA_REZOLVAT_DEJA_CLIENT}
+          </span>
+        </div>
+      )}
 
       {lead.status === 'pierdut' && lead.motiv_pierdut && (
         <div

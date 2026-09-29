@@ -176,7 +176,7 @@ export function buildLeadColumns(opts: {
       header: 'Status',
       cell: (l) => (
         <span className="flex items-center gap-1">
-          <StatusBadge status={l.status} />
+          <StatusBadge status={l.status} motivCategorie={l.motiv_categorie} />
           <SubStatusBadge subStatus={l.sub_status} />
         </span>
       ),

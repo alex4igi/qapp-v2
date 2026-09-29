@@ -1,6 +1,6 @@
 import type { Lead } from '@/types/db'
 import { formatDateTime } from '@/lib/format'
-import { STATUS_CONFIG, SUB_STATUS_OPTIONS } from './constants'
+import { SUB_STATUS_OPTIONS, statusLeadLabel } from './constants'
 import { prezentaLead, ultimContactMeta } from './leadColumns'
 
 function csvCell(v: string | number | null | undefined): string {
@@ -31,7 +31,7 @@ export function exportLeadsCsv(
       l.telefon,
       l.email,
       l.locatia,
-      STATUS_CONFIG[l.status]?.label ?? l.status,
+      statusLeadLabel(l),
       l.sub_status
         ? (SUB_STATUS_OPTIONS.find((o) => o.value === l.sub_status)?.label ?? '')
         : '',

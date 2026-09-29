@@ -41,6 +41,21 @@ export const STATUS_CONFIG = Object.fromEntries(
   ALL_STATUS_COLUMNS.map((c) => [c.status, c]),
 ) as Record<StatusLead, PipelineColumn>
 
+// Un lead închis cu „Deja client — rezolvat" nu e o vânzare ratată: omul e clientul
+// nostru. Statusul rămâne `pierdut` (nu `convertit` — reclama n-a adus un client nou și
+// ar umfla conversia), dar eticheta nu mai spune „Pierdut" la o clientă activă (Alex, 29.09.2026).
+export const ETICHETA_REZOLVAT_DEJA_CLIENT = 'Rezolvat — deja client'
+
+export function esteRezolvatDejaClient(l: { status: string; motiv_categorie?: string | null }): boolean {
+  return l.status === 'pierdut' && l.motiv_categorie === 'deja_client'
+}
+
+export function statusLeadLabel(l: { status: StatusLead; motiv_categorie?: string | null }): string {
+  return esteRezolvatDejaClient(l)
+    ? ETICHETA_REZOLVAT_DEJA_CLIENT
+    : (STATUS_CONFIG[l.status]?.label ?? l.status)
+}
+
 export const SUB_STATUS_OPTIONS: {
   value: 'de_revenit' | 'nu_raspunde'
   label: string

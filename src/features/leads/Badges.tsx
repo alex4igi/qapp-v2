@@ -1,16 +1,26 @@
 import type { StatusLead, SubStatusLead, GrupaLead } from '@/types/db'
-import { STATUS_CONFIG, SUB_STATUS_OPTIONS, GRUPA_LABELS } from './constants'
+import { STATUS_CONFIG, SUB_STATUS_OPTIONS, GRUPA_LABELS, esteRezolvatDejaClient, ETICHETA_REZOLVAT_DEJA_CLIENT } from './constants'
 import { StatusTooltip } from './StatusTooltip'
 
 const base =
   'inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border'
 
-export function StatusBadge({ status }: { status: StatusLead }) {
+export function StatusBadge({
+  status,
+  motivCategorie,
+}: {
+  status: StatusLead
+  motivCategorie?: string | null
+}) {
   const c = STATUS_CONFIG[status]
+  const rezolvat = esteRezolvatDejaClient({ status, motiv_categorie: motivCategorie })
+  const cls = rezolvat
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    : `${c.bg} ${c.text} ${c.border}`
   return (
     <StatusTooltip status={status}>
-      <span className={`${base} ${c.bg} ${c.text} ${c.border} cursor-help`}>
-        {c.label}
+      <span className={`${base} ${cls} cursor-help`}>
+        {rezolvat ? ETICHETA_REZOLVAT_DEJA_CLIENT : c.label}
       </span>
     </StatusTooltip>
   )

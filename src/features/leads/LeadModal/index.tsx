@@ -22,7 +22,7 @@ import {
 } from '@/lib/lookups'
 import type { Lead, GrupaLead } from '@/types/db'
 import {
-  STATUS_CONFIG,
+  statusLeadLabel,
   GRUPA_TO_VARSTA_CURS,
   ZILE_SAPTAMANA,
   waLeadMessage,
@@ -551,7 +551,7 @@ export function LeadModal({
   if (!open) return null
 
   const tone = STATUS_TONE[form.status] ?? STATUS_TONE.nou
-  const statusLabel = STATUS_CONFIG[form.status]?.label ?? form.status
+  const statusLabel = statusLeadLabel({ status: form.status, motiv_categorie: form.motiv_categorie })
   const campaignLabel =
     campanii.data?.find((c) => c.value === form.sursa)?.label ?? ''
   const waHref = form.telefon ? waLink(form.telefon, waLeadMessage(form)) : null
