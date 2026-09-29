@@ -152,7 +152,7 @@ Decizii Alex, 28 sept. 2026. Brief: `handoff/2026-09-27-campanie-recomandari-var
   prima lună, rata întreagă rămâne a școlii.
 - **Cine poate fi invitat:** oricine **nu e înscris în sezonul campaniei** (nicio înrolare în sezon făcută înainte de
   recomandare), deci și un fost cursant. Nu din aceeași familie cu cel care invită.
-- **Termen:** ziua dinaintea primei vacanțe a sezonului (2026: **27 octombrie**) — proba, înscrierea și plata primei
+- **Termen:** ziua dinaintea primei vacanțe a sezonului (2026: **25 octombrie**; vacanța de toamnă începe luni, 26 oct.) — proba, înscrierea și plata primei
   luni, toate până atunci. Nu există prelungire în noiembrie. `campanii_recomandare.data_limita` e sursa unică:
   după ea, site-ul ascunde `/recomandari` și câmpul „Cine te-a invitat?", iar intake-ul nu mai înregistrează nimic.
 - **Atribuirea:** invitatul declară un nume; recepția confirmă cursantul (→ familia lui) în fișa leadului, înainte de

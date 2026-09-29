@@ -26,7 +26,7 @@ Ai de făcut patru lucruri:
   - **Nu** se poate folosi pentru merch, bilete la spectacole sau închirieri.
 - **Confirmat de Alex:** poate fi invitat oricine **nu e înscris în sezonul acesta**, deci și un fost cursant care revine. Prietenul poate alege orice grupă.
 - **Confirmat de Alex:** dacă prietenul începe în mijlocul lunii, prima lună se plătește întreagă, iar diferența se scade din luna a doua. Exemplu: începe pe 15 octombrie, plătește 280 lei în octombrie și 98 lei în noiembrie. Totalul e același; doar prima plată e întreagă.
-- **Confirmat de Alex:** campania durează **până la începutul primei vacanțe**: vacanța de toamnă începe pe **28 octombrie 2026**, deci ultima zi este **27 octombrie 2026**. Până atunci trebuie făcute **toate**: proba, înscrierea și plata primei luni. Campania nu continuă în noiembrie.
+- **Confirmat de Alex:** campania durează **până la începutul primei vacanțe**: vacanța de toamnă începe pe **26 octombrie 2026** (mutată de Alex pe 29.09, inițial 28), deci ultima zi este **25 octombrie 2026**. Până atunci trebuie făcute **toate**: proba, înscrierea și plata primei luni. Campania nu continuă în noiembrie.
 - **Confirmat de Alex:** biletele sunt identice pentru toată lumea. Nu au cod unic pe copil sau nume pretipărit; numele celui care invită se scrie de mână. Toate biletele au **același QR**, către `quasardance.ro/dance-with-me`.
 - **Confirmat de Alex:** campania se anunță la toate grupele. Accentul vizual și de ton cade pe **Teens și Varsity**, adolescenți și tineri, fără imagini cu copii mici.
 
@@ -48,7 +48,7 @@ Ai de făcut patru lucruri:
 3. QR mare, cu margine albă, lizibil pe hârtie și din poză; sub el, URL-ul scris: **quasardance.ro/dance-with-me**;
 4. telefoanele recepției (vezi mai jos);
 5. subsolul cu condițiile;
-6. „Valabil până pe 27 octombrie 2026”.
+6. „Valabil până pe 25 octombrie 2026”.
 
 **Telefoane (confirmat de Alex):** pe bilet apar două numere. De cele de la Quasar for Kids se ocupă tot recepția din Nicolina.
 
@@ -74,7 +74,7 @@ Inspirată de biletele de eveniment: un „01” mare pentru prima oră, contras
 - **CTA:** „Rezervă-ți locul”
 
 ### Subsol / verso (comun ambelor direcții)
-> Prima oră e gratuită, cu programare confirmată de recepție. După ce te înscrii și achiți prima lună, familia care te-a invitat primește 60 lei credit Quasar. Ceri ora scanând codul, la telefon sau direct la recepție. Ora gratuită, înscrierea și plata: până pe 27 octombrie 2026. Detalii: quasardance.ro/dance-with-me
+> Prima oră e gratuită, cu programare confirmată de recepție. După ce te înscrii și achiți prima lună, familia care te-a invitat primește 60 lei credit Quasar. Ceri ora scanând codul, la telefon sau direct la recepție. Ora gratuită, înscrierea și plata: până pe 25 octombrie 2026. Detalii: quasardance.ro/dance-with-me
 
 Pe bilet nu apar formula de pro-rata, lista cu ce acoperă creditul sau alte condiții lungi. Toate acestea stau pe landing page.
 
@@ -96,7 +96,7 @@ Varianta funcțională e deja live pe site (quasardance.ro/dance-with-me). Desig
 - Titlu: „Un prieten te-a invitat la dans. Prima oră e gratuită.”
 - Subtitlu: „Vino să vezi cum e la Quasar: Street Dance, KPOP, gimnastică acrobatică — în grupe pe vârste, cu instructori care te iau de la zero.”
 - Buton: „Vreau ora gratuită” (duce la formular).
-- Sub buton, mic: „Valabil până pe 27 octombrie 2026 · Regulamentul campaniei” (linkul deschide pop-up-ul).
+- Sub buton, mic: „Valabil până pe 25 octombrie 2026 · Regulamentul campaniei” (linkul deschide pop-up-ul).
 
 **Secțiunile cu beneficiile cursurilor**, preluate de pe prima pagină a site-ului: tipurile de cursuri, de ce aleg părinții Quasar, grupele pe vârste (cu Teens și Varsity vizibile), ce ne face diferiți, testimoniale.
 
@@ -125,12 +125,12 @@ Varianta funcțională e deja live pe site (quasardance.ro/dance-with-me). Desig
 - **Prima lună:** se plătește întreagă, iar diferența se scade din luna următoare (exemplul 15 oct. → 280 / 98 lei).
 - **Pentru familia care te-a invitat:** un credit Quasar (fără sumă pe pagină — confirmat de Alex) după plata integrală a primei luni. Se folosește la abonament, OPEN class, ședințe, workshopuri și concursuri; nu la merch, bilete sau închirieri.
 - **Cine te-a invitat:** se confirmă la recepție; în cazurile neclare decide managerul.
-- **Termen:** 27 octombrie 2026.
+- **Termen:** 25 octombrie 2026.
 
 **D. Contact:** cele trei locații cu adresele lor și două telefoane, Ștefan cel Mare 0730 534 172 și Nicolina / Quasar for Kids 0770 227 580, plus un buton „Sună” pe mobil.
 
 ### După termen
-Din **28 octombrie 2026**, pagina nu se mai afișează: cine scanează un bilet vechi ajunge pe pagina obișnuită de programare. Pentru această stare nu e nevoie de design.
+Din **26 octombrie 2026**, pagina nu se mai afișează: cine scanează un bilet vechi ajunge pe pagina obișnuită de programare. Pentru această stare nu e nevoie de design.
 
 ### Livrabile LP
 Machetă mobil (375 px) și desktop (1440 px), cu stările formularului. Componentele se refolosesc din site-ul actual (butoane, câmpuri, select-uri), nu se reinventează.
@@ -139,18 +139,18 @@ Machetă mobil (375 px) și desktop (1440 px), cu stările formularului. Compone
 
 ## 3. Câmpul „Cine te-a invitat?” în celelalte formulare de pe site
 
-- Până pe 27 octombrie, câmpul apare în **toate formularele de înscriere/programare** de pe site, **opțional**.
+- Până pe 25 octombrie, câmpul apare în **toate formularele de înscriere/programare** de pe site, **opțional**.
 - Eticheta: „Te-a invitat cineva? (opțional)”
 - Placeholder: „Numele colegului de la Quasar”
 - Se desenează ca un câmp în plus, în stilul formularului existent, **fără** banner sau pop-up.
-- Din 28 octombrie câmpul dispare singur; nu e nevoie de design pentru starea aceasta.
+- Din 26 octombrie câmpul dispare singur; nu e nevoie de design pentru starea aceasta.
 
 ---
 
 ## 4. Materiale pentru instructori și recepție
 
 **Anunțul la curs** (citit de instructor, ~20 de secunde):
-> „Avem o campanie pentru voi: fiecare primește bilete pentru prieteni. Prietenul vostru vine la o oră gratuită, iar dacă se înscrie, familia voastră primește 60 lei credit, pentru fiecare prieten. Scrieți-vă numele pe bilet ca să știm că e invitatul vostru. E valabil până pe 27 octombrie.”
+> „Avem o campanie pentru voi: fiecare primește bilete pentru prieteni. Prietenul vostru vine la o oră gratuită, iar dacă se înscrie, familia voastră primește 60 lei credit, pentru fiecare prieten. Scrieți-vă numele pe bilet ca să știm că e invitatul vostru. E valabil până pe 25 octombrie.”
 
 **Imaginea pentru WhatsApp** (pătrat 1080×1080 și story 1080×1920): aceeași grafică a biletului, cu „M-a invitat: ___” gol și URL-ul vizibil. Imaginea e pentru familiile care trimit invitația digital.
 
