@@ -69,9 +69,10 @@ export function InstructoriTrendCard({ rows }: { rows: InstructorTrendRow[] }) {
         </tbody>
       </table>
       <p className="border-t border-quasar-gray-light px-3 py-2 text-xs text-quasar-gray">
-        Clienți distincți prezenți în luna încheiată, la cursurile instructorului
-        (titular + co-titular). Δ și retenția compară ultimele 2 luni încheiate —
-        arată cine nu mai vine. Click pe un rând pentru fișa instructorului.
+        Clienți distincți în luna curentă (încă în desfășurare), la cursurile
+        instructorului (titular + co-titular): înscriși pe lună sau prezenți măcar o
+        dată. Δ și retenția compară luna curentă cu luna trecută — arată cine nu mai
+        vine. Click pe un rând pentru fișa instructorului.
       </p>
     </div>
   )

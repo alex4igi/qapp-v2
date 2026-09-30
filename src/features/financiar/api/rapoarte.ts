@@ -24,6 +24,7 @@ export const CATEGORII_RAPORT = [
   'Taxa',
   'Workshop',
   'Auditie',
+  'Inchiriere',
 ] as const
 
 export const RAPORT_CATEGORIE_LABEL: Record<string, string> = {
@@ -33,6 +34,7 @@ export const RAPORT_CATEGORIE_LABEL: Record<string, string> = {
   Taxa: 'Taxă',
   Workshop: 'Workshop',
   Auditie: 'Audiție',
+  Inchiriere: 'Închiriere',
   Necunoscut: 'Necunoscut',
 }
 

@@ -11,7 +11,7 @@ export function Section6Oameni({ scoped = false }: { scoped?: boolean }) {
     <section>
       <SectionTitle
         badge={scoped ? <TotClubulBadge /> : undefined}
-        sub="Cursanți prezenți pe lunile încheiate. Iulie–august apar goale: la vară toate grupele sunt facultative."
+        sub="Cursanți pe lună (înscriși sau prezenți), ultimele 6 luni, luna curentă inclusă."
       >
         Instructori
       </SectionTitle>

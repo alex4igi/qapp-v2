@@ -206,7 +206,10 @@ export function SituatieZilnicaPage() {
         </div>
 
         {locatieId && locatieNume ? (
+          // `key` pe (zi, locație): fără el, formularul păstra bancnotele zilei
+          // anterioare pe o zi încă nenumărată și le salva acolo.
           <ReconciliereCashCard
+            key={`${ziua}|${locatieId}`}
             data={ziua}
             locatieId={locatieId}
             locatieNume={locatieNume}

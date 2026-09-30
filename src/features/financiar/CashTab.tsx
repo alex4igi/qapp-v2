@@ -312,7 +312,7 @@ export function CashTab() {
             <h3 className="mb-3 text-sm font-semibold text-quasar-black">
               Diferență pe zile
               <span className="ml-2 font-normal text-quasar-gray">
-                (verde = surplus, roșu = lipsă)
+                (verde = fără diferență, portocaliu = surplus, roșu = lipsă)
               </span>
             </h3>
             <div className="h-72">
