@@ -3,6 +3,9 @@
 // fiecare rând după gclid cu click-ul pe reclamă. Ce intră și de ce: migrația 20260930170000
 // (`conversii_google_csv`).
 //
+// Google cere ca adresa să se termine în .csv: în Google Ads se introduce
+// `.../functions/v1/google-ads-conversii/conversii.csv` (funcția ignoră sub-calea).
+//
 // Env (supabase secrets set):
 //   GOOGLE_ADS_CSV_USER / GOOGLE_ADS_CSV_PASS — aceleași introduse în Google Ads la programare.
 //   GOOGLE_ADS_CONVERSION_NAME — numele EXACT al acțiunii de conversie din Google Ads
@@ -38,7 +41,8 @@ function autorizat(req: Request): boolean {
 const camp = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
 
 Deno.serve(async (req) => {
-  if (req.method !== 'GET') return new Response('Doar GET', { status: 405 })
+  // HEAD: unele verificări de conexiune întreabă întâi doar de antete.
+  if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Doar GET', { status: 405 })
   if (!autorizat(req)) {
     return new Response('Unauthorized', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="conversii"' } })
   }
@@ -58,7 +62,7 @@ Deno.serve(async (req) => {
     ),
   ]
   console.log(`[google-ads-conversii] ${randuri.length} conversii în fișier`)
-  return new Response(linii.join('\n') + '\n', {
+  return new Response(req.method === 'HEAD' ? null : linii.join('\n') + '\n', {
     headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store' },
   })
 })
