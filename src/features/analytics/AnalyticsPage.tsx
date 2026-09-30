@@ -4,6 +4,7 @@ import { PageHeader, Spinner } from '@/components/ui'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { listPraguri } from '@/features/scorecard/api'
+import { getRestanteScadente } from '@/features/datorii/api'
 import { useDeUrmarit, type GrupeSubMinimSumar } from '@/features/ansamblu/useDeUrmarit'
 import { ANALYTICS_QO, getAnalyticsSezon, getCursantiLunar } from './api'
 import { SezonKpis } from './SezonKpis'
@@ -52,6 +53,12 @@ export function AnalyticsPage() {
     ...ANALYTICS_QO,
   })
   const praguriQ = useQuery({ queryKey: ['scorecard', 'praguri'], queryFn: listPraguri, ...ANALYTICS_QO })
+  const restanteQ = useQuery({
+    queryKey: ['analytics', 'restante-scadente', locatieId],
+    queryFn: () => getRestanteScadente(locatieId),
+    enabled: ready,
+    ...ANALYTICS_QO,
+  })
   const { grupe, absente } = useDeUrmarit(locatieId, ready)
 
   const d = sezonQ.data?.selectie
@@ -82,7 +89,7 @@ export function AnalyticsPage() {
         ) : sezonQ.isError || !d ? (
           <p className="text-sm text-danger">Cifrele sezonului nu s-au putut încărca.</p>
         ) : (
-          <SezonKpis d={d} grupe={grupe} praguri={praguriQ.data} />
+          <SezonKpis d={d} grupe={grupe} praguri={praguriQ.data} restanteScadente={restanteQ.data?.total} />
         )}
 
         <RezumatOperational absente={absente} grupe={grupe} />

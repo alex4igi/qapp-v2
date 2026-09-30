@@ -13687,6 +13687,14 @@ export type Database = {
           valoare: number
         }[]
       }
+      conversii_google_csv: {
+        Args: { p_from?: string }
+        Returns: {
+          data_conversie: string
+          gclid: string
+          valoare: number
+        }[]
+      }
       converteste_abonament_in_sedinte: {
         Args: { p_abonament: string; p_motiv?: string }
         Returns: Json
@@ -14941,6 +14949,18 @@ export type Database = {
           total: number
         }[]
       }
+      get_restante_scadente: {
+        Args: { p_locatie?: string }
+        Returns: {
+          clienti: number
+          este_total: boolean
+          id_locatie: string
+          lei: number
+          lei_oneoff: number
+          nume_locatie: string
+          rate: number
+        }[]
+      }
       get_restante_worklist: {
         Args: {
           p_curs?: string
@@ -15300,7 +15320,6 @@ export type Database = {
           curs_id: string
           curs_nivel: string
           curs_nume: string
-          datorie: number
           facultativ: boolean
           posibile: number
           prezenti: number
@@ -16278,6 +16297,10 @@ export type Database = {
           p_tip_valoare?: string
           p_unitate?: string
         }
+        Returns: string
+      }
+      scadenta_inrolare: {
+        Args: { p_data_incepere: string; p_sezon: string; p_tip_plata: string }
         Returns: string
       }
       scadenta_rata: {

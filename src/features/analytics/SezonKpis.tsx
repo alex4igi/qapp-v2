@@ -3,6 +3,7 @@ import { procentOcupare } from '@/features/ansamblu/api'
 import type { Prag } from '@/features/scorecard/api'
 import { praguriRata, semaforRataRestante } from '@/features/datorii/semafor'
 import type { GrupeSubMinimSumar } from '@/features/ansamblu/useDeUrmarit'
+import type { RestanteScadenteRow } from '@/features/datorii/api'
 import type { IndicatoriSezon } from './api'
 import { DeltaKpiCard } from './DeltaKpiCard'
 import { dataScurta, deltaProcent, motivText, notaLocuriFaraPrezenta } from './comparatii'
@@ -45,12 +46,13 @@ const INFO_RESTANTE = (
   <>
     <p className="font-semibold">Ce numără</p>
     <p className="mt-1">
-      Restul de plată doar pe ratele trecute de scadență, fără cele prescrise —
-      exact tabul „Restanțe pe rate" din /datorii.
+      Tot ce a trecut de termen, fără cele prescrise: ședința se plătește în ziua ei,
+      abonamentul până pe 15 (în septembrie și iunie, data sezonului), taxele și biletele pe loc.
+      Aceeași cifră ca în Overview și pe /datorii.
     </p>
     <p className="mt-1.5">
-      Ratele lunii care n-au ajuns la scadență nu intră, deci cifra nu sare pe 1
-      ale lunii.
+      Ratele lunii care n-au ajuns la termen nu intră, deci cifra nu sare pe 1
+      ale lunii. „Luna asta" e ritmul încasării lunii curente, inclusiv partea nescadentă.
     </p>
   </>
 )
@@ -76,9 +78,10 @@ type Props = {
   d: IndicatoriSezon
   grupe: GrupeSubMinimSumar | null
   praguri: Prag[] | undefined
+  restanteScadente?: RestanteScadenteRow
 }
 
-export function SezonKpis({ d, grupe, praguri }: Props) {
+export function SezonKpis({ d, grupe, praguri, restanteScadente: rs }: Props) {
   const vsRef = `vs ${dataScurta(d.referinta)}`
 
   const c = d.cursanti
@@ -146,12 +149,12 @@ export function SezonKpis({ d, grupe, praguri }: Props) {
       />
       <DeltaKpiCard
         label="Restanțe scadente"
-        value={r ? formatRON(r.suma) : '—'}
+        value={rs ? formatRON(rs.lei) : '—'}
         sub={
-          r ? (
+          rs ? (
             <>
-              {r.clienti.toLocaleString('ro-RO')} datornici · {r.rate.toLocaleString('ro-RO')} rate
-              {r.oneoff > 0 ? ` · + ${formatRON(r.oneoff)} one-off` : ''}
+              {rs.clienti.toLocaleString('ro-RO')} datornici · {rs.rate.toLocaleString('ro-RO')} rate
+              {rs.lei_oneoff > 0 ? ` · din care ${formatRON(rs.lei_oneoff)} one-off` : ''}
               {rataLuna != null && (
                 <span
                   className={`ml-1 font-medium ${semafor === 'rosu' ? 'text-danger' : semafor === 'galben' ? 'text-warn' : 'text-success'}`}

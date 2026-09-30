@@ -45,10 +45,10 @@ export function SectionKpiFinanciar({ interval }: { interval: Interval }) {
         />
       )}
       <KpiCard
-        label="Restanțe"
+        label="Neîncasat din perioadă"
         value={kpisQ.data ? formatRON(kpisQ.data.restanteTotal) : '—'}
         tone="warning"
-        hint="de recuperat (înrolări din interval, fără prescrise)"
+        hint="rate din lunile alese, încă neplătite (și cele nescadente) — restanțele sunt pe /datorii"
       />
     </div>
   )

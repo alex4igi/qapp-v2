@@ -8,11 +8,10 @@ export type TeacherOverviewRow = {
   activi: number
   prezenti: number
   posibile: number
-  datorie: number
 }
 
 // Overview per instructor (secțiunea „Privire pe instructor" din /statistici):
-// un rând per curs al teacher-ului, pe luna curentă (activi, prezențe, datorie neprescrisă).
+// un rând per curs al teacher-ului, pe luna curentă (activi, prezențe).
 export async function getTeacherOverview(
   teacherId: string,
 ): Promise<TeacherOverviewRow[]> {
@@ -28,7 +27,6 @@ export async function getTeacherOverview(
     activi: Number(r.activi ?? 0),
     prezenti: Number(r.prezenti ?? 0),
     posibile: Number(r.posibile ?? 0),
-    datorie: Number(r.datorie ?? 0),
   }))
 }
 

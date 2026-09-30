@@ -5,7 +5,7 @@ import { sezonActiv, saliWithLocatie } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
 import { getAbsente21zCount } from '@/features/absente21z/api'
-import { getDatoriiDashboard, restTotal, sumDatorii } from '@/features/datorii/api'
+import { getRestanteScadente } from '@/features/datorii/api'
 import { getGrupeSubMinim, subMinimLunaAsta } from '@/features/cursuri/api'
 import type { RandDeUrmarit } from './DeUrmarit'
 
@@ -39,11 +39,12 @@ const INFO_DATORII = (
   <>
     <p className="font-semibold">Ce numără</p>
     <p className="mt-1">
-      Clienții cu sold restant și totalul restanței cumulate, fără sumele
-      prescrise.
+      Clienții cu plăți trecute de termen și suma lor, fără cele prescrise (peste 2 ani).
+      Termenul: ședința se plătește în ziua ei, abonamentul până pe 15 (în septembrie
+      și iunie, data sezonului), taxele și biletele pe loc.
     </p>
     <p className="mt-1.5">
-      Pe tot clubul, un client cu restanțe la două locații se numără la fiecare.
+      Rata lunii încă nescadente nu e restanță. Un client se numără o singură dată.
     </p>
   </>
 )
@@ -75,8 +76,8 @@ export function useDeUrmarit(locatieId: string | null, ready: boolean) {
     enabled: ready && !!sezon,
   })
   const datoriiQ = useQuery({
-    queryKey: ['ansamblu', 'datorii', locatieId],
-    queryFn: () => getDatoriiDashboard(locatieId),
+    queryKey: ['ansamblu', 'restante', locatieId],
+    queryFn: () => getRestanteScadente(locatieId),
     enabled: ready,
   })
   const grupeQ = useQuery({
@@ -92,7 +93,7 @@ export function useDeUrmarit(locatieId: string | null, ready: boolean) {
     enabled: privileged && !!locatieId,
   })
 
-  const datorii = datoriiQ.data ? sumDatorii(datoriiQ.data) : null
+  const datorii = datoriiQ.data?.total ?? null
 
   const grupeScop = useMemo(() => {
     const rows = grupeQ.data ?? []
@@ -143,13 +144,13 @@ export function useDeUrmarit(locatieId: string | null, ready: boolean) {
       })
     }
 
-    if (datorii && datorii.nr_datornici > 0) {
+    if (datorii && datorii.clienti > 0) {
       out.push({
         key: 'datorii',
-        valoare: datorii.nr_datornici,
+        valoare: datorii.clienti,
         tone: 'danger',
         text: 'clienți cu restanțe',
-        hint: `${formatRON(restTotal(datorii))} restant, fără prescrise`,
+        hint: `${formatRON(datorii.lei)} trecuți de termen`,
         to: '/datorii',
         info: INFO_DATORII,
       })

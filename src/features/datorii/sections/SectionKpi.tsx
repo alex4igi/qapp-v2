@@ -4,7 +4,7 @@ import { formatRON } from '@/lib/format'
 import { humanizeError } from '@/lib/errorMessage'
 import { KpiCard } from '@/features/statistici/KpiCard'
 import { listPraguri } from '@/features/scorecard/api'
-import { getDatoriiDashboard, rataRestantePct, restLuna, restTotal, sumDatorii } from '../api'
+import { getDatoriiDashboard, getRestanteScadente, rataRestantePct, restLuna, sumDatorii } from '../api'
 import { praguriRata, semaforRataRestante, SEMAFOR_TONE } from '../semafor'
 import { DATORII_QO, LUNA_CURENTA_LABEL } from './shared'
 
@@ -12,6 +12,11 @@ export function SectionKpi({ locatieId }: { locatieId: string | null }) {
   const dashQ = useQuery({
     queryKey: ['datorii', 'dashboard', locatieId],
     queryFn: () => getDatoriiDashboard(locatieId),
+    ...DATORII_QO,
+  })
+  const restanteQ = useQuery({
+    queryKey: ['datorii', 'restante-scadente', locatieId],
+    queryFn: () => getRestanteScadente(locatieId),
     ...DATORII_QO,
   })
   const praguriQ = useQuery({
@@ -29,6 +34,7 @@ export function SectionKpi({ locatieId }: { locatieId: string | null }) {
   const semafor = semaforRataRestante(rata, praguriQ.data)
   const { peste, standard } = praguriRata(praguriQ.data)
   const restRecuperabil = restLuna(total)
+  const restante = restanteQ.data?.total
 
   return (
     <div>
@@ -46,8 +52,8 @@ export function SectionKpi({ locatieId }: { locatieId: string | null }) {
         />
         <KpiCard
           label="Datornici"
-          value={total.nr_datornici}
-          hint={locatieId ? 'clienți cu rest, toate lunile' : 'pe locații, toate lunile'}
+          value={restante ? restante.clienti : '—'}
+          hint="plăți trecute de termen, toate lunile"
         />
         <KpiCard
           label="Recuperat în lună"
@@ -63,11 +69,11 @@ export function SectionKpi({ locatieId }: { locatieId: string | null }) {
         />
       </div>
       <p className="mt-2 text-xs text-muted-2">
-        Cifrele de sus sunt pe luna curentă — pe ea se conduce recuperarea. Sold
-        istoric: {formatRON(restTotal(total))} restant pe toate lunile (din care{' '}
-        {formatRON(total.rest_prescris)} prescris, peste 2 ani — nu se mai
-        urmărește). Definiție: net — fără rezilieri și luni facturate în viitor;
-        include datoriile one-off. Aceeași bază în lista de mai jos, în fișa clientului și în SMS-uri.
+        Cifrele de sus sunt pe luna curentă — pe ea se conduce recuperarea, inclusiv partea
+        încă nescadentă. Restanțe:{' '}
+        {restante ? formatRON(restante.lei) : '—'} trecuți de termen, pe toate lunile
+        (ședința se plătește în ziua ei, abonamentul până pe 15, taxele pe loc; include
+        one-off). Prescris, peste 2 ani, nu se mai urmărește: {formatRON(total.rest_prescris)}.
       </p>
     </div>
   )

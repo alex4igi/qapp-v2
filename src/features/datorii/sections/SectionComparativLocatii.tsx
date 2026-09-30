@@ -5,15 +5,20 @@ import { humanizeError } from '@/lib/errorMessage'
 import { listPraguri, type Prag } from '@/features/scorecard/api'
 import {
   getDatoriiDashboard,
+  getRestanteScadente,
   rataRestantePct,
   restLuna,
-  restTotal,
   type DatoriiLocatieRow,
+  type RestanteScadenteRow,
 } from '../api'
 import { semaforRataRestante, SEMAFOR_DOT } from '../semafor'
 import { DATORII_QO, LUNA_CURENTA_LABEL } from './shared'
 
-function columnsFor(praguri: Prag[] | undefined): Column<DatoriiLocatieRow>[] {
+function columnsFor(
+  praguri: Prag[] | undefined,
+  restante: Map<string, RestanteScadenteRow>,
+): Column<DatoriiLocatieRow>[] {
+  const rest = (r: DatoriiLocatieRow) => restante.get(r.id_locatie ?? '')
   return [
     {
       header: 'Locație',
@@ -39,16 +44,16 @@ function columnsFor(praguri: Prag[] | undefined): Column<DatoriiLocatieRow>[] {
       sortValue: (r) => r.recuperat_luna,
     },
     {
-      header: 'Sold istoric',
-      cell: (r) => <span className="text-quasar-gray">{formatRON(restTotal(r))}</span>,
+      header: 'Restanțe',
+      cell: (r) => <span className="text-quasar-gray">{formatRON(rest(r)?.lei ?? 0)}</span>,
       className: 'w-32 text-right',
-      sortValue: (r) => restTotal(r),
+      sortValue: (r) => rest(r)?.lei ?? 0,
     },
     {
       header: 'Datornici',
-      cell: (r) => r.nr_datornici,
+      cell: (r) => rest(r)?.clienti ?? 0,
       className: 'w-24 text-right',
-      sortValue: (r) => r.nr_datornici,
+      sortValue: (r) => rest(r)?.clienti ?? 0,
     },
     {
       header: 'Rata',
@@ -84,6 +89,11 @@ export function SectionComparativLocatii({
     queryFn: () => getDatoriiDashboard(null),
     ...DATORII_QO,
   })
+  const restanteQ = useQuery({
+    queryKey: ['datorii', 'restante-scadente', null],
+    queryFn: () => getRestanteScadente(null),
+    ...DATORII_QO,
+  })
   const praguriQ = useQuery({
     queryKey: ['scorecard', 'praguri'],
     queryFn: listPraguri,
@@ -94,8 +104,13 @@ export function SectionComparativLocatii({
   if (dashQ.isError)
     return <p className="text-sm text-red-600">Eroare: {humanizeError(dashQ.error)}</p>
 
+  const restante = new Map(
+    (restanteQ.data?.locatii ?? []).map((r) => [r.id_locatie ?? '', r] as const),
+  )
   const rows = [...(dashQ.data ?? [])].sort(
-    (a, b) => restLuna(b) - restLuna(a) || restTotal(b) - restTotal(a),
+    (a, b) =>
+      restLuna(b) - restLuna(a) ||
+      (restante.get(b.id_locatie ?? '')?.lei ?? 0) - (restante.get(a.id_locatie ?? '')?.lei ?? 0),
   )
 
   return (
@@ -109,7 +124,7 @@ export function SectionComparativLocatii({
         )}
       </h3>
       <DataTable
-        columns={columnsFor(praguriQ.data)}
+        columns={columnsFor(praguriQ.data, restante)}
         rows={rows}
         rowKey={(r) => r.id_locatie ?? 'fara-locatie'}
         onRowClick={onPick}

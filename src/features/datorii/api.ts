@@ -212,6 +212,45 @@ export async function getDatoriiDashboard(
   }))
 }
 
+// Restanțele = DOAR ce a trecut de termen (ședința: ziua ei; abonamentul: 15 ale lunii, cu
+// excepțiile sezonului; one-off: ziua creării). Un rând per locație + rândul total, cu
+// clienți distincți — un client cu restanțe la două locații se numără o dată.
+export type RestanteScadenteRow = {
+  id_locatie: string | null
+  nume_locatie: string | null
+  este_total: boolean
+  clienti: number
+  rate: number
+  lei: number
+  lei_oneoff: number
+}
+
+export async function getRestanteScadente(
+  locatieId: string | null,
+): Promise<{ total: RestanteScadenteRow; locatii: RestanteScadenteRow[] }> {
+  const { data, error } = await supabase.rpc('get_restante_scadente', {
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
+  if (error) throw error
+  const rows = ((data ?? []) as unknown as RestanteScadenteRow[]).map((r) => ({
+    ...r,
+    clienti: Number(r.clienti ?? 0),
+    rate: Number(r.rate ?? 0),
+    lei: Number(r.lei ?? 0),
+    lei_oneoff: Number(r.lei_oneoff ?? 0),
+  }))
+  const total = rows.find((r) => r.este_total) ?? {
+    id_locatie: null,
+    nume_locatie: null,
+    este_total: true,
+    clienti: 0,
+    rate: 0,
+    lei: 0,
+    lei_oneoff: 0,
+  }
+  return { total, locatii: rows.filter((r) => !r.este_total) }
+}
+
 // Sumele KPI globale = suma rândurilor per locație. nr_datornici e „pe locații"
 // (un client cu datorii la 2 locații se numără la fiecare) — etichetat în UI.
 export function sumDatorii(rows: DatoriiLocatieRow[]): DatoriiLocatieRow {
@@ -250,11 +289,6 @@ export function sumDatorii(rows: DatoriiLocatieRow[]): DatoriiLocatieRow {
 // Restanța LUNII CURENTE (abonamente + one-off) — cifra „de acțiune" de pe /datorii.
 export function restLuna(r: { rest_luna: number; rest_luna_oneoff: number }): number {
   return r.rest_luna + r.rest_luna_oneoff
-}
-
-// Restanța cumulată pe toate lunile (fără prescrise) — context, nu titlu.
-export function restTotal(r: { rest_net: number; rest_oneoff: number }): number {
-  return r.rest_net + r.rest_oneoff
 }
 
 // Rata restanțe pe LUNA CURENTĂ: rest ÷ de-încasat pe lună — aceeași formulă ca

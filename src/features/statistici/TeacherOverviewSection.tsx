@@ -9,7 +9,6 @@ import {
   Tooltip,
 } from 'recharts'
 import { Field, Select, Spinner } from '@/components/ui'
-import { formatRON } from '@/lib/format'
 import { useTeacheriOptions } from '@/hooks/useTeacheriOptions'
 import { getTeacherOverview } from './api'
 import { STAT_QO } from './sections/shared'
@@ -56,7 +55,7 @@ export function TeacherOverviewSection() {
             Privire pe instructor
           </h2>
           <p className="text-xs text-quasar-gray">
-            Clienți activi luna asta, pe grupe — cu prezențe și datorii.
+            Clienți activi luna asta, pe grupe — cu prezențe.
           </p>
         </div>
         <div className="w-64">
@@ -127,7 +126,7 @@ export function TeacherOverviewSection() {
             )}
           </div>
 
-          {/* Situația fiecărei grupe: studenți, prezențe, datorii */}
+          {/* Situația fiecărei grupe: studenți, prezențe */}
           <div className="flex flex-col gap-3">
             {rows.map((r) => {
               const rataPct =
@@ -149,7 +148,7 @@ export function TeacherOverviewSection() {
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="grid grid-cols-2 gap-2 text-center">
                     <div>
                       <div className="font-display text-xl font-bold text-quasar-black">
                         {r.activi}
@@ -165,16 +164,6 @@ export function TeacherOverviewSection() {
                       <div className="text-[11px] text-quasar-gray">
                         prezențe{rataPct !== null ? ` · ${rataPct}%` : ''}
                       </div>
-                    </div>
-                    <div>
-                      <div
-                        className={`font-display text-xl font-bold ${
-                          r.datorie > 0 ? 'text-red-600' : 'text-green-700'
-                        }`}
-                      >
-                        {formatRON(r.datorie)}
-                      </div>
-                      <div className="text-[11px] text-quasar-gray">datorii</div>
                     </div>
                   </div>
                 </div>

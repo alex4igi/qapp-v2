@@ -87,6 +87,19 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   setează `locatie` (din locația de lucru) și `categorie` (`Abonament` / `Bilet` / `Merch` / `Taxa`); `sezon` îl pune triggerul.
 - **Datoria canonică:** înrolări **nereziliate**, `rest = suma − Σ încasări`, pe luna lui `data_incepere`.
   Prescris = mai vechi de 2 ani (KPI-urile arată net, cu „din care prescrise"). O înrolare reziliată nu are datorie validă.
+- **Restanță = DOAR ce a trecut de termenul de plată (30.09).** Termenul: plata pe **ședință** (OPEN, facultativ pe
+  ședință) — **ziua ședinței** (omul plătește pe loc); **abonamentul** (și la facultative) — **15 ale lunii**, cu
+  excepțiile sezonului (`sezoane.scadenta_prima_rata` / `scadenta_ultima_rata`, septembrie și iunie); datoriile
+  **one-off** (taxe, bilete, merch, închirieri) — ziua creării. Toate intră în **aceeași cifră**, iar un client se
+  numără **o singură dată**, oricâte locații ar avea. Rata lunii încă nescadentă e „de încasat", nu restanță.
+  Cod: `scadenta_inrolare(data, sezon, tip_plata)` (peste `scadenta_rata`, care rămâne pentru K1/K2, penalizare și
+  suspendarea de 50 de zile — toate doar pe „Per luna") și `get_restante_scadente(p_locatie)` = cifra din Overview,
+  Panou și /datorii. Cardurile „pe luna curentă" din /datorii (rest recuperabil, rata lunii) măsoară ritmul
+  încasării lunii, inclusiv partea nescadentă — nu sunt restanțe.
+- **Abonament la curs facultativ: nu după 15 ale lunii (30.09).** După 15, ședințele rămase valorează mai puțin decât
+  un abonament întreg — omul plătește pe ședință. (Regula nu e încă impusă în formularul de înrolare.)
+- **Datoriile nu se arată pe instructor (30.09):** instructorul nu încasează; datoriile unei grupe se văd pe /datorii,
+  filtrate pe grupă.
 - **Lună fără nicio prezență și fără nicio plată, pe o lună încheiată, nu e datorie** (12/16.09) — dar anularea e decizie
   manuală, cu audit. Pe luna în curs sau pe o grupă fără prezențe logate, lipsa prezenței nu dovedește nimic.
 - **Lună achitată:** `suma − Σ încasări <= 0` (creditul e tot achitat; lunile de 0 lei n-au rând în `incasari`).
