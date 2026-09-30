@@ -8,6 +8,13 @@ import { CursulMeuGuard } from '@/components/CursulMeuGuard'
 import { AuthBootGate } from '@/components/AuthBootGate'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AdministrareIndex, AdministrareLayout } from '@/components/layout/AdministrareLayout'
+import { HubLayout } from '@/components/layout/HubLayout'
+import {
+  CLIENTI_TABS,
+  EVENIMENTE_TABS,
+  RAPOARTE_TABS,
+  SMS_TABS,
+} from '@/components/layout/hubTabs'
 import { Placeholder } from '@/components/Placeholder'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -187,6 +194,12 @@ const OptOutListPage = lazy(() =>
 )
 import { ROUTE_ACCESS, hasSalariulMeu } from '@/lib/rolesMatrix'
 
+// Layout-urile hub apar în mai multe grupuri de rute (drepturi diferite pe tab):
+// același element, deci bara de taburi arată la fel oriunde intri.
+const rapoarteHub = <HubLayout title="Rapoarte" tabs={RAPOARTE_TABS} />
+const evenimenteHub = <HubLayout title="Evenimente" tabs={EVENIMENTE_TABS} />
+const smsHub = <HubLayout title="SMS" tabs={SMS_TABS} />
+
 function App() {
   return (
     <AuthProvider>
@@ -271,15 +284,19 @@ function App() {
           {/* Overview: staff fără teacher (teacher-ul nu are conținut aici). */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/overview']} />}>
             <Route element={<AppLayout />}>
-              <Route path="overview" element={<AnsambluPage />} />
+              <Route element={rapoarteHub}>
+                <Route path="overview" element={<AnsambluPage />} />
+              </Route>
             </Route>
           </Route>
 
           {/* Rute pentru staff (no teacher): listele globale + financial. */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/clienti']} />}>
             <Route element={<AppLayout />}>
-              <Route path="clienti" element={<ClientiListPage />} />
-              <Route path="familii" element={<FamiliiListPage />} />
+              <Route element={<HubLayout title="Clienți" tabs={CLIENTI_TABS} />}>
+                <Route path="clienti" element={<ClientiListPage />} />
+                <Route path="familii" element={<FamiliiListPage />} />
+              </Route>
               <Route path="familii/:id" element={<FamilieProfilePage />} />
               <Route path="teacheri" element={<TeacheriListPage />} />
               <Route path="teacheri/:id" element={<TeacherProfilePage />} />
@@ -290,7 +307,9 @@ function App() {
               <Route path="absente-21z" element={<Absente21zPage />} />
               <Route path="recomandari" element={<RecomandariPage />} />
               <Route path="preinscrieri" element={<PreinscrieriPage />} />
-              <Route path="sms" element={<NotificariSmsPage />} />
+              <Route element={smsHub}>
+                <Route path="sms" element={<NotificariSmsPage />} />
+              </Route>
               <Route path="facturare" element={<FacturarePage />} />
               <Route path="feedback" element={<FeedbackListPage />} />
               <Route path="situatie-zilnica" element={<SituatieZilnicaPage />} />
@@ -336,12 +355,16 @@ function App() {
 
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/financiar']} />}>
             <Route element={<AppLayout />}>
-              <Route path="financiar" element={<FinanciarPage />} />
-              <Route path="statistici" element={<StatisticiPage />} />
+              <Route element={rapoarteHub}>
+                <Route path="financiar" element={<FinanciarPage />} />
+                <Route path="statistici" element={<StatisticiPage />} />
+              </Route>
+              <Route element={evenimenteHub}>
+                <Route path="evenimente" element={<EvenimenteListPage />} />
+                <Route path="concursuri" element={<ConcursuriListPage />} />
+              </Route>
               <Route path="scorecard" element={<ScorecardPage />} />
               <Route path="vouchere" element={<VouchereListPage />} />
-              <Route path="evenimente" element={<EvenimenteListPage />} />
-              <Route path="concursuri" element={<ConcursuriListPage />} />
               <Route path="reinscrieri" element={<ReinscrieriPage />} />
             </Route>
           </Route>
@@ -349,7 +372,9 @@ function App() {
           {/* Spectacole / recitaluri — producție lineup (owner/admin/manager). */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/spectacole']} />}>
             <Route element={<AppLayout />}>
-              <Route path="spectacole" element={<SpectacoleListPage />} />
+              <Route element={evenimenteHub}>
+                <Route path="spectacole" element={<SpectacoleListPage />} />
+              </Route>
               <Route path="spectacole/:id" element={<SpectacolProfilePage />} />
             </Route>
           </Route>
@@ -369,15 +394,19 @@ function App() {
           {/* Dashboard analitic + zonă CFO — doar owner + admin. */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/analytics']} />}>
             <Route element={<AppLayout />}>
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="cfo" element={<CfoPage />} />
+              <Route element={rapoarteHub}>
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="cfo" element={<CfoPage />} />
+              </Route>
             </Route>
           </Route>
 
           {/* Raportul de început de sezon — citit, nu lucrat: nu scrie nimic. */}
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/start-sezon']} />}>
             <Route element={<AppLayout />}>
-              <Route path="start-sezon" element={<StartSezonPage />} />
+              <Route element={rapoarteHub}>
+                <Route path="start-sezon" element={<StartSezonPage />} />
+              </Route>
             </Route>
           </Route>
 
@@ -462,7 +491,9 @@ function App() {
 
           <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/opt-out']} />}>
             <Route element={<AppLayout />}>
-              <Route path="opt-out" element={<OptOutListPage />} />
+              <Route element={smsHub}>
+                <Route path="opt-out" element={<OptOutListPage />} />
+              </Route>
             </Route>
           </Route>
 

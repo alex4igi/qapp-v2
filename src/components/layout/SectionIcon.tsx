@@ -56,6 +56,15 @@ export function SectionIcon({ label }: { label: string }) {
           <rect x="17" y="3" width="4" height="17" rx="1" />
         </svg>
       )
+    case 'Echipă':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="7" r="2.6" />
+          <circle cx="5.5" cy="9.5" r="2.1" />
+          <circle cx="18.5" cy="9.5" r="2.1" />
+          <path d="M7.5 19c0-2.6 2-4.5 4.5-4.5s4.5 1.9 4.5 4.5M2 18.5c0-2 1.5-3.5 3.5-3.5M22 18.5c0-2-1.5-3.5-3.5-3.5" />
+        </svg>
+      )
     case 'Personal':
       return (
         <svg {...common}>

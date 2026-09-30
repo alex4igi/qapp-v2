@@ -6,7 +6,7 @@ import { canAccessRoute, canEditLeads, roleLabel } from '@/lib/rolesMatrix'
 import { isForcedDesktop, isNarrowViewport, setForceDesktop } from '@/hooks/useIsMobile'
 import { initialsFromEmail } from './accountInitials'
 import { SectionIcon } from './SectionIcon'
-import { sectionMatches, visibleSections } from './navConfig'
+import { itemMatches, sectionMatches, visibleSections } from './navConfig'
 
 // Cele două modale de „adaugă rapid" se deschid rar, dar importate static trăgeau în
 // bundle-ul inițial toată logica de leads + clienți. Se încarcă la primul click.
@@ -125,7 +125,7 @@ function RailNav({
           </span>
         )
 
-        // Frunză (Administrare): un singur rând-link, fără acordeon.
+        // Frunză (Evenimente, Rapoarte, Administrare): un singur rând-link, fără acordeon.
         if (section.leaf) {
           return (
             <NavLink
@@ -192,13 +192,13 @@ function RailNav({
                       className={({ isActive }) =>
                         [
                           'block truncate rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors',
-                          isActive
+                          isActive || itemMatches(item, location.pathname)
                             ? ''
                             : 'text-rail-soft hover:bg-rail-2 hover:text-white',
                         ].join(' ')
                       }
                       style={({ isActive }) =>
-                        isActive
+                        isActive || itemMatches(item, location.pathname)
                           ? {
                               backgroundColor: `color-mix(in srgb, ${section.color} 22%, transparent)`,
                               color: section.color,
