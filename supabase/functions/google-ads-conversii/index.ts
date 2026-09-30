@@ -54,8 +54,9 @@ Deno.serve(async (req) => {
   }
   const randuri = (data ?? []) as { gclid: string; data_conversie: string; valoare: number }[]
 
+  // Fără linia „Parameters:TimeZone=…”: Managerul de date o citește drept antet.
+  // Fusul orar e în fiecare oră (UTC, „+00:00”) — vezi migrația 20260930180000.
   const linii = [
-    'Parameters:TimeZone=Europe/Bucharest',
     'Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency,Ad User Data,Ad Personalization',
     ...randuri.map((r) =>
       [camp(r.gclid), camp(CONVERSION_NAME), r.data_conversie, String(Number(r.valoare) || 0), 'RON', 'Granted', 'Granted'].join(','),
