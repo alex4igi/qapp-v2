@@ -42,7 +42,9 @@ import {
   type MetodaSel,
 } from '../../modals/PlataNouaModal/MetodaPlataField'
 import {
+  countSessionsBetween,
   createInrolari,
+  endOfMonth,
   getCursForInrolare,
   getOpenSesiuneByDate,
   hasActiveEnrollmentOnCurs,
@@ -249,6 +251,17 @@ export function EnrollmentForm({
     Boolean(dataIncepere) &&
     Boolean(cursSelectat?.zile?.length) &&
     dataIncepere !== nextSessionDate(cursSelectat!.zile, dataIncepere)
+
+  // Abonament la facultativ după 15 ale lunii: ședințele rămase valorează de regulă mai puțin
+  // decât abonamentul. Doar avertizăm — unii îl vor oricum (docs/reguli-domeniu.md §4).
+  const abonamentFacultativTarziu =
+    isFacultativ &&
+    tipPlata === 'Per luna' &&
+    Boolean(dataIncepere) &&
+    Number(dataIncepere.slice(8, 10)) > 15
+  const sedinteRamase = abonamentFacultativTarziu
+    ? countSessionsBetween(dataIncepere, endOfMonth(dataIncepere), cursSelectat?.zile ?? null)
+    : 0
 
   // Tip plata permis în funcție de tipul derivat din curs.
   // Default (fără curs ales) = setul recurent (cel mai comun).
@@ -935,6 +948,17 @@ export function EnrollmentForm({
               )}
             </Field>
           </div>
+
+          {abonamentFacultativTarziu && (
+            <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              ⚠️ Abonament după 15 ale lunii: mai sunt
+              {sedinteRamase > 0 ? ` ~${sedinteRamase} ședințe` : ' puține ședințe'} în luna aleasă
+              {sedinteRamase > 0 && cursSelectat?.pret_sedinta != null && cursSelectat?.pret_lunar != null
+                ? ` (${formatRON(sedinteRamase * cursSelectat.pret_sedinta)} pe ședință, față de ${formatRON(cursSelectat.pret_lunar)} abonamentul)`
+                : ''}
+              . De regulă îi convine plata pe ședință — dacă vrea totuși abonamentul, îl poți face.
+            </p>
+          )}
 
           {promoDisponibil && (
             <div className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2">

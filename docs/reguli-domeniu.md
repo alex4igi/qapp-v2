@@ -96,8 +96,8 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   suspendarea de 50 de zile — toate doar pe „Per luna") și `get_restante_scadente(p_locatie)` = cifra din Overview,
   Panou și /datorii. Cardurile „pe luna curentă" din /datorii (rest recuperabil, rata lunii) măsoară ritmul
   încasării lunii, inclusiv partea nescadentă — nu sunt restanțe.
-- **Abonament la curs facultativ: nu după 15 ale lunii (30.09).** După 15, ședințele rămase valorează mai puțin decât
-  un abonament întreg — omul plătește pe ședință. (Regula nu e încă impusă în formularul de înrolare.)
+- **Abonament la curs facultativ: de regulă nu după 15 ale lunii (30.09).** După 15, ședințele rămase valorează mai puțin decât
+  un abonament întreg — de regulă omul plătește pe ședință. Formularul de înrolare doar avertizează, nu blochează: unii vor abonamentul oricum.
 - **Datoriile nu se arată pe instructor (30.09):** instructorul nu încasează; datoriile unei grupe se văd pe /datorii,
   filtrate pe grupă.
 - **Lună fără nicio prezență și fără nicio plată, pe o lună încheiată, nu e datorie** (12/16.09) — dar anularea e decizie
