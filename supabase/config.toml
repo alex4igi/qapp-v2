@@ -432,6 +432,10 @@ verify_jwt = false
 [functions.intake-wa-click]
 verify_jwt = false
 
+# Fișierul de conversii offline pe care Google Ads îl ia zilnic. Protejat prin HTTP Basic.
+[functions.google-ads-conversii]
+verify_jwt = false
+
 # Intake din Google Sheet (Meta Ads → Sheet → Apps Script). Protejat prin x-sheets-secret.
 [functions.intake-sheets-lead]
 verify_jwt = false

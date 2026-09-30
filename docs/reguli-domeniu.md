@@ -228,3 +228,8 @@ cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functi
 - Click-urile fără lead nu sunt o eroare: recepția notează doar conversațiile serioase. Raportul „click-uri vs.
   leaduri” măsoară tocmai asta.
 - `whatsapp_clickuri` nu conține date personale; devine personal doar prin legătura cu un lead.
+- **Conversii offline Google Ads** (din 30.09.2026): un lead cu `gclid` devenit client (`data_conversie`, `id_client`)
+  intră în CSV-ul pe care Google Ads îl ia zilnic (`google-ads-conversii` → `conversii_google_csv`), cu valoarea lunară
+  a înrolărilor active — aceeași definiție ca la Meta. Doar conversii din 30.09.2026 încolo, fereastră de 30 de zile
+  (Google respinge dublurile). `gclid` există doar cu consimțământ de marketing pe site.
+- Meta primește doar leaduri din **reclame**: `facebook / social` (vizită organică) nu se trimite (`conversii_ads_de_trimis`).

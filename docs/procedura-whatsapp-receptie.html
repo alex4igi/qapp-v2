@@ -1,0 +1,72 @@
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>WhatsApp — conversație nouă</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 12pt/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111; }
+  .cap { background: #000; color: #fff; padding: 16px 20px; border-radius: 6px; }
+  .cap h1 { margin: 0; font-size: 22pt; letter-spacing: -0.3px; }
+  .cap h1 b { background: #FFD600; color: #000; padding: 0 8px; border-radius: 3px; }
+  .cap p { margin: 6px 0 0; font-size: 11pt; color: #d0d0d0; }
+  .regula { margin: 14px 0 10px; padding: 12px 16px; border: 2px solid #000; border-radius: 6px; background: #FFF8CC; font-size: 13pt; }
+  .regula b { font-size: 14pt; }
+  ol.pasi { list-style: none; margin: 14px 0 0; padding: 0; counter-reset: p; }
+  ol.pasi > li { counter-increment: p; display: flex; gap: 14px; align-items: flex-start; padding: 10px 4px; border-bottom: 1px solid #e6e6e6; break-inside: avoid; }
+  ol.pasi > li::before { content: counter(p); flex: 0 0 38px; height: 38px; border-radius: 50%; background: #FFD600; color: #000; font-weight: 800; font-size: 17pt; display: flex; align-items: center; justify-content: center; }
+  .t { font-weight: 700; font-size: 13.5pt; }
+  .d { font-size: 11pt; color: #444; margin-top: 2px; }
+  kbd { font: 700 10.5pt/1 "Helvetica Neue", Arial, sans-serif; border: 1px solid #999; border-bottom-width: 2px; border-radius: 4px; padding: 2px 6px; background: #fafafa; }
+  .camp { font-weight: 700; background: #f1f1f1; padding: 0 5px; border-radius: 3px; }
+  .rez { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .rez div { border-radius: 6px; padding: 8px 12px; font-size: 11pt; }
+  .ok { background: #E7F4EE; border: 1px solid #9fd3b7; }
+  .nu { background: #FDF1F1; border: 1px solid #efb9b9; }
+  .ok b { color: #1E7A4D; } .nu b { color: #C2403F; }
+  h2 { font-size: 12pt; text-transform: uppercase; letter-spacing: 0.6px; margin: 18px 0 6px; }
+  ul.alte { margin: 0; padding-left: 20px; font-size: 11pt; }
+  ul.alte li { margin: 4px 0; }
+  .jos { margin-top: 16px; font-size: 9pt; color: #888; text-align: right; }
+</style></head><body>
+
+<div class="cap">
+  <h1>WhatsApp — <b>om nou</b> care scrie</h1>
+  <p>Numărul 0730 534 172 · pentru oricine întreabă de cursuri și nu e deja client</p>
+</div>
+
+<div class="regula">
+  <b>COPIAZĂ primul mesaj, nu-l rescrie.</b><br>
+  În mesaj e un cod ascuns (nu se vede). El ne spune din ce reclamă a venit omul. Dacă rescrii mesajul, codul se pierde.
+</div>
+
+<ol class="pasi">
+  <li><div><div class="t">În qapp: Leads → „+ Lead nou”</div>
+    <div class="d">Orice persoană nouă care întreabă de cursuri devine lead — chiar dacă pare doar curioasă.</div></div></li>
+
+  <li><div><div class="t">Completează numele și telefonul</div>
+    <div class="d">Dacă qapp scrie „Telefon existent” sau apare bannerul galben „deja client” → <b>nu</b> crea lead nou, lucrezi pe fișa existentă.</div></div></li>
+
+  <li><div><div class="t">Sursă (campanie) = <span class="camp">WhatsApp</span></div>
+    <div class="d">Apare câmpul <span class="camp">Primul mesaj de pe WhatsApp</span>.</div></div></li>
+
+  <li><div><div class="t">În WhatsApp Web: selectează PRIMUL mesaj al omului → <kbd>Ctrl</kbd> + <kbd>C</kbd></div>
+    <div class="d">Tot mesajul, de la primul cuvânt la ultimul.</div></div></li>
+
+  <li><div><div class="t">În qapp: click în câmp → <kbd>Ctrl</kbd> + <kbd>V</kbd> → click în afara câmpului</div>
+    <div class="rez">
+      <div class="ok"><b>✓ verde</b> (ex. „Google Ads · …”)<br>Perfect — mergi mai departe.</div>
+      <div class="nu"><b>Roșu: „Mesajul nu are cod”</b><br>Omul n-a scris din site. <b>Golește câmpul</b> și mergi mai departe.</div>
+    </div></div></li>
+
+  <li><div><div class="t">Completează restul ca de obicei → „Adaugă lead”</div>
+    <div class="d">De aici leadul urmează procedura obișnuită (sunat în aceeași zi etc.).</div></div></li>
+</ol>
+
+<h2>Situații speciale</h2>
+<ul class="alte">
+  <li><b>Ai creat deja leadul fără mesaj?</b> Deschide-l → „Editează datele” → lipește mesajul → Salvează.</li>
+  <li><b>Un părinte scrie pentru doi copii?</b> Două leaduri — lipești <b>același</b> mesaj la amândoi.</li>
+  <li><b>Omul a scris mai multe mesaje?</b> Doar <b>primul</b> contează (cel care începe cu „Bună!…”).</li>
+  <li><b>Client sau lead existent</b> care scrie pe WhatsApp → răspunzi normal, nu creezi nimic nou.</li>
+</ul>
+
+<div class="jos">Quasar Dance · procedură recepție · 30.09.2026</div>
+</body></html>
