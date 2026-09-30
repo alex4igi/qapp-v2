@@ -214,3 +214,16 @@ cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functi
   recepție: cine le sună trebuie decis **înainte** de distribuirea flyerelor.
 - `leads.interes` pe un lead de preînscriere e doar primul stil bifat (proiecție); lista completă e în preînscriere.
 - GDPR: tabelul intră în `gdpr_export_client` și `anonimizeaza_client`, legat pe lead/client, nu pe telefon.
+
+## 12. Atribuirea leadurilor din WhatsApp (din 30.09.2026)
+
+- Butoanele de WhatsApp de pe site pun în mesaj un cod `ref Q-XXXXX` și salvează click-ul în `whatsapp_clickuri`,
+  cu sursa vizitei (UTM, domeniul de proveniență, `gclid` doar cu consimțământ de marketing). Recepția lipește primul
+  mesaj în fișa leadului (câmpul apare când sursa e „WhatsApp”), iar `leaga_click_whatsapp` copiază atribuirea pe lead.
+- Pe un lead WhatsApp, **`leads.sursa` rămâne „WhatsApp”** (canalul de contact), iar `utm_source/medium/campaign`
+  spun **de unde a venit omul înainte** (ex. `google / cpc` = Google Ads, `google / organic` = căutare). `utm_*` gol =
+  omul a scris fără butonul de pe site sau recepția n-a lipit mesajul — **nu** înseamnă „direct”.
+- Legătura stă pe lead (`leads.wa_click_id`): un click poate avea mai multe leaduri (frați).
+- Click-urile fără lead nu sunt o eroare: recepția notează doar conversațiile serioase. Raportul „click-uri vs.
+  leaduri” măsoară tocmai asta.
+- `whatsapp_clickuri` nu conține date personale; devine personal doar prin legătura cu un lead.

@@ -42,6 +42,7 @@ import {
   enqueueConfirmareProgramare,
   markLeadConvertit,
   getLeadConversionInfo,
+  leagaClickWhatsApp,
   type LeadForm,
 } from '../api'
 import { inscrieLaDemo } from '@/lib/inscrieriDemo'
@@ -61,6 +62,7 @@ import { ContactatSection } from './sections/ContactatSection'
 import { PierdutSection } from './sections/PierdutSection'
 import { DateContactSection, type DupHit } from './sections/DateContactSection'
 import { ProfilInteresSection } from './sections/ProfilInteresSection'
+import { WhatsAppAtribuireSection } from './sections/WhatsAppAtribuireSection'
 import { RecomandareLeadSection } from '@/features/recomandari/components/RecomandareLeadSection'
 import { PasUrmatorSection } from './sections/PasUrmatorSection'
 import { DejaClientBanner, useClientExistent, ceraConfirmareClient } from '../DejaClientBanner'
@@ -110,6 +112,8 @@ export function LeadModal({
   // altfel nu află că exista una (un lead are o singură programare).
   const [inlocuireConfirmata, setInlocuireConfirmata] = useState(false)
   const [clientConfirmat, setClientConfirmat] = useState(false)
+  // Primul mesaj de pe WhatsApp, cu codul de atribuire („ref Q-…”); nu se salvează ca atare.
+  const [waText, setWaText] = useState('')
   // Valorile programării la deschidere — ca să nu re-creăm o programare la edituri
   // care nu schimbă data/cursul.
   const [initial, setInitial] = useState<{ data: string; selectie: string }>({
@@ -177,6 +181,7 @@ export function LeadModal({
     setPlinDinServer(false)
     setInlocuireConfirmata(false)
     setClientConfirmat(false)
+    setWaText('')
     setInitial({ data: lead?.data_programare?.slice(0, 10) ?? '', selectie: '' })
   }, [open, lead, defaultStatus, startScheduling])
 
@@ -409,6 +414,18 @@ export function LeadModal({
       const formToSave: LeadForm = scheduleChanged
         ? { ...form, status: 'programat' }
         : form
+      // Codul se verifică ÎNAINTE de salvare: o eroare după crearea leadului ar lăsa
+      // modalul deschis, iar a doua apăsare ar crea un lead dublu.
+      if (waText.trim()) {
+        const r = await leagaClickWhatsApp(waText)
+        if (!r.gasit) {
+          throw new Error(
+            r.motiv === 'fara_cod'
+              ? 'Mesajul de WhatsApp nu are cod „ref Q-…” — golește câmpul.'
+              : `Codul WhatsApp ${r.cod} nu există — verifică-l sau golește câmpul.`,
+          )
+        }
+      }
       let leadId = lead?.id ?? null
       if (isEdit) {
         await updateLead(lead!.id, formToSave)
@@ -416,6 +433,7 @@ export function LeadModal({
         const created = await createLead(formToSave)
         leadId = created.id
       }
+      if (waText.trim() && leadId) await leagaClickWhatsApp(waText, leadId)
       if (scheduleChanged && leadId) {
         const sel = resolveSelectie()!
         let programareId: string | null = null
@@ -585,6 +603,9 @@ export function LeadModal({
         reactivatePending={reactivate.isPending}
       />
       <ProfilInteresSection form={form} set={set} campanii={campanii.data ?? []} />
+      {campaignLabel === 'WhatsApp' && (
+        <WhatsAppAtribuireSection text={waText} onChange={setWaText} clickLegatId={lead?.wa_click_id ?? null} />
+      )}
     </>
   )
 

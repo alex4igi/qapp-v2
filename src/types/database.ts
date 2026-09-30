@@ -6472,6 +6472,7 @@ export type Database = {
           utm_medium: string | null
           utm_source: string | null
           varsta: number | null
+          wa_click_id: string | null
         }
         Insert: {
           ad_id?: string | null
@@ -6525,6 +6526,7 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           varsta?: number | null
+          wa_click_id?: string | null
         }
         Update: {
           ad_id?: string | null
@@ -6578,6 +6580,7 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           varsta?: number | null
+          wa_click_id?: string | null
         }
         Relationships: [
           {
@@ -6677,6 +6680,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restante_locatie_luna"
             referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "leads_wa_click_id_fkey"
+            columns: ["wa_click_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_clickuri"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -11442,6 +11452,45 @@ export type Database = {
           },
         ]
       }
+      whatsapp_clickuri: {
+        Row: {
+          cod: string
+          created: string
+          gclid: string | null
+          id: string
+          pagina: string | null
+          referrer_host: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          cod: string
+          created?: string
+          gclid?: string | null
+          id?: string
+          pagina?: string | null
+          referrer_host?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          cod?: string
+          created?: string
+          gclid?: string | null
+          id?: string
+          pagina?: string | null
+          referrer_host?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       bilete_publice: {
@@ -15537,6 +15586,10 @@ export type Database = {
           lead_id: string
           referinta: string
         }[]
+      }
+      leaga_click_whatsapp: {
+        Args: { p_lead?: string; p_text: string }
+        Returns: Json
       }
       list_bilete_evenimente: {
         Args: never

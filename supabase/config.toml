@@ -428,6 +428,10 @@ verify_jwt = false
 [functions.intake-meta-lead]
 verify_jwt = false
 
+# Click pe WhatsApp de pe site (codul din mesajul precompletat). Protejat prin x-intake-secret.
+[functions.intake-wa-click]
+verify_jwt = false
+
 # Intake din Google Sheet (Meta Ads → Sheet → Apps Script). Protejat prin x-sheets-secret.
 [functions.intake-sheets-lead]
 verify_jwt = false
