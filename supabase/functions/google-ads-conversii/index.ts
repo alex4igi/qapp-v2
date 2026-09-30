@@ -15,6 +15,10 @@ import { serviceClient } from '../_shared/intake.ts'
 const USER = Deno.env.get('GOOGLE_ADS_CSV_USER') ?? ''
 const PASS = Deno.env.get('GOOGLE_ADS_CSV_PASS') ?? ''
 const CONVERSION_NAME = Deno.env.get('GOOGLE_ADS_CONVERSION_NAME') ?? 'Inscriere qapp'
+// Managerul de date nu acceptă un fișier fără niciun rând („nu s-a putut stabili schema”).
+// Doar pe durata configurării conexiunii: un rând de exemplu, cu un gclid inexistent pe care
+// Google îl respinge la import. Comutatorul se șterge după configurare.
+const EXEMPLU = Deno.env.get('GOOGLE_ADS_CSV_EXEMPLU') === 'true'
 
 function egal(a: string, b: string): boolean {
   if (a.length !== b.length) return false
@@ -53,6 +57,10 @@ Deno.serve(async (req) => {
     return new Response('Eroare', { status: 500 })
   }
   const randuri = (data ?? []) as { gclid: string; data_conversie: string; valoare: number }[]
+  if (EXEMPLU && randuri.length === 0) {
+    const ieri = new Date(Date.now() - 86_400_000).toISOString().slice(0, 19).replace('T', ' ')
+    randuri.push({ gclid: 'EXEMPLU-CONFIGURARE-QAPP', data_conversie: `${ieri}+00:00`, valoare: 270 })
+  }
 
   // Fără linia „Parameters:TimeZone=…”: Managerul de date o citește drept antet.
   // Fusul orar e în fiecare oră (UTC, „+00:00”) — vezi migrația 20260930180000.
