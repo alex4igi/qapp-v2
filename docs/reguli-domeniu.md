@@ -217,8 +217,9 @@ cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functi
 
 ## 12. Atribuirea leadurilor din WhatsApp (din 30.09.2026)
 
-- Butoanele de WhatsApp de pe site pun în mesaj un cod `ref Q-XXXXX` și salvează click-ul în `whatsapp_clickuri`,
-  cu sursa vizitei (UTM, domeniul de proveniență, `gclid` doar cu consimțământ de marketing). Recepția lipește primul
+- Butoanele de WhatsApp de pe site pun în mesaj un cod **invizibil** (15 caractere de lățime zero după primul „!”;
+  până la 30.09 16:00 era vizibil, `ref Q-XXXXX`, și e încă recunoscut) și salvează click-ul în `whatsapp_clickuri`,
+  cu sursa vizitei (UTM, domeniul de proveniență, `gclid` doar cu consimțământ de marketing). Recepția **copiază** (nu rescrie) primul
   mesaj în fișa leadului (câmpul apare când sursa e „WhatsApp”), iar `leaga_click_whatsapp` copiază atribuirea pe lead.
 - Pe un lead WhatsApp, **`leads.sursa` rămâne „WhatsApp”** (canalul de contact), iar `utm_source/medium/campaign`
   spun **de unde a venit omul înainte** (ex. `google / cpc` = Google Ads, `google / organic` = căutare). `utm_*` gol =

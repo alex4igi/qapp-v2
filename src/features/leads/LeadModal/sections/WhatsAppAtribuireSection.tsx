@@ -41,11 +41,11 @@ export function WhatsAppAtribuireSection({ text, onChange, clickLegatId }: Props
 
   return (
     <div style={{ marginTop: '13px' }}>
-      <L>Primul mesaj de pe WhatsApp (sau codul Q-…)</L>
+      <L>Primul mesaj de pe WhatsApp</L>
       <input
         className="qf"
         value={text}
-        placeholder="Lipește mesajul: „Bună! Aș dori… (ref Q-7K3MP)”"
+        placeholder="Copiază primul mesaj al omului din WhatsApp și lipește-l aici"
         onChange={(e) => onChange(e.target.value)}
         onBlur={(e) => setVerificat(e.target.value)}
         style={inputStyle}
@@ -54,14 +54,14 @@ export function WhatsAppAtribuireSection({ text, onChange, clickLegatId }: Props
       {r && !r.gasit && (
         <div style={{ fontSize: '12px', marginTop: '6px', color: '#C2403F' }}>
           {r.motiv === 'fara_cod'
-            ? 'Mesajul nu are cod — omul a scris fără butonul de pe site. Golește câmpul.'
+            ? 'Mesajul nu are cod — omul a scris fără butonul de pe site (sau mesajul a fost rescris, nu copiat). Golește câmpul.'
             : `Codul ${r.cod} nu există (sau e mai vechi de 90 de zile). Verifică-l sau golește câmpul.`}
         </div>
       )}
       {!text.trim() && legatQ.data && <Linie c={legatQ.data} ton="legat" />}
       {!text.trim() && !clickLegatId && (
         <div style={{ fontSize: '11.5px', marginTop: '5px', color: 'var(--color-muted)' }}>
-          Mesajele trimise de pe site au la final „ref Q-…”. Cu el aflăm din ce reclamă a venit omul.
+          Mesajele scrise din butonul de pe site au un cod ascuns — nu se vede, dar trece la copy-paste. Cu el aflăm din ce reclamă a venit omul. Copiază mesajul, nu-l rescrie.
         </div>
       )}
     </div>

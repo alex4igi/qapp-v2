@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 
-// Atribuirea leadurilor venite pe WhatsApp: site-ul pune un cod („ref Q-7K3MP") în mesajul
+// Atribuirea leadurilor venite pe WhatsApp: site-ul pune un cod invizibil în mesajul
 // precompletat și salvează click-ul cu sursa lui; recepția lipește primul mesaj în fișă.
 // Vezi migrația 20260930140000_whatsapp_clickuri_atribuire.sql.
 

@@ -112,7 +112,7 @@ export function LeadModal({
   // altfel nu află că exista una (un lead are o singură programare).
   const [inlocuireConfirmata, setInlocuireConfirmata] = useState(false)
   const [clientConfirmat, setClientConfirmat] = useState(false)
-  // Primul mesaj de pe WhatsApp, cu codul de atribuire („ref Q-…”); nu se salvează ca atare.
+  // Primul mesaj de pe WhatsApp, cu codul de atribuire ascuns în el; nu se salvează ca atare.
   const [waText, setWaText] = useState('')
   // Valorile programării la deschidere — ca să nu re-creăm o programare la edituri
   // care nu schimbă data/cursul.
@@ -421,7 +421,7 @@ export function LeadModal({
         if (!r.gasit) {
           throw new Error(
             r.motiv === 'fara_cod'
-              ? 'Mesajul de WhatsApp nu are cod „ref Q-…” — golește câmpul.'
+              ? 'Mesajul de WhatsApp nu are cod (a fost scris fără butonul de pe site) — golește câmpul.'
               : `Codul WhatsApp ${r.cod} nu există — verifică-l sau golește câmpul.`,
           )
         }
