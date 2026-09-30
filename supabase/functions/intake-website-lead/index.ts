@@ -2,7 +2,11 @@
 // Formularul face POST cu:
 //   { nume, prenume?, nume_parinte?, telefon, email?, data_nasterii?,
 //     interes?, grupa_varsta?, locatia?, mesaj?, campanie?, invitat_de?,
-//     utm_source?, utm_medium?, utm_campaign?, gclid?, campaign_id? }.
+//     utm_source?, utm_medium?, utm_campaign?, utm_content?, gclid?, campaign_id?,
+//     preinscriere? }.
+// `preinscriere` = formularul de campanie cu participanți (Valea Lupului): fiecare
+// participant primește leadul lui sau clientul lui și un rând în `preinscrieri_campanie`
+// (vezi _shared/preinscriere.ts). Fără el, drumul e cel vechi: un lead, dedup pe telefon.
 // `invitat_de` = „Cine te-a invitat?" din campania de recomandări: se înregistrează în
 // `recomandari` doar cât campania e activă, și la telefon duplicat.
 // GET → starea campaniei de recomandări ({ activa, nume, data_limita, recompensa_lei }),
@@ -37,6 +41,7 @@ import {
   campanieRecomandareActiva,
   inregistreazaRecomandare,
 } from '../_shared/intake.ts'
+import { parsePreinscriere, salveazaPreinscriere, stariCampaniiPreinscriere } from '../_shared/preinscriere.ts'
 import { clientIp, raspuns429, verificaPlafon } from '../_shared/rateLimit.ts'
 
 const SECRET = Deno.env.get('INTAKE_SECRET') ?? ''
@@ -74,11 +79,16 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: cors })
   }
   // Starea campaniei e informație publică (termen, sumă) — fără date personale.
+  // `preinscrieri` = starea campaniilor de preînscriere (pagina și pop-up-ul de pe site).
   if (req.method === 'GET') {
-    const c = await campanieRecomandareActiva(serviceClient())
-    return json(c
-      ? { activa: true, nume: c.nume, data_limita: c.data_limita, recompensa_lei: c.recompensa_lei }
-      : { activa: false })
+    const sb = serviceClient()
+    const [c, preinscrieri] = await Promise.all([campanieRecomandareActiva(sb), stariCampaniiPreinscriere(sb)])
+    return json({
+      ...(c
+        ? { activa: true, nume: c.nume, data_limita: c.data_limita, recompensa_lei: c.recompensa_lei }
+        : { activa: false }),
+      preinscrieri,
+    })
   }
   if (req.method !== 'POST') return json({ error: 'Doar POST' }, 405)
 
@@ -150,6 +160,45 @@ Deno.serve(async (req) => {
     if (emailRaw && !emailValid) warnings.push('email_invalid_ignorat')
 
     const campanieNume = cap(body.campanie, MAX_SCURT) ?? 'Website quasardance.ro'
+
+    if (body.preinscriere != null) {
+      const pre = parsePreinscriere(body.preinscriere)
+      if (!pre.ok) {
+        await respins(`preînscriere: ${pre.motiv}`)
+        return json({ error: 'Formular incomplet. Reîncarcă pagina și încearcă din nou.' }, 400)
+      }
+      // Campania o pornește și o închide Alex din /preinscrieri: până atunci (și după) nu se
+      // salvează nimic, chiar dacă pagina e deschisă în previzualizare sau dintr-un cache vechi.
+      const stare = (await stariCampaniiPreinscriere(supabase)).find((c) => c.nume === campanieNume)?.stare
+      if (stare !== 'activa') {
+        await respins(`preînscriere: campania ${campanieNume} e ${stare ?? 'necunoscută'}`)
+        return json({
+          error: stare === 'inchisa'
+            ? 'Preînscrierile s-au încheiat. Pentru detalii, sună-ne la 0730 534 172.'
+            : 'Preînscrierile nu sunt încă deschise. Revino în curând sau sună-ne la 0730 534 172.',
+          campanie_stare: stare ?? null,
+        }, 400)
+      }
+      const sursaId = await resolveCampanie(supabase, campanieNume)
+      const r = await salveazaPreinscriere(supabase, {
+        contact: { nume, telefon, email: emailFinal },
+        pre: pre.value,
+        campanie: campanieNume,
+        sursaId,
+        utm: {
+          campaign: cap(body.utm_campaign, MAX_SCURT),
+          source: cap(body.utm_source, MAX_SCURT),
+          medium: cap(body.utm_medium, MAX_SCURT),
+          content: cap(body.utm_content, MAX_SCURT),
+        },
+        canal: 'website',
+        detalii: urma,
+      })
+      console.log(`[intake/website] preinscriere ${r.duplicat ? 'retry' : 'salvata'}: ${r.participanti} participanti, ${r.leaduriNoi} leaduri noi`)
+      if (!areSecret) return json({ ok: true })
+      return json({ ok: true, preinscriere: r, ...(warnings.length ? { warnings } : {}) })
+    }
+
     const sursaId = await resolveCampanie(supabase, campanieNume)
 
     const result = await insertLead(

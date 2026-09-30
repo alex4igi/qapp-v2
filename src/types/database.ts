@@ -717,6 +717,79 @@ export type Database = {
           },
         ]
       }
+      campanii_preinscriere: {
+        Row: {
+          created: string
+          id: string
+          inchisa_la: string | null
+          locatie_id: string
+          nume: string
+          pornita_la: string | null
+          updated: string
+        }
+        Insert: {
+          created?: string
+          id?: string
+          inchisa_la?: string | null
+          locatie_id: string
+          nume: string
+          pornita_la?: string | null
+          updated?: string
+        }
+        Update: {
+          created?: string
+          id?: string
+          inchisa_la?: string | null
+          locatie_id?: string
+          nume?: string
+          pornita_la?: string | null
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanii_preinscriere_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "campanii_preinscriere_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campanii_preinscriere_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "campanii_preinscriere_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "campanii_preinscriere_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "campanii_preinscriere_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+        ]
+      }
       campanii_promovare: {
         Row: {
           bani: string | null
@@ -7655,6 +7728,201 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "portal_accounts"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      preinscrieri_campanie: {
+        Row: {
+          acord_marketing: boolean
+          acord_text_versiune: string | null
+          campanie: string
+          client_id: string | null
+          confirmata_de: string | null
+          created: string
+          disponibilitate: string[]
+          disponibilitate_confirmata_la: string | null
+          elev_scoala_partenera: boolean | null
+          email: string | null
+          id: string
+          lead_id: string | null
+          locatie_id: string
+          nota_staff: string | null
+          nume_contact: string
+          nume_participant: string
+          observatii: string | null
+          participant: string
+          participant_index: number
+          status: string
+          stiluri: string[]
+          telefon: string
+          trimitere_id: string
+          updated: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          varsta: number | null
+        }
+        Insert: {
+          acord_marketing?: boolean
+          acord_text_versiune?: string | null
+          campanie: string
+          client_id?: string | null
+          confirmata_de?: string | null
+          created?: string
+          disponibilitate?: string[]
+          disponibilitate_confirmata_la?: string | null
+          elev_scoala_partenera?: boolean | null
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          locatie_id: string
+          nota_staff?: string | null
+          nume_contact: string
+          nume_participant: string
+          observatii?: string | null
+          participant: string
+          participant_index: number
+          status?: string
+          stiluri: string[]
+          telefon: string
+          trimitere_id: string
+          updated?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          varsta?: number | null
+        }
+        Update: {
+          acord_marketing?: boolean
+          acord_text_versiune?: string | null
+          campanie?: string
+          client_id?: string | null
+          confirmata_de?: string | null
+          created?: string
+          disponibilitate?: string[]
+          disponibilitate_confirmata_la?: string | null
+          elev_scoala_partenera?: boolean | null
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          locatie_id?: string
+          nota_staff?: string | null
+          nume_contact?: string
+          nume_participant?: string
+          observatii?: string | null
+          participant?: string
+          participant_index?: number
+          status?: string
+          stiluri?: string[]
+          telefon?: string
+          trimitere_id?: string
+          updated?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          varsta?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preinscrieri_campanie_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "preinscrieri_campanie_locatie_id_fkey"
+            columns: ["locatie_id"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
           },
         ]
       }
@@ -15909,6 +16177,24 @@ export type Database = {
       set_suspendare_datorii: {
         Args: { p_client: string; p_suspendat: boolean }
         Returns: undefined
+      }
+      seteaza_campanie_preinscriere: {
+        Args: { p_actiune: string; p_nume: string }
+        Returns: {
+          created: string
+          id: string
+          inchisa_la: string | null
+          locatie_id: string
+          nume: string
+          pornita_la: string | null
+          updated: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "campanii_preinscriere"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

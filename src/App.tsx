@@ -83,6 +83,7 @@ const DatoriiPage = lazy(() =>
 )
 const Absente21zPage = lazy(() => import('@/features/absente21z/Absente21zPage'))
 const RecomandariPage = lazy(() => import('@/features/recomandari/RecomandariPage'))
+const PreinscrieriPage = lazy(() => import('@/features/preinscrieri/PreinscrieriPage'))
 const GrileKpiPage = lazy(() => import('@/features/grile-kpi/GrileKpiPage'))
 const GrilaEditorPage = lazy(() => import('@/features/grile-kpi/GrilaEditorPage'))
 const RaportKpiPage = lazy(() => import('@/features/raport-kpi/RaportKpiPage'))
@@ -287,6 +288,7 @@ function App() {
               <Route path="recuperare" element={<Navigate to="/datorii" replace />} />
               <Route path="absente-21z" element={<Absente21zPage />} />
               <Route path="recomandari" element={<RecomandariPage />} />
+              <Route path="preinscrieri" element={<PreinscrieriPage />} />
               <Route path="sms" element={<NotificariSmsPage />} />
               <Route path="facturare" element={<FacturarePage />} />
               <Route path="feedback" element={<FeedbackListPage />} />

@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
       prenume: lead.prenume || lead.nume,
       locatie,
     })
+    if (!mesaj) continue
 
     const result = await sendSms(lead.telefon, mesaj)
     if (result.ok) {

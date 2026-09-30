@@ -111,7 +111,7 @@ export const GRUPA_LABELS: Record<GrupaLead, string> = {
 }
 
 // Locațiile relevante pentru lead-uri (folosite și de logica SMS — adresă/review link).
-export const LOCATII = ['Ștefan cel Mare', 'Nicolina', 'Quasar 4 Kids'] as const
+export const LOCATII = ['Ștefan cel Mare', 'Nicolina', 'Quasar 4 Kids', 'Valea Lupului'] as const
 
 // Motivele plecării, pe categorii închise (vezi CHECK-ul din
 // 20260918100000_leads_motiv_categorie.sql). Granița, decisă 2026-09-17:

@@ -275,6 +275,10 @@ Deno.serve(async (req) => {
         ora,
         cand: t.cand,
       })
+      if (!mesaj) {
+        console.warn(`[cron-morning] reminder sarit: locatia ${locatie} nu are inca adresa in SMS`)
+        continue
+      }
 
       const result = await sendSms(lead.telefon, mesaj)
       await supabase.from('sms_logs').insert({

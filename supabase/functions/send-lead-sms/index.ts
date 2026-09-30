@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
       dataProgramare: lead.data_programare,
       ora,
     })
+    if (!mesaj) return json({ skipped: true, reason: `locația ${locatie} nu are încă adresă în SMS` })
 
     // Zonă interzisă: nu trimitem acum — punem mesajul (deja compus) în coada
     // sms_amanate, drenată de process-sms-amanate după ce iese din fereastră.

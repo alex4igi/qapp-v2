@@ -274,6 +274,7 @@ Deno.serve(async (req) => {
           prenume: lead.prenume || lead.nume,
           locatie,
         })
+        if (!mesaj) continue
 
         const result = await sendSms(lead.telefon, mesaj)
         await supabase.from('sms_logs').insert({

@@ -191,6 +191,10 @@ Deno.serve(async (req) => {
       dataProgramare: programare.data_programarii,
       ora,
     })
+    if (!mesaj) {
+      await anuleaza(row.id, `locatia ${locatie} nu are inca adresa in SMS`)
+      continue
+    }
 
     // Același text deja trimis = aceeași zi, oră și adresă. Se întâmplă când
     // leadul iese din „Programat" și revine: salvarea creează o programare nouă,

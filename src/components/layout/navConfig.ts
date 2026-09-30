@@ -35,6 +35,7 @@ export const navSections: NavSection[] = [
       { label: 'Prezențe',   path: '/prezente' },
       { label: 'Absenți 21z', path: '/absente-21z' },
       { label: 'Recomandări', path: '/recomandari' },
+      { label: 'Preînscrieri', path: '/preinscrieri' },
       { label: 'Evaluări',   path: '/evaluari' },
     ],
   },

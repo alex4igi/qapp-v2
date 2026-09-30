@@ -99,7 +99,9 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 
 ## 6. Nomenclatoare închise
 
-- **Locații:** în DB `Galeriile Stefan cel Mare` / `Nicolina` / `Quasar 4 Kids`; în UI și în `leads.locatia` etichete scurte.
+- **Locații:** în DB `Galeriile Stefan cel Mare` / `Nicolina` / `Quasar 4 Kids` / `Valea Lupului`; în UI și în `leads.locatia` etichete scurte.
+  Valea Lupului (Școala Verde, parteneriat cu Școala „Profesor Mihai Dumitriu”, deschidere noiembrie 2026) există din 29.09.2026 doar ca locație de campanie: fără săli, grupe,
+  recepție, adresă sau telefon — vezi §11.
   Potrivirea se face normalizat (`locatie_label_match` în SQL), niciodată cu `=`. Cursuri „S …" = Ștefan, „N …" = Nicolina.
 - **Săli la Ștefan:** `SCM Studio 1`, `SCM Studio 2`.
 - **Disciplina (`cursuri.stil`):** `Street Dance` · `Gimnastica` · `K-Pop` · `Teatru` · `Zumba` · `Open` — lista din `src/lib/enums.ts`.
@@ -119,6 +121,8 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **Opt-out = doar marketing.** Clasificarea stă într-un singur loc: `supabase/functions/_shared/smsCategorie.ts`
   (marketing: `post_demo`, `review`, `followup`; restul tranzacționale; un cod necunoscut = marketing).
 - Adresa/telefonul dintr-un SMS către lead se iau din **locația programării**, nu din `leads.locatia`.
+- **O locație fără adresă nu primește SMS** (`LOCATII_FARA_DATE_SMS` în `_shared/sms.ts`, azi Valea Lupului): `buildSms` întoarce
+  null și apelantul sare mesajul, în loc să trimită adresa de la Ștefan. Se scoate de pe listă când intră în `ADRESE`/`TELEFOANE`/`REVIEW_LINKS`.
 
 ## 8. Capcane de interogare
 
@@ -177,3 +181,34 @@ Decizii Alex, 28 sept. 2026. Brief: `handoff/2026-09-27-campanie-recomandari-var
 - **Anulare:** dacă dispar banii de pe rata care a calificat (ștergere, restituire), creditul nefolosit se anulează
   singur; cel deja folosit rămâne folosit (nu se cere înapoi) și apare în raport ca „consumat înainte de anulare".
   Plecarea ulterioară a invitatului nu anulează nimic. Managerul poate anula manual, cu motiv.
+
+## 11. Preînscrieri de campanie (Valea Lupului, 2026)
+
+Decizii Alex, 29.09.2026. Brief: `handoff/2026-09-29-campanie-valea-lupului.md` + `handoff/2026-09-29-review-plan-claude-valea-lupului.md`;
+cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functions/_shared/preinscriere.ts`, `src/features/preinscrieri/`,
+`/preinscrieri` (aplicație) · pe site `quasardance.ro/valea-lupului`, QR `quasardance.ro/vl/<lot>` (lotul ajunge în `utm_content`).
+
+- **Campania o pornește și o închide Alex** (30.09.2026), din `/preinscrieri` (owner/admin, RPC `seteaza_campanie_preinscriere`,
+  urmă în `audit_log`). Starea stă în `campanii_preinscriere` (nepornită → activă → închisă, se poate redeschide). Site-ul o
+  citește prin GET-ul din `intake-website-lead` (cache ~1 min, deci o schimbare se vede în 1–2 minute): nepornită = pagina
+  spune „în curând”, fără formular și fără pop-up; activă = formular + cardul lateral pe tot site-ul; închisă = „s-au încheiat”.
+  Intake-ul refuză orice preînscriere când campania nu e activă. `quasardance.ro/valea-lupului?previzualizare` arată pagina
+  întreagă (pentru agenție), dar trimiterea e refuzată.
+- **Preînscriere ≠ înscriere.** E interes declarat, strâns ca să decidem grupele și cererea de închiriere a sălii. Nu promite
+  loc, grupă sau oră. Locația e deschisă oricui. **Cursurile se țin la Școala Verde; parteneriatul e cu Școala „Profesor Mihai
+  Dumitriu”** — acolo se face promovarea, deci formularul întreabă dacă elevul învață acolo (`elev_scoala_partenera`).
+- **Un rând per participant**, nu per formular: doi frați + părintele la Zumba = trei rânduri. Fiecare participant are
+  leadul LUI (frate nou = lead nou, cu același telefon) sau clientul lui (`client_id`, dacă e deja în familia de pe telefon).
+  Motivul: programarea la DEMO e unică pe (lead, eveniment) și reprogramarea șterge celelalte programări ale leadului.
+  Un lead vechi trecut pe numele părintelui NU se refolosește pentru copil. Potrivirea pe nume ignoră ordinea cuvintelor.
+- **Un formular = un `trimitere_id`**; retrimiterea aceluiași formular nu dublează nimic. Un formular nou pentru același
+  participant e o cerere nouă; rapoartele iau **ultima** cerere a fiecărui participant, iar `retras` nu se mai numără.
+- **Disponibilitatea = perechi zi × interval**, per participant: L–V × 13–15 / 15–17 / 17–19 și, din 30.09.2026,
+  Sâ–Du × 10–12 / 12–14 (cheile `Sa 10-12` etc. sunt aceleași în CHECK-ul din DB, în intake și pe site). „Confirmat la telefon” e
+  separat de status (`disponibilitate_confirmata_la`); o grilă schimbată după confirmare redevine declarată (trigger).
+- **Pragul pentru o grupă**: reperul de 8 e în cursanți **plătitori** (§2), nu în preînscrieri. Ecranul „Decizie grupe”
+  împarte pragul la o rată de conversie presupusă (reglabilă) și o afișează ca ipoteză.
+- **Leadurile Valea Lupului intră în `nou`** și deci în lista de sunat de seară (`leads_de_flagat_seara`). Locația n-are
+  recepție: cine le sună trebuie decis **înainte** de distribuirea flyerelor.
+- `leads.interes` pe un lead de preînscriere e doar primul stil bifat (proiecție); lista completă e în preînscriere.
+- GDPR: tabelul intră în `gdpr_export_client` și `anonimizeaza_client`, legat pe lead/client, nu pe telefon.

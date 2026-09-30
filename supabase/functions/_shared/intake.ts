@@ -137,6 +137,8 @@ const LOCATIE_ALIASES: Record<string, string> = {
   'centru': 'Ștefan cel Mare',
   'nicolina': 'Nicolina',
   'quasar nicolina': 'Nicolina',
+  'valea lupului': 'Valea Lupului',
+  'scoala verde': 'Valea Lupului',
 }
 
 function foldKey(v: unknown): string | null {
@@ -192,7 +194,7 @@ export async function findMatchingClient(
 
 // True dacă clientul are cel puțin o înrolare sau o încasare (client „real",
 // nu o fantomă de import fără istoric).
-async function clientHasHistory(
+export async function clientHasHistory(
   supabase: SupabaseClient,
   clientId: string,
 ): Promise<boolean> {
@@ -334,11 +336,16 @@ export async function insertLead(
     // Context care se lipește pe TOATE rândurile de log ale acestui apel (nu doar
     // pe cel de respingere): folosit ca să marcăm apelurile fără secret de server.
     detalii?: Record<string, unknown>
+    // Preînscrierile rezolvă singure participantul (telefon + nume): un frate de pe
+    // același telefon primește leadul lui, nu îl moștenește pe al celuilalt.
+    faraDedupTelefon?: boolean
+    // Clientul decis de apelant; fără el se caută după telefon/email.
+    potrivireClient?: { id_client: string | null; deja_client: boolean }
   },
 ): Promise<{ created: boolean; leadId: string | null; reason?: string }> {
   const telefon = lead.telefon ? normalizeTelefon(lead.telefon) : null
 
-  if (telefon) {
+  if (telefon && !opts?.faraDedupTelefon) {
     const { data: existing } = await supabase
       .from('leads')
       .select('id')
@@ -381,7 +388,10 @@ export async function insertLead(
   // Dacă telefonul/emailul aparține unui client existent (activ sau ex), marchează
   // lead-ul „deja client": rămâne pe board ca istoric, dar e scos din fluxul rece.
   const emailTrim = lead.email?.trim() || null
-  const match = await findMatchingClient(supabase, telefon, emailTrim)
+  const potrivire = opts?.potrivireClient ?? await (async () => {
+    const m = await findMatchingClient(supabase, telefon, emailTrim)
+    return { id_client: m?.id ?? null, deja_client: !!m }
+  })()
 
   const { data, error } = await supabase
     .from('leads')
@@ -397,8 +407,8 @@ export async function insertLead(
       varsta: lead.varsta ?? null,
       locatia,
       sursa: sursaId,
-      id_client: match?.id ?? null,
-      deja_client: !!match,
+      id_client: potrivire.id_client,
+      deja_client: potrivire.deja_client,
       status: opts?.status ?? 'nou',
       observatii: note.length ? note.join('\n') : null,
       extern_id: lead.extern_id?.trim() || null,

@@ -38,6 +38,12 @@ const TELEFON_DEFAULT = '0730 534 172'
 // Cheia hardcodată folosită ca ultim resort când locația nu se poate canoniza.
 const LOCATIE_DEFAULT = 'Ștefan cel Mare'
 
+// Locații cunoscute, dar încă fără adresă/telefon/recenzii în tabelele de mai sus
+// (Valea Lupului, deschidere nov. 2026). Pentru ele `buildSms` întoarce null: mai
+// bine niciun SMS decât unul cu adresa de la Ștefan. Se scot de aici când intră în
+// ADRESE/TELEFOANE/REVIEW_LINKS.
+const LOCATII_FARA_DATE_SMS = new Set(['Valea Lupului'])
+
 // Locația poate veni fie din câmpul liber al leadului, fie din numele DB al
 // locației programării ("Galeriile Stefan cel Mare", "Quasar 4 Kids" etc). Cheile
 // ADRESE/REVIEW/TELEFOANE sunt scurte ("Ștefan cel Mare"), deci normalizăm +
@@ -45,6 +51,7 @@ const LOCATIE_DEFAULT = 'Ștefan cel Mare'
 function canonLocatie(locatie: string | null): keyof typeof ADRESE | null {
   if (!locatie) return null
   const n = locatie.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  if (n.includes('valea lupului') || n.includes('scoala verde')) return 'Valea Lupului'
   // "Quasar 4 Kids" și "Quasar for Kids" sunt sinonime (4 ⊄ for) — vezi LeadModal.
   if (n.includes('quasar') && n.includes('kids')) return 'Quasar 4 Kids'
   if (n.includes('nicolina')) return 'Nicolina'
@@ -142,7 +149,11 @@ export type SmsParams = {
   cand?: 'azi' | 'maine'
 }
 
-export function buildSms(tip: SmsTip, params: SmsParams): string {
+// null = locația e cunoscută, dar n-are încă datele din SMS (LOCATII_FARA_DATE_SMS):
+// apelantul nu trimite nimic și lasă urmă.
+export function buildSms(tip: SmsTip, params: SmsParams): string | null {
+  const canon = canonLocatie(params.locatie ?? null)
+  if (canon && LOCATII_FARA_DATE_SMS.has(canon)) return null
   const salut = salutSms(params.prenume)
   const adresa = getAdresa(params.locatie ?? null)
   const reviewLink = getReviewLink(params.locatie ?? null)

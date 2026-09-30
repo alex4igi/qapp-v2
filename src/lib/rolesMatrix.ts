@@ -45,6 +45,9 @@ export const ROUTE_ACCESS = {
   // Campania de recomandări: recepția confirmă cine a invitat pe cine; creditul îl
   // acordă DB-ul la plată. Anularea e gardată la manager+ în RPC.
   '/recomandari': ALL_STAFF,
+  // Preînscrierile Valea Lupului: cine sună familiile încă nu e decis (locația n-are
+  // recepție), deci lista e deschisă întregului staff. Instructorii și agenția nu.
+  '/preinscrieri': ALL_STAFF,
   '/sms': ALL_STAFF,
   '/feedback': ALL_STAFF,
   '/feedback-app': WITH_TEACHER,
