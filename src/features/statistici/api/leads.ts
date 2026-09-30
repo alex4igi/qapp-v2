@@ -76,3 +76,20 @@ export async function getLeadFunnel(
   return { global, perSursa }
 }
 
+// ── Leads pe lună ────────────────────────────────────────────────────────────
+export type LeadsLunaRow = { luna: string; leads: number; convertiti: number }
+
+export async function getLeadsPeLuna(i: Interval, locatieLabel: string | null): Promise<LeadsLunaRow[]> {
+  const { from, to } = intervalToDateRange(i)
+  const { data, error } = await supabase.rpc('get_leads_pe_luna', {
+    p_from: from,
+    p_to: to,
+    ...(locatieLabel ? { p_locatie: locatieLabel } : {}),
+  })
+  if (error) throw error
+  return ((data ?? []) as LeadsLunaRow[]).map((r) => ({
+    luna: r.luna,
+    leads: Number(r.leads ?? 0),
+    convertiti: Number(r.convertiti ?? 0),
+  }))
+}

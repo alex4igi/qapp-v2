@@ -71,7 +71,7 @@ export function OcupareList({ rows }: { rows: OcupareRow[] }) {
                     className="ml-1 text-xs"
                     style={{ color: barColor(r.procent) }}
                   >
-                    {r.procent}%
+                    {r.procent.toLocaleString('ro-RO')}%
                   </span>
                 )}
               </td>

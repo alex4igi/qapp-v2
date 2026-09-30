@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
+import { Sparkline } from '@/features/analytics/Sparkline'
 import type { InstructorTrendRow } from './api'
-import { Sparkline } from './Sparkline'
 
 // Feature „1 click instructor": câți clienți are fiecare instructor, dacă
 // pierde/câștigă (delta lună-vs-lună) + sparkline. Click pe rând → fișa lui.

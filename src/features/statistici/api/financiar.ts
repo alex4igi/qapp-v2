@@ -243,3 +243,22 @@ export async function getMixMetode(
   }))
 }
 
+// ── Mix recurent vs one-off ──────────────────────────────────────────────────
+export type RecurentOneoffRow = { tip: string; total: number }
+
+export async function getMixRecurentOneoff(
+  i: Interval,
+  locatieId: string | null = null,
+): Promise<RecurentOneoffRow[]> {
+  const { from, to } = intervalToDateRange(i)
+  const { data, error } = await supabase.rpc('get_mix_recurent_oneoff', {
+    p_from: from,
+    p_to: to,
+    ...(locatieId ? { p_locatie: locatieId } : {}),
+  })
+  if (error) throw error
+  return ((data ?? []) as RecurentOneoffRow[]).map((r) => ({
+    tip: r.tip,
+    total: Number(r.total ?? 0),
+  }))
+}

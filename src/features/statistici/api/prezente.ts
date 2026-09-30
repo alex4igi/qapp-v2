@@ -104,3 +104,25 @@ export async function getRetentieLuna(locatieId: string | null = null): Promise<
   return { retinuti, pierduti, bazaPrev, rata: rata(retinuti, bazaPrev) }
 }
 
+// ── Ocupare prime-time ───────────────────────────────────────────────────────
+export type PrimeTimeRow = {
+  slot: string
+  grupe: number
+  activi: number
+  capacitate: number
+  procent: number | null
+}
+
+export async function getOcuparePrimeTime(locatieId: string | null): Promise<PrimeTimeRow[]> {
+  const { data, error } = await supabase.rpc('get_ocupare_prime_time', {
+    p_locatie: locatieId ?? undefined,
+  })
+  if (error) throw error
+  return ((data ?? []) as PrimeTimeRow[]).map((r) => ({
+    slot: r.slot,
+    grupe: Number(r.grupe ?? 0),
+    activi: Number(r.activi ?? 0),
+    capacitate: Number(r.capacitate ?? 0),
+    procent: r.procent != null ? Number(r.procent) : null,
+  }))
+}

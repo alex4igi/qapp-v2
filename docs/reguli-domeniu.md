@@ -22,6 +22,8 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   Nu-l folosi pentru istoric. Anularea unei rezervări OPEN se citește din `open_rezervari.status = 'anulat'`.
 - **Elev activ (canonic, 02.07):** înrolare nereziliată care acoperă ziua **SAU** ≥1 `Prezent` în ultimele 21 de zile.
   Fără condiție de plată. Helperi SQL: `inrolari_active_la`, `clienti_activi_la`, `inrolari_active_luna`.
+  Pe o lună (30.09): `inrolari_active_luna` citește rezilierea din `data_reziliere` (nu din bifa `reziliat`), leagă
+  „Per ședință" doar de ziua ședinței și nu numără rezervările OPEN anulate — aceeași fereastră ca `_inrolari_platite_randuri`.
 - **Înscriși ≠ Vin efectiv (10.09):** `get_clienti_inscrisi_sezon()` = clienți distincți cu înrolare fără
   `data_reziliere` în sezonul activ. La cumpăna sezoanelor cifra „activi" se mișcă doar calendaristic — de aceea două cifre.
 - **Cursant plătitor pe lună:** `suma > 0`, intervalul acoperă luna, fără `data_reziliere <= 1 ale lunii`.

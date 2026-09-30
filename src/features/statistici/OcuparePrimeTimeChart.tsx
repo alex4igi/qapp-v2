@@ -46,14 +46,14 @@ export function OcuparePrimeTimeChart({ rows }: { rows: PrimeTimeRow[] }) {
             <Tooltip
               formatter={(v, _n, item) => {
                 const p = item?.payload as (typeof data)[number]
-                return [`${v}% · ${formatLocuri(p.activi)}/${p.capacitate} · ${p.grupe} grupe`, 'Ocupare']
+                return [`${Number(v).toLocaleString('ro-RO')}% · ${formatLocuri(p.activi)}/${p.capacitate} · ${p.grupe} grupe`, 'Ocupare']
               }}
             />
             <Bar dataKey="Ocupare" fill="#1d4ed8" radius={[3, 3, 0, 0]}>
               <LabelList
                 dataKey="Ocupare"
                 position="top"
-                formatter={(v) => `${Number(v)}%`}
+                formatter={(v) => `${Number(v).toLocaleString('ro-RO')}%`}
                 style={{ fontSize: 11, fill: '#374151' }}
               />
             </Bar>

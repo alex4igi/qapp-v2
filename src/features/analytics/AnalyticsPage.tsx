@@ -5,12 +5,10 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { listPraguri } from '@/features/scorecard/api'
 import { useDeUrmarit, type GrupeSubMinimSumar } from '@/features/ansamblu/useDeUrmarit'
-import { getAnalyticsSezon, getCursantiLunar } from './api'
-import { ANALYTICS_QO } from './sections/shared'
+import { ANALYTICS_QO, getAnalyticsSezon, getCursantiLunar } from './api'
 import { SezonKpis } from './SezonKpis'
 import { SchimbariLocatii } from './SchimbariLocatii'
 import { CursantiSezonChart } from './CursantiSezonChart'
-import { DetaliiInRevizuire } from './DetaliiInRevizuire'
 import { dataScurta } from './comparatii'
 
 // Lista operațională stă pe /overview; aici doar o numărăm, cu trimitere acolo.
@@ -101,7 +99,6 @@ export function AnalyticsPage() {
             ) : (
               <CursantiSezonChart rows={lunarQ.data ?? []} />
             )}
-            <DetaliiInRevizuire locatieId={locatieId} locatieNume={locatieNume} />
           </>
         )}
       </div>

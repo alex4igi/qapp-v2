@@ -31,3 +31,28 @@ export async function getTeacherOverview(
     datorie: Number(r.datorie ?? 0),
   }))
 }
+
+// ── Instructori — clienți + trend (feature „1 click") ───────────────────────
+export type InstructorTrendRow = {
+  teacher_id: string
+  teacher_nume: string
+  clienti_curent: number
+  clienti_prev: number
+  delta: number
+  retentie_procent: number | null
+  serie: number[]
+}
+
+export async function getInstructoriClientiTrend(luni = 6): Promise<InstructorTrendRow[]> {
+  const { data, error } = await supabase.rpc('get_instructori_clienti_trend', { p_luni: luni })
+  if (error) throw error
+  return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+    teacher_id: String(r.teacher_id),
+    teacher_nume: (r.teacher_nume as string) ?? '',
+    clienti_curent: Number(r.clienti_curent ?? 0),
+    clienti_prev: Number(r.clienti_prev ?? 0),
+    delta: Number(r.delta ?? 0),
+    retentie_procent: r.retentie_procent != null ? Number(r.retentie_procent) : null,
+    serie: ((r.serie as number[]) ?? []).map((x) => Number(x)),
+  }))
+}

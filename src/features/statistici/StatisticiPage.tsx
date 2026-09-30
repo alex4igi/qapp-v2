@@ -10,7 +10,7 @@ import {
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { isPrivileged } from '@/lib/rolesMatrix'
+import { canAccessRoute, isPrivileged } from '@/lib/rolesMatrix'
 import { getSezonActiv, lunaCurenta, lunaCuOffset, type Interval } from './api'
 import { TeacherOverviewSection } from './TeacherOverviewSection'
 import { SectionKpiFinanciar } from './sections/SectionKpiFinanciar'
@@ -25,6 +25,9 @@ import { SectionTrendPrezente } from './sections/SectionTrendPrezente'
 import { SectionOcupare } from './sections/SectionOcupare'
 import { SectionTotalClienti } from './sections/SectionTotalClienti'
 import { SectionConversieLeads } from './sections/SectionConversieLeads'
+import { SectionLeadsPeLuna } from './sections/SectionLeadsPeLuna'
+import { SectionOcuparePrimeTime } from './sections/SectionOcuparePrimeTime'
+import { SectionInstructoriTrend } from './sections/SectionInstructoriTrend'
 
 const TABS = [
   { id: 'financiar',   label: 'Financiar' },
@@ -44,6 +47,8 @@ const TABS_CU_INTERVAL = new Set(['financiar', 'prezente', 'leads'])
 export function StatisticiPage() {
   const { role } = useAuth()
   const privileged = isPrivileged(role)
+  // Tabelul instructorilor a venit din Panou (owner/admin) — păstrează publicul de acolo.
+  const vedeTrendInstructori = canAccessRoute(role, '/analytics')
   const { locatieNume: scopLocatieNume } = useWorkingLocatie()
   const [fromLuna, setFromLuna] = useState(lunaCuOffset(-11))
   const [toLuna, setToLuna] = useState(lunaCurenta())
@@ -142,6 +147,9 @@ export function StatisticiPage() {
             <LazySection>
               <SectionOcupare />
             </LazySection>
+            <LazySection>
+              <SectionOcuparePrimeTime />
+            </LazySection>
           </div>
         </>
       )}
@@ -162,6 +170,9 @@ export function StatisticiPage() {
       {tab === 'leads' && (
         <div className="flex flex-col gap-8">
           <SectionFunnelLeads interval={interval} />
+          <LazySection>
+            <SectionLeadsPeLuna interval={interval} />
+          </LazySection>
           {privileged && (
             <LazySection minHeight={160}>
               <SectionConversieLeads />
@@ -173,6 +184,11 @@ export function StatisticiPage() {
       {tab === 'instructori' && (
         <div className="flex flex-col gap-8">
           <TeacherOverviewSection />
+          {vedeTrendInstructori && (
+            <LazySection>
+              <SectionInstructoriTrend />
+            </LazySection>
+          )}
         </div>
       )}
     </div>
