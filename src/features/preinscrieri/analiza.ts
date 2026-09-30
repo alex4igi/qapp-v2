@@ -15,7 +15,8 @@ export const GRILE = [
 ] as const
 export const SLOTURI = GRILE.flatMap((g) => g.zile.flatMap((z) => g.intervale.map((i) => `${z} ${i}`)))
 
-export const STILURI = ['Street Dance', 'Gimnastica', 'K-Pop', 'Zumba'] as const
+// Ce oferim acum (Zumba scoasă, Alex 30.09.2026); aceeași listă ca în _shared/preinscriere.ts.
+export const STILURI = ['Street Dance', 'Gimnastica', 'K-Pop'] as const
 export const STIL_LABEL: Record<string, string> = {
   'Street Dance': 'Dans (Street Dance)',
   Gimnastica: 'Gimnastică',
@@ -24,8 +25,9 @@ export const STIL_LABEL: Record<string, string> = {
 }
 
 // Grupele publice de vârstă (docs/reguli-domeniu.md §6); adulții sunt o singură grupă aici.
-export const GRUPE_VARSTA = ['Tiny', 'Junior', 'Varsity', 'Teens', 'Adulți'] as const
-export type GrupaVarsta = (typeof GRUPE_VARSTA)[number]
+// Formularul e doar pentru copii (30.09.2026); „Adulți" rămâne în tip pentru rândurile vechi.
+export const GRUPE_VARSTA = ['Tiny', 'Junior', 'Varsity', 'Teens'] as const
+export type GrupaVarsta = (typeof GRUPE_VARSTA)[number] | 'Adulți'
 export const GRUPA_LABEL: Record<GrupaVarsta, string> = {
   Tiny: 'Tiny 4–6', Junior: 'Junior 7–10', Varsity: 'Varsity 11–14', Teens: 'Teens 15–18', Adulți: 'Adulți',
 }

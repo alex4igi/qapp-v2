@@ -14,7 +14,9 @@ import {
   type IntakeCanal,
 } from './intake.ts'
 
-export const STILURI = ['Street Dance', 'Gimnastica', 'K-Pop', 'Zumba'] as const
+// Ce oferim acum la Valea Lupului, doar copiilor (Zumba scoasă, Alex 30.09.2026). CHECK-ul din DB
+// o mai acceptă, ca s-o putem readuce fără migrație.
+export const STILURI = ['Street Dance', 'Gimnastica', 'K-Pop'] as const
 // În timpul săptămânii după școală, în weekend dimineața (Alex, 30.09.2026).
 const SLOTURI = new Set([
   ...['Lu', 'Ma', 'Mi', 'Jo', 'Vi'].flatMap((z) => ['13-15', '15-17', '17-19'].map((i) => `${z} ${i}`)),

@@ -197,7 +197,9 @@ cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functi
 - **Preînscriere ≠ înscriere.** E interes declarat, strâns ca să decidem grupele și cererea de închiriere a sălii. Nu promite
   loc, grupă sau oră. Locația e deschisă oricui. **Cursurile se țin la Școala Verde; parteneriatul e cu Școala „Profesor Mihai
   Dumitriu”** — acolo se face promovarea, deci formularul întreabă dacă elevul învață acolo (`elev_scoala_partenera`).
-- **Un rând per participant**, nu per formular: doi frați + părintele la Zumba = trei rânduri. Fiecare participant are
+- **Oferta (30.09.2026): doar copii — Dans (Street Dance), Gimnastică, K-pop.** Zumba și participanții adulți au fost
+  scoși din formular (DB-ul îi mai acceptă, ca să poată reveni fără migrație).
+- **Un rând per participant**, nu per formular: doi frați = două rânduri. Fiecare participant are
   leadul LUI (frate nou = lead nou, cu același telefon) sau clientul lui (`client_id`, dacă e deja în familia de pe telefon).
   Motivul: programarea la DEMO e unică pe (lead, eveniment) și reprogramarea șterge celelalte programări ale leadului.
   Un lead vechi trecut pe numele părintelui NU se refolosește pentru copil. Potrivirea pe nume ignoră ordinea cuvintelor.
