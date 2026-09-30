@@ -257,6 +257,10 @@ se uită la **ședințele pierdute**, nu la ziua din calendar:
   de colegi (270 / 6 = 45 RON/ședință), iar prețul pe ședință (39) i-ar face pe cei întârziați
   mai ieftini pe ședință decât cei veniți la timp. Exemplu, Sâm+Dum, 6 ședințe din 12 sept:
   semnat 20 sept ⇒ 3/6 ⇒ **135**; cu preț de reînscriere 260 ⇒ **130**.
+  ⚠️ **45 RON/ședință e doar la grupele cu 6 ședințe de la start (Sâm+Dum).** Numitorul e al
+  grupei: Marți+Joi are 5 ședințe din 12 sept ⇒ 270 / 5 = **54**. În sept. 2026 managerii au
+  aplicat 45 peste tot, peste calculul aplicației (162→135, 108→90) — de aceea „Ajustează preț"
+  arată acum de unde vine suma (`PriceAdjustmentModal` → `derivePreviewRecurent`).
 - **Nicio ședință rămasă în luna semnării ⇒ prima rată e luna următoare.** Semnat 28 sept pe
   un curs de Sâm+Dum ⇒ fără rată pe septembrie; înainte plătea 270 pentru zero ședințe.
 - **Doar de acum înainte:** înrolările de septembrie create înainte de 22 sept. 2026 (50 care

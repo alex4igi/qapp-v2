@@ -39,6 +39,7 @@ export type PrevizualizareRecurent = {
         sedinte: number
         sedinteLuna: number
         suma: number
+        rata: number
       }
     | {
         sursaPret: 'sedinta'
@@ -118,6 +119,7 @@ export function derivePreviewRecurent(params: {
         sedinte,
         sedinteLuna,
         suma: Math.round((rata * sedinte) / sedinteLuna),
+        rata,
         sursaPret: 'proportional',
       }
     } else if (curs.pret_sedinta != null) {

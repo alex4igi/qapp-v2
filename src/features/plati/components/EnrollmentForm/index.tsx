@@ -1030,7 +1030,15 @@ export function EnrollmentForm({
               cursSelectat={cursSelectat}
               blockantPretLipsa={blockantPretLipsa}
               prorataInLunaDoi={prorataInLunaDoi}
+              dataIncepere={dataIncepere}
             />
+          )}
+
+          {isFacultativ && tipPlata === 'Per luna' && cursSelectat && (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Facultativ lunar: luna se plătește <strong>întreagă</strong>, indiferent de ziua
+              înscrierii — fără prorata. Pentru câteva ședințe alege <strong>Per ședință</strong>.
+            </p>
           )}
 
           {showBonusIunie && (

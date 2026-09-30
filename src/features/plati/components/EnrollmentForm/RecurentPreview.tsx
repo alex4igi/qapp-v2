@@ -1,4 +1,5 @@
 import type { Curs } from '@/types/db'
+import { formatDate } from '@/lib/format'
 import type { PrevizualizareRecurent } from './helpers'
 
 type Props = {
@@ -6,13 +7,15 @@ type Props = {
   cursSelectat: Curs | null
   blockantPretLipsa: boolean
   prorataInLunaDoi?: boolean
+  dataIncepere?: string
 }
 
 // Pentru recurent + per lună: afișează câte rânduri se vor crea, eventuala
 // prorata pentru prima lună (doar când clientul pierde ședințe din ea), și un
 // blocker roșu dacă cursul nu are nici „Preț ședință" nici „Preț anual"
 // (atunci nu se poate calcula prorata pentru înrolare târzie).
-export function RecurentPreview({ preview, cursSelectat, blockantPretLipsa, prorataInLunaDoi }: Props) {
+export function RecurentPreview({ preview, cursSelectat, blockantPretLipsa, prorataInLunaDoi, dataIncepere }: Props) {
+  const deLa = dataIncepere ? ` de la ${formatDate(dataIncepere)}` : ''
   return (
     <>
       {preview && (
@@ -29,17 +32,21 @@ export function RecurentPreview({ preview, cursSelectat, blockantPretLipsa, pror
           )}
           {preview.prorata?.sursaPret === 'proportional' && (
             <p className="mt-1">
-              Prima lună e prorata: prinde <strong>{preview.prorata.sedinte}</strong>{' '}
+              Prima lună e prorata:{deLa} prinde <strong>{preview.prorata.sedinte}</strong>{' '}
               din {preview.prorata.sedinteLuna} ședințe de la startul sezonului ={' '}
-              <strong>{preview.prorata.suma} RON</strong>.
+              <strong>{preview.prorata.suma} RON</strong> ({preview.prorata.rata} ÷{' '}
+              {preview.prorata.sedinteLuna} ={' '}
+              {Math.round(preview.prorata.rata / preview.prorata.sedinteLuna)} RON/ședință la
+              această grupă). Suma e finală — nu se mai ajustează de mână.
             </p>
           )}
           {preview.prorata?.sursaPret === 'sedinta' && (
             <p className="mt-1">
-              Prima lună e prorata: <strong>{preview.prorata.sedinte}</strong>{' '}
+              Prima lună e prorata:{deLa} <strong>{preview.prorata.sedinte}</strong>{' '}
               din {preview.prorata.sedinteLuna} ședințe × {cursSelectat?.pret_sedinta}{' '}
               RON = <strong>{preview.prorata.suma} RON</strong>
-              {preview.prorata.plafonat && ' (plafonat la rata lunii)'}.
+              {preview.prorata.plafonat && ' (plafonat la rata lunii)'}. Suma e finală — nu se
+              mai ajustează de mână.
             </p>
           )}
           {prorataInLunaDoi && preview.prorata && preview.months > 1 && (
