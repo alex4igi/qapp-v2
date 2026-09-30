@@ -11003,6 +11003,90 @@ export type Database = {
         }
         Relationships: []
       }
+      utilizare_config: {
+        Row: {
+          activ_pana_la: string
+          exclusi: string[]
+          id: boolean
+          updated: string
+        }
+        Insert: {
+          activ_pana_la: string
+          exclusi?: string[]
+          id?: boolean
+          updated?: string
+        }
+        Update: {
+          activ_pana_la?: string
+          exclusi?: string[]
+          id?: boolean
+          updated?: string
+        }
+        Relationships: []
+      }
+      utilizare_luna: {
+        Row: {
+          luna: string
+          n: number
+          rol: string
+          ruta: string
+          tinta: string
+          tip: string
+          varianta: string
+          zile: number
+        }
+        Insert: {
+          luna: string
+          n: number
+          rol: string
+          ruta: string
+          tinta?: string
+          tip: string
+          varianta: string
+          zile: number
+        }
+        Update: {
+          luna?: string
+          n?: number
+          rol?: string
+          ruta?: string
+          tinta?: string
+          tip?: string
+          varianta?: string
+          zile?: number
+        }
+        Relationships: []
+      }
+      utilizare_zi: {
+        Row: {
+          n: number
+          rol: string
+          ruta: string
+          tinta: string
+          tip: string
+          varianta: string
+          zi: string
+        }
+        Insert: {
+          n: number
+          rol: string
+          ruta: string
+          tinta?: string
+          tip: string
+          varianta: string
+          zi: string
+        }
+        Update: {
+          n?: number
+          rol?: string
+          ruta?: string
+          tinta?: string
+          tip?: string
+          varianta?: string
+          zi?: string
+        }
+        Relationships: []
+      }
       vacante: {
         Row: {
           created: string
@@ -15268,6 +15352,7 @@ export type Database = {
         Args: { p_lead: string; p_pastreaza: string }
         Returns: number
       }
+      inregistreaza_utilizare: { Args: { p_lot: Json }; Returns: boolean }
       inrolari_active_la: {
         Args: { p_data?: string }
         Returns: {
@@ -15996,6 +16081,10 @@ export type Database = {
           status: string
         }[]
       }
+      raport_utilizare: {
+        Args: { p_de_la: string; p_pana_la: string }
+        Returns: Json
+      }
       rate_limit_hit: {
         Args: { p_cheie: string; p_fereastra_sec: number; p_limita: number }
         Returns: {
@@ -16313,6 +16402,8 @@ export type Database = {
         Returns: Json
       }
       user_locatie_id: { Args: never; Returns: string }
+      utilizare_perioade: { Args: never; Returns: Json }
+      utilizare_rezumat_lunar: { Args: never; Returns: number }
       validate_voucher_code: {
         Args: {
           p_client: string

@@ -118,6 +118,7 @@ export const navSections: NavSection[] = [
       '/inventar',
       '/pontaj-staff',
       '/audit',
+      '/utilizare',
       '/fise-incomplete',
       '/grile-kpi',
       '/organizatie',

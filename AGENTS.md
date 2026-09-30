@@ -128,5 +128,9 @@ corectate — nu s-a schimbat nicio cifră, doar eticheta.
 statusuri client etc.) stau în **[docs/reguli-domeniu.md](./docs/reguli-domeniu.md)**. Citește-l înainte
 de orice analiză sau cod care numără, încasează sau clasifică clienți.
 
+**Utilizarea aplicației** (contoare pe zi × rol × pagină × buton, fără id de utilizator, până la 30 iunie 2027)
+stă în **[docs/utilizare-aplicatie.md](./docs/utilizare-aplicatie.md)** — cum se colectează, rezumatul lunar, cum se
+citește la final de sezon. Un buton a cărui etichetă conține date variabile primește `data-track="..."`.
+
 Contextul de companie (echipă, trupe, abonamente, locații, firme) e în **`../AGENTS.md`**.
 ARCHITECTURE.md descrie doar codul.

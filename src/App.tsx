@@ -181,6 +181,7 @@ const GrupaDashboardPage = lazy(() =>
 const SituatieZilnicaPage = lazy(() =>
   import('@/features/situatie-zilnica/SituatieZilnicaPage').then((m) => ({ default: m.SituatieZilnicaPage })),
 )
+const UtilizarePage = lazy(() => import('@/features/utilizare/UtilizarePage'))
 const OptOutListPage = lazy(() =>
   import('@/features/opt-out/OptOutListPage').then((m) => ({ default: m.OptOutListPage })),
 )
@@ -419,6 +420,14 @@ function App() {
               <Route element={<AdministrareLayout />}>
                 <Route path="grile-kpi" element={<GrileKpiPage />} />
                 <Route path="grile-kpi/:grilaId" element={<GrilaEditorPage />} />
+              </Route>
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={ROUTE_ACCESS['/utilizare']} />}>
+            <Route element={<AppLayout />}>
+              <Route element={<AdministrareLayout />}>
+                <Route path="utilizare" element={<UtilizarePage />} />
               </Route>
             </Route>
           </Route>

@@ -2,6 +2,7 @@ import { WorkingDateProvider } from '@/hooks/useWorkingDate'
 import { WorkingLocatieProvider } from '@/hooks/useWorkingLocatie'
 import { useIdleLogout } from '@/hooks/useIdleLogout'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useUtilizareTracking } from '@/lib/utilizare'
 import { DesktopShell } from './DesktopShell'
 import { MobileShell } from './mobile/MobileShell'
 
@@ -11,6 +12,7 @@ export function AppLayout() {
   // telefon paza o face ecranul de blocare, iar instructorul ține telefonul în
   // buzunar între grupe — 30 de minute l-ar da afară în mijlocul turei.
   useIdleLogout(!isMobile)
+  useUtilizareTracking(isMobile)
 
   return (
     <WorkingDateProvider>

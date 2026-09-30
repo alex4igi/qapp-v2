@@ -125,6 +125,8 @@ export const ROUTE_ACCESS = {
   // Salariile tuturor (instructori, manageri, recepție) și confirmarea lor:
   // date sensibile, deci nici managerul nu le vede.
   '/salarizare': ADMIN_OR_OWNER,
+  // Contoarele de utilizare (pagini deschise, butoane apăsate) pe rol, fără nume.
+  '/utilizare': ADMIN_OR_OWNER,
 } as const satisfies Record<string, readonly AppRole[]>
 
 export type AppRoute = keyof typeof ROUTE_ACCESS
