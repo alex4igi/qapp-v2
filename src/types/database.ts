@@ -14645,6 +14645,20 @@ export type Database = {
           teacher_nume: string
         }[]
       }
+      get_istoric_comunicari: {
+        Args: { p_client?: string; p_familie?: string }
+        Returns: {
+          autor: string
+          canal: string
+          destinatar: string
+          detalii: Json
+          mesaj: string
+          moment: string
+          pentru: string
+          status: string
+          tip: string
+        }[]
+      }
       get_kpis_financiar: {
         Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {

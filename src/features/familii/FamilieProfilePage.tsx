@@ -20,7 +20,8 @@ import {
 } from '@/lib/checklist/specs/familie'
 import type { Client } from '@/types/db'
 import { useAuth } from '@/hooks/useAuth'
-import { isFrontDeskOrHigher } from '@/lib/rolesMatrix'
+import { isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import { IstoricComunicari } from '@/features/comunicari/IstoricComunicari'
 import { humanizeError } from '@/lib/errorMessage'
 import { FamilieForm } from './FamilieForm'
 import { AddMembersModal } from './AddMembersModal'
@@ -65,11 +66,12 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-type TabId = 'inrolari' | 'date'
+type TabId = 'inrolari' | 'date' | 'comunicari'
 
 export function FamilieProfilePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { role } = useAuth()
   const [editOpen, setEditOpen] = useState(false)
   const [focusSection, setFocusSection] = useState<SectiuneFamilie | undefined>()
   const [addMembersOpen, setAddMembersOpen] = useState(false)
@@ -218,6 +220,7 @@ export function FamilieProfilePage() {
           tabs={[
             { id: 'inrolari', label: 'Detalii înrolări' },
             { id: 'date',     label: 'Detalii personale' },
+            ...(isTeacher(role) ? [] : [{ id: 'comunicari', label: 'Comunicări' }]),
           ]}
           active={tab}
           onChange={(t) => setTab(t as TabId)}
@@ -233,6 +236,9 @@ export function FamilieProfilePage() {
           )}
 
           {tab === 'date' && <DatePersonaleTab familie={familie} />}
+          {tab === 'comunicari' && !isTeacher(role) && (
+            <IstoricComunicari familieId={familie.id} />
+          )}
         </div>
       </ProfileScaffold>
 
