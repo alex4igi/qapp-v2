@@ -8,7 +8,14 @@
 // Followup-ul, confirmarea înrolării și post_demo pleacă din cron-afternoon, la
 // 16:00, când e cineva la sală să răspundă (decizie 2026-09-15).
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { buildSms, sendSms } from '../_shared/sms.ts'
+import {
+  adresaSms,
+  buildPrimaSedintaSms,
+  buildSms,
+  buildStartSezonSms,
+  sendSms,
+  type SedintaSms,
+} from '../_shared/sms.ts'
 import {
   localDateBucharest,
   localHourBucharest,
@@ -372,6 +379,107 @@ Deno.serve(async (req) => {
     }
   }
 
+  // --- Remindere înainte de prima ședință ---
+  // Reînscrișii: un SMS cu 7 zile înainte de start. Ceilalți: cu o zi înainte de
+  // prima ședință, dacă s-au înscris cu peste 7 zile înainte. Cine primește ce
+  // decide `remindere_prima_sedinta_de_trimis`; aici doar compunem și trimitem.
+  // Un telefon primește un singur SMS: frații apar în aceeași frază la start, iar
+  // la „mâine" textul n-are numele copilului, deci doi frați ar primi același SMS.
+  let remindereStart = 0
+  let reminderePrima = 0
+  {
+    type Rand = {
+      tip: 'start_sezon' | 'prima_sedinta'
+      client_id: string
+      curs_id: string
+      data_sedinta: string
+      ora: string | null
+      prenume: string | null
+      telefon: string | null
+      curs_nume: string
+      locatie_nume: string | null
+    }
+    const { data, error } = await supabase.rpc('remindere_prima_sedinta_de_trimis', {
+      p_azi: localDateBucharest(now),
+    })
+    if (error) {
+      errors.push(`remindere prima sedinta: ${error.message}`)
+    } else {
+      const rows = (data ?? []) as Rand[]
+      const urme: {
+        client_id: string
+        curs_id: string
+        tip: Rand['tip']
+        data_sedinta: string
+        status: string
+        error?: string | null
+      }[] = []
+      const loturi = new Map<string, { rows: Rand[]; sedinte: SedintaSms[] }>()
+
+      for (const r of rows) {
+        const adresa = adresaSms(r.locatie_nume)
+        const telefon = r.telefon?.replace(/\D/g, '') ?? ''
+        if (!telefon || !adresa) {
+          urme.push({
+            client_id: r.client_id,
+            curs_id: r.curs_id,
+            tip: r.tip,
+            data_sedinta: r.data_sedinta,
+            status: telefon ? 'fara_adresa' : 'fara_telefon',
+          })
+          continue
+        }
+        const sedinta: SedintaSms = {
+          prenume: r.prenume,
+          curs: r.curs_nume,
+          dataSedinta: r.data_sedinta,
+          ora: r.ora,
+          adresa,
+        }
+        const cheie =
+          r.tip === 'start_sezon'
+            ? `start|${telefon}`
+            : `prima|${telefon}|${buildPrimaSedintaSms(sedinta)}`
+        const lot = loturi.get(cheie) ?? { rows: [], sedinte: [] }
+        lot.rows.push(r)
+        lot.sedinte.push(sedinta)
+        loturi.set(cheie, lot)
+      }
+
+      for (const lot of loturi.values()) {
+        const primul = lot.rows[0]
+        const mesaj =
+          primul.tip === 'start_sezon'
+            ? buildStartSezonSms(lot.sedinte)
+            : buildPrimaSedintaSms(lot.sedinte[0])
+        const res = await sendSms(primul.telefon!, mesaj)
+        if (res.ok) {
+          if (primul.tip === 'start_sezon') remindereStart++
+          else reminderePrima++
+        } else {
+          errors.push(`reminder ${primul.tip} → ${primul.telefon}: ${res.error ?? 'eșec'}`)
+        }
+        for (const r of lot.rows) {
+          urme.push({
+            client_id: r.client_id,
+            curs_id: r.curs_id,
+            tip: r.tip,
+            data_sedinta: r.data_sedinta,
+            status: res.ok ? 'trimis' : 'esuat',
+            error: res.ok ? null : (res.error ?? 'eroare necunoscuta'),
+          })
+        }
+      }
+
+      if (urme.length > 0) {
+        const { error: eUrme } = await supabase
+          .from('remindere_prima_sedinta')
+          .upsert(urme, { onConflict: 'client_id,curs_id' })
+        if (eUrme) errors.push(`remindere prima sedinta (urme): ${eUrme.message}`)
+      }
+    }
+  }
+
   // --- Regula 50 de zile: suspendare automată + email către manageri ---
   let suspendati = 0
   let emailuriTrimise = 0
@@ -407,12 +515,14 @@ Deno.serve(async (req) => {
   const fisiereGdpr = await stergeFisiereGdpr(supabase, errors)
 
   console.log(
-    `[cron/morning] remindere: ${sent.length}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, securitate: ${emailuriSecuritate}, fisiereGdpr: ${fisiereGdpr}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, startSezon: ${remindereStart}, primaSedinta: ${reminderePrima}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, securitate: ${emailuriSecuritate}, fisiereGdpr: ${fisiereGdpr}, erori: ${errors.length}`,
   )
   return Response.json({
     sent,
     aVenitFlagged,
     aVenitNurtured,
+    remindereStartSezon: remindereStart,
+    reminderePrimaSedinta: reminderePrima,
     suspendati50z: suspendati,
     emailuriSuspendari: emailuriTrimise,
     emailuriSecuritate,

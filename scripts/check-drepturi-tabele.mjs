@@ -21,6 +21,7 @@ const DOAR_SERVER = new Set([
   'securitate_digest', // digestul zilnic de securitate, scris de cron-morning
   'gdpr_config', // pragul de retenție (anonimizare)
   'gdpr_fisiere_de_sters', // fișierele clienților anonimizați, de șters din Storage/Drive
+  'remindere_prima_sedinta', // urma SMS-urilor de start sezon / prima ședință, scrisă de cron-morning
 ])
 
 const env = Object.fromEntries(

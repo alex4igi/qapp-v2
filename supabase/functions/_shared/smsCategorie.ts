@@ -29,6 +29,8 @@ const CATEGORII: Record<string, CategorieSms> = {
   reminder: 'tranzactional',
   waiting_list: 'tranzactional',
   confirmare_inrolare: 'tranzactional',
+  start_sezon: 'tranzactional',
+  prima_sedinta: 'tranzactional',
   reminder_plata: 'tranzactional',
   notificare_restante: 'tranzactional',
   avertisment_loc: 'tranzactional',

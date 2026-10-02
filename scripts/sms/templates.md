@@ -159,6 +159,43 @@ Buna ziua! Confirmam inscrierea pentru {prenume} la grupa {nume curs}. Program: 
   n-au sumă. Vezi `docs/reguli-preturi-reduceri.md`.
 - `{link_whatsapp}` = `cursuri.link_whatsapp` (editat manual în profilul cursului)
 
+## A3. Remindere înainte de prima ședință — trimise AUTOMAT de `cron-morning` (10:00) — 2026-10-02
+
+Decizie Alex, 02.10.2026. Confirmarea de mai sus rămâne neschimbată. Lista o dă
+`remindere_prima_sedinta_de_trimis(azi)` (migrațiile `20261002100000` + `100100`);
+o pereche (client, grupă) primește **cel mult un** reminder, de oricare fel — urma
+stă în `remindere_prima_sedinta`. Doar grupe/trupe recurente (`Per luna`/`Per an`,
+nu facultative, nu one-time). Fără adresă de SMS (Valea Lupului) sau fără telefon
+→ nu pleacă nimic, rămâne urmă `fara_adresa`/`fara_telefon`.
+
+**Prima ședință** = prima zi din `cursuri.zile` de la max(prima lună a înrolării,
+startul sezonului, ziua înscrierii), sărind vacanțele sezonului și lunile în care
+grupa e suspendată. Ora = `ore_pe_zi` pe ziua aceea, altfel `cursuri.ora`.
+
+### `start_sezon` — reînscrișii, cu 7 zile înainte de startul sezonului
+„Reînscris" = aceeași definiție ca /start-sezon: abonament plătit, nereziliat, din
+alt sezon, început în ultimele 5 luni dinaintea startului. Fereastra e
+**[start − 7, start − 1]**: cine e trecut în aplicație mai târziu primește mesajul
+a doua zi dimineață (în 2026 doar 93 din 371 de perechi erau în aplicație la
+start − 7). Un SMS pe telefon — frații / copilul cu două grupe stau în aceeași frază.
+> **2 segmente** (~183 car. cu un copil; ~280 cu doi).
+```
+Buna ziua! Sezonul Quasar Dance incepe in curand. Prima sedinta pentru {prenume}: grupa {nume curs}, {zi} {data}, ora {ora}, la {adresa}. Va asteptam!
+```
+Doi copii: `… Prima sedinta pentru Ana: grupa …, la …; pentru Mihai: grupa …, la …. Va asteptam!`
+
+### `prima_sedinta` — ceilalți, cu o zi înainte de prima ședință
+Doar dacă prima ședință e la **mai mult de 7 zile** de la înscriere (sub 7 zile
+ajunge confirmarea) și cursantul n-are încă nicio prezență la grupă. Include pe
+cei înscriși de vară pentru septembrie și orice grupă nouă adăugată în sezon.
+Textul n-are numele copilului → frații cu același telefon și aceeași ședință
+primesc un singur SMS.
+> **1 segment** (~145 car.).
+```
+Buna ziua! Va asteptam maine, {zi} {data}, ora {ora}, la prima sedinta a grupei {nume curs}, la {adresa}.
+```
+- `{zi} {data}` = „marti 15 sept." (`formatZiSedinta`)
+
 ---
 
 ## B. Mesaje bulk (plăți / restanțe) — cu pas de selecție + confirmare
@@ -303,7 +340,7 @@ interes legitim, GDPR art. 6 lit. f.
 | Categorie | Mesaje | Opt-out |
 |---|---|---|
 | **Marketing** | `post_demo`, `review`, `followup` (parcat) | **blochează** |
-| **Tranzacțional** | `confirmare`, `reminder`, `waiting_list`, `confirmare_inrolare`, `reminder_plata`, `notificare_restante`, `avertisment_loc`, `contract`, `contract_reminder`, `cont_portal` | nu blochează |
+| **Tranzacțional** | `confirmare`, `reminder`, `waiting_list`, `confirmare_inrolare`, `start_sezon`, `prima_sedinta`, `reminder_plata`, `notificare_restante`, `avertisment_loc`, `contract`, `contract_reminder`, `cont_portal` | nu blochează |
 
 Unde e pus gardul:
 - `send-lead-sms` — verifică `leads.opt_out_marketing` și sare dacă tipul e marketing;

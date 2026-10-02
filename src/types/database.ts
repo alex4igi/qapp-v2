@@ -9506,6 +9506,159 @@ export type Database = {
           },
         ]
       }
+      remindere_prima_sedinta: {
+        Row: {
+          client_id: string
+          creat: string
+          curs_id: string
+          data_sedinta: string
+          error: string | null
+          id: string
+          status: string
+          tip: string
+        }
+        Insert: {
+          client_id: string
+          creat?: string
+          curs_id: string
+          data_sedinta: string
+          error?: string | null
+          id?: string
+          status: string
+          tip: string
+        }
+        Update: {
+          client_id?: string
+          creat?: string
+          curs_id?: string
+          data_sedinta?: string
+          error?: string | null
+          id?: string
+          status?: string
+          tip?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remindere_prima_sedinta_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "inrolari_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_client"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profil_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_cursant"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "remindere_prima_sedinta_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
+        ]
+      }
       salarii_staff_componente: {
         Row: {
           anul: number
@@ -16117,6 +16270,10 @@ export type Database = {
           suma_finala: number
         }[]
       }
+      prima_sedinta_curs: {
+        Args: { p_curs: string; p_de_la: string }
+        Returns: string
+      }
       proceseaza_cozi_sms: { Args: never; Returns: undefined }
       proceseaza_sesiuni_evaluare: { Args: never; Returns: Json }
       prune_expired_leads: { Args: never; Returns: Json }
@@ -16221,6 +16378,20 @@ export type Database = {
           p_curs_tinta_id: string
         }
         Returns: string
+      }
+      remindere_prima_sedinta_de_trimis: {
+        Args: { p_azi: string }
+        Returns: {
+          client_id: string
+          curs_id: string
+          curs_nume: string
+          data_sedinta: string
+          locatie_nume: string
+          ora: string
+          prenume: string
+          telefon: string
+          tip: string
+        }[]
       }
       remove_eveniment_participant: {
         Args: { p_client: string; p_eveniment: string }

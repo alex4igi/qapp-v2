@@ -265,6 +265,65 @@ export function buildConfirmareInrolareSms(p: ConfirmareInrolareParams): string 
   return faraDiacritice(text)
 }
 
+// Remindere înainte de prima ședință (aprobate de Alex, 02.10.2026), trimise de
+// cron-morning. Lista o dă `remindere_prima_sedinta_de_trimis` — vezi migrația
+// 20261002100000 pentru cine primește ce.
+const ZILE_SMS = ['duminica', 'luni', 'marti', 'miercuri', 'joi', 'vineri', 'sambata']
+const LUNI_SCURT = [
+  'ian.', 'feb.', 'mart.', 'apr.', 'mai', 'iun.',
+  'iul.', 'aug.', 'sept.', 'oct.', 'nov.', 'dec.',
+]
+
+// „marti 15 sept." din 'YYYY-MM-DD' (data calendaristică, fără fus orar).
+export function formatZiSedinta(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+  return `${ZILE_SMS[dow]} ${d} ${LUNI_SCURT[m - 1]}`
+}
+
+// Adresa scurtă a locației sau null când locația n-are încă date de SMS (Valea
+// Lupului) ori nu se recunoaște — fără adresă nu trimitem, nu ghicim sediul.
+export function adresaSms(locatie: string | null): string | null {
+  const canon = canonLocatie(locatie)
+  if (!canon || LOCATII_FARA_DATE_SMS.has(canon)) return null
+  return ADRESE[canon] ?? null
+}
+
+export type SedintaSms = {
+  prenume?: string | null
+  curs: string
+  dataSedinta: string
+  ora?: string | null
+  adresa: string
+}
+
+function detaliiSedinta(s: SedintaSms): string {
+  const ora = s.ora?.trim() ? `, ora ${s.ora.trim()}` : ''
+  return `grupa ${s.curs}, ${formatZiSedinta(s.dataSedinta)}${ora}, la ${s.adresa}`
+}
+
+// Reînscrișii, cu 7 zile înainte de start. Un SMS pe telefon: frații sau copilul
+// cu două grupe apar pe rând în aceeași frază.
+export function buildStartSezonSms(sedinte: SedintaSms[]): string {
+  // „Prima sedinta pentru Ana: …; pentru Mihai: …" — fără prenume, doar „: …".
+  const parti = sedinte.map((s, i) => {
+    const cine = (s.prenume ?? '').trim().split(/\s+/)[0]
+    if (cine) return ` pentru ${cine}: ${detaliiSedinta(s)}`
+    return `${i === 0 ? ':' : ''} ${detaliiSedinta(s)}`
+  })
+  return faraDiacritice(
+    `Buna ziua! Sezonul Quasar Dance incepe in curand. Prima sedinta${parti.join(';')}. Va asteptam!`,
+  )
+}
+
+// Înscrierile noi, cu o zi înainte de prima ședință.
+export function buildPrimaSedintaSms(s: SedintaSms): string {
+  const ora = s.ora?.trim() ? `, ora ${s.ora.trim()}` : ''
+  return faraDiacritice(
+    `Buna ziua! Va asteptam maine, ${formatZiSedinta(s.dataSedinta)}${ora}, la prima sedinta a grupei ${s.curs}, la ${s.adresa}.`,
+  )
+}
+
 // Re-export `sendSms` din messaging.ts pentru backwards compat la callsite-uri.
 // Toate edge functions care făceau `import { sendSms } from '../_shared/sms.ts'`
 // continuă să meargă fără modificări — provider-ul de jos e themarketer.

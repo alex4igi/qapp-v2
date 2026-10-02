@@ -20,6 +20,6 @@ export const STARE_CLS: Record<string, string> = {
 }
 
 export const TIP_CLS: Record<string, string> = {
-  principal: 'bg-quasar-black text-quasar-white',
+  principal: 'bg-quasar-black text-white',
   extra: 'bg-purple-100 text-purple-800',
 }
