@@ -22,6 +22,7 @@ import {
   nextSessionDate,
   rezervaLocOpen,
 } from '../../api'
+import { PlataRezervareBadge } from '../../components/PlataRezervareBadge'
 import { fmtDate, todayIso } from './helpers'
 
 type Props = {
@@ -242,6 +243,7 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
                   {rezervariQ.data!.map((r) => (
                     <li key={r.id}>
                       • {r.nume} {r.prenume ?? ''}
+                      <PlataRezervareBadge r={r} />
                     </li>
                   ))}
                 </ul>

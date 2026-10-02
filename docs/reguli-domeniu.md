@@ -103,6 +103,11 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **Lună fără nicio prezență și fără nicio plată, pe o lună încheiată, nu e datorie** (12/16.09) — dar anularea e decizie
   manuală, cu audit. Pe luna în curs sau pe o grupă fără prezențe logate, lipsa prezenței nu dovedește nimic.
 - **Lună achitată:** `suma − Σ încasări <= 0` (creditul e tot achitat; lunile de 0 lei n-au rând în `incasari`).
+- **Rezervare OPEN: `open_rezervari.status = 'platit'` NU înseamnă bani încasați (02.10.2026).** Înseamnă „loc confirmat":
+  recepția poate rezerva cu 0 lei, iar restul se încasează pe înrolare. `rezervat` = hold de pe portal în așteptarea plății
+  online (cron-ul îl anulează după 30 min, portalul arată doar `platit`) — de aceea statusul nu se schimbă după bani.
+  Plata reală = aceeași regulă ca mai sus, pe înrolarea rezervării (`listRezervariSesiune` → badge neplătit/parțial).
+  Ștergerea înrolării anulează rezervarea (`sterge_inrolare`); altfel locul rămânea blocat pentru reînscriere.
 - **`/plati` e registrul unic al încasărilor**; restanțele stau în `/datorii`.
 
 ## 5. Prezențe

@@ -9,6 +9,7 @@ import {
   anuleazaRezervare,
   createOpenSesiune,
 } from '@/features/plati/api'
+import { PlataRezervareBadge } from '@/features/plati/components/PlataRezervareBadge'
 import { listOpenSesiuniRatings } from '@/features/feedback/api'
 import { formatData } from '../helpers'
 
@@ -200,9 +201,7 @@ function RezervariList({ sesiuneId, canManage }: { sesiuneId: string; canManage:
         <li key={r.id} className="flex items-center justify-between px-3 py-2 text-sm">
           <span className="text-quasar-black">
             {r.nume} {r.prenume ?? ''}
-            {r.status === 'rezervat' && (
-              <span className="ml-2 text-xs font-semibold text-amber-600">în așteptarea plății</span>
-            )}
+            <PlataRezervareBadge r={r} />
           </span>
           {canManage && (
             <Button

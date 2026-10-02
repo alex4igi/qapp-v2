@@ -97,6 +97,11 @@ export async function listOpenSesiuni(cursId: string): Promise<OpenSesiuneRow[]>
   })
 }
 
+// `status = 'platit'` înseamnă „loc confirmat", nu „bani încasați": recepția poate
+// rezerva cu 0 lei, iar restul se încasează ulterior pe înrolare. Starea plății se
+// citește din bani (înrolare.suma − încasări), nu din status.
+export type PlataRezervare = 'online' | 'achitat' | 'partial' | 'neplatit'
+
 export type RezervareRow = {
   id: string
   status: StatusRezervare
@@ -105,15 +110,20 @@ export type RezervareRow = {
   clientId: string | null
   nume: string
   prenume: string | null
+  plata: PlataRezervare
+  incasat: number
+  rest: number
 }
 
-// Rezervările vii ale unei sesiuni (exclude anulate), cu clientul.
+// Rezervările vii ale unei sesiuni (exclude anulate), cu clientul și starea plății.
 export async function listRezervariSesiune(
   sesiuneId: string,
 ): Promise<RezervareRow[]> {
   const { data, error } = await supabase
     .from('open_rezervari')
-    .select('id, status, suma, created, client:clienti(id, nume, prenume)')
+    .select(
+      'id, status, suma, created, enrollment:enrollments(id, suma), client:clienti(id, nume, prenume)',
+    )
     .eq('sesiune', sesiuneId)
     .neq('status', 'anulat')
     .order('created', { ascending: true })
@@ -124,18 +134,47 @@ export async function listRezervariSesiune(
     status: StatusRezervare
     suma: number | null
     created: string
+    enrollment: { id: string; suma: number | null } | null
     client: { id: string; nume: string; prenume: string | null } | null
   }>
 
-  return rows.map((r) => ({
-    id: r.id,
-    status: r.status,
-    suma: r.suma,
-    created: r.created,
-    clientId: r.client?.id ?? null,
-    nume: r.client?.nume ?? '—',
-    prenume: r.client?.prenume ?? null,
-  }))
+  const enrollmentIds = rows.flatMap((r) => (r.enrollment ? [r.enrollment.id] : []))
+  const incasatByEnr = new Map<string, number>()
+  if (enrollmentIds.length > 0) {
+    const { data: inc, error: iErr } = await supabase
+      .from('incasari')
+      .select('inregistrare, suma')
+      .in('inregistrare', enrollmentIds)
+    if (iErr) throw iErr
+    for (const i of inc ?? []) {
+      if (i.inregistrare) {
+        incasatByEnr.set(i.inregistrare, (incasatByEnr.get(i.inregistrare) ?? 0) + Number(i.suma ?? 0))
+      }
+    }
+  }
+
+  return rows.map((r) => {
+    const datorat = Number(r.enrollment?.suma ?? r.suma ?? 0)
+    const incasat = r.enrollment ? (incasatByEnr.get(r.enrollment.id) ?? 0) : 0
+    const rest = Math.max(0, datorat - incasat)
+    const plata: PlataRezervare =
+      r.status === 'rezervat' ? 'online'
+      : rest <= 0.001 ? 'achitat'
+      : incasat > 0 ? 'partial'
+      : 'neplatit'
+    return {
+      id: r.id,
+      status: r.status,
+      suma: r.suma,
+      created: r.created,
+      clientId: r.client?.id ?? null,
+      nume: r.client?.nume ?? '—',
+      prenume: r.client?.prenume ?? null,
+      plata,
+      incasat,
+      rest,
+    }
+  })
 }
 
 export type RezervaLocParams = {
