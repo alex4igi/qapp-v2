@@ -82,14 +82,15 @@ Testat pe o eroare reală: ștergerea sălii „SCM Studio 2" (30 de închirieri
 se poate șterge.", iar sala a rămas neatinsă. Corecții față de textele propuse mai jos: sălile și locațiile **nu** au
 „dezactivează" (mesajul nu-l mai promite); voucherul se oprește din bifa „Activ"; evenimentul, din statusul „Anulat".
 
-⚠️ **Risc găsit pe drum (nereparat, de decis):** unele ștergeri nu sunt blocate, ci **trec** și iau istoricul cu ele:
+✅ **Risc reparat 3 oct.** (migrațiile `20261003193000` + `194500`, gărzi `before delete` pe `sezoane`, `vouchere`, `evenimente`; testat pe date de probă create și curățate). Situația dinainte: unele ștergeri nu sunt blocate, ci **trec** și iau istoricul cu ele:
 - **Sezon** (Setări → Sezoane): șterge în cascadă capacitatea pe grupe, salarizarea pe sezon, reînscrierile semnate,
   campaniile de reînscriere și vacanțele, iar înrolările, încasările, datoriile și cursurile **pierd sezonul** (devine gol).
   Singurul lucru care o blochează: o campanie de recomandări pe sezon.
 - **Voucher**: șterge istoricul folosirilor, iar înrolările, încasările și datoriile pierd legătura cu voucherul.
 - **Eveniment**: șterge biletele și participanții.
-Propunere: ștergerea sezonului permisă doar dacă sezonul e gol (fără cursuri/înrolări/încasări), altfel arhivare;
-la voucher și eveniment, ștergere doar dacă n-au fost folosite, altfel „Activ” debifat / „Anulat”.
+Regula aplicată (confirmat de Alex): **sezonul** se șterge doar fără cursuri, înrolări, încasări, datorii, evaluări și reînscrieri semnate
+(cu doar cursuri goale, mesajul spune să le ștergi întâi). **Voucherul** se șterge doar dacă n-a fost folosit niciodată (altfel: bifa „Activ").
+**Evenimentul** se șterge doar fără participanți, bilete, plăți, leaduri programate, spectacol sau review-uri (altfel: statusul „Anulat").
 
 **Ștergeri blocate** (azi: „Operația nu se poate face: există date asociate."):
 
@@ -209,7 +210,7 @@ Am verificat și varianta „fereastra arată 0 încasat, serverul vede bani": a
 
 0. ~~**§9** plasa globală pentru erori + fereastra „Șterge înrolarea"~~ ✅ 3 oct.
 1. ~~**§3** funcțiile edge pe `invokeEdge`~~ ✅ 3 oct.
-2. ~~**§2** suprapuneri (`23P01`) + **§4** harta pe numele constrângerii~~ ✅ 3 oct. (rămâne de decis riscul de ștergere de la §4)
+2. ~~**§2** suprapuneri (`23P01`) + **§4** harta pe numele constrângerii + ștergerile riscante~~ ✅ 3 oct.
 3. **§1** cele șase mesaje „cere unui manager": două decizii de la Alex (plata integrală, plata prea mare).
 4. **§5 + §7** textele din funcțiile DB: o migrație care rescrie doar mesajele (`create or replace`
    pe funcțiile atinse, fără schimbare de logică).
