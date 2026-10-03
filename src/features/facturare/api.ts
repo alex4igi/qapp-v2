@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { invokeEdge } from '@/lib/invokeEdge'
 import { applyWordSearch } from '@/lib/search'
 import { clientIdRegistru, familiaIdRegistru } from './alocari'
 import type {
@@ -12,13 +13,8 @@ import type {
   MatchSuggestion,
 } from './types'
 
-async function invoke<T>(action: string, payload: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('autofgo', {
-    body: { action, ...payload },
-  })
-  const errMsg = (data as { error?: string } | null)?.error
-  if (error || errMsg) throw new Error(errMsg || error?.message || 'Eroare necunoscută.')
-  return data as T
+function invoke<T>(action: string, payload: Record<string, unknown>): Promise<T> {
+  return invokeEdge<T>('autofgo', { action, ...payload })
 }
 
 export type EmitItem = {

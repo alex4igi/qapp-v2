@@ -46,6 +46,10 @@ prinde separat; celelalte trei afișează textul brut Postgres, de tipul
 | `manageri_locatii_fara_suprapunere` | salarizare manager, alocare locație | „Locația are deja un manager în perioada asta. Închide perioada celui vechi întâi." |
 | `salarizare_receptie_fara_suprapunere` | grila recepției | „Omul are deja o grilă de recepție în perioada asta. Închide-o pe cea veche întâi." |
 
+**✅ Făcut 3 oct.:** textele stau în `CONSTRAINT_MESSAGES` din `src/lib/errorMessage.ts`. Grila KPI veche nu
+se poate închide din aplicație (nu există câmp „valabil până la” în UI), deci mesajul spune asta și trimite la Alex.
+`manageri_locatii` și `salarizare_receptie` nu se scriu azi din aplicație; harta le acoperă pentru când se vor scrie.
+
 ## 3. Funcții edge al căror mesaj se pierde
 
 `src/lib/invokeEdge.ts` citește motivul real din răspuns. Patru locuri cheamă direct
@@ -59,7 +63,8 @@ prinde separat; celelalte trei afișează textul brut Postgres, de tipul
 | `src/features/facturare/api.ts` | `autofgo` | „liniile trebuie să aibă articol și sumă", erorile FGO (500) |
 | `src/features/notificari-sms/api.ts` | `process-sms-queue` | orice eroare de trimitere |
 
-Reparația: toate patru trec pe `invokeEdge`. E o reparație mecanică.
+**✅ Făcut 3 oct.:** toate patru trec pe `invokeEdge`. Testat: ștergerea propriului cont arată acum
+„nu te poți șterge pe tine însuți”, nu „Edge Function returned a non-2xx status code”.
 Unele texte de aici sunt scrise ca note interne („userId obligatoriu", „rol invalid"). Le
 rescriem doar pe cele pe care le poate vedea un om: cele despre conturi și locații.
 
@@ -69,6 +74,22 @@ Azi, orice cheie străină, valoare duplicată sau verificare eșuată primește
 să spună **ce** date sunt legate sau **ce** valoare e greșită. Propunere: în `errorMessage.ts`, o hartă
 **pe numele constrângerii** (Postgres îl trimite în mesaj). Constrângerile pe care nu le trecem în hartă
 rămân pe textul generic.
+
+**✅ Făcut 3 oct.:** harta are 57 de constrângeri (toate verificate că există în DB): `CONSTRAINT_MESSAGES` pentru
+duplicate, suprapuneri și verificări, plus `DELETE_BLOCKED_MESSAGES` pentru ștergeri. Textele „la ștergere" se aplică
+doar când mesajul începe cu `update or delete on table`, pentru că la inserare aceeași cheie străină înseamnă altceva.
+Testat pe o eroare reală: ștergerea sălii „SCM Studio 2" (30 de închirieri) arată „Sala are închirieri în istoric și nu
+se poate șterge.", iar sala a rămas neatinsă. Corecții față de textele propuse mai jos: sălile și locațiile **nu** au
+„dezactivează" (mesajul nu-l mai promite); voucherul se oprește din bifa „Activ"; evenimentul, din statusul „Anulat".
+
+⚠️ **Risc găsit pe drum (nereparat, de decis):** unele ștergeri nu sunt blocate, ci **trec** și iau istoricul cu ele:
+- **Sezon** (Setări → Sezoane): șterge în cascadă capacitatea pe grupe, salarizarea pe sezon, reînscrierile semnate,
+  campaniile de reînscriere și vacanțele, iar înrolările, încasările, datoriile și cursurile **pierd sezonul** (devine gol).
+  Singurul lucru care o blochează: o campanie de recomandări pe sezon.
+- **Voucher**: șterge istoricul folosirilor, iar înrolările, încasările și datoriile pierd legătura cu voucherul.
+- **Eveniment**: șterge biletele și participanții.
+Propunere: ștergerea sezonului permisă doar dacă sezonul e gol (fără cursuri/înrolări/încasări), altfel arhivare;
+la voucher și eveniment, ștergere doar dacă n-au fost folosite, altfel „Activ” debifat / „Anulat”.
 
 **Ștergeri blocate** (azi: „Operația nu se poate face: există date asociate."):
 
@@ -187,9 +208,8 @@ Am verificat și varianta „fereastra arată 0 încasat, serverul vede bani": a
 ## Ordinea propusă
 
 0. ~~**§9** plasa globală pentru erori + fereastra „Șterge înrolarea"~~ ✅ 3 oct.
-1. **§3** funcțiile edge pe `invokeEdge`: reparație mecanică, fără risc.
-2. **§2** traducerea erorilor de suprapunere (`23P01`) + **§4** harta pe numele constrângerii în
-   `errorMessage.ts`: un singur fișier, fără migrație.
+1. ~~**§3** funcțiile edge pe `invokeEdge`~~ ✅ 3 oct.
+2. ~~**§2** suprapuneri (`23P01`) + **§4** harta pe numele constrângerii~~ ✅ 3 oct. (rămâne de decis riscul de ștergere de la §4)
 3. **§1** cele șase mesaje „cere unui manager": două decizii de la Alex (plata integrală, plata prea mare).
 4. **§5 + §7** textele din funcțiile DB: o migrație care rescrie doar mesajele (`create or replace`
    pe funcțiile atinse, fără schimbare de logică).

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { invokeEdge } from '@/lib/invokeEdge'
 import { recordAuditLog } from '@/lib/auditLog'
 import { searchWords } from '@/lib/search'
 import type { SelectOption } from '@/components/ui'
@@ -359,23 +360,12 @@ export async function createTeacherAccount(params: {
   password: string
   locatieId: string | null
 }): Promise<CreateTeacherAccountResult> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: {
-      action: 'create',
-      email: params.email,
-      password: params.password,
-      role: 'teacher',
-      teacherId: params.teacherId,
-      locatieId: params.locatieId,
-    },
+  return invokeEdge<CreateTeacherAccountResult>('admin-users', {
+    action: 'create',
+    email: params.email,
+    password: params.password,
+    role: 'teacher',
+    teacherId: params.teacherId,
+    locatieId: params.locatieId,
   })
-  if (error) {
-    type MaybeContext = { context?: { error?: string; message?: string } }
-    const ctx = (error as unknown as MaybeContext).context
-    throw new Error(ctx?.error ?? ctx?.message ?? error.message)
-  }
-  if ((data as { error?: string })?.error) {
-    throw new Error((data as { error: string }).error)
-  }
-  return data as CreateTeacherAccountResult
 }

@@ -1,7 +1,6 @@
-// Apeluri către Edge Function-ul admin-users.
-// Functions URL e dedus din supabase URL. JWT-ul curent se trimite automat
-// prin supabase.functions.invoke.
-import { supabase } from '@/lib/supabase'
+// Apeluri către Edge Function-ul admin-users. invokeEdge aduce motivul real al
+// refuzului („nu poți șterge ultimul cont owner"), nu „non-2xx status code".
+import { invokeEdge } from '@/lib/invokeEdge'
 
 export type UserRole =
   | 'owner'
@@ -33,12 +32,8 @@ export const ROLE_LABEL: Record<UserRole, string> = {
 }
 
 export async function listUsers(): Promise<UserRow[]> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: { action: 'list' },
-  })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
-  return (data?.users ?? []) as UserRow[]
+  const data = await invokeEdge<{ users?: UserRow[] }>('admin-users', { action: 'list' })
+  return data.users ?? []
 }
 
 export async function createUser(input: {
@@ -48,11 +43,10 @@ export async function createUser(input: {
   teacherId?: string | null
   locatieId?: string | null
 }): Promise<{ id: string; email: string | null }> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: { action: 'create', ...input },
+  const data = await invokeEdge<{ user: { id: string; email: string | null } }>('admin-users', {
+    action: 'create',
+    ...input,
   })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
   return data.user
 }
 
@@ -60,58 +54,34 @@ export async function setUserLocatie(
   userId: string,
   locatieId: string | null,
 ): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: { action: 'setLocatie', userId, locatieId },
-  })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
+  await invokeEdge('admin-users', { action: 'setLocatie', userId, locatieId })
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: { action: 'delete', userId },
-  })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
+  await invokeEdge('admin-users', { action: 'delete', userId })
 }
 
 export async function updateUserRole(
   userId: string,
   role: UserRole,
 ): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: { action: 'update_role', userId, role },
-  })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
+  await invokeEdge('admin-users', { action: 'update_role', userId, role })
 }
 
 export async function linkTeacherAccount(
   userId: string,
   teacherId: string,
 ): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: { action: 'link_teacher', userId, teacherId },
-  })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
+  await invokeEdge('admin-users', { action: 'link_teacher', userId, teacherId })
 }
 
 export async function unlinkTeacherAccount(userId: string): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: { action: 'unlink_teacher', userId },
-  })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
+  await invokeEdge('admin-users', { action: 'unlink_teacher', userId })
 }
 
 export async function resetUserPassword(
   userId: string,
   password: string,
 ): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body: { action: 'reset_password', userId, password },
-  })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
+  await invokeEdge('admin-users', { action: 'reset_password', userId, password })
 }

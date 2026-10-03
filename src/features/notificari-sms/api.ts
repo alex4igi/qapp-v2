@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { invokeEdge } from '@/lib/invokeEdge'
 import { getSmsQuietHours } from '@/features/setari/api/sms'
 import type { SituatieSms, InsertDto } from '@/types/db'
 import type { SmsBulkCod, SmsRecipient, SmsRecipientMembru } from './templates'
@@ -143,11 +144,7 @@ export type ProcessResult = {
 }
 
 export async function processSmsQueue(): Promise<ProcessResult> {
-  const { data, error } = await supabase.functions.invoke('process-sms-queue', {
-    body: {},
-  })
-  if (error) throw error
-  return data as ProcessResult
+  return invokeEdge<ProcessResult>('process-sms-queue', {})
 }
 
 // ============================================================
