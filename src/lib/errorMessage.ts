@@ -101,6 +101,8 @@ const DELETE_BLOCKED_MESSAGES: Record<string, string> = {
   absente_21z_motiv_declarat_fkey: 'Motivul e folosit în cazuri de absență și nu se poate șterge.',
   kpi_grila_linii_kpi_id_fkey: 'KPI-ul e folosit într-o grilă și nu se poate șterge.',
   kpi_sablon_linii_kpi_id_fkey: 'KPI-ul e folosit într-un șablon și nu se poate șterge.',
+  facturi_fgo_incasare_id_fkey:
+    'Plata are factură FGO și nu se poate șterge. Stornează factura în FGO și scrie-i lui Alex.',
   clienti_unitate_invatamant_id_fkey: 'Școala e trecută pe fișele unor clienți și nu se poate șterge.',
 }
 

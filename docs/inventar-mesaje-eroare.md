@@ -19,6 +19,16 @@ Cazul pornit de Alex (ștergerea unei înrolări cu încasări) e deja bine: `st
 
 ## 1. „Cere unui manager" — dar managerul primește același refuz
 
+**✅ Făcut 3 oct.** (migrația `20261003201000`, aprobat de Alex). Față de textele propuse mai jos, verificate pe codul live:
+- „Plata e mai mare decât restul" **a dispărut**: de azi surplusul rămâne automat ca plată separată (`20261003180000`).
+- Netopia și FGO: sfatul „un manager șterge plata și o reîncasează" era fals. Plata cu factură FGO nu se poate șterge
+  (`facturi_fgo_incasare_id_fkey`), iar „Ignoră" din Facturare există doar pentru transferurile bancare. Mesajele trimit
+  la Alex (plus storno în FGO).
+- Rezervări OPEN: sfatul „anulează rezervările, corectează, rezervă din nou" ar fi stricat înrolarea, pentru că
+  `anuleaza_rezervare_open` dezactivează și înrolarea. Mesajul spune că mutarea automată merge doar cu o rezervare și
+  trimite la Alex. Cazul nu e rar: 125 de înrolări au mai multe rezervări OPEN active.
+
+
 Șase mesaje trimit recepția la manager, dar verificarea din DB nu ține cont de rol: managerul
 lovește exact același zid. Omul pierde timp și ajunge tot la zero.
 
@@ -124,6 +134,9 @@ prinse deja de formulare. Le traducem doar pe cele care ajung la utilizator, de 
 
 ## 5. Mesaje tehnice sau în engleză din funcțiile DB
 
+**✅ Făcut 3 oct.** (aceeași migrație). Erorile de programare primesc în față „Eroare internă (anunță-l pe Alex):".
+
+
 | Mesaj | Funcții | Text propus |
 |---|---|---|
 | `Access denied` | 8 (pontaj, absențe 21z, evaluări, cron) | „Acces refuzat." (ca celelalte) |
@@ -142,6 +155,12 @@ portal și agenție: cineva din staff le vede doar dacă butonul e vizibil pentr
 rolurile care pot: „Doar managerii și adminii pot face asta."
 
 ## 7. Mesaje corecte, dar fără pas următor
+
+**✅ Făcut 3 oct.** (aceeași migrație), mai puțin rândurile cu ⚠️ și cele nesigure: „Clientul are deja o familie",
+„Există deja un abonament activ", „Nu există grilă de salarizare", „Înrolarea e reziliată — data nu se mai corectează". Le-am lăsat
+neschimbate, pentru că nu am verificat că pasul propus există în aplicație. La portal (`hold_loc_open`) nu am adăugat sfaturi pentru staff.
+Verificare: amprenta celor 41 de funcții atinse (sursă cu înlocuirile inversate + setări + drepturi) e identică înainte și după.
+
 
 | Mesaj | Funcție | Sugestie de adăugat |
 |---|---|---|
@@ -211,9 +230,8 @@ Am verificat și varianta „fereastra arată 0 încasat, serverul vede bani": a
 0. ~~**§9** plasa globală pentru erori + fereastra „Șterge înrolarea"~~ ✅ 3 oct.
 1. ~~**§3** funcțiile edge pe `invokeEdge`~~ ✅ 3 oct.
 2. ~~**§2** suprapuneri (`23P01`) + **§4** harta pe numele constrângerii + ștergerile riscante~~ ✅ 3 oct.
-3. **§1** cele șase mesaje „cere unui manager": două decizii de la Alex (plata integrală, plata prea mare).
-4. **§5 + §7** textele din funcțiile DB: o migrație care rescrie doar mesajele (`create or replace`
-   pe funcțiile atinse, fără schimbare de logică).
+3. ~~**§1** „cere unui manager"~~ ✅ 3 oct.
+4. ~~**§5 + §7** textele din funcțiile DB~~ ✅ 3 oct.
 5. **§6 + §8** când apar.
 
 ## Cum se regenerează lista din DB

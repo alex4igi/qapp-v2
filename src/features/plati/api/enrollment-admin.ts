@@ -368,7 +368,7 @@ export async function getMotivareAbsentaContext(
     client: string | null
     cursul: { numele: string | null; zile: string[] | null } | null
   }
-  if (!row.data_incepere) throw new Error('Înrolarea nu are lună (data_incepere).')
+  if (!row.data_incepere) throw new Error('Înrolarea nu are dată de început. Corectează data din fișa clientului.')
 
   const luna = `${row.data_incepere.slice(0, 7)}-01`
   const lunaEnd = endOfMonth(luna)
