@@ -50,6 +50,7 @@ export default function PreinscrieriPage() {
   const { role } = useAuth()
   const campQ = useQuery({ queryKey: ['preinscrieri', 'campanie'], queryFn: () => getCampanie(CAMPANIE_VL) })
   const comuta = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: (actiune: 'porneste' | 'inchide') => seteazaCampanie(CAMPANIE_VL, actiune),
     onSuccess: () => void campQ.refetch(),
   })

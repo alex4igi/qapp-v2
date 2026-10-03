@@ -99,6 +99,7 @@ export function ObiectiveCard({ luna, locatie, rows }: Props) {
   const realizatConversii = conversiiQ.data ?? 0
 
   const saveM = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: async () => {
       const entries: [ObiectivMetric, string][] = [
         ['conversii', draft.conversii],

@@ -28,6 +28,7 @@ export function GdprModal({ open, clientId, numeClient, onClose, onAnonimizat }:
   const motivOk = motiv.trim().length > 0
 
   const exportMut = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: () => exportDateClient(clientId, motiv.trim()),
     onSuccess: (date) => {
       descarcaJson(date, `date-personale-${clientId.slice(0, 8)}.json`)
@@ -36,6 +37,7 @@ export function GdprModal({ open, clientId, numeClient, onClose, onAnonimizat }:
   })
 
   const anonimMut = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: () => anonimizeazaClient(clientId, motiv.trim()),
     onSuccess: onAnonimizat,
   })

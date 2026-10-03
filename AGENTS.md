@@ -71,6 +71,7 @@ npx supabase db push # aplică migrațiile locale pe Supabase remote
 - **TypeScript** obligatoriu.
 - **Comentarii**: minim. Doar pentru WHY non-evident (constrângeri, invariante subtile, bug-uri workaround). Nu narăm WHAT-ul.
 - **Server-side guarantees** prin RLS + RPC; UI-ul nu validează ce DB-ul deja validează.
+- **Erori la salvare:** orice `useMutation` care eșuează afișează mesajul prin plasa globală din `src/main.tsx` (`MutationCache.onError` → `src/lib/errorToasts.ts`). Dacă mutația își arată singură eroarea (în fereastră, sub buton), primește `meta: { erroareAfisata: true }`, altfel apare de două ori. Un `onError` propriu scoate și el mutația din plasă. Fără asta, un refuz arată ca un buton care „nu face nimic” (cazul „Șterge înrolarea”, 3 oct. 2026).
 
 ## Workflow per modul (validat de user)
 

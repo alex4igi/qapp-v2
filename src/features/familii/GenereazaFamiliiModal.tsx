@@ -66,6 +66,7 @@ export function GenereazaFamiliiModal({ open, onClose }: Props) {
     })
 
   const generare = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: async (): Promise<Rezultat> => {
       // ordinea previzualizării: primul frate creează familia, al doilea o găsește
       const ids = rows.filter((r) => sel.has(r.client_id)).map((r) => r.client_id)

@@ -31,6 +31,7 @@ export function LectieBanner({ cursId, data }: Props) {
   })
 
   const confirma = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: async ({ status, nota }: { status: StatusJurnal; nota: string | null }) => {
       const l = query.data
       if (!l) return

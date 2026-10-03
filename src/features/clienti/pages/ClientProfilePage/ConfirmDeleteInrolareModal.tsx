@@ -5,6 +5,7 @@ type Props = {
   platit: number
   motiv: string
   isPending: boolean
+  error: string | null
   onMotivChange: (motiv: string) => void
   onConfirm: () => void
   onClose: () => void
@@ -19,6 +20,7 @@ export function ConfirmDeleteInrolareModal({
   platit,
   motiv,
   isPending,
+  error,
   onMotivChange,
   onConfirm,
   onClose,
@@ -36,7 +38,11 @@ export function ConfirmDeleteInrolareModal({
             Anulează
           </Button>
           {!arePlata && (
-            <Button variant="danger" onClick={onConfirm} disabled={isPending}>
+            <Button
+              variant="danger"
+              onClick={onConfirm}
+              disabled={isPending || !motiv.trim()}
+            >
               {isPending ? 'Se șterge…' : 'Șterge înrolarea'}
             </Button>
           )}
@@ -71,6 +77,11 @@ export function ConfirmDeleteInrolareModal({
               Duplicat din eroare
             </Button>
           </>
+        )}
+        {error && (
+          <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </p>
         )}
       </div>
     </Modal>

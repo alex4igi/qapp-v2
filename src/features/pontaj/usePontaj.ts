@@ -34,10 +34,12 @@ export function usePontaj() {
   }
 
   const intraM = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: () => checkIn(),
     onSuccess: invalideaza,
   })
   const iesM = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: () => checkOut(),
     onSuccess: invalideaza,
   })

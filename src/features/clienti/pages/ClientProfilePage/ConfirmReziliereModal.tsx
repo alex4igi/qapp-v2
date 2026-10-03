@@ -12,6 +12,7 @@ type Props = {
   canRecalc: boolean
   recalcChecked: boolean
   isPending: boolean
+  error: string | null
   onMotivChange: (motiv: string) => void
   onReintegrateChange: (reintegrate: boolean) => void
   onRecalcChange: (recalc: boolean) => void
@@ -33,6 +34,7 @@ export function ConfirmReziliereModal({
   canRecalc,
   recalcChecked,
   isPending,
+  error,
   onMotivChange,
   onReintegrateChange,
   onRecalcChange,
@@ -100,6 +102,11 @@ export function ConfirmReziliereModal({
         {canRecalc && preview && !preview.applicable && (
           <p className="text-xs text-quasar-gray">
             Recalcul ultima lună indisponibil: {preview.reason}
+          </p>
+        )}
+        {error && (
+          <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
           </p>
         )}
       </div>

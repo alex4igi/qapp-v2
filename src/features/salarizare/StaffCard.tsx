@@ -100,6 +100,7 @@ export function StaffCard({
   const [rezultat, setRezultat] = useState<RezultatConfirmare | null>(null)
 
   const confirma = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: () => confirmaSalariuStaff(om.user_id, post, anul, luna, lunaPlatii()),
     onSuccess: (r) => {
       setRezultat(r)
@@ -107,6 +108,7 @@ export function StaffCard({
     },
   })
   const corecteaza = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: (x: { id: string; motiv: string }) => corecteazaComponenta(x.id, x.motiv),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['salarizare-luna', anul, luna] }),
   })

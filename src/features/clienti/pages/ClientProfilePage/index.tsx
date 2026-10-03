@@ -49,6 +49,7 @@ import { ClientSidebar } from './ClientSidebar'
 import { RestanteAlteSezoaneBanner } from './RestanteAlteSezoaneBanner'
 import { ConfirmReziliereModal } from './ConfirmReziliereModal'
 import { ConfirmDeleteInrolareModal } from './ConfirmDeleteInrolareModal'
+import { humanizeError } from '@/lib/errorMessage'
 import { GdprModal } from './GdprModal'
 import { calcAge, getInitials } from './helpers'
 import { InrolariSezonTab } from './tabs/InrolariSezonTab'
@@ -225,6 +226,7 @@ export function ClientProfilePage() {
   }, [enrollmentsQuery.data])
 
   const rezilia = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: async (input: {
       cursId: string
       reintegrateAsLead: boolean
@@ -261,6 +263,7 @@ export function ClientProfilePage() {
   })
 
   const closeReziliereModal = () => {
+    rezilia.reset()
     setConfirmCursId(null)
     setReintegrateAsLead(false)
     setRecalcUltimaLuna(false)
@@ -268,6 +271,7 @@ export function ClientProfilePage() {
   }
 
   const stergeInrolare = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: (input: { enrollmentId: string; motiv: string }) =>
       deleteInrolareDuplicat(input),
     onSuccess: () => {
@@ -285,6 +289,7 @@ export function ClientProfilePage() {
   })
 
   const closeDeleteModal = () => {
+    stergeInrolare.reset()
     setDeleteRow(null)
     setMotivStergere('')
   }
@@ -650,6 +655,7 @@ export function ClientProfilePage() {
           platit={deleteRow.platit ?? 0}
           motiv={motivStergere}
           isPending={stergeInrolare.isPending}
+          error={stergeInrolare.error ? humanizeError(stergeInrolare.error) : null}
           onMotivChange={setMotivStergere}
           onConfirm={() =>
             stergeInrolare.mutate({
@@ -672,6 +678,7 @@ export function ClientProfilePage() {
           canRecalc={canManagerActions}
           recalcChecked={recalcUltimaLuna}
           isPending={rezilia.isPending}
+          error={rezilia.error ? humanizeError(rezilia.error) : null}
           onMotivChange={setMotivReziliere}
           onReintegrateChange={setReintegrateAsLead}
           onRecalcChange={setRecalcUltimaLuna}

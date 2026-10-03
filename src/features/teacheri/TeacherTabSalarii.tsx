@@ -186,10 +186,12 @@ export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
   }
 
   const confirm = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: (mo: { y: number; m: number }) => confirmaSalariuTeacher(teacherId, mo.y, mo.m),
     onSuccess: invalideaza,
   })
   const corecteaza = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: (x: { y: number; m: number; motiv: string }) =>
       corecteazaSalariuTeacher(teacherId, x.y, x.m, x.motiv),
     onSuccess: invalideaza,

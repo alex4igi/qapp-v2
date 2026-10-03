@@ -30,6 +30,7 @@ export function PreinscriereModal({
   const confirmataAcum = !!p.disponibilitate_confirmata_la && !grilaSchimbata
 
   const save = useMutation({
+    meta: { erroareAfisata: true },
     mutationFn: async () => {
       // Grila întâi, confirmarea separat: triggerul șterge confirmarea la o grilă nouă.
       await updatePreinscriere(p.id, {

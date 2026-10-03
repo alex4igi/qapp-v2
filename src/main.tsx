@@ -10,6 +10,9 @@ import {
 } from '@tanstack/react-query'
 import './index.css'
 import App from './App.tsx'
+import { ErrorToasts } from './components/ui/ErrorToasts'
+import { humanizeError } from './lib/errorMessage'
+import { showErrorToast } from './lib/errorToasts'
 
 // Principiu: după orice salvare reușită dintr-un pop-up (plată, înrolare,
 // editare etc.) reîmprospătăm automat pagina activă. invalidateQueries() fără
@@ -31,6 +34,11 @@ const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onSuccess: () => {
       void queryClient.invalidateQueries()
+    },
+    // Mutațiile cu onError propriu sau cu eroarea afișată în fereastră se descurcă singure.
+    onError: (error, _variables, _context, mutation) => {
+      if (mutation.options.onError || mutation.meta?.erroareAfisata) return
+      showErrorToast(humanizeError(error, 'Acțiunea nu a reușit.'))
     },
   }),
   defaultOptions: {
@@ -56,6 +64,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <App />
+      <ErrorToasts />
     </QueryClientProvider>
   </StrictMode>,
 )
