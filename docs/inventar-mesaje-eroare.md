@@ -26,7 +26,11 @@ Cazul pornit de Alex (ștergerea unei înrolări cu încasări) e deja bine: `st
   la Alex (plus storno în FGO).
 - Rezervări OPEN: sfatul „anulează rezervările, corectează, rezervă din nou" ar fi stricat înrolarea, pentru că
   `anuleaza_rezervare_open` dezactivează și înrolarea. Mesajul spune că mutarea automată merge doar cu o rezervare și
-  trimite la Alex. Cazul nu e rar: 125 de înrolări au mai multe rezervări OPEN active.
+  trimite la Alex. Cazul practic nu apare: refuzul privește doar înrolările „Per sedinta", și niciuna din 1.273 n-a
+  avut vreodată două rezervări (fiecare rezervare își face înrolarea ei). Cele 125 de înrolări cu două rezervări active
+  sunt abonamente „Per luna" cu bonusul promo din 29–30 iunie 2026 (`rezerva_bonus_open`), pe care cele două funcții
+  nu le verifică. La ele era alt risc: „Anulează" din tabul OPEN al cursului dezactiva tot abonamentul. Reparat în
+  `20261003213000`: anularea dezactivează înrolarea doar la „Per sedinta".
 
 
 Șase mesaje trimit recepția la manager, dar verificarea din DB nu ține cont de rol: managerul
@@ -149,6 +153,20 @@ prinse deja de formulare. Le traducem doar pe cele care ajung la utilizator, de 
 
 ## 6. Refuzuri de rol care nu spun cine poate
 
+**✅ Făcut 3 oct.** (migrația `20261003210000`, cerut de Alex). 77 de refuzuri din 74 de funcții spun acum cine are voie,
+după garda din fața lor: „Doar adminii …", „Doar managerii și adminii …", „Doar recepția și managerii …", „Doar echipa
+școlii …" (cu instructorii), „… și agenția de marketing" la rapoartele de leaduri. Funcțiile de portal spun că acțiunea
+se face din contul de portal al familiei, iar „forbidden: clientul nu aparține familiei contului" → „Cursantul ales nu
+face parte din familia contului." `anuleaza_rezervare_open` a primit același text prin `20261003213000` (cealaltă sesiune).
+Neatins intenționat: `inregistreaza_utilizare` (contor în fundal).
+
+**Capcană reparată în aplicație:** aproape toate gărzile ridică `errcode = '42501'`, iar `humanizeError` înlocuia orice
+`42501` cu mesajul generic „Nu aveți permisiunea necesară…". Deci textul nu ajungea niciodată pe ecran. Acum textul unei
+gărzi trece; mesajul generic rămâne doar pentru refuzul Postgres/RLS (`permission denied…`, `row-level security…`).
+
+Verificare: amprenta celor 75 de funcții (sursă cu înlocuirile inversate + setări + drepturi; pentru
+`anuleaza_rezervare_open`, sursa ei de dinainte) e identică cu cea de dinaintea migrației.
+
 „Acces refuzat." (52 funcții), „Acces interzis" (9), „forbidden" (6). Sunt mai ales garduri pentru
 portal și agenție: cineva din staff le vede doar dacă butonul e vizibil pentru un rol care n-are voie
 (un caz deja întâmplat cu contract-send). **Prioritate mică.** Când apare un caz, mesajul spune
@@ -232,7 +250,7 @@ Am verificat și varianta „fereastra arată 0 încasat, serverul vede bani": a
 2. ~~**§2** suprapuneri (`23P01`) + **§4** harta pe numele constrângerii + ștergerile riscante~~ ✅ 3 oct.
 3. ~~**§1** „cere unui manager"~~ ✅ 3 oct.
 4. ~~**§5 + §7** textele din funcțiile DB~~ ✅ 3 oct.
-5. **§6 + §8** când apar.
+5. ~~**§6**~~ ✅ 3 oct. · **§8** (portal) parțial: refuzurile „forbidden" sunt traduse; restul când apar.
 
 ## Cum se regenerează lista din DB
 

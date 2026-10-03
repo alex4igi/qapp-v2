@@ -133,6 +133,12 @@ export function humanizeError(e: unknown, fallback = 'A apărut o eroare.'): str
   const byConstraint = constraintMessage(code, message)
   if (byConstraint) return byConstraint
 
+  // 42501 vine și din gărzile de rol ale RPC-urilor (`raise … using errcode = '42501'`), cu
+  // text care spune cine are voie. Doar refuzul Postgres/RLS rămâne pe mesajul generic.
+  if (code === '42501' && message && !/row-level security|row level security|permission denied/i.test(message)) {
+    return message
+  }
+
   if (code && code in CODE_MESSAGES) return CODE_MESSAGES[code]
 
   // Mesajele RLS pot ajunge fără cod (ex. din edge functions) — detectăm după text.
