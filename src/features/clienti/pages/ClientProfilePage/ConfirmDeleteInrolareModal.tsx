@@ -11,8 +11,9 @@ type Props = {
 }
 
 // Ștergere fizică a unei înrolări create din greșeală (duplicat). Distinctă de
-// reziliere: înlăturăm rândul complet. Permisă doar pentru înrolări fără bani
-// încasați — dacă are plată, îndrumăm spre Mută/Reziliază (garda reală e în RPC).
+// reziliere: înlăturăm rândul complet. Permisă doar pentru înrolări cu suma netă
+// încasată 0 (plată restituită integral contează ca 0) — altfel îndrumăm spre
+// Mută/Reziliază (garda reală e în RPC).
 export function ConfirmDeleteInrolareModal({
   open,
   platit,
