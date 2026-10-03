@@ -133,5 +133,9 @@ de orice analiză sau cod care numără, încasează sau clasifică clienți.
 stă în **[docs/utilizare-aplicatie.md](./docs/utilizare-aplicatie.md)** — cum se colectează, rezumatul lunar, cum se
 citește la final de sezon. Un buton a cărui etichetă conține date variabile primește `data-track="..."`.
 
+**Ideile amânate sau parcate** („bună idee, dar la o versiune ulterioară") stau într-o singură listă:
+**[docs/idei-versiuni-viitoare.md](./docs/idei-versiuni-viitoare.md)**. O idee nouă de felul ăsta se scrie acolo, nu
+doar în memorie. Când adaugi ceva în listă, amintește-i lui Alex, pe scurt, ce mai e în ea (cerut de Alex, 3 oct. 2026).
+
 Contextul de companie (echipă, trupe, abonamente, locații, firme) e în **`../AGENTS.md`**.
 ARCHITECTURE.md descrie doar codul.
