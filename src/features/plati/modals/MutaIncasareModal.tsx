@@ -78,21 +78,31 @@ export function MutaIncasareModal({
     enabled: open && Boolean(tinta),
   })
 
+  const acelasiClient = tinta?.id === clientId
+  const luniTinta = useMemo(
+    () => (luniQ.data ?? []).filter((l) => l.id_enrollment !== luna.id_enrollment),
+    [luniQ.data, luna.id_enrollment],
+  )
+
   const pozitive = useMemo(
     () => (incasariQ.data ?? []).filter((i) => i.suma > 0),
     [incasariQ.data],
   )
   const incasareId = incasareAleasa ?? (pozitive.length === 1 ? pozitive[0].id : null)
 
-  // Luna echivalentă (același curs, aceeași lună) e aproape mereu cea corectă.
+  // Alt client: luna echivalentă (același curs, aceeași lună) e aproape mereu cea
+  // corectă. Același client: aceeași lună pe altă grupă, dacă e una singură.
   const lunaPotrivita = useMemo(() => {
-    const luni = luniQ.data
-    if (!luni) return null
-    const potrivita =
-      luni.find((l) => l.id_curs === luna.id_curs && sameMonth(l.data_incepere, luna.data_incepere)) ??
-      (luni.length === 1 ? luni[0] : null)
+    if (!luniQ.data) return null
+    const aceeasiLuna = luniTinta.filter((l) => sameMonth(l.data_incepere, luna.data_incepere))
+    const potrivita = acelasiClient
+      ? aceeasiLuna.length === 1
+        ? aceeasiLuna[0]
+        : null
+      : (aceeasiLuna.find((l) => l.id_curs === luna.id_curs) ??
+        (luniTinta.length === 1 ? luniTinta[0] : null))
     return potrivita?.id_enrollment ?? null
-  }, [luniQ.data, luna.id_curs, luna.data_incepere])
+  }, [luniQ.data, luniTinta, acelasiClient, luna.id_curs, luna.data_incepere])
   const tintaEnrollmentId = tintaAleasa ?? lunaPotrivita
 
   // Fișele, rosterele și restanțele se reîmprospătează singure după mutare
@@ -148,6 +158,7 @@ export function MutaIncasareModal({
   }
 
   if (rezultat) {
+    const peAcelasi = rezultat.sursa.client_id === rezultat.tinta.client_id
     return (
       <Modal
         open={open}
@@ -159,23 +170,36 @@ export function MutaIncasareModal({
             <Button variant="secondary" onClick={onClose}>
               Închide
             </Button>
-            <Button
-              onClick={() => {
-                onClose()
-                navigate(`/clienti/${rezultat.tinta.client_id}`)
-              }}
-            >
-              Deschide fișa lui {rezultat.tinta.client_nume}
-            </Button>
+            {!peAcelasi && (
+              <Button
+                onClick={() => {
+                  onClose()
+                  navigate(`/clienti/${rezultat.tinta.client_id}`)
+                }}
+              >
+                Deschide fișa lui {rezultat.tinta.client_nume}
+              </Button>
+            )}
           </>
         }
       >
         <div className="space-y-3">
           <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-            ✅ {formatRON(rezultat.incasare.suma)} {rezultat.incasare.metoda ?? ''} din{' '}
-            {formatDate(rezultat.incasare.data)} a dispărut de la{' '}
-            <strong>{rezultat.sursa.client_nume}</strong> și a apărut la{' '}
-            <strong>{rezultat.tinta.client_nume}</strong>.
+            ✅ {formatRON(rezultat.incasare.suma_mutata)} {rezultat.incasare.metoda ?? ''} din{' '}
+            {formatDate(rezultat.incasare.data)}{' '}
+            {peAcelasi ? (
+              <>
+                au trecut de pe <strong>{rezultat.sursa.curs ?? '—'} · {formatMonth(rezultat.sursa.data_incepere)}</strong>{' '}
+                pe <strong>{rezultat.tinta.curs ?? '—'} · {formatMonth(rezultat.tinta.data_incepere)}</strong>.
+              </>
+            ) : (
+              <>
+                au dispărut de la <strong>{rezultat.sursa.client_nume}</strong> și au apărut la{' '}
+                <strong>{rezultat.tinta.client_nume}</strong>.
+              </>
+            )}
+            {rezultat.incasare.rest_ramas > 0 &&
+              ` Restul de ${formatRON(rezultat.incasare.rest_ramas)} a rămas pe luna de plecare.`}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <ParteCard titlu="De la" parte={rezultat.sursa} dupa />
@@ -197,7 +221,7 @@ export function MutaIncasareModal({
   return (
     <Modal
       open={open}
-      title="Mută plata la alt client"
+      title="Mută plata"
       onClose={onClose}
       size="lg"
       footer={
@@ -222,8 +246,9 @@ export function MutaIncasareModal({
     >
       <div className="space-y-5 text-sm">
         <p className="text-quasar-gray">
-          Pentru o plată înregistrată din greșeală la <strong className="text-ink">{clientNume}</strong>.
-          Plata dispare de aici și apare la clientul corect, cu aceeași sumă, dată și formă de plată.
+          Pentru o plată pusă din greșeală pe luna asta: trece pe altă grupă sau lună a lui{' '}
+          <strong className="text-ink">{clientNume}</strong>, sau la alt client — cu aceeași dată și
+          formă de plată.
         </p>
 
         <section className="space-y-2">
@@ -272,10 +297,12 @@ export function MutaIncasareModal({
         </section>
 
         <section className="space-y-2">
-          <h4 className="font-semibold text-ink">2. Clientul corect</h4>
+          <h4 className="font-semibold text-ink">2. Unde merge plata</h4>
           {tinta ? (
             <div className="flex items-center justify-between gap-2 rounded-lg border border-quasar-yellow bg-quasar-yellow/10 px-3 py-2">
-              <strong className="text-ink">{tinta.nume}</strong>
+              <strong className="text-ink">
+                {acelasiClient ? `${tinta.nume} — altă grupă sau lună` : tinta.nume}
+              </strong>
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -288,6 +315,17 @@ export function MutaIncasareModal({
             </div>
           ) : (
             <>
+              <button
+                type="button"
+                onClick={() => alegeClient({ id: clientId, nume: clientNume })}
+                className="flex w-full items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-left hover:bg-surface"
+              >
+                <span className="text-ink">
+                  <strong>{clientNume}</strong> — altă grupă sau lună
+                </span>
+                <span className="text-xs text-quasar-gray">plătit la grupa greșită</span>
+              </button>
+              <p className="text-xs text-quasar-gray">sau la alt client:</p>
               <TextInput
                 placeholder="Caută după nume…"
                 value={search.input}
@@ -356,14 +394,14 @@ export function MutaIncasareModal({
             <h4 className="font-semibold text-ink">3. Luna pe care intră plata</h4>
             {luniQ.isLoading ? (
               <Spinner />
-            ) : (luniQ.data ?? []).length === 0 ? (
+            ) : luniTinta.length === 0 ? (
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
-                {tinta.nume} nu are nicio lună cu rest de plată. Înrolează-l întâi pe cursul
-                corect, apoi mută plata.
+                {tinta.nume} nu are {acelasiClient ? 'altă' : 'nicio'} lună cu rest de plată.
+                Înrolează-l întâi pe cursul corect, apoi mută plata.
               </p>
             ) : (
               <ul className="max-h-56 space-y-1 overflow-y-auto">
-                {sortLuni(luniQ.data ?? [], luna).map((l) => (
+                {sortLuni(luniTinta, luna, acelasiClient).map((l) => (
                   <li key={l.id_enrollment}>
                     <button
                       type="button"
@@ -406,9 +444,11 @@ export function MutaIncasareModal({
                   <ParteCard titlu="Apare la" parte={verificare.tinta} />
                 </div>
                 <p className="text-xs text-quasar-gray">
-                  Plata rămâne {formatRON(verificare.incasare.suma)}{' '}
-                  {verificare.incasare.metoda ?? ''} din {formatDate(verificare.incasare.data)}
-                  {verificare.incasare.locatie_nume ? `, ${verificare.incasare.locatie_nume}` : ''}.
+                  Plata: {formatRON(verificare.incasare.suma)} {verificare.incasare.metoda ?? ''} din{' '}
+                  {formatDate(verificare.incasare.data)}
+                  {verificare.incasare.locatie_nume ? `, ${verificare.incasare.locatie_nume}` : ''}.{' '}
+                  {verificare.incasare.rest_ramas > 0 &&
+                    `Se mută ${formatRON(verificare.incasare.suma_mutata)}, iar ${formatRON(verificare.incasare.rest_ramas)} rămân pe luna de plecare. `}
                   Casa zilei nu se schimbă. Mutarea apare în jurnalul de audit.
                 </p>
                 <Avertismente lista={verificare.avertismente} />
@@ -433,9 +473,11 @@ export function MutaIncasareModal({
   )
 }
 
-function sortLuni(luni: LunaCuRest[], luna: Props['luna']): LunaCuRest[] {
+function sortLuni(luni: LunaCuRest[], luna: Props['luna'], acelasiClient: boolean): LunaCuRest[] {
+  // La același client cursul e tocmai ce se schimbă, deci contează luna.
   const scor = (l: LunaCuRest) =>
-    (l.id_curs === luna.id_curs ? 0 : 2) + (sameMonth(l.data_incepere, luna.data_incepere) ? 0 : 1)
+    (!acelasiClient && l.id_curs !== luna.id_curs ? 2 : 0) +
+    (sameMonth(l.data_incepere, luna.data_incepere) ? 0 : 1)
   return [...luni].sort(
     (a, b) => scor(a) - scor(b) || a.data_incepere.localeCompare(b.data_incepere),
   )

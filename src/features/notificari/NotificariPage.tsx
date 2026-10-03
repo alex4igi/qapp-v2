@@ -22,7 +22,7 @@ const ACTION_LABEL: Record<string, string> = {
   enrollment_reziliata: 'Reziliere înrolare',
   incasare_modified: 'Modificare încasare',
   incasare_deleted: 'Ștergere încasare',
-  incasare_moved: 'Mutare plată la alt client',
+  incasare_moved: 'Mutare plată',
   lead_deleted: 'Ștergere lead',
   curs_archived: 'Arhivare/dezarhivare curs',
   teacher_archived: 'Arhivare/dezarhivare instructor',

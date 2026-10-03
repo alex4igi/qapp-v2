@@ -19,6 +19,9 @@ export type MutareIncasareRezultat = {
     id: string
     data: string | null
     suma: number
+    /** Cât intră pe luna aleasă; diferența rămâne pe luna de plecare ca rând separat. */
+    suma_mutata: number
+    rest_ramas: number
     metoda: Enums<'metoda_plata'> | null
     locatie_nume: string | null
   }

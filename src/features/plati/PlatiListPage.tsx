@@ -155,8 +155,8 @@ export function PlatiListPage() {
     )
       items.push({
         icon: '💸',
-        label: 'Mută la alt client',
-        title: 'Plata dispare de la acest client și apare la clientul corect',
+        label: 'Mută plata',
+        title: 'Plata trece pe altă grupă/lună a clientului sau la alt client',
         onClick: () => setMutaRow(r),
       })
     if (canEdit)

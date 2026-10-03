@@ -112,9 +112,9 @@ export function InrolariSezonTab({
                 if (onMoveIncasare && (r.platit ?? 0) > 0)
                   actions.push({
                     icon: '💸',
-                    label: 'Mută plata la alt client',
+                    label: 'Mută plata',
                     title:
-                      'Plata încasată din greșeală aici dispare de la acest client și apare la clientul corect',
+                      'Plata pusă din greșeală pe luna asta trece pe altă grupă/lună a clientului sau la alt client',
                     onClick: () => onMoveIncasare(r),
                   })
                 if (onMoveCurs)
