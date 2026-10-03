@@ -9,6 +9,17 @@ export function todayIso(): string {
     .slice(0, 10)
 }
 
+// Cât de departe în urmă poate merge data unei înrolări: aceeași lună ȘI cel mult
+// 7 zile (Alex, 03.10.2026). În luna curentă rata, locul și termenul de plată sunt
+// aceleași ca la o înrolare făcută azi; o lună trecută ar muta KPI-uri și salarii
+// (docs/reguli-domeniu.md §3).
+export function dataMinimaInrolare(azi: string = todayIso()): string {
+  const [y, m, d] = azi.split('-').map(Number)
+  const minus7 = new Date(Date.UTC(y, m - 1, d - 7)).toISOString().slice(0, 10)
+  const ziua1 = azi.slice(0, 8) + '01'
+  return minus7 > ziua1 ? minus7 : ziua1
+}
+
 export function deriveTip(curs: Curs | null): TipInrolare | null {
   if (!curs) return null
   if (curs.facultativ) return 'facultativ'

@@ -73,9 +73,13 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   proporțional (`rată × prinse / ședințe_de_la_start`). `pret_sedinta` pe grupe recurente = `pret_anual / ședințe din contract`,
   rotunjit în sus (2×/săpt. 39, 1×/săpt. 52). Detalii: reguli-preturi-reduceri.md §7.
 - **Facultativul nu are prorata și nici preț anual/promo/reziliere** — doar `pret_lunar` și `pret_sedinta`.
-- **Nu se înrolează în trecut, pentru niciun rol** (Alex, 03.10.2026: „se poate abuza"). „Înrolare nouă" refuză data
-  dinaintea zilei de azi și nu oferă sezoanele încheiate. Nu propune deblocarea, nici măcar pentru manager/admin.
-  Cele trei abuzuri posibile:
+- **Înrolarea în urmă: doar în luna curentă, cel mult 7 zile, doar ca reparație** (Alex, 03.10.2026). „Înrolare nouă"
+  acceptă o dată de la `max(ziua 1 a lunii, azi − 7)`, pentru orice rol care deschide formularul, cu motiv obligatoriu
+  și rând `enrollment_backdated` în `audit_log` (`dataMinimaInrolare` în `EnrollmentForm/helpers.ts`). În fereastra asta
+  locul, rata și termenul de plată sunt aceleași ca la o înrolare făcută azi — doar prorata pornește de la data reală.
+  „Per ședință" rămâne fără trecut (`rezerva_loc_open` refuză sesiunile trecute). Sezoanele încheiate nu se oferă.
+  **O lună trecută nu se deschide, pentru niciun rol** („se poate abuza") — nu propune lărgirea ferestrei.
+  Cele trei abuzuri pe care le-ar deschide o lună trecută:
   1. **Capacitatea umflată pentru KPI-ul managerului** — locuri ocupate adăugate pe luni trecute urcă bonusul pe ocupare
      (`docs/bonus-manager-studio.md`) fără ca omul să fi venit.
   2. **Termenele de încasare ale recepției date peste cap** — o rată creată după scadența ei n-avea cum să fie plătită
@@ -83,9 +87,9 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   3. **Salariile confirmate nu se mai recalculează** — o lună confirmată pe `/salarizare` e înghețată, deci o înrolare
      retroactivă pe ea lasă cifrele înghețate diferite de rapoartele live, iar pe o lună neconfirmată mută salariul
      instructorului (cursanți plătitori, pragurile de 8 și 14).
-  Greșelile recente se repară cu „📅 Corectează data" (recepția ±14 zile, managerul fără limită), care mută doar data,
-  nu adaugă luni. Un caz real de înrolare retroactivă îl face Claude prin SQL, la cererea explicită a lui Alex, cu rând
-  `enrollment_backdated` în `audit_log`.
+  „📅 Corectează data" își păstrează regula (recepția ±14 zile, managerul fără limită — Alex, 03.10.2026), deși poate
+  muta o rată „Per lună" în luna anterioară. Un caz mai vechi decât fereastra îl face Claude prin SQL, la cererea
+  explicită a lui Alex, cu rând `enrollment_backdated` în `audit_log`.
 - **Mutarea la alt curs mută toată seria** (`muta_inrolare_curs`): rândul ales + lunile ulterioare nereziliate; trecutul rămâne.
 - **OPEN class: data înrolării = data ȘEDINȚEI, nu a încasării.** Orice drum care cheamă `rezerva_loc_open` precompletează
   data cu `nextSessionDate`. La corecții se mută rezervarea + `enrollments.data_incepere`; `incasari.data` nu se atinge

@@ -14,6 +14,7 @@ import {
   type SelectOption,
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { recordAuditLog } from '@/lib/auditLog'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import {
@@ -60,6 +61,7 @@ import { PROMO_BONUS_IUNIE, PROMO_BONUS_IUNIE_PANA_LA } from '../../promo'
 import {
   TIP_LABEL,
   TIP_ORDER,
+  dataMinimaInrolare,
   derivePreviewRecurent,
   deriveTip,
   todayIso,
@@ -130,6 +132,7 @@ export function EnrollmentForm({
   const [card, setCard] = useState('')
   const [overbook, setOverbook] = useState(false)
   const [toateCursurile, setToateCursurile] = useState(false)
+  const [motivRetroactiv, setMotivRetroactiv] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const clientiQ = useQuery({
@@ -139,8 +142,8 @@ export function EnrollmentForm({
 
   // Sezonul în care se face înrolarea. NU e neapărat cel activ: la începutul lui
   // septembrie recepția înscrie în sezonul care abia urmează (încă `planificat`).
-  // Se oferă doar sezoanele neîncheiate — în trecut nu se poate înrola oricum
-  // (garda „Data nu poate fi în trecut" din handleSubmit).
+  // Se oferă doar sezoanele neîncheiate — în urmă se poate merge doar în luna
+  // curentă, cel mult 7 zile (garda din handleSubmit).
   const sezoaneQ = useQuery({ queryKey: ['sezoane-list'], queryFn: listSezoane })
   const sezoaneDisponibile = useMemo(() => {
     const today = todayIso()
@@ -231,6 +234,9 @@ export function EnrollmentForm({
   // fără curs, iar omul lipsea din rosterul ședinței reale.
   // La ieșirea din „Per ședință" data precompletată revine la azi, ca o înrolare
   // „Per lună" să nu aterizeze în luna următoare.
+  const dataMinima = dataMinimaInrolare()
+  const esteRetroactiv = Boolean(dataIncepere) && dataIncepere < todayIso()
+
   const zileKey = (cursSelectat?.zile ?? []).join(',')
   const autoDataRef = useRef<string | null>(null)
   useEffect(() => {
@@ -604,6 +610,26 @@ export function EnrollmentForm({
       }
       const rows = result as Enrollment[]
       console.info(`[Înrolare] ${rows.length} rânduri create.`)
+      if (esteRetroactiv && rows[0]) {
+        try {
+          await recordAuditLog({
+            action: 'enrollment_backdated',
+            entityType: 'enrollment',
+            entityId: rows[0].id,
+            newValue: {
+              client: clientId,
+              cursul: cursId,
+              tip_plata: tipPlata,
+              data_incepere: dataIncepere,
+              rate: rows.map((r) => r.data_incepere),
+            },
+            reason: motivRetroactiv.trim(),
+            locatieId: cursSelectat?.locatie ?? locatieId ?? null,
+          })
+        } catch (e) {
+          console.error('[audit înrolare retroactivă]', e)
+        }
+      }
       // Încasare la înrolare (parțial/0): distribuie FIFO peste rândurile create
       // (vechi → nou). Înrolarea există deja; dacă încasarea eșuează păstrăm modalul
       // deschis cu eroarea (se poate încasa ulterior din „Plată nouă → Abonament").
@@ -675,8 +701,22 @@ export function EnrollmentForm({
     setError(null)
     if (!clientId) return setError('Selectează clientul.')
     if (!cursId) return setError('Selectează cursul.')
-    if (dataIncepere < todayIso()) {
-      return setError('Data nu poate fi în trecut.')
+    if (esteRetroactiv) {
+      if (dataIncepere < dataMinima) {
+        return setError(
+          `Data poate merge în urmă doar în luna curentă, cel mult 7 zile (de la ${formatDate(dataMinima)}). Pentru o dată mai veche, cere lui Alex.`,
+        )
+      }
+      // rezerva_loc_open refuză sesiunile trecute; ședința trecută se mută după
+      // creare cu „Corectează data", care o duce și pe rezervare.
+      if (isFacultativPerSedinta) {
+        return setError(
+          'O ședință trecută nu se rezervă de aici: înrolează-l pe următoarea ședință, apoi „📅 Corectează data" din fișa clientului.',
+        )
+      }
+      if (!motivRetroactiv.trim()) {
+        return setError('Scrie motivul pentru care înrolarea pornește în urmă.')
+      }
     }
     // O semnare ÎNAINTEA sezonului e legitimă (reînscriere în august pentru
     // toamnă) — ratele pornesc oricum de la startul sezonului. După finalul
@@ -937,6 +977,7 @@ export function EnrollmentForm({
             >
               <DateInput
                 id="data"
+                min={dataMinima}
                 value={dataIncepere}
                 onChange={(e) => setDataIncepere(e.target.value)}
               />
@@ -948,6 +989,23 @@ export function EnrollmentForm({
               )}
             </Field>
           </div>
+
+          {esteRetroactiv && !isFacultativPerSedinta && dataIncepere >= dataMinima && (
+            <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+              <p className="text-sm text-amber-900">
+                ⚠️ Înrolarea pornește în urmă, de pe {formatDate(dataIncepere)}. Se face doar ca să
+                repari o înrolare uitată și rămâne în jurnalul de audit, cu motivul.
+              </p>
+              <Field label="Motiv" required htmlFor="motiv-retroactiv">
+                <TextInput
+                  id="motiv-retroactiv"
+                  value={motivRetroactiv}
+                  onChange={(e) => setMotivRetroactiv(e.target.value)}
+                  placeholder="ex: vine de sâmbătă, n-a fost înrolat la timp"
+                />
+              </Field>
+            </div>
+          )}
 
           {abonamentFacultativTarziu && (
             <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">

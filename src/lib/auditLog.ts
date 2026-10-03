@@ -4,6 +4,7 @@ export type AuditAction =
   | 'price_override'
   | 'enrollment_moved'
   | 'enrollment_date_corrected'
+  | 'enrollment_backdated'
   | 'abonament_to_sedinte'
   | 'sedinte_to_abonament'
   | 'enrollment_reziliata'
