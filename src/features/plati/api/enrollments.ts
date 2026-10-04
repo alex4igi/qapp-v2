@@ -117,10 +117,13 @@ export async function listCursuriPentruInrolare(
         return sala?.locatie === locatieId
       })
     : rows
+  // `locatie` = locația sălii (aceeași regulă ca filtrul de mai sus), ca UI-ul să
+  // poată spune când cursul e la altă locație decât cea unde se încasează.
   return filtered.map((r) => {
-    const rest = { ...(r as Curs & { sala_rel?: unknown }) }
+    const rest = { ...(r as Curs & { sala_rel?: { locatie: string | null } | null }) }
+    const locatieSala = rest.sala_rel?.locatie ?? null
     delete (rest as { sala_rel?: unknown }).sala_rel
-    return rest as Curs
+    return { ...rest, locatie: locatieSala ?? rest.locatie } as Curs
   })
 }
 

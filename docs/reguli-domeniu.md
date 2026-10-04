@@ -102,6 +102,9 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 
 - **Locația banilor = `incasari.locatie`** (unde s-a încasat), nu lanțul curs → sală → locație. Orice insert în `incasari`
   setează `locatie` (din locația de lucru) și `categorie` (`Abonament` / `Bilet` / `Merch` / `Taxa`); `sezon` îl pune triggerul.
+  Un curs de la altă locație se plătește tot la locația de lucru: formularele de înrolare/OPEN arată și cursurile
+  celorlalte locații și avertizează, ca recepția să nu schimbe bara de sus doar ca să găsească grupa (4 oct. 2026:
+  OPEN de la Ștefan plătit cash la Nicolina a ajuns la Ștefan). Locația unei încasări nu se corectează din aplicație.
 - **Datoria canonică:** înrolări **nereziliate**, `rest = suma − Σ încasări`, pe luna lui `data_incepere`.
   Prescris = mai vechi de 2 ani (KPI-urile arată net, cu „din care prescrise"). O înrolare reziliată nu are datorie validă.
 - **Restanță = DOAR ce a trecut de termenul de plată (30.09).** Termenul: plata pe **ședință** (OPEN, facultativ pe

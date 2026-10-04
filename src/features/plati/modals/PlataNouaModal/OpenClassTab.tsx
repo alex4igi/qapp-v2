@@ -23,6 +23,7 @@ import {
   rezervaLocOpen,
 } from '../../api'
 import { PlataRezervareBadge } from '../../components/PlataRezervareBadge'
+import { AltaLocatieWarning } from '../../components/AltaLocatieWarning'
 import { fmtDate, todayIso } from './helpers'
 
 type Props = {
@@ -35,7 +36,7 @@ const INSTRUCTOR_INVITAT = '__invitat__'
 
 export function OpenClassTab({ onClose, defaultClientId }: Props) {
   const queryClient = useQueryClient()
-  const { locatieId, locatieNume } = useWorkingLocatie()
+  const { locatieId, locatieNume, options: locatiiOpts } = useWorkingLocatie()
 
   const [cursId, setCursId] = useState('')
   const [data, setData] = useState('')
@@ -55,11 +56,27 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
     queryKey: ['lookup', 'sezon-activ'],
     queryFn: sezonActivId,
   })
+  // Toate locațiile: OPEN-urile sunt puține, iar banii rămân oricum la locația
+  // din bara de sus. Cele de la locația curentă vin primele.
   const cursuriQ = useQuery<Curs[]>({
-    queryKey: ['cursuri-facultative', locatieId, sezonActivQ.data ?? null],
-    queryFn: () => listCursuriFacultative(locatieId, sezonActivQ.data ?? null),
+    queryKey: ['cursuri-facultative', 'toate', sezonActivQ.data ?? null],
+    queryFn: () => listCursuriFacultative(null, sezonActivQ.data ?? null),
     enabled: sezonActivQ.isSuccess,
   })
+  const cursuriOpts = useMemo(() => {
+    const numeLocatie = (id: string | null) =>
+      id ? (locatiiOpts.find((o) => o.value === id)?.label ?? null) : null
+    return [...(cursuriQ.data ?? [])]
+      .sort((a, b) => {
+        const aici = Number(b.locatie === locatieId) - Number(a.locatie === locatieId)
+        return aici || a.numele.localeCompare(b.numele, 'ro')
+      })
+      .map((c) => ({
+        value: c.id,
+        label: c.numele,
+        secondary: numeLocatie(c.locatie) ?? undefined,
+      }))
+  }, [cursuriQ.data, locatieId, locatiiOpts])
   const clientiQ = useQuery({ queryKey: ['lookup', 'clienti'], queryFn: clientiOptions })
   const teacheriQ = useTeacheriOptions()
 
@@ -189,13 +206,14 @@ export function OpenClassTab({ onClose, defaultClientId }: Props) {
                 ? '— niciun curs facultativ —'
                 : '— alege curs —'
             }
-            options={(cursuriQ.data ?? []).map((c) => ({ value: c.id, label: c.numele }))}
+            options={cursuriOpts}
             value={cursId}
             onChange={(v) => {
               setCursId(v)
               setSumaTouched(false)
             }}
           />
+          <AltaLocatieWarning cursLocatieId={cursSelectat?.locatie} />
         </Field>
         <Field label="Data sesiunii" required>
           <DateInput

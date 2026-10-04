@@ -68,6 +68,7 @@ import {
 } from './helpers'
 import { PriceSummary, type MotivPolitica } from './PriceSummary'
 import { RecurentPreview } from './RecurentPreview'
+import { AltaLocatieWarning } from '../AltaLocatieWarning'
 import { clientAreRecomandare } from '@/features/recomandari/api'
 
 type Props = {
@@ -132,6 +133,7 @@ export function EnrollmentForm({
   const [card, setCard] = useState('')
   const [overbook, setOverbook] = useState(false)
   const [toateCursurile, setToateCursurile] = useState(false)
+  const [alteLocatii, setAlteLocatii] = useState(false)
   const [motivRetroactiv, setMotivRetroactiv] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -166,13 +168,13 @@ export function EnrollmentForm({
   }, [sezonId, defaultSezonId, sezoaneDisponibile])
 
   const cursuriQ = useQuery<Curs[]>({
-    queryKey: ['cursuri-pentru-inrolare', locatieId, sezonSelectat?.id ?? null],
-    queryFn: () => listCursuriPentruInrolare(locatieId, sezonSelectat?.id ?? null),
+    queryKey: ['cursuri-pentru-inrolare', 'toate', sezonSelectat?.id ?? null],
+    queryFn: () => listCursuriPentruInrolare(null, sezonSelectat?.id ?? null),
     enabled: sezoaneQ.isSuccess,
   })
 
-  // Dacă deschidem modalul cu un curs prestabilit sau sugerat care nu e la
-  // locația curentă, îl aducem separat ca să apară totuși ca opțiune.
+  // Cursul prestabilit sau sugerat poate fi din alt sezon decât cel selectat;
+  // îl aducem separat ca să apară totuși ca opțiune.
   const cursExternId = defaultCursId ?? sugestieCursId ?? null
   const cursExternQ = useQuery<Curs>({
     queryKey: ['curs-pentru-inrolare-default', cursExternId],
@@ -376,9 +378,23 @@ export function EnrollmentForm({
     })
   }, [cursuri, areSugestii, sugestieVarsta, sugestieLocatieId])
 
+  // Implicit doar cursurile de la locația din bara de sus; cele de la alte locații
+  // se deschid din link, fără să schimbi bara — banii rămân unde stă recepția.
+  const cursuriLocatie = useMemo(
+    () =>
+      locatieId && !alteLocatii
+        ? cursuri.filter((c) => c.locatie === locatieId || c.id === cursExternId)
+        : cursuri,
+    [cursuri, locatieId, alteLocatii, cursExternId],
+  )
+
   const sugestiiActive =
     areSugestii && !toateCursurile && cursuriSugerate.length > 0
-  const cursuriAfisate = sugestiiActive ? cursuriSugerate : cursuri
+  const cursuriAfisate = sugestiiActive
+    ? cursuriSugerate
+    : areSugestii
+      ? cursuri
+      : cursuriLocatie
 
   // Opțiuni curs grupate vizual: Grupe → Trupe → Facultative, alfabetic în grup.
   // Sub-textul poartă ORARUL, nu doar tipul: numele grupei codifică zilele
@@ -393,7 +409,15 @@ export function EnrollmentForm({
         opt: {
           value: c.id,
           label: c.numele,
-          secondary: [formatOrar(c), TIP_LABEL[tip]].filter(Boolean).join(' · '),
+          secondary: [
+            formatOrar(c),
+            TIP_LABEL[tip],
+            c.locatie !== locatieId
+              ? locatiiQ.data?.find((l) => l.value === c.locatie)?.label
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · '),
         } satisfies SelectOption,
       }
     })
@@ -403,7 +427,7 @@ export function EnrollmentForm({
       return a.curs.numele.localeCompare(b.curs.numele, 'ro')
     })
     return decorated.map((d) => d.opt)
-  }, [cursuriAfisate])
+  }, [cursuriAfisate, locatieId, locatiiQ.data])
 
   // Prețul promo de reînscriere e o a doua valoare pe curs (`pret_lunar_promo`),
   // nu un override manual. Doar la GRUPE: trupele nu au preț promo (decizie
@@ -911,6 +935,7 @@ export function EnrollmentForm({
                 {numeLocatie(cursSelectat) && <> · {numeLocatie(cursSelectat)}</>}
               </p>
             )}
+            <AltaLocatieWarning cursLocatieId={cursSelectat?.locatie} />
 
             <p className="mt-1 text-xs text-quasar-gray">
               {sugestiiActive ? (
@@ -941,8 +966,30 @@ export function EnrollmentForm({
                   </button>
                   .{' '}
                 </>
+              ) : locatieNume && !alteLocatii ? (
+                <>
+                  Cursuri active la <strong>{locatieNume}</strong>.{' '}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => setAlteLocatii(true)}
+                  >
+                    Arată și cursurile de la celelalte locații
+                  </button>
+                  .{' '}
+                </>
               ) : locatieNume ? (
-                <>Cursuri active la <strong>{locatieNume}</strong>. </>
+                <>
+                  Cursuri de la toate locațiile.{' '}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => setAlteLocatii(false)}
+                  >
+                    Doar {locatieNume}
+                  </button>
+                  .{' '}
+                </>
               ) : (
                 <>Cursuri active (toate locațiile). </>
               )}
