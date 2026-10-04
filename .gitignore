@@ -45,3 +45,13 @@ provision-*.csv
 
 # Config local Codex — conține chei API (Stitch)
 .codex/
+
+# Backup-uri dinaintea curățeniilor pe date reale (nume, sume) — rămân doar local
+scripts/cleanup/_backup_*.json
+
+# Exporturi de reînscrieri cu date de clienți
+docs/Reinscrieri 25-26/
+
+# Setări locale de editor / lock generat de Deno
+.vscode/
+deno.lock
