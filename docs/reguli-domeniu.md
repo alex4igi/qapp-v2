@@ -143,6 +143,10 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **Portal: „restant” = doar termen trecut, inclusiv datoriile one-off (04.10.2026).** Acasă, badge-ul din meniu și
   cardul „Sold familie” citesc `get_rezumat_plati_familie`, nu `get_sold_familie` (care ignoră one-off-urile și pune rata
   lunii curente înainte de scadență). Rata care urmează se arată neutru, „de achitat până pe [data]”.
+- **Portal: lunile plătite rămân vizibile și după reziliere (Alex, 04.10.2026: „oamenii ar trebui să vadă ce au plătit”).**
+  Jobul EXclient bifează `reziliat` și pe lunile încheiate și achitate; `get_plati_client` (`20261004233000`) nu mai
+  citește `plati_inrolari` (care le exclude), ci arată lunile reziliate CU plăți ca „achitat” (total = cât s-a plătit,
+  fără rest de plată). Lunile reziliate fără nicio plată (viitoare anulate, conversii) rămân ascunse.
 - **`/plati` e registrul unic al încasărilor**; restanțele stau în `/datorii`.
 
 ## 5. Prezențe
