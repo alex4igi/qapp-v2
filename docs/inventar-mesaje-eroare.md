@@ -200,10 +200,28 @@ Verificare: amprenta celor 41 de funcții atinse (sursă cu înlocuirile inversa
 
 ## 8. Portal (părinți)
 
-Câteva mesaje din `submit_rating_client` / `submit_app_feedback_portal` sunt fără diacritice și cu
-literă mică („ai nevoie de minim 3 luni achitate consecutiv la aceasta grupa (ai %)", „rating invalid").
-Portalul le afișează așa cum sunt. Le aducem la forma celorlalte; textele tehnice („rating invalid",
-„context invalid") nu ar trebui să ajungă la părinte, pentru că le oprește interfața înainte.
+**✅ Făcut 4 oct.** (cerut de Alex). Toate mesajele pe care le poate vedea un părinte spun ce s-a întâmplat
+și ce poate face, la persoana a doua, cu diacritice. Trei straturi:
+
+1. **Funcțiile DB doar de portal** (migrația `20261004100000`): 33 de mesaje din `hold_loc_open`, `hold_bilete`,
+   `build_fifo_plan_membru`, `plan_plata_integrala_sezon`, `submit_rating_client`, `submit_app_feedback_portal`,
+   `update_profil_client`, `update_profil_familie`. La `hold_bilete` mesajul spune câte locuri au rămas, nu „X / Y ocupate".
+   Amprenta celor 8 funcții (sursa cu înlocuirile inversate + drepturi + setări) e identică.
+2. **Edge functions** `portal-auth`, `netopia-create-payment`, `portal-document`, `contract-public` și `raspuns429`
+   din `_shared/rateLimit.ts` (spune acum peste câte minute). Ieșeau la părinte texte ca `missing auth`, `forbidden`,
+   `order insert: …`, `String(e)`, `link de resetare invalid sau expirat`. Detaliile tehnice merg în `console.error`.
+   Unde plata nu a pornit, mesajul spune explicit că nu s-a luat niciun ban de pe card.
+3. **Portalul** (`qapp-membri/src/lib/errorMessage.ts` → `mesajEroare`): traduce erorile de transport (fără internet,
+   sesiune expirată, RLS) și motivele de voucher comune cu staff-ul (`_voucher_motiv_invalid`, scrise pentru recepție);
+   lasă neschimbate mesajele scrise de noi. Înlocuiește „Eroare la încărcare/salvare/trimitere" peste tot.
+
+**Reparat pe drum:**
+- 8 ecrane (Acasă, Calendar, Prezențe, Activitate, Reduceri, Plăți, lista de membri) nu arătau nimic la o încărcare eșuată:
+  părintele vedea „0 lei" sau o listă goală ca pe datele lui. Acum o plasă globală (`QueryCache.onError` în `main.tsx`,
+  `meta: { erroareAfisata: true }` ca în aplicația de staff) arată un mesaj cu „Reîncarcă pagina".
+- Login: orice eroare (fără internet, portal oprit, prea multe încercări) apărea ca „Email sau parolă incorecte".
+  Fără internet, butonul rămânea blocat pe „Se conectează…". La refresh fără internet, omul era scos din cont.
+- Semnarea: o cădere de rețea la „Semnează documentul" nu afișa nimic.
 
 ## 9. Butoane care „nu fac nimic": eroarea nu se afișează nicăieri
 
@@ -250,7 +268,7 @@ Am verificat și varianta „fereastra arată 0 încasat, serverul vede bani": a
 2. ~~**§2** suprapuneri (`23P01`) + **§4** harta pe numele constrângerii + ștergerile riscante~~ ✅ 3 oct.
 3. ~~**§1** „cere unui manager"~~ ✅ 3 oct.
 4. ~~**§5 + §7** textele din funcțiile DB~~ ✅ 3 oct.
-5. ~~**§6**~~ ✅ 3 oct. · **§8** (portal) parțial: refuzurile „forbidden" sunt traduse; restul când apar.
+5. ~~**§6**~~ ✅ 3 oct. · ~~**§8**~~ (portal) ✅ 4 oct.
 
 ## Cum se regenerează lista din DB
 

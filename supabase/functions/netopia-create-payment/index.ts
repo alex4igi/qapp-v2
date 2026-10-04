@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
   try {
     const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-    if (!token) return json({ error: 'missing auth' }, 401)
+    if (!token) return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 401)
 
     const url = Deno.env.get('SUPABASE_URL')!
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
@@ -70,10 +70,10 @@ Deno.serve(async (req) => {
         audience: 'authenticated',
       })
       const role = (payload.app_metadata as { role?: string } | undefined)?.role
-      if (role !== 'parinte' || !payload.sub) return json({ error: 'forbidden' }, 403)
+      if (role !== 'parinte' || !payload.sub) return json({ error: 'Plata online se face doar din contul de membru al familiei.' }, 403)
       portalAccountId = String(payload.sub)
     } catch {
-      return json({ error: 'invalid token' }, 401)
+      return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 401)
     }
 
     // Cheia e contul, nu IP-ul: apelantul e deja identificat, iar o familie întreagă
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     if (!plafon.permis) return raspuns429(plafon.retryAfter, corsHeaders)
 
     const { clientId, kind = 'abonament', sesiuneId, evenimentId, qty, panaLa, datorii, includeInrolari, voucherCod, platesteIntegral } = (await req.json()) as Body
-    if (!clientId) return json({ error: 'clientId obligatoriu' }, 400)
+    if (!clientId) return json({ error: 'Alege membrul familiei pentru care plătești, apoi încearcă din nou.' }, 400)
 
     // Client scopat pe JWT-ul părintelui => RPC-urile validează apartenența la familie
     // prin client_member_ids() (auth.uid()).
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
 
     if (kind === 'bilet') {
       // Bilete spectacol: creează holduri (bilete 'rezervat', fără bani) → preț × qty.
-      if (!evenimentId || !qty) return json({ error: 'evenimentId + qty obligatorii pentru bilet' }, 400)
+      if (!evenimentId || !qty) return json({ error: 'Alege evenimentul și numărul de bilete.' }, 400)
       const { data: holdRes, error: holdErr } = await userClient.rpc('hold_bilete', {
         p_eveniment: evenimentId,
         p_qty: qty,
@@ -116,10 +116,10 @@ Deno.serve(async (req) => {
       if (holdErr) return json({ error: holdErr.message }, 400)
       amount = Number(holdRes?.amount ?? 0)
       nrBilete = Number(holdRes?.nr ?? 0)
-      if (amount <= 0 || !nrBilete) return json({ error: 'Bilete invalide.' }, 400)
+      if (amount <= 0 || !nrBilete) return json({ error: 'Biletele nu au putut fi rezervate. Reîncarcă pagina și încearcă din nou.' }, 400)
     } else if (kind === 'rezervare') {
       // Rezervare OPEN class: creează un hold (loc 'rezervat', fără bani) → prețul ședinței.
-      if (!sesiuneId) return json({ error: 'sesiuneId obligatoriu pentru rezervare' }, 400)
+      if (!sesiuneId) return json({ error: 'Alege ședința pe care vrei s-o rezervi.' }, 400)
       const { data: holdRes, error: holdErr } = await userClient.rpc('hold_loc_open', {
         p_client: clientId,
         p_sesiune: sesiuneId,
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       if (holdErr) return json({ error: holdErr.message }, 400)
       amount = Number(holdRes?.amount ?? 0)
       rezervareId = (holdRes?.rezervare_id as string) ?? null
-      if (amount <= 0 || !rezervareId) return json({ error: 'Rezervare invalidă.' }, 400)
+      if (amount <= 0 || !rezervareId) return json({ error: 'Locul nu a putut fi rezervat. Reîncarcă pagina și încearcă din nou.' }, 400)
 
       // Voucher opțional pe rezervare: validăm server-side, apoi aplicăm reducerea.
       const cod = (voucherCod ?? '').trim()
@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
       amount = Number(planRes?.amount ?? 0)
       plan = planRes?.plan ?? []
       plataIntegrala = true
-      if (amount <= 0) return json({ error: 'Nimic de plătit pentru acest membru.' }, 400)
+      if (amount <= 0) return json({ error: 'Nu ai nimic de plătit acum pentru acest membru. Reîncarcă pagina ca să vezi soldul la zi.' }, 400)
     } else {
       // Abonament: recalculează restanța FIFO server-side (sursa de adevăr a sumei).
       // Include opțional datoriile one-off (Bilet/Merch/Taxă) selectate (plată integrală).
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
       if (planErr) return json({ error: planErr.message }, 403)
       amount = Number(planRes?.amount ?? 0)
       plan = planRes?.plan ?? []
-      if (amount <= 0) return json({ error: 'Nimic de plătit pentru acest membru.' }, 400)
+      if (amount <= 0) return json({ error: 'Nu ai nimic de plătit acum pentru acest membru. Reîncarcă pagina ca să vezi soldul la zi.' }, 400)
     }
 
     // Date de facturare: clientul, cu fallback pe reprezentantul familiei.
@@ -219,7 +219,8 @@ Deno.serve(async (req) => {
       // eliberează holdurile orfane (rezervare / bilete stampilate cu acest order_ref)
       if (rezervareId) await admin.rpc('cancel_netopia_order', { p_order_ref: orderRef })
       if (kind === 'bilet') await admin.from('bilete').update({ status: 'anulat' }).eq('order_ref', orderRef)
-      return json({ error: `order insert: ${insErr.message}` }, 500)
+      console.error('netopia_orders insert', orderRef, insErr.message)
+      return json({ error: 'Nu am putut porni plata (problema e la noi, nu la card — nu s-a luat niciun ban). Încearcă din nou peste câteva minute.' }, 500)
     }
 
     const portalBase = (Deno.env.get('PORTAL_BASE_URL') ?? '').replace(/\/$/, '')
@@ -273,7 +274,10 @@ Deno.serve(async (req) => {
       // eliberează holdul (dacă e rezervare) + marchează comanda canceled
       await admin.rpc('cancel_netopia_order', { p_order_ref: orderRef })
       console.error('Netopia start failed', ntpRes.status, `${NETOPIA_BASE}/payment/card/start`, rawText.slice(0, 500))
-      return json({ error: ntp?.error?.message ?? 'Netopia start a eșuat', netopia: ntp?.error }, 502)
+      return json({
+        error: 'Procesatorul de plăți (Netopia) nu a răspuns. Nu s-a luat niciun ban de pe card — încearcă din nou peste câteva minute.',
+        netopia: ntp?.error,
+      }, 502)
     }
 
     // ntpID e singura cheie cu care se poate întreba Netopia de starea plății
@@ -292,7 +296,8 @@ Deno.serve(async (req) => {
 
     return json({ redirectUrl, orderId: orderRef })
   } catch (e) {
-    return json({ error: String(e) }, 500)
+    console.error('netopia-create-payment', e)
+    return json({ error: 'Nu am putut porni plata (problema e la noi, nu la card — nu s-a luat niciun ban). Încearcă din nou peste câteva minute.' }, 500)
   }
 })
 

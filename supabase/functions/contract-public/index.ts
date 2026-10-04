@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json()
     const token = String(body.token ?? '')
-    if (!token || token.length < 20) return json({ error: 'token invalid' }, 400)
+    if (!token || token.length < 20) return json({ error: 'Linkul nu e complet. Deschide-l din nou direct din mesajul primit, fără să-l copiezi pe bucăți.' }, 400)
 
     const admin = serviceClient()
 
@@ -248,7 +248,7 @@ Deno.serve(async (req) => {
     // trebuie să poată fi luat acasă.
     if (body.action === 'download') {
       if (!['semnat', 'finalizat'].includes(contract.status)) {
-        return json({ error: 'Documentul nu este semnat.' }, 409)
+        return json({ error: 'Documentul nu e semnat încă. Semnează-l mai întâi pe această pagină.' }, 409)
       }
       // 'semnat' = finalizarea (PDF + arhivare) încă rulează; pagina reîncearcă.
       if (contract.status === 'semnat' || !contract.pdf_storage_path) {
@@ -269,7 +269,7 @@ Deno.serve(async (req) => {
       const { data: signed } = await admin.storage
         .from('contracte')
         .createSignedUrl(contract.pdf_storage_path, 300, { download: fisier })
-      if (!signed?.signedUrl) return json({ error: 'Documentul nu poate fi descărcat acum.' }, 500)
+      if (!signed?.signedUrl) return json({ error: 'Documentul nu s-a putut pregăti pentru descărcare. Încearcă din nou peste câteva minute; dacă nu merge, scrie-ne la office@quasardance.ro și ți-l trimitem pe email.' }, 500)
       await logEvent(admin, contract.id, 'descarcat', {
         ip: clientIp(req), ua: req.headers.get('user-agent') ?? '', canal: 'link_semnare',
       })
@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
     ) {
       await admin.from('contracte').update({ status: 'expirat' }).eq('id', contract.id)
       await logEvent(admin, contract.id, 'expirat', { la: 'acces' })
-      return json({ error: 'Linkul a expirat. Contactați recepția pentru unul nou.' }, 410)
+      return json({ error: 'Linkul a expirat. Sună sau scrie recepției locației tale și îți trimitem unul nou.' }, 410)
     }
     if (['semnat', 'finalizat'].includes(contract.status)) {
       const expirat = descarcareExpirata(contract)
@@ -295,7 +295,7 @@ Deno.serve(async (req) => {
       })
     }
     if (!['trimis', 'deschis'].includes(contract.status)) {
-      return json({ error: 'Documentul nu mai este disponibil pentru semnare.' }, 410)
+      return json({ error: 'Documentul nu mai este de semnat: a fost anulat sau înlocuit cu o variantă nouă. Deschide cel mai recent mesaj primit de la Quasar Dance sau cere recepției linkul actual.' }, 410)
     }
 
     const { data: tpl } = await admin
@@ -303,7 +303,7 @@ Deno.serve(async (req) => {
       .select('nume, tip, fields, pdf_storage_path')
       .eq('id', contract.template_id)
       .single()
-    if (!tpl) return json({ error: 'Template lipsă.' }, 500)
+    if (!tpl) return json({ error: 'Documentul nu poate fi afișat acum (problemă la noi). Anunță recepția și îți trimitem un link corect.' }, 500)
     const fields = (tpl.fields ?? []) as TemplateField[]
 
     if (body.action === 'load') {
@@ -352,17 +352,17 @@ Deno.serve(async (req) => {
       const marketingOptin = body.marketingOptin === true
 
       if (!consimtamant) {
-        return json({ error: 'Consimțământul pentru semnarea electronică este obligatoriu.' }, 400)
+        return json({ error: 'Bifează căsuța „Sunt de acord să semnez acest document electronic…” de deasupra butonului, apoi semnează.' }, 400)
       }
       if (!semnaturaPng.startsWith('data:image/png;base64,')) {
-        return json({ error: 'Semnătura lipsește.' }, 400)
+        return json({ error: 'Semnătura lipsește. Semnează cu degetul sau cu mouse-ul în chenarul de semnătură.' }, 400)
       }
       const pngBytes = Uint8Array.from(
         atob(semnaturaPng.slice('data:image/png;base64,'.length)),
         (c) => c.charCodeAt(0),
       )
       if (pngBytes.length < 500 || pngBytes.length > MAX_SIGNATURE_BYTES) {
-        return json({ error: 'Semnătura este goală sau prea mare.' }, 400)
+        return json({ error: 'Semnătura nu s-a putut citi. Apasă „Șterge și reia” și semnează din nou în chenar.' }, 400)
       }
 
       await completeazaMascate(admin, contract, fields, valori)
@@ -379,15 +379,15 @@ Deno.serve(async (req) => {
         // altfel valoarea booleană `false` (nebifat) ar trece ca prezentă.
         if (f.type === 'checkbox') {
           if (f.required && val !== true) {
-            return json({ error: `Câmpul „${f.label}" trebuie bifat.` }, 400)
+            return json({ error: `Câmpul „${f.label}" trebuie bifat ca documentul să poată fi semnat.` }, 400)
           }
           continue
         }
         if (f.required && (val === undefined || val === null || String(val).trim() === '')) {
-          return json({ error: `Câmpul „${f.label}" este obligatoriu.` }, 400)
+          return json({ error: `Câmpul „${f.label}" este obligatoriu. Completează-l și apasă din nou „Semnează documentul”.` }, 400)
         }
         if (f.source === 'familie.cnp' && val && !isValidCnp(String(val).trim())) {
-          return json({ error: 'CNP-ul introdus nu este valid.' }, 400)
+          return json({ error: 'CNP-ul introdus nu este valid. Verifică cele 13 cifre, exact ca pe buletin — o singură cifră greșită îl face invalid.' }, 400)
         }
       }
 
@@ -406,7 +406,7 @@ Deno.serve(async (req) => {
         .in('status', ['trimis', 'deschis'])
         .select('id')
       if (!updated || updated.length === 0) {
-        return json({ error: 'Documentul a fost deja semnat.' }, 409)
+        return json({ error: 'Documentul a fost deja semnat. Reîncarcă pagina ca să-l poți descărca.' }, 409)
       }
 
       const semnaturaPath = `semnaturi/${contract.id}.png`
@@ -458,9 +458,9 @@ Deno.serve(async (req) => {
       return json({ ok: true, message: 'Documentul a fost semnat. Mulțumim!' })
     }
 
-    return json({ error: 'action necunoscut' }, 400)
+    return json({ error: 'Cerere necunoscută. Reîncarcă pagina și încearcă din nou.' }, 400)
   } catch (e) {
     console.error('contract-public error:', e)
-    return json({ error: 'Eroare internă.' }, 500)
+    return json({ error: 'A apărut o problemă la noi. Încearcă din nou peste câteva minute; dacă se repetă, scrie-ne la office@quasardance.ro.' }, 500)
   }
 })

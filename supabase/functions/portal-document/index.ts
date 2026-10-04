@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
 
   try {
     const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-    if (!token) return json({ error: 'missing auth' }, 401)
+    if (!token) return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 401)
 
     try {
       const { payload } = await jose.jwtVerify(
@@ -40,13 +40,13 @@ Deno.serve(async (req) => {
         { issuer: 'qapp-portal', audience: 'authenticated' },
       )
       const role = (payload.app_metadata as { role?: string } | undefined)?.role
-      if (role !== 'parinte' || !payload.sub) return json({ error: 'forbidden' }, 403)
+      if (role !== 'parinte' || !payload.sub) return json({ error: 'Documentele se descarcă din contul de membru al familiei.' }, 403)
     } catch {
-      return json({ error: 'invalid token' }, 401)
+      return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 401)
     }
 
     const { documentId } = (await req.json()) as { documentId?: string }
-    if (!documentId) return json({ error: 'documentId obligatoriu' }, 400)
+    if (!documentId) return json({ error: 'Reîncarcă pagina și apasă din nou pe document.' }, 400)
 
     const url = Deno.env.get('SUPABASE_URL')!
 
@@ -56,9 +56,12 @@ Deno.serve(async (req) => {
     })
     const { data: storagePath, error: rpcErr } = await userClient
       .rpc('get_document_storage_path', { p_document: documentId })
-    if (rpcErr) return json({ error: rpcErr.message }, 400)
+    if (rpcErr) {
+      console.error('get_document_storage_path', rpcErr.message)
+      return json({ error: 'Documentul nu s-a putut pregăti pentru descărcare. Încearcă din nou peste câteva minute; dacă nu merge, scrie-ne la office@quasardance.ro și ți-l trimitem pe email.' }, 400)
+    }
     if (!storagePath) {
-      return json({ error: 'Documentul nu este disponibil pentru descărcare.' }, 404)
+      return json({ error: 'Documentul nu are încă un fișier de descărcat. Scrie-ne la office@quasardance.ro și ți-l trimitem pe email.' }, 404)
     }
 
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
@@ -74,7 +77,7 @@ Deno.serve(async (req) => {
       .createSignedUrl(String(storagePath), SIGNED_URL_TTL_SEC, { download: fisier })
     if (stErr || !signed?.signedUrl) {
       console.error('portal-document signed url fail:', stErr?.message)
-      return json({ error: 'Documentul nu poate fi descărcat acum.' }, 500)
+      return json({ error: 'Documentul nu s-a putut pregăti pentru descărcare. Încearcă din nou peste câteva minute; dacă nu merge, scrie-ne la office@quasardance.ro și ți-l trimitem pe email.' }, 500)
     }
 
     // Contractele au jurnal probatoriu: descărcarea din portal intră în el.
@@ -94,6 +97,6 @@ Deno.serve(async (req) => {
     return json({ url: signed.signedUrl })
   } catch (e) {
     console.error('portal-document error:', e)
-    return json({ error: 'Eroare internă.' }, 500)
+    return json({ error: 'A apărut o problemă la noi. Încearcă din nou peste câteva minute; dacă se repetă, scrie-ne la office@quasardance.ro.' }, 500)
   }
 })

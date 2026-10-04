@@ -68,7 +68,9 @@ export async function verificaPlafon(
 /** Răspunsul standard la depășire. */
 export function raspuns429(retryAfter: number, headers: Record<string, string> = {}): Response {
   return new Response(
-    JSON.stringify({ error: 'Prea multe cereri. Încearcă din nou peste puțin timp.' }),
+    JSON.stringify({
+      error: `Prea multe încercări într-un timp scurt. Încearcă din nou peste ${Math.max(1, Math.ceil(retryAfter / 60))} min.`,
+    }),
     {
       status: 429,
       headers: { ...headers, 'Content-Type': 'application/json', 'Retry-After': String(retryAfter) },

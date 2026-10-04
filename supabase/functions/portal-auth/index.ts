@@ -116,7 +116,7 @@ async function sendResetEmail(email: string, link: string) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (!JWT_SECRET) return json({ error: 'PORTAL_JWT_SECRET neconfigurat' }, 500)
+  if (!JWT_SECRET) return eroareInterna('config', 'PORTAL_JWT_SECRET neconfigurat')
 
   try {
     const body = await req.json().catch(() => ({}))
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     // Întrerupătorul de incident (docs/runbook-incident.md): oprește intrarea și
     // reîmprospătarea sesiunilor fără redeploy. Tokenurile deja emise mor în ACCESS_TTL_SEC.
     if (Deno.env.get('PORTAL_LOGIN_DISABLED') === '1' && action !== 'logout') {
-      return json({ error: 'Portalul este temporar indisponibil. Revino în câteva ore.' }, 503)
+      return json({ error: 'Portalul este oprit temporar pentru mentenanță. Revino în câteva ore; pentru ceva urgent (plăți, rezervări), sună la recepția locației tale.' }, 503)
     }
 
     const grupPlafon = action === 'change_temporary_password' ? 'login' : action
@@ -139,11 +139,11 @@ Deno.serve(async (req) => {
     if (action === 'login') {
       const email = String(body.email ?? '').trim().toLowerCase()
       const password = String(body.password ?? '')
-      if (!email || !password) return json({ error: 'email și parolă obligatorii' }, 400)
+      if (!email || !password) return json({ error: 'Completează emailul și parola.' }, 400)
       const { data, error } = await admin.rpc('portal_login', { p_email: email, p_password: password })
       if (error) return eroareInterna('portal_login', error)
       const row = Array.isArray(data) ? data[0] : data
-      if (!row?.id) return json({ error: 'Email sau parolă greșite (sau cont blocat temporar).' }, 401)
+      if (!row?.id) return json({ error: 'Emailul sau parola nu se potrivesc. Verifică emailul cu care ești înscris la școală și parola (contează literele mari și mici). Dacă ai uitat-o, apasă „Ai uitat parola?”. După 8 încercări greșite, contul se blochează 15 minute.' }, 401)
       // Parolă temporară (comună): fără tokenuri până nu își alege una proprie.
       const { data: acc, error: accErr } = await admin
         .from('portal_accounts')
@@ -160,20 +160,20 @@ Deno.serve(async (req) => {
       const email = String(body.email ?? '').trim().toLowerCase()
       const password = String(body.password ?? '')
       const newPwd = String(body.new_password ?? '')
-      if (!email || !password) return json({ error: 'email și parolă obligatorii' }, 400)
+      if (!email || !password) return json({ error: 'Completează emailul și parola.' }, 400)
       if (newPwd.length < 8) return json({ error: 'Parola nouă trebuie să aibă minim 8 caractere.' }, 400)
       if (newPwd === password) return json({ error: 'Alege o parolă diferită de cea primită.' }, 400)
       const { data, error } = await admin.rpc('portal_login', { p_email: email, p_password: password })
       if (error) return eroareInterna('portal_login', error)
       const row = Array.isArray(data) ? data[0] : data
-      if (!row?.id) return json({ error: 'Email sau parolă greșite (sau cont blocat temporar).' }, 401)
+      if (!row?.id) return json({ error: 'Emailul sau parola nu se potrivesc. Verifică emailul cu care ești înscris la școală și parola (contează literele mari și mici). Dacă ai uitat-o, apasă „Ai uitat parola?”. După 8 încercări greșite, contul se blochează 15 minute.' }, 401)
       const { data: acc, error: accErr } = await admin
         .from('portal_accounts')
         .select('must_change_password')
         .eq('id', row.id)
         .maybeSingle()
       if (accErr) return eroareInterna('citire cont', accErr)
-      if (!acc?.must_change_password) return json({ error: 'Contul nu are parolă temporară.' }, 400)
+      if (!acc?.must_change_password) return json({ error: 'Contul are deja o parolă aleasă de tine. Întoarce-te la autentificare și intră cu ea; dacă n-o mai știi, apasă „Ai uitat parola?”.' }, 400)
       const { error: setErr } = await admin.rpc('portal_set_password', { p_id: row.id, p_password: newPwd })
       if (setErr) return eroareInterna('portal_set_password', setErr)
       return json({ ...(await issueTokens(row.id)), email: row.email })
@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
     // ---- refresh ----
     if (action === 'refresh') {
       const refresh = String(body.refresh_token ?? '')
-      if (!refresh) return json({ error: 'refresh_token lipsă' }, 400)
+      if (!refresh) return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 400)
       const hash = await sha256(refresh)
       const { data: sess } = await admin
         .from('portal_sessions')
@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
         .maybeSingle()
       if (!sess || new Date(sess.expires_at) < new Date()) {
         if (sess) await admin.from('portal_sessions').delete().eq('id', sess.id)
-        return json({ error: 'sesiune expirată' }, 401)
+        return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 401)
       }
       // rotație: șterge sesiunea veche, emite alta
       await admin.from('portal_sessions').delete().eq('id', sess.id)
@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
     // ---- request_reset ---- (răspuns identic indiferent dacă emailul există)
     if (action === 'request_reset') {
       const email = String(body.email ?? '').trim().toLowerCase()
-      if (!email) return json({ error: 'email obligatoriu' }, 400)
+      if (!email) return json({ error: 'Completează adresa de email.' }, 400)
       const pe = await verificaPlafon(admin, 'portal-request_reset-email', email, PLAFON_RESET_PE_EMAIL)
       // Tăcut: un 429 aici ar confirma că emailul a mai fost cerut, deci că există.
       if (!pe.permis) return json({ ok: true })
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
     if (action === 'reset') {
       const token = String(body.token ?? '')
       const password = String(body.password ?? '')
-      if (!token || password.length < 8) return json({ error: 'token și parolă (min. 8) obligatorii' }, 400)
+      if (!token || password.length < 8) return json({ error: 'Parola nouă trebuie să aibă minim 8 caractere.' }, 400)
       const hash = await sha256(token)
       const { data: rt } = await admin
         .from('portal_reset_tokens')
@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
         .eq('token_hash', hash)
         .maybeSingle()
       if (!rt || rt.used_at || new Date(rt.expires_at) < new Date()) {
-        return json({ error: 'link de resetare invalid sau expirat' }, 400)
+        return json({ error: 'Linkul de resetare a expirat (e valabil o oră) sau a fost deja folosit. Cere unul nou de pe pagina „Ai uitat parola?”.' }, 400)
       }
       const { error } = await admin.rpc('portal_set_password', { p_id: rt.account_id, p_password: password })
       if (error) return eroareInterna('portal_set_password', error)
@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
     // ---- change_password ---- (din portal, logat; cere Authorization: Bearer <access_token>)
     if (action === 'change_password') {
       const authz = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-      if (!authz) return json({ error: 'neautentificat' }, 401)
+      if (!authz) return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 401)
       let accountId: string
       let email: string
       try {
@@ -261,26 +261,26 @@ Deno.serve(async (req) => {
         })
         accountId = String(payload.sub)
         const { data: acc } = await admin.from('portal_accounts').select('email').eq('id', accountId).maybeSingle()
-        if (!acc?.email) return json({ error: 'cont inexistent' }, 401)
+        if (!acc?.email) return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 401)
         email = acc.email
       } catch {
-        return json({ error: 'token invalid' }, 401)
+        return json({ error: 'Sesiunea ta a expirat. Ieși din cont și intră din nou, apoi reia pasul.' }, 401)
       }
       const oldPwd = String(body.old_password ?? '')
       const newPwd = String(body.new_password ?? '')
-      if (newPwd.length < 8) return json({ error: 'parola nouă min. 8 caractere' }, 400)
+      if (newPwd.length < 8) return json({ error: 'Parola nouă trebuie să aibă minim 8 caractere.' }, 400)
       // Parola veche e opțională: tokenul valid dovedește deja identitatea. Dacă e
       // furnizată, o verificăm (defense-in-depth pentru schimbarea din contul logat).
       if (oldPwd) {
         const { data: ok } = await admin.rpc('portal_login', { p_email: email, p_password: oldPwd })
-        if (!(Array.isArray(ok) ? ok[0]?.id : ok?.id)) return json({ error: 'parola actuală e greșită' }, 403)
+        if (!(Array.isArray(ok) ? ok[0]?.id : ok?.id)) return json({ error: 'Parola actuală nu e corectă. Dacă n-o mai știi, ieși din cont și folosește „Ai uitat parola?”.' }, 403)
       }
       const { error } = await admin.rpc('portal_set_password', { p_id: accountId, p_password: newPwd })
       if (error) return eroareInterna('portal_set_password', error)
       return json({ ok: true })
     }
 
-    return json({ error: 'acțiune necunoscută' }, 400)
+    return json({ error: 'Cerere necunoscută. Reîncarcă pagina (poate ai deschisă o versiune veche a portalului) și încearcă din nou.' }, 400)
   } catch (e) {
     return eroareInterna('neprevăzut', e)
   }
