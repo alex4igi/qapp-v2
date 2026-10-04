@@ -137,3 +137,42 @@ export async function emitInvoice(
     link: (fact.Link as string) || (fact.link as string) || null,
   }
 }
+
+// Stornare TOTALĂ a unei facturi emise (FGO nu stornează parțial prin API).
+// Hash pe operațiile cu o factură existentă: SHA1(CodUnic + cheie + Numar).
+export async function stornoInvoice(cui: string, serie: string, numar: string): Promise<FgoEmitResult> {
+  const privateKey = fgoPrivateKey(cui)
+  if (!privateKey) throw new Error(`Lipsește cheia API FGO pentru CUI ${cui} (secret FGO_KEYS).`)
+
+  const params = new URLSearchParams()
+  params.set('CodUnic', cui)
+  params.set('Hash', sha1Upper(cui + privateKey + numar))
+  params.set('PlatformaUrl', PLATFORMA_URL)
+  params.set('Serie', serie)
+  params.set('Numar', numar)
+
+  const res = await fetch(`${API_BASE}/factura/stornare`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+    signal: AbortSignal.timeout(30000),
+  })
+  const text = await res.text()
+  let body: Record<string, unknown> | null = null
+  try {
+    body = JSON.parse(text)
+  } catch {
+    body = null
+  }
+  if (!(body ? (body.Success ?? body.success) === true : false)) {
+    throw new Error(
+      (body?.Message as string) || (body?.message as string) || `HTTP ${res.status}: ${text.slice(0, 300)}`,
+    )
+  }
+  const fact = (body?.Factura as Record<string, unknown>) || body || {}
+  const nr = [fact.Serie ?? serie, fact.Numar ?? fact.numar ?? ''].filter(Boolean).join(' ').trim()
+  return {
+    numar: nr || '(număr nealocat în răspuns)',
+    link: (fact.Link as string) || (fact.link as string) || null,
+  }
+}

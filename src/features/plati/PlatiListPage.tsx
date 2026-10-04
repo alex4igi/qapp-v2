@@ -13,7 +13,7 @@ import {
 } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
-import { isManagerOrHigher } from '@/lib/rolesMatrix'
+import { isAdminOrHigher, isManagerOrHigher } from '@/lib/rolesMatrix'
 import { locatiiOptions } from '@/lib/lookups'
 import { downloadCsv } from '@/lib/csv'
 import { formatDate, formatMonth, formatRON } from '@/lib/format'
@@ -23,6 +23,8 @@ import { PlataNouaModal } from './PlataNouaModal'
 import { CorecteazaMetodaModal } from './modals/CorecteazaMetodaModal'
 import { IncasareEditModal } from './modals/IncasareEditModal'
 import { MutaIncasareModal } from './modals/MutaIncasareModal'
+import { RestituireOnlineModal } from './modals/RestituireOnlineModal'
+import { orderRefDinObservatii } from './api/restituire-online'
 import { todayIso } from './modals/PlataNouaModal/helpers'
 import { PlatiFiltreBar } from './components/PlatiFiltreBar'
 import { intervalPerioada, type Perioada } from './perioada'
@@ -49,6 +51,7 @@ function pentruSecundar(r: PlataRow): string {
 export function PlatiListPage() {
   const { role } = useAuth()
   const canEdit = isManagerOrHigher(role)
+  const canRestitui = isAdminOrHigher(role)
   const { locatieId: globalLocatieId } = useWorkingLocatie()
 
   const [searchInput, setSearchInput] = useState('')
@@ -66,6 +69,7 @@ export function PlatiListPage() {
   const [corectId, setCorectId] = useState<string | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const [mutaRow, setMutaRow] = useState<PlataRow | null>(null)
+  const [restituire, setRestituire] = useState<{ orderRef: string; clientNume: string } | null>(null)
   const [exporting, setExporting] = useState(false)
 
   const locatieId = locatieAleasa ?? globalLocatieId ?? ''
@@ -158,6 +162,14 @@ export function PlatiListPage() {
         label: 'Mută plata',
         title: 'Plata trece pe altă grupă/lună a clientului sau la alt client',
         onClick: () => setMutaRow(r),
+      })
+    const orderRef = r.metoda === 'Online' && r.suma > 0 ? orderRefDinObservatii(r.observatii) : null
+    if (canRestitui && orderRef)
+      items.push({
+        icon: '↩️',
+        label: 'Restituie pe card',
+        title: 'Returul plății online prin Netopia, cu încasarea negativă și stornarea facturii',
+        onClick: () => setRestituire({ orderRef, clientNume: r.client_nume ?? '' }),
       })
     if (canEdit)
       items.push({
@@ -342,6 +354,14 @@ export function PlatiListPage() {
       )}
       {editId && (
         <IncasareEditModal open incasareId={editId} onClose={() => setEditId(null)} />
+      )}
+      {restituire && (
+        <RestituireOnlineModal
+          open
+          orderRef={restituire.orderRef}
+          clientNume={restituire.clientNume}
+          onClose={() => setRestituire(null)}
+        />
       )}
       {mutaRow && (
         <MutaIncasareModal

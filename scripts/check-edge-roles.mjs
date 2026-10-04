@@ -38,6 +38,8 @@ const CAZURI = [
   // admin-users cere manager+; un front_desk ar fi tot 403, deci contul „pozitiv"
   // de mai jos e manager pentru toate cazurile.
   { fn: 'admin-users', body: { action: '__probe__' }, pozitiv: 400 },
+  // restituirea banilor e doar owner/admin: și managerul trebuie refuzat
+  { fn: 'netopia-refund', body: { actiune: '__probe__' }, pozitiv: 403 },
 ]
 
 async function call(fn, token, body) {

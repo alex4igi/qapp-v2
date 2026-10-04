@@ -9726,6 +9726,71 @@ export type Database = {
           },
         ]
       }
+      restituiri_online: {
+        Row: {
+          actor_id: string | null
+          actor_role: string
+          alocare: Json | null
+          created: string
+          eroare: string | null
+          fgo_eroare: string | null
+          fgo_status: string | null
+          fgo_storno: string | null
+          id: string
+          mod: string
+          motiv: string
+          netopia_raspuns: Json | null
+          order_ref: string
+          status: string
+          suma: number
+          updated: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role: string
+          alocare?: Json | null
+          created?: string
+          eroare?: string | null
+          fgo_eroare?: string | null
+          fgo_status?: string | null
+          fgo_storno?: string | null
+          id?: string
+          mod: string
+          motiv: string
+          netopia_raspuns?: Json | null
+          order_ref: string
+          status?: string
+          suma: number
+          updated?: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string
+          alocare?: Json | null
+          created?: string
+          eroare?: string | null
+          fgo_eroare?: string | null
+          fgo_status?: string | null
+          fgo_storno?: string | null
+          id?: string
+          mod?: string
+          motiv?: string
+          netopia_raspuns?: Json | null
+          order_ref?: string
+          status?: string
+          suma?: number
+          updated?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restituiri_online_order_ref_fkey"
+            columns: ["order_ref"]
+            isOneToOne: false
+            referencedRelation: "netopia_orders"
+            referencedColumns: ["order_ref"]
+          },
+        ]
+      }
       salarii_staff_componente: {
         Row: {
           anul: number
@@ -13582,6 +13647,13 @@ export type Database = {
         Returns: number
       }
       _plan_plata_integrala: { Args: { p_client: string }; Returns: Json }
+      _restituire_surse: {
+        Args: { p_order_ref: string }
+        Returns: {
+          id: string
+          ramas: number
+        }[]
+      }
       _salarizare_parametri: {
         Args: { p_luna: string; p_post: string }
         Returns: Json
@@ -14667,6 +14739,7 @@ export type Database = {
           nivel: Database["public"]["Enums"]["nivel_curs"]
           ora: string
           sala: string
+          sedinte: string[]
           stil: string
           tip_plata: Database["public"]["Enums"]["tip_plata"]
           varsta: Database["public"]["Enums"]["varsta_curs"]
@@ -14910,6 +14983,7 @@ export type Database = {
           rest: number
           sezon_id: string
           sezon_nume: string
+          tip_curs: string
           tip_plata: Database["public"]["Enums"]["tip_plata"]
           total_de_plata: number
         }[]
@@ -15878,7 +15952,7 @@ export type Database = {
         }[]
       }
       list_open_sesiuni_client: {
-        Args: { p_locatie?: string }
+        Args: { p_client?: string; p_locatie?: string }
         Returns: {
           capacitate: number
           curs_id: string
@@ -15887,6 +15961,7 @@ export type Database = {
           instructor_nume: string
           locuri_ramase: number
           pret: number
+          rezervare_status: string
           sesiune_id: string
         }[]
       }
@@ -16345,6 +16420,7 @@ export type Database = {
         Args: { p_id: string; p_password: string }
         Returns: undefined
       }
+      portal_status_comanda: { Args: { p_order_ref: string }; Returns: Json }
       portal_upsert_credentials: {
         Args: { p_email: string; p_password: string }
         Returns: string
@@ -16503,6 +16579,21 @@ export type Database = {
       respinge_evaluare: {
         Args: { p_id: string; p_motiv: string }
         Returns: undefined
+      }
+      restituire_online_finalizeaza: {
+        Args: { p_id: string; p_netopia?: Json }
+        Returns: Json
+      }
+      restituire_online_incepe: {
+        Args: {
+          p_actor: string
+          p_actor_role: string
+          p_mod: string
+          p_motiv: string
+          p_order_ref: string
+          p_suma: number
+        }
+        Returns: Json
       }
       rezerva_bonus_open: {
         Args: { p_date_list: string[]; p_enrollment: string }
