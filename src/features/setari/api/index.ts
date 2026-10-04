@@ -3,5 +3,6 @@
 // sezoane (+vacanțe+clonare), sms (zonă interzisă).
 export * from './locatii'
 export * from './sali'
+export * from './retele'
 export * from './sezoane'
 export * from './sms'

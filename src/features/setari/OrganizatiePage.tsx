@@ -1,5 +1,6 @@
 import { PageHeader } from '@/components/ui'
 import { LocatiiSection } from './LocatiiSection'
+import { ReteleSection } from './ReteleSection'
 import { CronJobsSection } from './CronJobsSection'
 import { FirmeSection } from './FirmeSection'
 
@@ -13,6 +14,8 @@ export function OrganizatiePage() {
 
       <div className="space-y-8">
         <LocatiiSection />
+
+        <ReteleSection />
 
         <FirmeSection />
 

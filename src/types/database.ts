@@ -15777,6 +15777,22 @@ export type Database = {
         Args: { p_lead?: string; p_text: string }
         Returns: Json
       }
+      asociaza_reteaua_curenta: {
+        Args: { p_eticheta?: string; p_locatie: string }
+        Returns: string
+      }
+      lista_retele_locatii: {
+        Args: never
+        Returns: {
+          created: string
+          eticheta: string
+          ip: string
+          locatie: string
+          locatie_nume: string
+        }[]
+      }
+      locatia_retelei: { Args: never; Returns: Json }
+      sterge_retea_locatie: { Args: { p_ip: string }; Returns: undefined }
       list_bilete_evenimente: {
         Args: never
         Returns: {

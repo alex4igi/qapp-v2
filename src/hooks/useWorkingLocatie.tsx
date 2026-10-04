@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 import { locatiiOptions } from '@/lib/lookups'
 import { useAuth } from '@/hooks/useAuth'
 import { canChangeLocatie } from '@/lib/rolesMatrix'
@@ -16,6 +17,9 @@ const STORAGE_KEY = 'qapp.working_locatie'
 // Sentinel folosit în localStorage când userul a ales explicit "Toate".
 // (E nevoie de o valoare distinctă de null/empty ca să distingem "Toate" de "nu am ales încă".)
 const ALL_SENTINEL = '__ALL__'
+// Locația rețelei aplicată deja în tabul ăsta: o alegere manuală din bară rămâne
+// până se închide tabul sau până când omul trece pe rețeaua altei locații.
+const RETEA_KEY = 'qapp.locatie_retea_aplicata'
 
 type Ctx = {
   /** UUID locație, sau null dacă userul a ales „Toate locațiile". */
@@ -35,6 +39,9 @@ type Ctx = {
   locked: boolean
   /** True dacă userul are dreptul să basculeze între locații + „Toate". */
   canChange: boolean
+  /** Locația recunoscută după rețea (IP-ul din `locatii_retele`), sau null. */
+  locatieRetea: string | null
+  locatieReteaNume: string | null
 }
 
 const WorkingLocatieContext = createContext<Ctx | undefined>(undefined)
@@ -77,6 +84,35 @@ export function WorkingLocatieProvider({ children }: { children: ReactNode }) {
     [locked],
   )
 
+  const aplicaLocatiaRetelei = (locatie: string) => {
+    let aplicata: string | null = null
+    try {
+      aplicata = sessionStorage.getItem(RETEA_KEY)
+      sessionStorage.setItem(RETEA_KEY, locatie)
+    } catch {
+      /* sessionStorage indisponibil — aplicăm la fiecare verificare */
+    }
+    if (aplicata !== locatie) setLocatieId(locatie)
+  }
+
+  // Rețeaua spune unde stă omul fizic (4 oct. 2026: banii de la Nicolina au ajuns
+  // la Ștefan pentru că bara rămăsese pe Ștefan). Doar pentru cine poate schimba bara.
+  const reteaQ = useQuery({
+    queryKey: ['locatia-retelei'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('locatia_retelei')
+      if (error) return null
+      const locatie = (data as { locatie_id?: string | null } | null)?.locatie_id ?? null
+      if (locatie) aplicaLocatiaRetelei(locatie)
+      return locatie
+    },
+    enabled: Boolean(role) && canChange,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
+    retry: false,
+  })
+  const locatieRetea = canChange ? (reteaQ.data ?? null) : null
+
   const value = useMemo<Ctx>(() => {
     const options = locatiiQ.data ?? []
     let effective: string | null
@@ -93,6 +129,9 @@ export function WorkingLocatieProvider({ children }: { children: ReactNode }) {
     const found =
       effective ? options.find((o) => o.value === effective)?.label ?? null : null
     const ready = locked || storedPref !== null || !locatiiQ.isPending
+    const locatieReteaNume = locatieRetea
+      ? (options.find((o) => o.value === locatieRetea)?.label ?? null)
+      : null
     return {
       locatieId: effective,
       setLocatieId,
@@ -102,8 +141,11 @@ export function WorkingLocatieProvider({ children }: { children: ReactNode }) {
       ready,
       locked,
       canChange,
+      locatieRetea,
+      locatieReteaNume,
     }
   }, [
+    locatieRetea,
     storedPref,
     assignedLocatieId,
     locked,

@@ -22,6 +22,7 @@ const DOAR_SERVER = new Set([
   'gdpr_config', // pragul de retenție (anonimizare)
   'gdpr_fisiere_de_sters', // fișierele clienților anonimizați, de șters din Storage/Drive
   'remindere_prima_sedinta', // urma SMS-urilor de start sezon / prima ședință, scrisă de cron-morning
+  'locatii_retele', // IP-urile locațiilor; doar prin locatia_retelei / asociaza_reteaua_curenta
 ])
 
 const env = Object.fromEntries(

@@ -69,6 +69,7 @@ import {
 import { PriceSummary, type MotivPolitica } from './PriceSummary'
 import { RecurentPreview } from './RecurentPreview'
 import { AltaLocatieWarning } from '../AltaLocatieWarning'
+import { ReteaDiferitaWarning } from '../ReteaDiferitaWarning'
 import { clientAreRecomandare } from '@/features/recomandari/api'
 
 type Props = {
@@ -936,6 +937,9 @@ export function EnrollmentForm({
               </p>
             )}
             <AltaLocatieWarning cursLocatieId={cursSelectat?.locatie} />
+            <div className="mt-2">
+              <ReteaDiferitaWarning />
+            </div>
 
             <p className="mt-1 text-xs text-quasar-gray">
               {sugestiiActive ? (

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui'
 import { SimpleIncasareForm } from '../../SimpleIncasareForm'
 import { DatoriiUnificateTab } from './DatoriiUnificateTab'
+import { ReteaDiferitaWarning } from '../../components/ReteaDiferitaWarning'
 import { OpenClassTab } from './OpenClassTab'
 import { InchiriereTab, type DefaultInchiriere } from './InchiriereTab'
 import { TipSelector } from './TipSelector'
@@ -47,6 +48,7 @@ export function PlataNouaModal({
       size="xl"
       minHeight="640px"
     >
+      <ReteaDiferitaWarning />
       <TipSelector value={tip} onChange={setTip} />
       {tip === 'Abonament' ? (
         <DatoriiUnificateTab
