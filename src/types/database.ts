@@ -13695,8 +13695,8 @@ export type Database = {
           sursa_reprezentant: string
         }[]
       }
-      asociaza_reteaua_curenta: {
-        Args: { p_eticheta?: string; p_locatie: string }
+      asociaza_retea_locatie: {
+        Args: { p_eticheta?: string; p_ip?: string; p_locatie: string }
         Returns: string
       }
       atribuie_recomandare: {

@@ -21,10 +21,12 @@ export async function reteauaCurenta(): Promise<{ ip: string | null; locatie_id:
   return data as { ip: string | null; locatie_id: string | null }
 }
 
-export async function asociazaReteauaCurenta(locatieId: string, eticheta: string): Promise<string> {
-  const { data, error } = await supabase.rpc('asociaza_reteaua_curenta', {
+// `ip` gol = rețeaua de pe care se face cererea.
+export async function asociazaRetea(locatieId: string, eticheta: string, ip: string): Promise<string> {
+  const { data, error } = await supabase.rpc('asociaza_retea_locatie', {
     p_locatie: locatieId,
     p_eticheta: eticheta,
+    p_ip: ip,
   })
   if (error) throw error
   return data

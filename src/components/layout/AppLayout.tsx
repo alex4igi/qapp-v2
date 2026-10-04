@@ -5,6 +5,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { useUtilizareTracking } from '@/lib/utilizare'
 import { DesktopShell } from './DesktopShell'
 import { MobileShell } from './mobile/MobileShell'
+import { SugestieLocatieRetea } from './SugestieLocatieRetea'
 
 export function AppLayout() {
   const isMobile = useIsMobile()
@@ -18,6 +19,7 @@ export function AppLayout() {
     <WorkingDateProvider>
       <WorkingLocatieProvider>
         {isMobile ? <MobileShell /> : <DesktopShell />}
+        <SugestieLocatieRetea />
       </WorkingLocatieProvider>
     </WorkingDateProvider>
   )

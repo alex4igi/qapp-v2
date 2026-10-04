@@ -17,9 +17,6 @@ const STORAGE_KEY = 'qapp.working_locatie'
 // Sentinel folosit în localStorage când userul a ales explicit "Toate".
 // (E nevoie de o valoare distinctă de null/empty ca să distingem "Toate" de "nu am ales încă".)
 const ALL_SENTINEL = '__ALL__'
-// Locația rețelei aplicată deja în tabul ăsta: o alegere manuală din bară rămâne
-// până se închide tabul sau până când omul trece pe rețeaua altei locații.
-const RETEA_KEY = 'qapp.locatie_retea_aplicata'
 
 type Ctx = {
   /** UUID locație, sau null dacă userul a ales „Toate locațiile". */
@@ -84,27 +81,15 @@ export function WorkingLocatieProvider({ children }: { children: ReactNode }) {
     [locked],
   )
 
-  const aplicaLocatiaRetelei = (locatie: string) => {
-    let aplicata: string | null = null
-    try {
-      aplicata = sessionStorage.getItem(RETEA_KEY)
-      sessionStorage.setItem(RETEA_KEY, locatie)
-    } catch {
-      /* sessionStorage indisponibil — aplicăm la fiecare verificare */
-    }
-    if (aplicata !== locatie) setLocatieId(locatie)
-  }
-
   // Rețeaua spune unde stă omul fizic (4 oct. 2026: banii de la Nicolina au ajuns
-  // la Ștefan pentru că bara rămăsese pe Ștefan). Doar pentru cine poate schimba bara.
+  // la Ștefan pentru că bara rămăsese pe Ștefan). Doar o propunem — bara o schimbă
+  // omul (SugestieLocatieRetea), cum s-a obișnuit (Alex, 4 oct.).
   const reteaQ = useQuery({
     queryKey: ['locatia-retelei'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('locatia_retelei')
       if (error) return null
-      const locatie = (data as { locatie_id?: string | null } | null)?.locatie_id ?? null
-      if (locatie) aplicaLocatiaRetelei(locatie)
-      return locatie
+      return (data as { locatie_id?: string | null } | null)?.locatie_id ?? null
     },
     enabled: Boolean(role) && canChange,
     staleTime: 5 * 60_000,

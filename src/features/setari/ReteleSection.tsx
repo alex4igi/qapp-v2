@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, DataTable, Field, Select, Spinner, TextInput, type Column } from '@/components/ui'
 import {
-  asociazaReteauaCurenta,
+  asociazaRetea,
   listReteleLocatii,
   listLocatii,
   reteauaCurenta,
@@ -10,12 +10,13 @@ import {
   type ReteaLocatie,
 } from './api'
 
-// Pe rețeaua unei locații aplicația pune singură bara de sus pe locația aceea
-// (useWorkingLocatie). Asocierea se face de pe calculatorul de la recepție.
+// Pe rețeaua unei locații, cine are bara de sus pe altă locație primește la
+// deschidere propunerea să treacă pe ea (SugestieLocatieRetea).
 export function ReteleSection() {
   const queryClient = useQueryClient()
   const [locatieId, setLocatieId] = useState('')
   const [eticheta, setEticheta] = useState('')
+  const [ip, setIp] = useState('')
 
   const reteleQ = useQuery({ queryKey: ['retele-locatii'], queryFn: listReteleLocatii })
   const curentaQ = useQuery({ queryKey: ['retea-curenta'], queryFn: reteauaCurenta })
@@ -27,9 +28,10 @@ export function ReteleSection() {
     void queryClient.invalidateQueries({ queryKey: ['locatia-retelei'] })
   }
   const asociaza = useMutation({
-    mutationFn: () => asociazaReteauaCurenta(locatieId, eticheta),
+    mutationFn: () => asociazaRetea(locatieId, eticheta, ip),
     onSuccess: () => {
       setEticheta('')
+      setIp('')
       refresh()
     },
   })
@@ -64,8 +66,9 @@ export function ReteleSection() {
     <section>
       <h2 className="mb-1 text-lg font-bold text-quasar-black">Rețelele locațiilor</h2>
       <p className="mb-3 text-sm text-quasar-gray">
-        Pe rețeaua unei locații, aplicația trece singură bara de sus pe locația aceea, ca banii să
-        se înregistreze unde stă recepția. Asocierea se face de pe calculatorul de la recepție.
+        Cine deschide aplicația pe rețeaua unei locații, cu bara de sus pe altă locație, primește
+        propunerea să treacă pe locația rețelei, ca banii să se înregistreze unde stă. Asocierea se
+        face de pe calculatorul de la recepție sau scriind IP-ul.
       </p>
 
       <div className="mb-3 rounded-md border border-line bg-surface px-3 py-2 text-sm">
@@ -83,12 +86,19 @@ export function ReteleSection() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        <Field label="Asociază rețeaua de acum cu">
+        <Field label="Asociază cu locația">
           <Select
             placeholder="— alege locația —"
             options={(locatiiQ.data ?? []).map((l) => ({ value: l.id, label: l.nume }))}
             value={locatieId}
             onChange={(e) => setLocatieId(e.target.value)}
+          />
+        </Field>
+        <Field label="IP (gol = rețeaua de acum)">
+          <TextInput
+            placeholder={curenta?.ip ?? 'ex. 86.124.55.150'}
+            value={ip}
+            onChange={(e) => setIp(e.target.value)}
           />
         </Field>
         <Field label="Notă (opțional)">
@@ -100,7 +110,7 @@ export function ReteleSection() {
         </Field>
         <Button
           onClick={() => asociaza.mutate()}
-          disabled={!locatieId || !curenta?.ip || asociaza.isPending}
+          disabled={!locatieId || (!ip.trim() && !curenta?.ip) || asociaza.isPending}
         >
           Asociază
         </Button>
