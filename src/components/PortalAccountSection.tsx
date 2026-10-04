@@ -1,9 +1,11 @@
 import { humanizeError } from '@/lib/errorMessage'
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, TextInput } from '@/components/ui'
+import { formatDateTime } from '@/lib/format'
 import {
   createPortalAccount,
+  getPortalAccountInfo,
   resetPortalPassword,
   suggestPortalPassword,
   unlinkPortalAccount,
@@ -39,7 +41,16 @@ export function PortalAccountSection({
   const [err, setErr] = useState<string | null>(null)
 
   const target = kind === 'familie' ? { familieId: id } : { clientId: id }
-  const refresh = () => qc.invalidateQueries({ queryKey: invalidateKey })
+  const info = useQuery({
+    queryKey: ['portal-account-info', authUserId],
+    queryFn: () => getPortalAccountInfo(authUserId!),
+    enabled: !!authUserId,
+    staleTime: 60_000,
+  })
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: invalidateKey })
+    qc.invalidateQueries({ queryKey: ['portal-account-info'] })
+  }
 
   async function run(fn: () => Promise<void>) {
     setBusy(true)
@@ -114,6 +125,38 @@ export function PortalAccountSection({
               Cont portal activ
             </span>
           </p>
+          {info.data && (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm">
+              <dt className="text-gray-500">Email de login</dt>
+              <dd className="font-medium break-all">
+                {info.data.email}
+                {defaultEmail && defaultEmail.trim().toLowerCase() !== info.data.email.toLowerCase() && (
+                  <span className="ml-2 text-xs font-normal text-amber-700">
+                    diferit de emailul din fișă — omul se loghează cu acesta
+                  </span>
+                )}
+              </dd>
+              <dt className="text-gray-500">Ultima logare</dt>
+              <dd>
+                {info.data.last_login_at
+                  ? formatDateTime(info.data.last_login_at)
+                  : info.data.must_change_password
+                    ? 'încă n-a intrat (are parola temporară din email)'
+                    : 'niciodată'}
+              </dd>
+              {info.data.locked_until && new Date(info.data.locked_until) > new Date() && (
+                <>
+                  <dt className="text-gray-500">Blocat</dt>
+                  <dd className="text-red-600">
+                    prea multe parole greșite, până la {formatDateTime(info.data.locked_until)}
+                  </dd>
+                </>
+              )}
+            </dl>
+          )}
+          {info.error && (
+            <p className="text-xs text-gray-500">Emailul de login nu s-a putut încărca.</p>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             {!showReset ? (
               <Button variant="secondary" onClick={() => setShowReset(true)}>

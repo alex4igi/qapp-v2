@@ -6,7 +6,7 @@ Lista unică a ideilor bune care **nu se construiesc acum**: amânate sau parcat
 Stări: **amânat** = da, dar mai târziu · **parcat** = construit sau planificat, oprit printr-o decizie ·
 **de decis** = întâi o discuție cu Alex.
 
-Ultima actualizare: 3 octombrie 2026.
+Ultima actualizare: 4 octombrie 2026.
 
 ## Din lista de inspirație (2 oct. 2026)
 
@@ -44,6 +44,11 @@ Ultima actualizare: 3 octombrie 2026.
 
 Rămase din grupele mari: **facturile în portal**, **costume**, **suspendarea abonamentului de către părinte**,
 **mesagerie**, **galerie foto/video**, **program de fidelitate**.
+
+| Idee | Stare | Note |
+|---|---|---|
+| Schimbarea emailului de login din fișă | amânat (4 oct., din review-ul Codex la lansarea pe trupe) | Fișa arată emailul de login, dar nu-l poate schimba; azi o face Alex în SQL. Fluxul trebuie să păstreze contul și legăturile, să verifice unicitatea, să lase urmă în `audit_log` și să invalideze linkurile de resetare și sesiunile vechi. |
+| Link de activare în locul parolei temporare `Nume-1234` | amânat (4 oct., idem) | Loginul se blochează după 8 încercări și are plafon pe IP, deci ghicirea nu e un risc practic. Butonul din fișă nu cere încă schimbarea parolei la prima logare (doar scriptul pe grupe o cere). |
 
 ## Instructori și echipă
 

@@ -40,7 +40,8 @@ type CreatePayload = {
 }
 type ResetPayload = { action: 'reset_password'; userId: string; password: string; notify?: Notify }
 type UnlinkPayload = { action: 'unlink'; familieId?: string | null; clientId?: string | null }
-type Payload = CreatePayload | ResetPayload | UnlinkPayload
+type InfoPayload = { action: 'info'; userId: string }
+type Payload = CreatePayload | ResetPayload | UnlinkPayload | InfoPayload
 
 // Trimite datele de acces pe email (TheMarketer transactional). Întoarce true dacă a plecat.
 // Nu aruncă — provisioning-ul nu trebuie să eșueze dacă emailul nu pleacă.
@@ -273,6 +274,20 @@ Deno.serve(async (req) => {
         smsAmanat = r.amanat
       }
       return json({ ok: true, emailed, smsSent, smsAmanat })
+    }
+
+    // Emailul de login poate diferi de cel din fișă (corectarea fișei nu ajunge la cont).
+    // `portal_accounts` nu e citibil de staff (ține hash-ul parolei), deci trece pe aici.
+    if (body.action === 'info') {
+      if (!body.userId) return json({ error: 'userId obligatoriu' }, 400)
+      const { data: acc, error } = await admin
+        .from('portal_accounts')
+        .select('email, status, last_login_at, must_change_password, locked_until')
+        .eq('id', body.userId)
+        .maybeSingle()
+      if (error) return json({ error: error.message }, 500)
+      if (!acc) return json({ error: 'cont de portal inexistent' }, 404)
+      return json(acc)
     }
 
     if (body.action === 'unlink') {

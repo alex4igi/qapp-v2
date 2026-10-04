@@ -3,6 +3,7 @@
 // sezonul activ). Re-rulabil — lista se scurtează pe măsură ce recepția completează fișele.
 //
 //   node scripts/export-emailuri-lipsa.mjs [--out docs/emailuri-lipsa-portal-receptie.csv]
+//   node scripts/export-emailuri-lipsa.mjs --nivel Trupa   (doar membrii grupelor de acel nivel; lot în curs)
 //
 // Scrie și un .html de printat lângă .csv. PDF-ul (fișa de sunat) se face din el cu Chromium:
 //   "$HOME/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing" \
@@ -25,7 +26,8 @@ const db = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { 
 
 const argv = process.argv.slice(2)
 const arg = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : d }
-const OUT = arg('out', fileURLToPath(new URL('../docs/emailuri-lipsa-portal-receptie.csv', import.meta.url)))
+const NIVEL = arg('nivel', null)
+const OUT = arg('out', fileURLToPath(new URL(`../docs/emailuri-lipsa-portal-${NIVEL ? NIVEL.toLowerCase() : 'receptie'}.csv`, import.meta.url)))
 
 async function all(table, cols, filter) {
   let out = []
@@ -43,7 +45,7 @@ const { data: sezon } = await db.from('sezoane').select('id, numele_sezonului').
 const clienti = await all('clienti', 'id, nume, prenume, email, telefon, familia, auth_user_id', (q) => q.eq('status', 'Activ'))
 const familii = await all('familii', 'id, nume_familie, email, telefon, auth_user_id')
 const locatii = await all('locatii', 'id, nume')
-const cursuri = await all('cursuri', 'id, numele, locatie', (q) => q.eq('sezon', sezon.id))
+const cursuri = await all('cursuri', 'id, numele, locatie', (q) => NIVEL ? q.eq('sezon', sezon.id).eq('nivelul', NIVEL) : q.eq('sezon', sezon.id))
 const inrolari = await all('enrollments', 'client, cursul', (q) => q.eq('sezon_id', sezon.id).is('data_reziliere', null))
 
 const locById = new Map(locatii.map((l) => [l.id, l.nume]))
@@ -63,6 +65,7 @@ for (const e of inrolari) {
 // O țintă = o familie (un cont pentru toți frații) sau un client fără familie.
 const targets = new Map()
 for (const c of clienti) {
+  if (NIVEL && !perClient.has(c.id)) continue
   const f = c.familia ? famById.get(c.familia) : null
   const key = f ? `f:${f.id}` : `c:${c.id}`
   if (!targets.has(key)) {
@@ -136,6 +139,9 @@ for (const t of list) {
   ])
 }
 
+const CAND_CONT = NIVEL
+  ? 'Restul membrilor au primit deja contul pe email. După ce completați emailul în fișă, spuneți-i lui Alex: contul se creează și pleacă pe email.'
+  : 'Deocamdată nimeni nu primește date de acces. Conturile se fac mai târziu, când decide Alex. Voi doar completați emailurile în fișe.'
 const note = [
   [],
   ['NOTIȚE'],
@@ -144,7 +150,7 @@ const note = [
   ['Un cont per familie', 'Frații legați într-o familie primesc UN singur cont, pe emailul familiei. Frații nelegați primesc conturi separate — de aceea semnalăm în „Observații” fișele cu același telefon.'],
   ['Același email la două fișe', 'Portalul nu acceptă aceeași adresă la două conturi. Ori una dintre fișe are emailul greșit, ori sunt frați care trebuie legați în aceeași familie.'],
   ['Emailuri false', 'Adrese de tipul „s@yahoo.com” au fost puse doar ca să nu rămână câmpul gol. Se înlocuiesc cu adresa adevărată.'],
-  ['Când primesc oamenii contul', 'Deocamdată nimeni nu primește date de acces. Conturile se fac mai târziu, când decide Alex. Voi doar completați emailurile în fișe.'],
+  ['Când primesc oamenii contul', CAND_CONT],
   [],
   ['TOTALURI'],
   ...Object.entries(perLoc).map(([l, n]) => [l, String(n)]),
@@ -224,7 +230,7 @@ const htmlDoc = `<!doctype html><html lang="ro"><head><meta charset="utf-8"><tit
   .semnat { margin-top: 18px; font-size: 8.5pt; color: #888; }
 </style></head><body>
 <header class="cap">
-  <div><h1><b>Quasar</b> — emailuri lipsă pentru portal</h1>
+  <div><h1><b>Quasar</b> — emailuri lipsă pentru portal${NIVEL === 'Trupa' ? ' · trupe' : NIVEL ? ` · ${h(NIVEL)}` : ''}</h1>
   <p>${h(sezon.numele_sezonului)} · listă de sunat pentru recepție · generată ${h(azi)}</p></div>
   <div class="nr"><b>${list.length}</b>de completat</div>
 </header>
@@ -234,7 +240,7 @@ const htmlDoc = `<!doctype html><html lang="ro"><head><meta charset="utf-8"><tit
     <li>Sunăm și cerem adresa de email a părintelui sau a adultului.</li>
     <li>O scriem pe foaie, apoi o completăm în fișa din aplicație.</li>
     <li>Bifăm căsuța când e gata.</li>
-    <li>Nimeni nu primește încă date de acces — deocamdată doar strângem emailurile.</li>
+    <li>${NIVEL ? 'Când ai completat emailuri, spune-i lui Alex: contul pleacă pe email.' : 'Nimeni nu primește încă date de acces — deocamdată doar strângem emailurile.'}</li>
   </ol>
 </div>
 ${sectiuni}
@@ -246,7 +252,7 @@ ${sectiuni}
     <dt>Același email la două fișe</dt><dd>Portalul nu acceptă aceeași adresă la două conturi. Ori una dintre fișe are emailul greșit, ori sunt frați care trebuie legați în aceeași familie.</dd>
     <dt>Emailuri false</dt><dd>Adrese de tipul „s@yahoo.com” au fost puse doar ca să nu rămână câmpul gol. Se înlocuiesc cu adresa adevărată.</dd>
     <dt>Telefoane invalide</dt><dd>Unde telefonul e trecut greșit în fișă, luăm și numărul corect.</dd>
-    <dt>Când primesc oamenii contul</dt><dd>Mai târziu, când decide Alex. Până atunci nu trimitem nimic.</dd>
+    <dt>Când primesc oamenii contul</dt><dd>${h(CAND_CONT)}</dd>
   </dl>
   <table class="tot">
     <tr><th colspan="2">Totaluri</th></tr>

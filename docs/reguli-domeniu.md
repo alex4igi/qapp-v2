@@ -93,7 +93,9 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **Mutarea la alt curs mută toată seria** (`muta_inrolare_curs`): rândul ales + lunile ulterioare nereziliate; trecutul rămâne.
 - **OPEN class: data înrolării = data ȘEDINȚEI, nu a încasării.** Orice drum care cheamă `rezerva_loc_open` precompletează
   data cu `nextSessionDate`. La corecții se mută rezervarea + `enrollments.data_incepere`; `incasari.data` nu se atinge
-  (e data reală a banilor). Membrii de trupă plătesc 50% la OPEN (regula nu e în cod — recepția scrie suma).
+  (e data reală a banilor). Membrii de trupă plătesc 50% la OPEN prin codul `TRUPA50` (`cerinta_eligibilitate='trupa'`:
+  serverul îl refuză oricui nu are acum o înrolare activă în trupă, verificat pe copil, nu pe familie). La recepție, codul
+  îl aplică recepția; în portal îl scrie membrul (Alex, 4 oct.: îl sugerăm doar trupelor, pe canalele lor).
 - **Conversie ședințe → abonament:** o lună întreagă, banii de pe ședințele lunii devin avans; fără prorata.
 - **Prețul vine din entitate, fără câmp de override** (19.05). Singura cale de reducere la tranzacție = voucherul.
   Voucherul lunar se aplică pe **o singură rată**; voucher + preț de reînscriere nu se combină.
@@ -107,6 +109,10 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   OPEN de la Ștefan plătit cash la Nicolina a ajuns la Ștefan). Locația unei încasări nu se corectează din aplicație.
   Pe rețeaua unei locații (`locatii_retele`, IP public → locație, administrat din Organizație) aplicația doar
   PROPUNE bara de sus pe locația aceea (la deschidere + avertisment la plăți) — nu o schimbă singură (Alex, 4 oct.).
+- **Plata online din portal intră pe Quasar Dance Studio SRL** (singurul POS Netopia), inclusiv pentru cursurile
+  Quasar 4 Kids, care țin de Quasar Dance SRL. Portalul nu le exclude. Alex, 4 oct. 2026: acceptat ca excepție
+  (1–2 familii cu frați la Q4K); se revede doar dacă devine frecvent. O analiză pe firme care pleacă de la `netopia_orders`
+  trebuie să țină cont de asta.
 - **Datoria canonică:** înrolări **nereziliate**, `rest = suma − Σ încasări`, pe luna lui `data_incepere`.
   Prescris = mai vechi de 2 ani (KPI-urile arată net, cu „din care prescrise"). O înrolare reziliată nu are datorie validă.
 - **Restanță = DOAR ce a trecut de termenul de plată (30.09).** Termenul: plata pe **ședință** (OPEN, facultativ pe

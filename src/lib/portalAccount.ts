@@ -80,3 +80,15 @@ export async function resetPortalPassword(
 export async function unlinkPortalAccount(target: Target): Promise<void> {
   await invoke({ action: 'unlink', ...target })
 }
+
+export type PortalAccountInfo = {
+  email: string
+  status: string
+  last_login_at: string | null
+  must_change_password: boolean
+  locked_until: string | null
+}
+
+export async function getPortalAccountInfo(userId: string): Promise<PortalAccountInfo> {
+  return invoke<PortalAccountInfo>({ action: 'info', userId })
+}
