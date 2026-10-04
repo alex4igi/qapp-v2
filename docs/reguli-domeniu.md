@@ -105,6 +105,8 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   Un curs de la altă locație se plătește tot la locația de lucru: formularele de înrolare/OPEN arată și cursurile
   celorlalte locații și avertizează, ca recepția să nu schimbe bara de sus doar ca să găsească grupa (4 oct. 2026:
   OPEN de la Ștefan plătit cash la Nicolina a ajuns la Ștefan). Locația unei încasări nu se corectează din aplicație.
+  Pe rețeaua unei locații (`locatii_retele`, IP public → locație, administrat din Organizație) bara de sus trece
+  singură pe locația aceea; o rețea necunoscută nu schimbă nimic.
 - **Datoria canonică:** înrolări **nereziliate**, `rest = suma − Σ încasări`, pe luna lui `data_incepere`.
   Prescris = mai vechi de 2 ani (KPI-urile arată net, cu „din care prescrise"). O înrolare reziliată nu are datorie validă.
 - **Restanță = DOAR ce a trecut de termenul de plată (30.09).** Termenul: plata pe **ședință** (OPEN, facultativ pe
