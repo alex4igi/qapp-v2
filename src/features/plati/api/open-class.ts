@@ -2,13 +2,14 @@ import { supabase } from '@/lib/supabase'
 import type { Curs, Enums, OpenSesiune, StatusRezervare } from '@/types/db'
 import { listCursuriPentruInrolare } from './enrollments'
 
-// Cursuri facultative (OPEN class) la care se pot face rezervări pe sesiune.
+// Cursuri OPEN class = facultative cu rezervare din portal bifată (Alex, 4 oct. 2026).
+// Celelalte facultative se plătesc pe ședință din „Înrolare nouă".
 export async function listCursuriFacultative(
   locatieId: string | null,
   sezonId?: string | null,
 ): Promise<Curs[]> {
   const cursuri = await listCursuriPentruInrolare(locatieId, sezonId)
-  return cursuri.filter((c) => c.facultativ)
+  return cursuri.filter((c) => c.facultativ && c.rezervari_online)
 }
 
 export type OpenSesiuneOcupare = {
