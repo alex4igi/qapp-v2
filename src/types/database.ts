@@ -6797,6 +6797,73 @@ export type Database = {
         }
         Relationships: []
       }
+      locatii_retele: {
+        Row: {
+          created: string
+          eticheta: string | null
+          id: string
+          ip: unknown
+          locatie: string
+        }
+        Insert: {
+          created?: string
+          eticheta?: string | null
+          id?: string
+          ip: unknown
+          locatie: string
+        }
+        Update: {
+          created?: string
+          eticheta?: string | null
+          id?: string
+          ip?: unknown
+          locatie?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locatii_retele_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "incasari_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "locatii_retele_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "locatii"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locatii_retele_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "locatii_retele_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "locatii_retele_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_locatie"]
+          },
+          {
+            foreignKeyName: "locatii_retele_locatie_fkey"
+            columns: ["locatie"]
+            isOneToOne: false
+            referencedRelation: "restante_locatie_luna"
+            referencedColumns: ["id_locatie"]
+          },
+        ]
+      }
       manageri_locatii: {
         Row: {
           created: string
@@ -13471,6 +13538,7 @@ export type Database = {
           tip: string
         }[]
       }
+      _ip_apelant: { Args: never; Returns: unknown }
       _is_anunt_expeditor: { Args: { p_anunt: string }; Returns: boolean }
       _is_anunt_recipient: { Args: { p_anunt: string }; Returns: boolean }
       _locuri_ocupate: {
@@ -13626,6 +13694,10 @@ export type Database = {
           reprezentant: string
           sursa_reprezentant: string
         }[]
+      }
+      asociaza_reteaua_curenta: {
+        Args: { p_eticheta?: string; p_locatie: string }
+        Returns: string
       }
       atribuie_recomandare: {
         Args: {
@@ -15777,22 +15849,6 @@ export type Database = {
         Args: { p_lead?: string; p_text: string }
         Returns: Json
       }
-      asociaza_reteaua_curenta: {
-        Args: { p_eticheta?: string; p_locatie: string }
-        Returns: string
-      }
-      lista_retele_locatii: {
-        Args: never
-        Returns: {
-          created: string
-          eticheta: string
-          ip: string
-          locatie: string
-          locatie_nume: string
-        }[]
-      }
-      locatia_retelei: { Args: never; Returns: Json }
-      sterge_retea_locatie: { Args: { p_ip: string }; Returns: undefined }
       list_bilete_evenimente: {
         Args: never
         Returns: {
@@ -15891,6 +15947,17 @@ export type Database = {
           valoare: number
         }[]
       }
+      lista_retele_locatii: {
+        Args: never
+        Returns: {
+          created: string
+          eticheta: string
+          ip: string
+          locatie: string
+          locatie_nume: string
+        }[]
+      }
+      locatia_retelei: { Args: never; Returns: Json }
       locatie_label_match: { Args: { a: string; b: string }; Returns: boolean }
       locatie_norm: { Args: { p: string }; Returns: string }
       locatii_manager_curent: { Args: never; Returns: string[] }
@@ -16572,6 +16639,7 @@ export type Database = {
         Args: { p_force?: boolean; p_program: string }
         Returns: undefined
       }
+      sterge_retea_locatie: { Args: { p_ip: string }; Returns: undefined }
       submit_app_feedback_portal: {
         Args: {
           p_client?: string
