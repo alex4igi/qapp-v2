@@ -14981,6 +14981,7 @@ export type Database = {
           enrollment_id: string
           platit: number
           rest: number
+          scadenta: string
           sezon_id: string
           sezon_nume: string
           tip_curs: string
@@ -15376,6 +15377,16 @@ export type Database = {
           rezultate: string
         }[]
       }
+      get_rezumat_plati_familie: {
+        Args: never
+        Returns: {
+          client_id: string
+          prenume: string
+          restant: boolean
+          scadenta: string
+          suma: number
+        }[]
+      }
       get_roster_evaluare: {
         Args: { p_curs: string; p_sesiune: string }
         Returns: {
@@ -15474,6 +15485,22 @@ export type Database = {
           suma_recuperata: number
           user_id: string
           volum_clasa: string
+        }[]
+      }
+      get_sedinte_membru: {
+        Args: { p_de: string; p_pana: string }
+        Returns: {
+          client_id: string
+          curs_id: string
+          curs_nume: string
+          data: string
+          instructori: string[]
+          locatie: string
+          ora: string
+          prenume: string
+          rezervare_id: string
+          sala: string
+          sursa: string
         }[]
       }
       get_sesiune_activa: {

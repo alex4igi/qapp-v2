@@ -136,6 +136,13 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   online (cron-ul îl anulează după 30 min, portalul arată doar `platit`) — de aceea statusul nu se schimbă după bani.
   Plata reală = aceeași regulă ca mai sus, pe înrolarea rezervării (`listRezervariSesiune` → badge neplătit/parțial).
   Ștergerea înrolării anulează rezervarea (`sterge_inrolare`); altfel locul rămânea blocat pentru reînscriere.
+- **Portal: ședința cu loc confirmat apare în calendar, indiferent de bani (Alex, 04.10.2026).** O rezervare `platit`
+  (sau o înrolare „Per ședință” fără rezervare) apare la părinte în Calendar și pe Acasă chiar cu 0 lei încasați; suma
+  apare separat la Plăți, scadentă în ziua ședinței. Holdurile și anulările nu apar. Sursa unică: `get_sedinte_membru`
+  (`20261004220000`), care exclude și vacanțele, lunile suspendate și ce e după `data_reziliere`.
+- **Portal: „restant” = doar termen trecut, inclusiv datoriile one-off (04.10.2026).** Acasă, badge-ul din meniu și
+  cardul „Sold familie” citesc `get_rezumat_plati_familie`, nu `get_sold_familie` (care ignoră one-off-urile și pune rata
+  lunii curente înainte de scadență). Rata care urmează se arată neutru, „de achitat până pe [data]”.
 - **`/plati` e registrul unic al încasărilor**; restanțele stau în `/datorii`.
 
 ## 5. Prezențe
