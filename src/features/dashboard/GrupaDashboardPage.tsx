@@ -44,13 +44,11 @@ const STATUS_LABEL: Record<RosterStatus, string> = {
   prezent: 'Prezent',
   absent: 'Absent',
   programat: 'Programat',
-  inactiv: 'Inactiv',
 }
 const STATUS_TONE: Record<RosterStatus, BadgeTone> = {
   prezent: 'success',
   absent: 'danger',
   programat: 'warn',
-  inactiv: 'neutral',
 }
 
 function initialsOf(nume: string, prenume: string | null): string {
@@ -65,7 +63,7 @@ function waParinteMessage(prenume: string): string {
 // Stil card de cursant — preluat 1:1 din designul Claude „Quasar OS - Grupe & Roster"
 // (varianta „Carduri"): card alb cu tentă subtilă după status, avatar rotund cu dot,
 // notificări la dreapta. bg=fundal, bd=bordură, ab/ac=fundal/text avatar, dot=indicator,
-// lc=culoare etichetă status, dim=estompare pentru inactivi.
+// lc=culoare etichetă status.
 type McardStyle = {
   bg: string
   bd: string
@@ -79,7 +77,6 @@ const MCARD: Record<RosterStatus, McardStyle> = {
   prezent: { bg: '#F8FBF9', bd: '#E1EFE7', ab: '#E7F4EE', ac: '#1E8A5B', dot: '#1E8A5B', lc: '#1E8A5B', dim: false },
   absent: { bg: '#FEF7F7', bd: '#F4DCDC', ab: '#FBEAEA', ac: '#D64545', dot: '#D64545', lc: '#D64545', dim: false },
   programat: { bg: '#FFFCEC', bd: '#F3E7AE', ab: '#FFF6C2', ac: '#9A7B00', dot: '#FFD600', lc: '#9A7B00', dim: false },
-  inactiv: { bg: '#F7F6F2', bd: '#EAE6DD', ab: '#EFEBE3', ac: '#8A857C', dot: '#B5B0A6', lc: '#8A857C', dim: true },
 }
 
 // Refuz GDPR de imagine (copilul sau familia). Teacherul trebuie să-l vadă
@@ -120,31 +117,20 @@ function ClientCard({
   canPay,
   onPay,
   onTogglePrezenta,
-  onReactivate,
   togglePending,
 }: {
   row: GrupaRosterRow
   canPay: boolean
   onPay: (clientId: string) => void
   onTogglePrezenta: (row: GrupaRosterRow) => void
-  onReactivate: (row: GrupaRosterRow) => void
   togglePending: boolean
 }) {
   const navigate = useNavigate()
   const name = [row.nume, row.prenume].filter(Boolean).join(', ')
   const isLead = row.kind === 'lead'
-  const showPay = !isLead && row.status !== 'inactiv' && row.restanta > 0
-  // Reactivarea „inactiv" se aplică doar cursanților — leads nu pot fi „inactivi"
-  const isInactiv = !isLead && row.status === 'inactiv'
-  const nextLabel = isInactiv
-    ? 'Reactivează'
-    : row.status === 'prezent'
-      ? 'Marchează absent'
-      : 'Marchează prezent'
-  const handlePhotoClick = () => {
-    if (isInactiv) onReactivate(row)
-    else onTogglePrezenta(row)
-  }
+  const showPay = !isLead && row.restanta > 0
+  const nextLabel = row.status === 'prezent' ? 'Marchează absent' : 'Marchează prezent'
+  const handlePhotoClick = () => onTogglePrezenta(row)
   const navTarget = isLead ? `/leads?lead=${row.refId}` : `/clienti/${row.refId}`
   // Contact părinte pe WhatsApp — doar cursanți cu telefon mobil valid.
   const waHref = isLead
@@ -307,7 +293,7 @@ function RosterList({
                 {formatRON(r.restanta)}
               </span>
             )}
-            {!isLead && r.status !== 'inactiv' && r.restanta > 0 && (
+            {!isLead && r.restanta > 0 && (
               <button
                 type="button"
                 disabled={!canPay}
@@ -345,7 +331,6 @@ const COLS: { status: RosterStatus; title: string }[] = [
   { status: 'prezent', title: 'Prezenți' },
   { status: 'absent', title: 'Absenți' },
   { status: 'programat', title: 'Programați' },
-  { status: 'inactiv', title: 'Inactivi' },
 ]
 
 function RosterColumns({
@@ -356,7 +341,7 @@ function RosterColumns({
   onMemberClick: (row: GrupaRosterRow) => void
 }) {
   return (
-    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
       {COLS.map((col) => {
         const members = rows.filter((r) => r.status === col.status)
         return (
@@ -676,7 +661,7 @@ export function GrupaDashboardPage() {
       const prev = queryClient.getQueryData<GrupaDashboard>(key)
       queryClient.setQueryData<GrupaDashboard>(key, (old) => {
         if (!old) return old
-        // client: prezent<->absent (inactiv la click => devine prezent).
+        // client: prezent<->absent.
         // lead:   prezent<->programat (a_venit / nu_a_venit).
         const next: RosterStatus =
           row.status === 'prezent'
@@ -694,13 +679,11 @@ export function GrupaDashboardPage() {
                 ? 'prezenti'
                 : r.status === 'absent'
                   ? 'absenti'
-                  : r.status === 'inactiv'
-                    ? 'inactivi'
-                    : 'programati'
+                  : 'programati'
             acc[k]++
             return acc
           },
-          { prezenti: 0, absenti: 0, inactivi: 0, programati: 0 },
+          { prezenti: 0, absenti: 0, programati: 0 },
         )
         return { ...old, roster, counters }
       })
@@ -747,21 +730,7 @@ export function GrupaDashboardPage() {
     data.counters.prezenti + data.counters.absenti + data.counters.programati
   const occPct = enrolled > 0 ? Math.min(100, Math.round((present / enrolled) * 100)) : 0
 
-  // Click pe un cursant „inactiv" = revine la grupă → îl marcăm Prezent azi.
-  // (Cardul e mereu un cursant deja înrolat care acoperă luna — de aia e în
-  // roster; nu are nevoie de o înrolare nouă, doar de bifă.) Facultativ și
-  // recurent la fel; per-ședință facultativ nu ajunge niciodată „inactiv".
-  const handleMemberClick = (row: GrupaRosterRow) => {
-    const isInactiv = row.kind !== 'lead' && row.status === 'inactiv'
-    if (isInactiv) {
-      const name = [row.nume, row.prenume].filter(Boolean).join(' ')
-      if (window.confirm(`${name} revine la grupă? Va fi marcat Prezent azi.`)) {
-        toggleMut.mutate(row)
-      }
-    } else {
-      toggleMut.mutate(row)
-    }
-  }
+  const handleMemberClick = (row: GrupaRosterRow) => toggleMut.mutate(row)
 
   const seg = (active: boolean) =>
     [
@@ -925,7 +894,6 @@ export function GrupaDashboardPage() {
               <Badge tone="success">{data.counters.prezenti} prezenți</Badge>
               <Badge tone="danger">{data.counters.absenti} absenți</Badge>
               <Badge tone="warn">{data.counters.programati} programați</Badge>
-              <Badge tone="neutral">{data.counters.inactivi} inactivi</Badge>
             </div>
             {!isMobile && (
               <div className="flex items-center gap-1 rounded-[10px] border border-line bg-card p-1">
@@ -968,14 +936,6 @@ export function GrupaDashboardPage() {
                   canPay={canDeskActionsHere}
                   onPay={(id) => setPayClientId(id)}
                   onTogglePrezenta={(row) => toggleMut.mutate(row)}
-                  onReactivate={(row) => {
-                    const name = [row.nume, row.prenume].filter(Boolean).join(' ')
-                    if (
-                      window.confirm(`${name} revine la grupă? Va fi marcat Prezent azi.`)
-                    ) {
-                      toggleMut.mutate(row)
-                    }
-                  }}
                   togglePending={
                     toggleMut.isPending && toggleMut.variables?.rowId === r.rowId
                   }

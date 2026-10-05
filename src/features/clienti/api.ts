@@ -7,7 +7,7 @@ export const PAGE_SIZE = 25
 export type CanalContact = Enums<'canal_contact'>
 export type RezultatContact = Enums<'rezultat_contact'>
 
-// Loghează un contact de reactivare pe un client inactiv (alimentează
+// Loghează un contact de reactivare pe un EXclient (alimentează
 // scorecard-ul Faza 3). „Reactivat" se determină din prezențe reale ulterioare
 // (vezi get_scorecard_reactivari), nu de aici.
 export async function logReactivareContact(input: {

@@ -24,7 +24,7 @@ export type WorklistRow = {
   cursuri: string | null
   suspendat: boolean
   ultim_sms_at: string | null
-  status_client: 'Activ' | 'Inactiv' | 'EXclient' | null
+  status_client: 'Activ' | 'EXclient' | null
   // Suspendat de cron-ul „50 de zile", nu de un om ⇒ locul așteaptă decizia
   // managerului. Vezi docs/reguli-preturi-reduceri.md §3b.
   suspendat_automat: boolean
@@ -82,7 +82,7 @@ export type RateRow = {
   total_de_plata: number
   platit: number
   rest: number
-  status_client: 'Activ' | 'Inactiv' | 'EXclient' | null
+  status_client: 'Activ' | 'EXclient' | null
   suspendat: boolean
 }
 

@@ -1,12 +1,12 @@
 // Dashboard pentru o grupă (curs) — roster cu status azi (prezent/absent/
-// inactiv/programat) pentru cursanți + leads programați la acest curs azi.
+// programat) pentru cursanți + leads programați la acest curs azi.
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
 import { endOfMonth } from '@/features/plati/api/calendar'
 import { esteAbonamentReal } from '@/features/cursuri/api'
 import { fetchAllRows } from '@/lib/fetchAll'
 import { fetchVineLaByClient, type VineLa } from '@/lib/ultimaPrezenta'
-import { dayOfWeekRO, isoDaysAgo } from './helpers'
+import { dayOfWeekRO } from './helpers'
 
 // `.in(...)` cu prea multe UUID-uri depășește limita de headers a PostgREST (~16KB)
 // și pică cu HeadersOverflowError. Istoricul unei grupe poate aduna sute de rânduri
@@ -19,7 +19,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out
 }
 
-export type RosterStatus = 'prezent' | 'absent' | 'inactiv' | 'programat'
+export type RosterStatus = 'prezent' | 'absent' | 'programat'
 
 export type RosterKind = 'client' | 'lead'
 
@@ -83,15 +83,9 @@ export type GrupaDashboard = {
   counters: {
     prezenti: number
     absenti: number
-    inactivi: number
     programati: number
   }
 }
-
-// Definiție business (2026-05-19): cursantul devine „inactiv" pe o grupă dacă
-// NU are nicio prezență `Prezent` în ultimele 21 zile la enrollment-ul lui pe
-// acea grupă. „Activ" = există minim o prezență Prezent în acest interval.
-const INACTIV_DAYS = 21
 
 const SUGESTII_RECENT_DAYS = 30
 const SUGESTII_VECHI_DAYS = 180
@@ -248,81 +242,6 @@ export async function getGrupaDashboard(params: {
     if (p.enrollment && p.status) statusToday.set(p.enrollment, p.status)
   }
 
-  const cutoff = isoDaysAgo(INACTIV_DAYS)
-  const rosterClientIds = [
-    ...new Set(
-      enrollments.map((e) => e.client?.id).filter((id): id is string => Boolean(id)),
-    ),
-  ]
-
-  // Istoricul înrolărilor acestor cursanți PE ACEASTĂ grupă (toate lunile, inclusiv
-  // reziliate). Ambele semnale de mai jos sunt per CLIENT, nu per rând de înrolare,
-  // pentru că `data_incepere` = ziua 1 a lunii facturate (vezi convenția v2), nu ziua
-  // în care cursantul a intrat în grupă:
-  //   1. prezența recentă — o prezență din 28 ale lunii trecute e legată de rândul
-  //      lunii trecute; căutată doar pe rândul lunii curente ar apărea inexistentă,
-  //      și cursantul ar fi marcat greșit inactiv la început de lună;
-  //   2. „abia înrolat pe grupă" — se citește din PRIMA înrolare pe curs. Citit de pe
-  //      rândul lunar curent, oricine e „proaspăt înrolat" în fiecare lună, iar
-  //      statusul `inactiv` nu s-ar aprinde niciodată în primele ~22 zile ale lunii.
-  const istoric = rosterClientIds.length
-    ? (
-        await Promise.all(
-          chunk(rosterClientIds, IN_CHUNK).map((ids) =>
-            fetchAllRows<{
-              id: string
-              client: string | null
-              data_incepere: string | null
-            }>(() =>
-              supabase
-                .from('enrollments')
-                .select('id, client, data_incepere')
-                .eq('cursul', params.cursId)
-                .in('client', ids)
-                .order('id'),
-            ),
-          ),
-        )
-      ).flat()
-    : []
-
-  const primaInrolareByClient = new Map<string, string>()
-  const clientByEnrId = new Map<string, string>()
-  for (const r of istoric) {
-    if (!r.client) continue
-    clientByEnrId.set(r.id, r.client)
-    if (r.data_incepere) {
-      const prev = primaInrolareByClient.get(r.client)
-      if (!prev || r.data_incepere < prev) {
-        primaInrolareByClient.set(r.client, r.data_incepere)
-      }
-    }
-  }
-
-  const istoricIds = istoric.map((r) => r.id)
-  const recent = istoricIds.length
-    ? (
-        await Promise.all(
-          chunk(istoricIds, IN_CHUNK).map((ids) =>
-            fetchAllRows<{ enrollment: string | null }>(() =>
-              supabase
-                .from('prezente')
-                .select('enrollment')
-                .in('enrollment', ids)
-                .gte('data', cutoff)
-                .eq('status', 'Prezent')
-                .order('enrollment'),
-            ),
-          ),
-        )
-      ).flat()
-    : []
-  const hasRecentClient = new Set<string>()
-  for (const r of recent) {
-    const clientId = r.enrollment ? clientByEnrId.get(r.enrollment) : undefined
-    if (clientId) hasRecentClient.add(clientId)
-  }
-
   // Plăți cumulative per înrolare → restanță = max(0, suma - sum(plăți))
   const { data: incasariRows, error: iErr } = enrollmentIds.length
     ? await supabase
@@ -382,7 +301,6 @@ export async function getGrupaDashboard(params: {
     prezent: 0,
     absent: 1,
     programat: 2,
-    inactiv: 3,
   }
 
   // Restanță agregată per client (sumează peste toate înrolările active)
@@ -400,28 +318,14 @@ export async function getGrupaDashboard(params: {
   for (const e of enrollments) {
     if (!e.client) continue
     // Facultativ „Per ședință": înrolarea acoperă O SINGURĂ ședință (data_incepere),
-    // nu toată luna. O includem doar pe ziua ei și o tratăm absent/prezent — niciodată
-    // `inactiv`. Altfel un rând cu `data_final=NULL` ar deveni fantomă inactivă în
-    // fiecare zi/lună ≥ data_incepere. Prezența reală vine via rezervarea OPEN a zilei.
+    // nu toată luna. O includem doar pe ziua ei — altfel un rând cu `data_final=NULL`
+    // ar deveni fantomă în fiecare zi/lună ≥ data_incepere.
     const isPerSedintaFacultativ =
       cursRow.facultativ && e.tip_plata === 'Per sedinta'
     if (isPerSedintaFacultativ && e.data_incepere !== params.date) continue
 
-    const s = statusToday.get(e.id)
-    // Un cursant abia intrat în grupă (PRIMA lui înrolare pe acest curs e în
-    // fereastra de 21 zile) NU e „inactiv": tocmai a fost înrolat (ex. trecerea în
-    // sezonul nou/vară) și n-a avut încă ocazia să vină. Altfel cardul lui apare
-    // inactiv și — pe facultativ — oferă „Înrolare nouă" deși e deja înrolat.
-    const primaInrolare = primaInrolareByClient.get(e.client.id)
-    const inrolareRecenta = Boolean(primaInrolare && primaInrolare >= cutoff)
-    let status: RosterStatus
-    if (s === 'Prezent') status = 'prezent'
-    else if (s === 'Absent' || s === 'Motivat') status = 'absent'
-    else if (isPerSedintaFacultativ) status = 'absent'
-    else if (!hasRecentClient.has(e.client.id) && !inrolareRecenta) status = 'inactiv'
-    // Cursantii nebifati azi sunt implicit absenti (pana cineva ii marcheaza
-    // prezent). Statusul `programat` (galben) e rezervat doar leads-urilor.
-    else status = 'absent'
+    // Nebifat azi = absent până îl marchează cineva; `programat` e doar pentru leads.
+    const status: RosterStatus = statusToday.get(e.id) === 'Prezent' ? 'prezent' : 'absent'
 
     const existing = byClient.get(e.client.id)
     if (!existing || STATUS_RANK[status] < STATUS_RANK[existing.status]) {
@@ -451,21 +355,7 @@ export async function getGrupaDashboard(params: {
     const s = statusToday.get(o.enrollmentId)
     const status: RosterStatus =
       s === 'Prezent' ? 'prezent' : s === 'Absent' || s === 'Motivat' ? 'absent' : 'absent'
-    const existing = byClient.get(o.client.id)
-    if (existing) {
-      // Rezervarea OPEN a zilei e autoritară: un client cu rezervare validă pe
-      // sesiunea de azi NU poate fi „inactiv". Promovăm statusul (și legăm prezența
-      // de enrollment-ul rezervării) dacă fusese clasat inactiv din altă înrolare.
-      if (existing.status === 'inactiv') {
-        byClient.set(o.client.id, {
-          ...existing,
-          rowId: o.enrollmentId,
-          enrollmentId: o.enrollmentId,
-          status,
-        })
-      }
-      continue
-    }
+    if (byClient.has(o.client.id)) continue
     byClient.set(o.client.id, {
       rowId: o.enrollmentId,
       kind: 'client',
@@ -571,13 +461,11 @@ export async function getGrupaDashboard(params: {
           ? 'prezenti'
           : r.status === 'absent'
             ? 'absenti'
-            : r.status === 'inactiv'
-              ? 'inactivi'
-              : 'programati'
+            : 'programati'
       acc[key]++
       return acc
     },
-    { prezenti: 0, absenti: 0, inactivi: 0, programati: 0 },
+    { prezenti: 0, absenti: 0, programati: 0 },
   )
 
   return {

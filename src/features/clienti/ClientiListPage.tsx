@@ -26,7 +26,6 @@ import { listClienti, PAGE_SIZE, type ClientCuDocumente } from './api'
 
 const STATUS_OPTIONS = [
   { label: 'Activ', value: 'Activ' },
-  { label: 'Inactiv', value: 'Inactiv' },
   { label: 'EXclient', value: 'EXclient' },
 ]
 
@@ -104,14 +103,14 @@ export function ClientiListPage() {
     placeholderData: keepPreviousData,
   })
 
-  // Pentru clienții inactivi/exclienți: buton de log reactivare (Faza 3 scorecard).
+  // Pentru exclienți: buton de log reactivare (Faza 3 scorecard).
   const tableColumns: Column<ClientCuDocumente>[] = [
     ...columns,
     ...(vedeFisa ? [coloanaFisa] : []),
     {
       header: '',
       cell: (c) =>
-        c.status === 'Inactiv' || c.status === 'EXclient' ? (
+        c.status === 'EXclient' ? (
           <button
             type="button"
             onClick={(e) => {

@@ -23,7 +23,6 @@ export { getCursEnrollments } from './enrollments'
 export type {
   CursOcupare,
   CursClientActiv,
-  CursClientInactiv,
   CursClientFaraDoc,
   CursDatorieRow,
   CursFaraPrezentaRow,
@@ -33,7 +32,6 @@ export type {
 export {
   getCursOcupare,
   getCursClientiActivi,
-  getCursClientiInactivi,
   getCursClientiFaraDocumente,
   getCursDatorii,
   getCursuriDatorii,

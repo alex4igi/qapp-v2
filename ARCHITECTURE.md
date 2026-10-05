@@ -202,7 +202,7 @@ Restul = React Query (`useQuery` / `useMutation`) per feature, cu invalidare dup
   manual a fost absorbit în `20260705110000_cron_qapp_jobs_formalize.sql`). Joburi:
   SMS dimineața (morning-a/b cu gardă 10:00 local: remindere ședință) și după-amiaza
   (afternoon-a/b, gardă 16:00 local, luni–vineri: followup, confirmare înrolare, post_demo), mutări leads seara, sfârșit de sezon,
-  statusuri client (Activ↔Inactiv↔EXclient), anulare promo reînscrieri, expirare holduri
+  statusuri client (Activ↔EXclient), anulare promo reînscrieri, expirare holduri
   OPEN, pull Meta leads, drenări SMS (programare/review/amânate), remindere contracte,
   audit digest, pontaj auto-close. Verificare: `select jobname, schedule from cron.job`.
 

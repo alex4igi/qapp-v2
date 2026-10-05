@@ -13815,13 +13815,12 @@ export type Database = {
       }
       auth_locatie_id: { Args: never; Returns: string }
       auth_role: { Args: never; Returns: string }
-      auto_mark_inactiv_si_exclient: {
+      auto_mark_exclient: {
         Args: never
         Returns: {
           inrolari_reziliate: number
           leads_create: number
           marcati_exclient: number
-          marcati_inactiv: number
           reactivati: number
           umbre_curatate: number
         }[]

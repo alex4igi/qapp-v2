@@ -29,8 +29,12 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **Cursant plătitor pe lună:** `suma > 0`, intervalul acoperă luna, fără `data_reziliere <= 1 ale lunii`.
   În SQL există o singură implementare: `cursanti_platitori_luna(curs, luna)` — nu scrie alta.
   Din 2026-2027 înrolările „Per ședință" au `data_final` NULL; funcția le leagă de luna ședinței.
-- **`clienti.status`** (cron nocturn): `Activ` = `Prezent` în ultimele 21 z sau înrolare în sezonul activ;
-  `Inactiv` = 21–45 z; `EXclient` = peste 45 z (→ opt-out marketing + reziliere luni viitoare + lead nurture).
+- **`clienti.status`** (cron nocturn `auto_mark_exclient`, 06.10.2026): doar `Activ` / `EXclient`. **EXclient** = fără
+  `Prezent` de peste 45 z **și fără acces** (abonament care acoperă azi sau o lună viitoare, ori ședință rezervată de azi
+  încolo) → opt-out marketing + reziliere luni viitoare + lead nurture. Revine pe Activ când are din nou acces.
+  **`Inactiv` nu mai există** (Alex, 05.10.2026): rămâne în enum, dar o constrângere îl interzice. Absențele le acoperă
+  jurnalul „Absenți 21 zile” (recurente) și „Au venit recent” din roster (facultative); nici rosterul, nici fișa grupei
+  nu mai au „inactivi”. Vechea condiție („orice înrolare în sezon”) ținea Activ până în iunie pe cine venise o dată.
   **Diferit** de `leads.status` (`nou … convertit / pierdut / nurture`); același om poate fi EXclient și lead nurture.
 - **Client nou de tot (01.09):** nicio urmă anterioară — fără înrolare, încasare, prezență înainte de fereastră
   ȘI fără `clienti.old_user_id` (import v1). Altfel lista se umflă de ~2,5×.

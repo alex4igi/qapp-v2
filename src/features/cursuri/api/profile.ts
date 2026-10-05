@@ -1,4 +1,4 @@
-// Query-uri pentru tab-urile profilului unui curs: clienți activi, inactivi,
+// Query-uri pentru tab-urile profilului unui curs: clienți activi,
 // datorii, fără prezență, ocupare (vs capacitate).
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/types/db'
@@ -297,80 +297,6 @@ export async function getCursClientiFaraDocumente(
   return activi
     .filter((c) => !cuDoc.has(c.clientId))
     .map((c) => ({ clientId: c.clientId, nume: c.nume, prenume: c.prenume }))
-}
-
-// ============================================================
-// Clienți inactivi (au fost cândva, nu mai sunt acum)
-// ============================================================
-
-export type CursClientInactiv = {
-  clientId: string
-  nume: string
-  prenume: string | null
-  ultimaPrezenta: string | null
-  vineLa: VineLa | null
-}
-
-export async function getCursClientiInactivi(
-  cursId: string,
-  luna?: string | null,
-): Promise<CursClientInactiv[]> {
-  // 1) toate enrolările (oricare status) la cursul ăsta + clientul lor
-  const { data: allEnr, error: eErr } = await supabase
-    .from('enrollments')
-    .select('id, client:clienti(id, nume, prenume)')
-    .eq('cursul', cursId)
-  if (eErr) throw eErr
-  const allEnrRows = (allEnr ?? []) as unknown as Array<{
-    id: string
-    client: { id: string; nume: string; prenume: string | null } | null
-  }>
-  if (allEnrRows.length === 0) return []
-
-  // 2) clienții activi în luna afișată (excluzi)
-  const activeRows = await fetchEnrollmentsForMonth(cursId, luna)
-  const activeClientIds = new Set<string>()
-  for (const e of activeRows) if (e.client) activeClientIds.add(e.client.id)
-
-  // 3) ultima prezență per client (join pe curs, nu `.in(enrollmentIds)`)
-  const lastByClient = await fetchUltimaPrezentaByClient(cursId)
-
-  // 4) păstrăm doar clienții cu cel puțin o prezență istorică (au fost cu adevărat la curs)
-  //    și care NU mai sunt activi acum
-  const byClient = new Map<string, CursClientInactiv>()
-  for (const e of allEnrRows) {
-    if (!e.client) continue
-    if (activeClientIds.has(e.client.id)) continue
-    const last = lastByClient.get(e.client.id)
-    if (!last) continue
-    const existing = byClient.get(e.client.id)
-    if (!existing || last > (existing.ultimaPrezenta ?? '')) {
-      byClient.set(e.client.id, {
-        clientId: e.client.id,
-        nume: e.client.nume,
-        prenume: e.client.prenume,
-        ultimaPrezenta: last,
-        vineLa: null,
-      })
-    }
-  }
-
-  const vineLa = await fetchVineLaByClient({
-    clienti: Array.from(byClient, ([id, c]) => ({
-      id,
-      ultimaPrezenta: c.ultimaPrezenta,
-    })),
-    exceptCursId: cursId,
-  })
-  for (const [clientId, v] of vineLa) {
-    const row = byClient.get(clientId)
-    if (row) row.vineLa = v
-  }
-
-  // Sortare descendentă după ultima prezență (cei recent inactivați sus)
-  return Array.from(byClient.values()).sort((a, b) =>
-    (b.ultimaPrezenta ?? '').localeCompare(a.ultimaPrezenta ?? ''),
-  )
 }
 
 // ============================================================

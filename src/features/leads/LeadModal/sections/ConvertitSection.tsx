@@ -11,7 +11,6 @@ type Props = {
 
 const STATUS_CLIENT_TONE: Record<string, { fg: string; bg: string }> = {
   Activ: { fg: '#1E7A4D', bg: '#D3ECDD' },
-  Inactiv: { fg: '#6B6760', bg: '#EFEBE2' },
   EXclient: { fg: '#C2403F', bg: '#FBE3E3' },
 }
 

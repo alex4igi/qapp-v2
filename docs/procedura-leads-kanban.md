@@ -134,7 +134,7 @@ gen:ghid` înseamnă că omul primește și mesaj, și telefon, pentru aceeași 
 | Un lead = o singură programare | RPC `inlocuieste_programari_lead` |
 | Conversia (client + înrolare) | `src/features/leads/api/conversie.ts` + trigger `enrollment_marcheaza_lead_convertit` |
 | Gardul „clientul e activ, nu-l nurtura" | `leaduriProtejate()`, `supabase/functions/_shared/leadNurture.ts` |
-| „Deja client": banner în fișă + la contact; mutarea unui client **încă înscris** (Activ/Inactiv sau înrolare neexpirată) în Programat / Waiting list cere bifa „am vorbit cu el, vrea ceva nou" — foștii clienți (EXclient) trec fără bifă (29.09.2026) | `DejaClientBanner.tsx` + `getClientExistent()` în `api/conversie.ts` |
+| „Deja client": banner în fișă + la contact; mutarea unui client **încă înscris** (Activ sau înrolare neexpirată) în Programat / Waiting list cere bifa „am vorbit cu el, vrea ceva nou" — foștii clienți (EXclient) trec fără bifă (29.09.2026) | `DejaClientBanner.tsx` + `getClientExistent()` în `api/conversie.ts` |
 | Lead închis cu „Deja client — rezolvat": statusul rămâne `pierdut` (NU `convertit` — reclama n-a adus un client nou, ar umfla conversia și atribuirea Meta), dar eticheta e „Rezolvat — deja client" pe card, în listă, în fișă și în CSV (Alex, 29.09.2026) | `statusLeadLabel()` / `esteRezolvatDejaClient()`, `src/features/leads/constants.ts` |
 | Căutarea după telefon ignoră prefixul (`+40` / `0` / spații → ultimele 9 cifre) | `searchWords()` / `applyWordSearch()` / `matchesWords()`, `src/lib/search.ts` |
 
@@ -153,7 +153,7 @@ central, într-un trigger (Faza 2a), nu la fiecare apelant.
 | 6 | Plasa de siguranță pe nr. de încercări (și pe „Nu a venit") | `cron-evening` | da |
 | 7 | A 2-a luni după demo, neconvertit | `cron-morning` | da |
 | 8 | Waiting list, la finalul sezonului | `cron-season-end` | da |
-| 9 | Client devenit EXclient (45 zile fără prezență) | `auto_mark_inactiv_si_exclient()` | da |
+| 9 | Client devenit EXclient (45 zile fără prezență și fără acces) | `auto_mark_exclient()` | da |
 | 10 | Reziliere cu bifa de reintegrare | `api/conversie.ts` · `reintegrateClientAsLead` | nu |
 | 11 | Participant la workshop | `src/features/plati/api/incasari.ts` | nu |
 | 12 | Butonul „🌱 Mută în Nurture" | `LeadModal/IdentityRail.tsx` | nu |

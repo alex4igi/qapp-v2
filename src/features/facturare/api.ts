@@ -279,7 +279,7 @@ export async function searchClienti(term: string): Promise<MatchSuggestion[]> {
   }
   const { data, error } = await query.limit(25)
   if (error) throw error
-  const rank: Record<string, number> = { Activ: 0, Inactiv: 1 }
+  const rank: Record<string, number> = { Activ: 0 }
   return (data ?? [])
     .sort((a, b) => (rank[a.status ?? ''] ?? 2) - (rank[b.status ?? ''] ?? 2))
     .map((c) => ({

@@ -74,8 +74,8 @@ export function ScorecardReactivariTab({ luna }: { luna: string }) {
       </div>
 
       <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-        <strong>Reactivare verificată:</strong> „Reactivat" înseamnă că un client
-        inactiv contactat a avut o prezență reală la cursuri DUPĂ contact — nu
+        <strong>Reactivare verificată:</strong> „Reactivat" înseamnă că un fost
+        client contactat a avut o prezență reală la cursuri DUPĂ contact — nu
         ce a promis la telefon. Rata = reveniri / clienți lucrați.
         {inainteDeLansare && (
           <span className="font-medium">

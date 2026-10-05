@@ -29,7 +29,6 @@ import {
   getCurs,
   getCursOcupare,
   getCursClientiActivi,
-  getCursClientiInactivi,
   getCursClientiFaraDocumente,
   getCursDatorii,
   getCursFaraPrezenteRecente,
@@ -51,7 +50,6 @@ import { getCursInitials, labelOf } from './helpers'
 import { ClientiActiviTab } from './tabs/ClientiActiviTab'
 import { AbsentiTab } from './tabs/AbsentiTab'
 import { RestantieriTab } from './tabs/RestantieriTab'
-import { ClientiInactiviTab } from './tabs/ClientiInactiviTab'
 import { FaraDocumenteTab } from './tabs/FaraDocumenteTab'
 import { DetaliiTab } from './tabs/DetaliiTab'
 import { IstoricTab } from './tabs/IstoricTab'
@@ -73,11 +71,10 @@ export function CursProfilePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<TabId>('activi')
-  // Luna de lucru a fișei ("YYYY-MM"). Tot ce e roster (activi, inactivi, fără
+  // Luna de lucru a fișei ("YYYY-MM"). Tot ce e roster (activi, fără
   // documente, ocupare) se citește pe ea, nu pe „azi" — altfel o grupă dintr-un
   // sezon încheiat arată goală. `null` = n-a ales nimeni nimic încă.
   const [lunaAleasa, setLunaAleasa] = useState<string | null>(null)
-  const [inactiviOpen, setInactiviOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   // Motivul precompletat când suspendarea pornește din semnalul „sub minim".
   const [suspendaSubMinim, setSuspendaSubMinim] = useState<string | null>(null)
@@ -157,12 +154,6 @@ export function CursProfilePage() {
     queryKey: ['curs', id, 'clienti-activi', luna],
     queryFn: () => getCursClientiActivi(id!, luna),
     enabled: Boolean(id) && tabActiv === 'activi',
-  })
-
-  const inactiviQuery = useQuery({
-    queryKey: ['curs', id, 'clienti-inactivi', luna],
-    queryFn: () => getCursClientiInactivi(id!, luna),
-    enabled: Boolean(id) && tabActiv === 'activi' && inactiviOpen,
   })
 
   const faraDocQuery = useQuery({
@@ -429,39 +420,6 @@ export function CursProfilePage() {
                     : null
                 }
               />
-
-              <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <button
-                  type="button"
-                  aria-expanded={inactiviOpen}
-                  onClick={() => setInactiviOpen((o) => !o)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-quasar-yellow/5"
-                >
-                  <span className="flex items-center gap-2 text-sm font-medium text-quasar-black">
-                    <span
-                      className={`text-quasar-gray transition-transform ${inactiviOpen ? 'rotate-90' : ''}`}
-                    >
-                      ▶
-                    </span>
-                    Clienți inactivi
-                  </span>
-                  {inactiviOpen && !inactiviQuery.isLoading && (
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-quasar-gray">
-                      {inactiviQuery.data?.length ?? 0}
-                    </span>
-                  )}
-                </button>
-                {inactiviOpen && (
-                  <div className="border-t border-gray-200">
-                    <ClientiInactiviTab
-                      loading={inactiviQuery.isLoading}
-                      rows={inactiviQuery.data ?? []}
-                      cursNume={curs.numele}
-                      onRowClick={(cid) => navigate(`/clienti/${cid}`)}
-                    />
-                  </div>
-                )}
-              </div>
             </>
           )}
 

@@ -36,7 +36,7 @@ Owner-ul vrea să **măsoare performanța call-center-ului** ca să (a) defineas
 - **Anti walk-in (apel PRECEDE plata):** recuperat verificat = `incasari` reale unde `incasari.created > client_contacte.created` ȘI `incasari.data` în `[ziua_apel, +7z]` (prag `recuperare_fereastra_zile`). Same-day reușit (înregistrat după apel) = numără; walk-in dinainte de apel = nu.
 
 ### Faza 3 — Reactivări ✅ v1 (de înlocuit — vezi „de implementat")
-- Tab **Reactivări** + buton „📞 Reactivare" pe clienții Inactiv/EXclient din `ClientiListPage` (am adăugat filtru de status). RPC `get_scorecard_reactivari`. Reactivat = prezență Prezent după contact.
+- Tab **Reactivări** + buton „📞 Reactivare" pe clienții EXclient din `ClientiListPage` (statusul Inactiv a fost scos pe 06.10.2026) (am adăugat filtru de status). RPC `get_scorecard_reactivari`. Reactivat = prezență Prezent după contact.
 - **NOTĂ:** designul de mai jos (worklist reactivare v2) îl rafinează semnificativ.
 
 ---
@@ -50,7 +50,7 @@ Owner-ul vrea să **măsoare performanța call-center-ului** ca să (a) defineas
 
 ### B. Reactivare — worklist v2 (redesign complet)
 **Populație (decizie: „doar absenți încă-înrolați", fără dublare):**
-- **Inactiv** = ultima prezență **22–45 zile**, **ÎNCĂ înrolat** (neraziliat). Prioritar (cel mai recuperabil).
+- **Inactiv** = ultima prezență **22–45 zile**, **ÎNCĂ înrolat** (neraziliat). Prioritar (cel mai recuperabil). ⚠️ Din 06.10.2026 nu mai e un status de client — populația asta o dă jurnalul „Absenți 21 zile”.
 - Opțional **EXclient neraziliat** (>45z, încă pe liste).
 - **EXCLUDEM** reziliații → ei sunt deja în **Nurture** (feature „re-lead la reziliere", cu `motiv_reziliere`); re-înrolarea lor = „convertit" în scorecard-ul **Leads**. Nu-i dublăm.
 - **EXCLUDEM** nereînscrișii sezon-la-sezon → teritoriul **Reînscrieri**.

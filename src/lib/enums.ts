@@ -6,7 +6,7 @@ const opts = (...values: string[]): SelectOption[] =>
 
 export const sexOptions = opts('B', 'F')
 
-export const statusClientOptions = opts('Activ', 'Inactiv', 'EXclient')
+export const statusClientOptions = opts('Activ', 'EXclient')
 
 // Grupate „Copii"/„Adulți": mărimile pe vârstă și cele pe litere stau în
 // dropdown sub antete separate (Select le randează ca <optgroup>).

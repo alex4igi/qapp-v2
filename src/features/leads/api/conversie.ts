@@ -215,7 +215,7 @@ export async function getLeadConversionInfo(
 }
 
 // Clientul de care e legat un lead „deja client", pentru bannerul din fișă și din
-// modalele de contact. `inscris` = încă al nostru (Activ/Inactiv sau o înrolare
+// modalele de contact. `inscris` = încă al nostru (Activ sau o înrolare
 // care n-a expirat) — atunci un apel de vânzare e o greșeală, nu o oportunitate.
 export type ClientExistent = {
   clientId: string
@@ -259,6 +259,6 @@ export async function getClientExistent(clientId: string): Promise<ClientExisten
     nume: [client.prenume, client.nume].filter(Boolean).join(' ').trim(),
     status,
     cursuri,
-    inscris: cursuri.length > 0 || status === 'Activ' || status === 'Inactiv',
+    inscris: cursuri.length > 0 || status === 'Activ',
   }
 }

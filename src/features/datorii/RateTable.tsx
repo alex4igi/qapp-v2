@@ -48,12 +48,12 @@ export function RateTable({ rows, showLocatie, onLog, onPlata, emptyMessage }: P
           >
             {r.nume} {r.prenume ?? ''}
           </Link>
-          {r.status_client && r.status_client !== 'Activ' && (
+          {r.status_client === 'EXclient' && (
             <span
               className="rounded-full bg-neutral-bg px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-2"
               title="Datoria nu se stinge la schimbarea statusului — doar la prescriere"
             >
-              {r.status_client === 'EXclient' ? 'ex-client' : 'inactiv'}
+              ex-client
             </span>
           )}
         </div>

@@ -18,7 +18,7 @@ function lunaLabel(iso: string | null): string {
 }
 
 type Semnat = 'toti' | 'semnat' | 'nesemnat'
-type Stat = 'toate' | 'Activ' | 'Inactiv' | 'EXclient'
+type Stat = 'toate' | 'Activ' | 'EXclient'
 
 export function NerevenitSection({ rows }: { rows: StartSezonNerevenitRow[] }) {
   const navigate = useNavigate()
@@ -180,7 +180,7 @@ export function NerevenitSection({ rows }: { rows: StartSezonNerevenitRow[] }) {
             ariaLabel="Status client"
             value={stat}
             onChange={setStat}
-            options={(['toate', 'Activ', 'Inactiv', 'EXclient'] as Stat[])
+            options={(['toate', 'Activ', 'EXclient'] as Stat[])
               .filter((s) => s === 'toate' || statCount(s) > 0)
               .map((s) => ({
                 value: s,
