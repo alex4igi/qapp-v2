@@ -6,7 +6,7 @@ import { endOfMonth } from '@/features/plati/api/calendar'
 import { esteAbonamentReal } from '@/features/cursuri/api'
 import { fetchAllRows } from '@/lib/fetchAll'
 import { fetchVineLaByClient, type VineLa } from '@/lib/ultimaPrezenta'
-import { isoDaysAgo } from './helpers'
+import { dayOfWeekRO, isoDaysAgo } from './helpers'
 
 // `.in(...)` cu prea multe UUID-uri depășește limita de headers a PostgREST (~16KB)
 // și pică cu HeadersOverflowError. Istoricul unei grupe poate aduna sute de rânduri
@@ -43,21 +43,24 @@ export type GrupaRosterRow = {
   faraPoze: boolean
 }
 
-// Cursant care a fost pe această grupă recent, dar NU mai are nicio înrolare
-// care să acopere luna afișată (s-a oprit sau e reziliat) — deci a dispărut cu
-// totul din roster. Nu e „inactiv" (ăla e încă înrolat); e candidat de recuperat.
-export type GrupaFostRow = {
+// Facultative: cine a venit la grupă, dar n-are acces în ziua rosterului (abonamentul lunii trecute
+// s-a închis, ședința de azi nu e rezervată). La început de lună rosterul e gol, iar lista asta e
+// drumul scurt spre reînrolare. Pe grupele recurente și trupe nu există: acolo înrolările sunt
+// automate pe tot sezonul, iar după reziliere nu ai voie la aceeași grupă în același sezon.
+export type GrupaSugestieRow = {
   clientId: string
   nume: string
   prenume: string | null
   poza: string | null
   telefon: string | null
-  // Luna ultimei înrolări pe această grupă (data_incepere = ziua 1 a lunii facturate).
-  ultimaLuna: string | null
+  // recent = prezent cel puțin o dată în cele 30 de zile dinaintea zilei rosterului;
+  // vechi = prezență sau înrolare în ultimele 180 de zile.
+  grup: 'recent' | 'vechi'
   ultimaPrezenta: string | null
-  // Unde a fost văzut mai recent decât `ultimaPrezenta`, dacă e cazul. La graniță
-  // de sezon „foștii" sunt de regulă aceiași oameni, mutați pe clona grupei —
-  // vezi lib/ultimaPrezenta.ts.
+  zilePrezente: number
+  ultimaLuna: string | null
+  // O ședință plătită în luna rosterului: „Lunar" devine conversie (ședințele devin avans).
+  sedintaLunaId: string | null
   vineLa: VineLa | null
 }
 
@@ -71,9 +74,12 @@ export type GrupaDashboard = {
   teacher: string | null
   sala: string | null
   facultativ: boolean
+  pretLunar: number | null
+  pretSedinta: number | null
+  zile: string[]
   linkWhatsapp: string | null
   roster: GrupaRosterRow[]
-  fosti: GrupaFostRow[]
+  sugestii: GrupaSugestieRow[]
   counters: {
     prezenti: number
     absenti: number
@@ -87,8 +93,14 @@ export type GrupaDashboard = {
 // acea grupă. „Activ" = există minim o prezență Prezent în acest interval.
 const INACTIV_DAYS = 21
 
-// Fereastra în care un cursant plecat mai are sens să fie propus spre recuperare.
-const FOSTI_DAYS = 180
+const SUGESTII_RECENT_DAYS = 30
+const SUGESTII_VECHI_DAYS = 180
+
+function addDaysIso(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d + days))
+  return dt.toISOString().slice(0, 10)
+}
 
 export async function getGrupaDashboard(params: {
   cursId: string
@@ -97,7 +109,7 @@ export async function getGrupaDashboard(params: {
   const { data: curs, error: cursErr } = await supabase
     .from('cursuri')
     .select(
-      'id, numele, ora, facultativ, link_whatsapp, sezon, sala:sali(nume), teacher:teacheri!fk_cursuri_teacher(nume, prenume)',
+      'id, numele, ora, facultativ, pret_lunar, pret_sedinta, zile, link_whatsapp, sezon, sala:sali(nume), teacher:teacheri!fk_cursuri_teacher(nume, prenume)',
     )
     .eq('id', params.cursId)
     .single()
@@ -107,6 +119,9 @@ export async function getGrupaDashboard(params: {
     numele: string
     ora: string | null
     facultativ: boolean
+    pret_lunar: number | null
+    pret_sedinta: number | null
+    zile: string[] | null
     link_whatsapp: string | null
     sezon: string | null
     sala: { nume: string } | null
@@ -211,6 +226,9 @@ export async function getGrupaDashboard(params: {
     ora: cursRow.ora,
     sala: cursRow.sala?.nume ?? null,
     facultativ: Boolean(cursRow.facultativ),
+    pretLunar: cursRow.pret_lunar,
+    pretSedinta: cursRow.pret_sedinta,
+    zile: cursRow.zile ?? [],
     linkWhatsapp: cursRow.link_whatsapp,
     teacher: cursRow.teacher
       ? `${cursRow.teacher.nume} ${cursRow.teacher.prenume ?? ''}`.trim()
@@ -533,103 +551,9 @@ export async function getGrupaDashboard(params: {
     })
   }
 
-  // „Foști / de recuperat": au avut înrolare pe această grupă în ultimele 180 zile,
-  // dar niciuna nu acoperă luna afișată (s-au oprit) sau sunt reziliați. Ei NU intră
-  // în roster — rosterul rămâne strict lista de marcat prezența, altfel revin
-  // „fantomele" scoase deliberat mai sus. Se afișează separat, ca listă de recuperare.
-  const fostiCutoff = isoDaysAgo(FOSTI_DAYS)
-  const fostiEnr = await fetchAllRows<{
-    id: string
-    data_incepere: string | null
-    client: {
-      id: string
-      nume: string
-      prenume: string | null
-      foto: string | null
-      telefon: string | null
-    } | null
-  }>(() =>
-    supabase
-      .from('enrollments')
-      .select(
-        'id, data_incepere, client:clienti(id, nume, prenume, foto, telefon)',
-      )
-      .eq('cursul', params.cursId)
-      .gte('data_incepere', fostiCutoff)
-      .order('id'),
-  )
-
-  const fostiById = new Map<string, GrupaFostRow>()
-  const fostiEnrIds = new Map<string, string>() // enrollmentId -> clientId
-  for (const e of fostiEnr) {
-    if (!e.client) continue
-    if (byClient.has(e.client.id)) continue // e în rosterul lunii curente
-    fostiEnrIds.set(e.id, e.client.id)
-    const existing = fostiById.get(e.client.id)
-    if (existing) {
-      if ((e.data_incepere ?? '') > (existing.ultimaLuna ?? '')) {
-        existing.ultimaLuna = e.data_incepere
-      }
-      continue
-    }
-    fostiById.set(e.client.id, {
-      clientId: e.client.id,
-      nume: e.client.nume,
-      prenume: e.client.prenume,
-      poza: e.client.foto,
-      telefon: e.client.telefon,
-      ultimaLuna: e.data_incepere,
-      ultimaPrezenta: null,
-      vineLa: null,
-    })
-  }
-
-  const fostiIds = [...fostiEnrIds.keys()]
-  if (fostiIds.length) {
-    const prezFosti = (
-      await Promise.all(
-        chunk(fostiIds, IN_CHUNK).map((ids) =>
-          fetchAllRows<{ enrollment: string | null; data: string | null }>(() =>
-            supabase
-              .from('prezente')
-              .select('enrollment, data')
-              .in('enrollment', ids)
-              .eq('status', 'Prezent')
-              .order('enrollment'),
-          ),
-        ),
-      )
-    ).flat()
-    for (const p of prezFosti) {
-      const clientId = p.enrollment ? fostiEnrIds.get(p.enrollment) : undefined
-      if (!clientId || !p.data) continue
-      const row = fostiById.get(clientId)
-      if (row && (!row.ultimaPrezenta || p.data > row.ultimaPrezenta)) {
-        row.ultimaPrezenta = p.data
-      }
-    }
-  }
-
-  if (fostiById.size) {
-    const vineLa = await fetchVineLaByClient({
-      clienti: Array.from(fostiById, ([id, f]) => ({
-        id,
-        ultimaPrezenta: f.ultimaPrezenta,
-      })),
-      exceptCursId: params.cursId,
-    })
-    for (const [clientId, v] of vineLa) {
-      const row = fostiById.get(clientId)
-      if (row) row.vineLa = v
-    }
-  }
-
-  const fosti = Array.from(fostiById.values()).sort(
-    (a, b) =>
-      (b.ultimaPrezenta ?? b.ultimaLuna ?? '').localeCompare(
-        a.ultimaPrezenta ?? a.ultimaLuna ?? '',
-      ) || a.nume.localeCompare(b.nume, 'ro'),
-  )
+  const sugestii = cursRow.facultativ
+    ? await getSugestii({ cursId: params.cursId, date: params.date, inRoster: byClient })
+    : []
 
   const roster: GrupaRosterRow[] = [
     ...Array.from(byClient.values()),
@@ -659,9 +583,211 @@ export async function getGrupaDashboard(params: {
   return {
     ...baseHeader,
     roster,
-    fosti,
+    sugestii,
     counters,
   }
+}
+
+// Candidații pornesc din PREZENȚE, nu din înrolări: contează cine a venit efectiv. Istoricul nu se
+// filtrează pe `activ`/`reziliat` — o lună încheiată are `reziliat` bifat fără ca omul să fi plecat.
+async function getSugestii(params: {
+  cursId: string
+  date: string
+  inRoster: Map<string, unknown>
+}): Promise<GrupaSugestieRow[]> {
+  const recentStart = addDaysIso(params.date, -SUGESTII_RECENT_DAYS)
+  const vechiStart = addDaysIso(params.date, -SUGESTII_VECHI_DAYS)
+  const lunaStart = params.date.slice(0, 7) + '-01'
+  const lunaEnd = endOfMonth(lunaStart)
+
+  // O prezență din fereastră stă pe înrolarea lunii ei (ziua 1) sau pe ședința ei — cel mult o lună
+  // înaintea ferestrei.
+  const enr = await fetchAllRows<{
+    id: string
+    tip_plata: Enums<'tip_plata'> | null
+    data_incepere: string | null
+    reziliat: boolean
+    suma_baza: number | null
+    client: {
+      id: string
+      nume: string
+      prenume: string | null
+      foto: string | null
+      telefon: string | null
+      anonimizat_la: string | null
+    } | null
+  }>(() =>
+    supabase
+      .from('enrollments')
+      .select(
+        'id, tip_plata, data_incepere, reziliat, suma_baza, client:clienti(id, nume, prenume, foto, telefon, anonimizat_la)',
+      )
+      .eq('cursul', params.cursId)
+      .gte('data_incepere', addDaysIso(vechiStart, -31))
+      .order('id'),
+  )
+
+  const byId = new Map<string, GrupaSugestieRow>()
+  const clientByEnr = new Map<string, string>()
+  for (const e of enr) {
+    const c = e.client
+    if (!c || c.anonimizat_la || params.inRoster.has(c.id)) continue
+    clientByEnr.set(e.id, c.id)
+    let row = byId.get(c.id)
+    if (!row) {
+      row = {
+        clientId: c.id,
+        nume: c.nume,
+        prenume: c.prenume,
+        poza: c.foto,
+        telefon: c.telefon,
+        grup: 'vechi',
+        ultimaPrezenta: null,
+        zilePrezente: 0,
+        ultimaLuna: null,
+        sedintaLunaId: null,
+        vineLa: null,
+      }
+      byId.set(c.id, row)
+    }
+    if (e.data_incepere && e.data_incepere <= params.date) {
+      if (!row.ultimaLuna || e.data_incepere > row.ultimaLuna) row.ultimaLuna = e.data_incepere
+    }
+    if (
+      e.tip_plata === 'Per sedinta' &&
+      !e.reziliat &&
+      Number(e.suma_baza ?? 0) > 0 &&
+      e.data_incepere &&
+      e.data_incepere >= lunaStart &&
+      e.data_incepere <= lunaEnd
+    ) {
+      row.sedintaLunaId = e.id
+    }
+  }
+
+  const enrIds = [...clientByEnr.keys()]
+  const prez = enrIds.length
+    ? (
+        await Promise.all(
+          chunk(enrIds, IN_CHUNK).map((ids) =>
+            fetchAllRows<{ enrollment: string | null; data: string | null }>(() =>
+              supabase
+                .from('prezente')
+                .select('enrollment, data')
+                .in('enrollment', ids)
+                .eq('status', 'Prezent')
+                .gte('data', vechiStart)
+                .lt('data', params.date)
+                .order('enrollment'),
+            ),
+          ),
+        )
+      ).flat()
+    : []
+  const zileRecente = new Map<string, Set<string>>()
+  for (const p of prez) {
+    const clientId = p.enrollment ? clientByEnr.get(p.enrollment) : undefined
+    const row = clientId ? byId.get(clientId) : undefined
+    if (!row || !p.data) continue
+    if (!row.ultimaPrezenta || p.data > row.ultimaPrezenta) row.ultimaPrezenta = p.data
+    if (p.data >= recentStart) {
+      const set = zileRecente.get(row.clientId) ?? new Set<string>()
+      set.add(p.data)
+      zileRecente.set(row.clientId, set)
+    }
+  }
+
+  const rows = [...byId.values()].filter((r) => {
+    const zile = zileRecente.get(r.clientId)
+    if (zile?.size) {
+      r.grup = 'recent'
+      r.zilePrezente = zile.size
+      return true
+    }
+    return (
+      (r.ultimaPrezenta != null && r.ultimaPrezenta >= vechiStart) ||
+      (r.ultimaLuna != null && r.ultimaLuna >= vechiStart)
+    )
+  })
+
+  if (rows.length) {
+    const vineLa = await fetchVineLaByClient({
+      clienti: rows.map((r) => ({ id: r.clientId, ultimaPrezenta: r.ultimaPrezenta })),
+      exceptCursId: params.cursId,
+    })
+    for (const r of rows) r.vineLa = vineLa.get(r.clientId) ?? null
+  }
+
+  return rows.sort(
+    (a, b) =>
+      (b.ultimaPrezenta ?? b.ultimaLuna ?? '').localeCompare(
+        a.ultimaPrezenta ?? a.ultimaLuna ?? '',
+      ) || a.nume.localeCompare(b.nume, 'ro'),
+  )
+}
+
+// „Pe ședință" din roster rezervă exact ziua rosterului — o singură dată pentru listă, salvare și
+// rezultat. Când ziua nu se poate rezerva, motivul se scrie pe buton, nu se sare la altă zi.
+export type ZiSedintaRapida =
+  | { ok: true; sesiuneId: string | null; ocupate: number; capacitate: number }
+  | { ok: false; motiv: string }
+
+export async function getZiSedintaRapida(params: {
+  cursId: string
+  date: string
+  zile: string[]
+  sezonId: string | null
+  azi: string
+}): Promise<ZiSedintaRapida> {
+  if (params.date < params.azi) {
+    return { ok: false, motiv: 'Ziua e în trecut — ședința se rezervă doar azi sau în viitor.' }
+  }
+  const zi = dayOfWeekRO(new Date(`${params.date}T12:00:00`))
+  if (!params.zile.includes(zi)) {
+    return { ok: false, motiv: 'Grupa nu se ține în ziua asta — alege din bara de sus o zi de curs.' }
+  }
+  if (params.sezonId) {
+    const { data: vac, error: vErr } = await supabase
+      .from('vacante')
+      .select('nume')
+      .eq('sezon_id', params.sezonId)
+      .lte('data_incepere', params.date)
+      .gte('data_final', params.date)
+      .limit(1)
+    if (vErr) throw vErr
+    if (vac?.length) return { ok: false, motiv: `E vacanță (${vac[0].nume}).` }
+  }
+  const { data: activ, error: aErr } = await supabase.rpc('curs_activ_in_luna', {
+    p_curs: params.cursId,
+    p_luna: `${params.date.slice(0, 7)}-01`,
+  })
+  if (aErr) throw aErr
+  if (activ === false) return { ok: false, motiv: 'Grupa e suspendată în luna asta.' }
+
+  const { data: ses, error: sErr } = await supabase
+    .from('open_sesiuni')
+    .select('id, status, capacitate')
+    .eq('curs', params.cursId)
+    .eq('data', params.date)
+    .maybeSingle()
+  if (sErr) throw sErr
+  if (ses?.status === 'anulata') return { ok: false, motiv: 'Ședința din ziua asta e anulată.' }
+  if (!ses) {
+    const { data: c, error: cErr } = await supabase
+      .from('cursuri')
+      .select('capacitate_maxima')
+      .eq('id', params.cursId)
+      .single()
+    if (cErr) throw cErr
+    return { ok: true, sesiuneId: null, ocupate: 0, capacitate: c.capacitate_maxima ?? 35 }
+  }
+  const { count, error: rErr } = await supabase
+    .from('open_rezervari')
+    .select('id', { count: 'exact', head: true })
+    .eq('sesiune', ses.id)
+    .neq('status', 'anulat')
+  if (rErr) throw rErr
+  return { ok: true, sesiuneId: ses.id, ocupate: count ?? 0, capacitate: ses.capacitate }
 }
 
 // ============================================================

@@ -6,7 +6,7 @@ Lista unică a ideilor bune care **nu se construiesc acum**: amânate sau parcat
 Stări: **amânat** = da, dar mai târziu · **parcat** = construit sau planificat, oprit printr-o decizie ·
 **de decis** = întâi o discuție cu Alex.
 
-Ultima actualizare: 4 octombrie 2026.
+Ultima actualizare: 5 octombrie 2026.
 
 ## Din lista de inspirație (2 oct. 2026)
 
@@ -58,6 +58,7 @@ Rămase din grupele mari: **facturile în portal**, **costume**, **suspendarea a
 | Criterii de evaluare diferite pe nivel/vârstă | amânat (12 aug.) | Schimbare de schemă: cele 10 coloane fixe devin criterii pe șablon. De decis: șablonul se leagă de vârstă, de nivel sau îl alege managerul? |
 | Pontaj plătit „lei/oră” | amânat | Azi pontajul măsoară doar orele. |
 | Jurnalul metodologic intră în evaluarea profesorului | amânat | Criteriul „Pregătirea lecției”. |
+| Instructorul semnalează „A venit, de verificat” pentru un copil fără acces la facultativ | de decis (5 oct., din alternativa Codex la rosterul facultativelor) | Instructorul e în sală, recepția e în altă parte. Semnalul nu creează înrolare, datorie sau prezență; cere o stare nouă, o notificare la recepție și un flux de rezolvare. Analiza: `docs/handoff/2026-10-05-alternativa-roster-facultative-participanti.md`. |
 | Plata evenimentelor trupelor (150 lei) în salarizare | amânat (25 sept.) | Etapa următoare a grilelor. |
 | Trupele modelate explicit (UNIQ, MiniQ's…) | amânat | Azi o trupă e doar `nivelul='Trupa'`; rapoartele nu le pot deosebi. |
 | Calendar pentru cursuri private 1-la-1 | amânat (28 mai) | Programare + cost pentru instructor + încasare per sesiune. |

@@ -124,6 +124,17 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   suspendarea de 50 de zile — toate doar pe „Per luna") și `get_restante_scadente(p_locatie)` = cifra din Overview,
   Panou și /datorii. Cardurile „pe luna curentă" din /datorii (rest recuperabil, rata lunii) măsoară ritmul
   încasării lunii, inclusiv partea nescadentă — nu sunt restanțe.
+- **Facultative: abonatul lunii nu plătește în plus ședința la aceeași grupă (05.10.2026).** Invers, un abonament nu se
+  pune peste ședințe plătite în luna lui — trece prin conversia „Abonează” (`converteste_sedinte_in_abonament`, ședințele
+  devin avans). Garda e în DB, pe orice drum: trigger amânat `trg_garda_abonament_sedinta` (verifică starea la commit, ca
+  ambele conversii să treacă; lacăt pe client+curs contra a două recepții simultane) + `hold_loc_open` în portal, înainte de
+  plată. Ședințele de 0 lei (bonus) sunt permise; apelurile `service_role` (IPN Netopia) nu sunt oprite, ca să nu se piardă
+  o plată deja luată. La lansare existau 7 perechi plătite de două ori (iul.–sept. 2026) — Alex: se ignoră.
+- **Rosterul facultativelor: „Au venit recent” (05.10.2026).** Pe grupele facultative, lista „Foști” a fost înlocuită de
+  cei prezenți în cele 30 de zile dinaintea zilei rosterului care n-au acces în ziua aceea, cu înrolare dintr-un clic:
+  „Lunar” = luna rosterului, „Pe ședință” = exact ziua rosterului (fără salt la următoarea ședință), 0 lei încasați.
+  Pe grupele recurente și trupe lista nu mai există: înrolările sunt automate pe sezon, iar după reziliere nu ai voie
+  la aceeași grupă în același sezon.
 - **Abonament la curs facultativ: de regulă nu după 15 ale lunii (30.09).** După 15, ședințele rămase valorează mai puțin decât
   un abonament întreg — de regulă omul plătește pe ședință. Formularul de înrolare doar avertizează, nu blochează: unii vor abonamentul oricum.
 - **Datoriile nu se arată pe instructor (30.09):** instructorul nu încasează; datoriile unei grupe se văd pe /datorii,

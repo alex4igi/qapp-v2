@@ -20,10 +20,11 @@ export type {
   RosterStatus,
   RosterKind,
   GrupaRosterRow,
-  GrupaFostRow,
+  GrupaSugestieRow,
+  ZiSedintaRapida,
   GrupaDashboard,
 } from './grupa'
-export { getGrupaDashboard, getGrupaIstoricLuna } from './grupa'
+export { getGrupaDashboard, getGrupaIstoricLuna, getZiSedintaRapida } from './grupa'
 export type { GrupaIstoricLuna, GrupaIstoricRow } from './grupa'
 
 export type {
