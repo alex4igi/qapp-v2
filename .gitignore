@@ -48,6 +48,7 @@ provision-*.csv
 
 # Backup-uri dinaintea curățeniilor pe date reale (nume, sume) — rămân doar local
 scripts/cleanup/_backup_*.json
+scripts/cleanup/_deleted_*.json
 
 # Exporturi de reînscrieri cu date de clienți
 docs/Reinscrieri 25-26/
