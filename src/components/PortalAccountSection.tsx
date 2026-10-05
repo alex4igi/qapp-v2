@@ -47,10 +47,7 @@ export function PortalAccountSection({
     enabled: !!authUserId,
     staleTime: 60_000,
   })
-  const refresh = () => {
-    qc.invalidateQueries({ queryKey: invalidateKey })
-    qc.invalidateQueries({ queryKey: ['portal-account-info'] })
-  }
+  const refresh = () => qc.invalidateQueries({ queryKey: invalidateKey })
 
   async function run(fn: () => Promise<void>) {
     setBusy(true)
@@ -107,6 +104,8 @@ export function PortalAccountSection({
                     email,
                     password,
                     notify: notify === 'none' ? undefined : notify,
+                    // Parola o vede și recepția: portalul cere una nouă la prima logare.
+                    mustChange: true,
                   })
                   setMsg(deliveryMsg('Cont creat', notify, r, password))
                   setPassword(suggestPortalPassword(nameHint))
@@ -270,5 +269,5 @@ function deliveryMsg(
       ? `${prefix}. Datele au fost trimise pe SMS.`
       : `${prefix}. ⚠️ SMS-ul NU a plecat (lipsă număr sau provider neconfigurat) — comunică manual parola: ${password}`
   }
-  return `${prefix}. Parolă: ${password} (comunic-o membrului).`
+  return `${prefix}. Parolă: ${password} (comunic-o membrului; la prima logare își alege una nouă).`
 }

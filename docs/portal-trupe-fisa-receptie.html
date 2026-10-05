@@ -1,10 +1,10 @@
 <!doctype html><html lang="ro"><head><meta charset="utf-8"><title>Portalul de membri — ce răspunde recepția</title>
 <!-- PDF: Chromium --print-to-pdf, ca în antetul scripts/export-emailuri-lipsa.mjs -->
 <style>
-  @page { size: A4; margin: 13mm 12mm 12mm; }
+  @page { size: A4; margin: 9mm 11mm 8mm; }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 10pt/1.38 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111; }
-  .cap { background: #000; color: #fff; padding: 14px 16px; border-radius: 4px; }
+  body { margin: 0; font: 9.6pt/1.32 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111; }
+  .cap { background: #000; color: #fff; padding: 10px 14px; border-radius: 4px; }
   .cap h1 { margin: 0; font-size: 17pt; letter-spacing: -0.2px; }
   .cap h1 b { background: #FFD600; color: #000; padding: 0 6px; border-radius: 2px; }
   .cap p { margin: 4px 0 0; font-size: 9pt; color: #cfcfcf; }
@@ -13,15 +13,19 @@
   .brief ul { margin: 0; padding-left: 18px; }
   .brief li { margin: 2px 0; }
   h2 { margin: 10px 0 4px; padding: 5px 10px; background: #FFD600; border-radius: 3px; font-size: 11pt; text-transform: uppercase; letter-spacing: 0.4px; }
-  article { break-inside: avoid; padding: 5px 10px; border-bottom: 1px solid #ececec; }
+  article { break-inside: avoid; padding: 3px 10px; border-bottom: 1px solid #ececec; }
   article h4 { margin: 0 0 3px; font-size: 11pt; }
-  article p { margin: 1px 0; font-size: 9.5pt; }
+  article p { margin: 0; font-size: 9.2pt; }
   article .spui { color: #444; }
   article .spui::before { content: "Spui: "; font-weight: 700; color: #111; }
   article .faci::before { content: "Faci: "; font-weight: 700; }
   article.alex { background: #fffdf2; }
   article.alex .faci { color: #8a6d00; }
-  .nu { margin-top: 10px; padding: 10px 14px; border: 2px solid #111; border-radius: 4px; font-size: 9.8pt; }
+  .pasi { margin-top: 8px; padding: 8px 14px; border: 1px solid #e5e5e5; border-left: 4px solid #FFD600; border-radius: 3px; font-size: 9.5pt; }
+  .pasi h3 { margin: 0 0 3px; font-size: 10pt; text-transform: uppercase; letter-spacing: 0.6px; }
+  .pasi ol { margin: 0; padding-left: 18px; }
+  .pasi p { margin: 4px 0 0; color: #444; }
+  .nu { margin-top: 8px; padding: 10px 14px; border: 2px solid #111; border-radius: 4px; font-size: 9.8pt; }
   .nu h3 { margin: 0 0 4px; font-size: 10pt; text-transform: uppercase; letter-spacing: 0.6px; }
   .nu ul { margin: 0; padding-left: 18px; }
 </style></head><body>
@@ -37,7 +41,7 @@
     <li>La prima intrare, portalul le cere să-și aleagă o parolă a lor. Parola din email merge o singură dată.</li>
     <li>Pentru copii, contul e al familiei: un singur cont pentru toți frații, pe emailul părintelui.</li>
     <li>În portal văd: grupa și programul, plățile (pot plăti online), prezențele, calendarul, adeverința de frecvență și notificările.</li>
-    <li>În fișa clientului sau a familiei, secțiunea „Cont portal membru” arată <b>emailul cu care se loghează</b> omul și când a intrat ultima dată.</li>
+    <li>În fișa clientului sau a familiei, tabul „Detalii personale”, secțiunea „Cont portal membru” arată <b>emailul cu care se loghează</b> omul și când a intrat ultima dată.</li>
   </ul>
 </div>
 
@@ -47,7 +51,7 @@
   <h4>„N-am primit niciun email.”</h4>
   <p class="faci">Deschide fișa. Dacă la „Cont portal membru” scrie „Cont portal activ”, contul există: verifică cu omul emailul de login afișat acolo.</p>
   <p class="spui">„Uitați-vă și în Spam / Junk / Promoții, mesajul vine de la Quasar Dance.” Dacă tot nu-l găsește: „Pe membri.quasardance.ro apăsați «Ai uitat parola?» și scrieți emailul ăsta.”</p>
-  <p class="faci">Dacă scrie că nu are cont: emailul lipsea sau era greșit în fișă. Completează-l și spune-i lui Alex, contul se creează după.</p>
+  <p class="faci">Dacă scrie că nu are cont: emailul lipsea sau era greșit în fișă. Completează-l și creează contul (pașii de jos).</p>
 </article>
 
 <article>
@@ -64,7 +68,7 @@
 
 <article>
   <h4>„Am email greșit în fișă” sau „nu mai am acces la emailul ăla”.</h4>
-  <p class="faci">Fără cont: corectează emailul în fișă și spune-i lui Alex. Cu cont: emailul de login se schimbă doar de Alex. Notează numele, trupa și emailul corect și trimite-i-le lui.</p>
+  <p class="faci">Fără cont: corectează emailul în fișă și creează contul (pașii de jos). Cu cont: emailul de login se schimbă doar de Alex. Notează numele, trupa și emailul corect și trimite-i-le lui.</p>
 </article>
 
 <article>
@@ -82,12 +86,24 @@
   <p class="spui">„În portal, jos în dreapta, e butonul «Trimite-ne o părere». Scrieți acolo, ajunge direct la noi.”</p>
 </article>
 
+<div class="pasi">
+  <h3>Am primit emailul mai târziu: creez contul</h3>
+  <ol>
+    <li>Completează emailul în fișa <b>familiei</b> (pentru copii) și salvează.</li>
+    <li>Tabul „Detalii personale” → „Cont portal membru”. Emailul e deja trecut, parola e generată.</li>
+    <li>La „Trimite datele de acces” lasă <b>Pe email</b> și apasă <b>Creează cont</b>.</li>
+    <li>Trebuie să apară „Cont creat. Datele au fost trimise pe email.” La prima intrare, omul își alege parola lui.</li>
+  </ol>
+  <p><b>s@yahoo.com</b> e o adresă falsă: înlocuiește-o cu cea adevărată, altfel apare „emailul e folosit deja”.
+  Același email la două familii: întreabă dacă e același părinte. Dacă da, spune-i lui Alex să lege fișele într-o familie (un singur cont).
+  Același drum și pentru copiii care intră în trupă mai târziu.</p>
+</div>
+
 <div class="nu">
   <h3>Nu</h3>
   <ul>
     <li>Nu ștergi contul de portal ca să-l refaci: se pierd legăturile, iar omul primește alt email.</li>
-    <li>Nu ceri și nu notezi parole, nici pe hârtie, nici pe WhatsApp.</li>
-    <li>Nu trimiți date de acces pe grupul trupei, doar în privat.</li>
+    <li>Nu ceri și nu notezi parole, iar datele de acces nu le trimiți pe grupul trupei, doar în privat.</li>
   </ul>
 </div>
 </body></html>

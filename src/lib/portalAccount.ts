@@ -39,7 +39,7 @@ export function suggestPortalPassword(nameHint?: string | null): string {
 export type NotifyChannel = 'email' | 'sms'
 
 export async function createPortalAccount(
-  input: Target & { email: string; password: string; notify?: NotifyChannel },
+  input: Target & { email: string; password: string; notify?: NotifyChannel; mustChange?: boolean },
 ): Promise<{
   id: string
   email: string | null

@@ -140,7 +140,7 @@ for (const t of list) {
 }
 
 const CAND_CONT = NIVEL
-  ? 'Restul membrilor au primit deja contul pe email. După ce completați emailul în fișă, spuneți-i lui Alex: contul se creează și pleacă pe email.'
+  ? 'Restul membrilor au primit deja contul pe email. După ce completați emailul în fișă, creați contul din fișă: Detalii personale → Cont portal membru → Creează cont (Pe email).'
   : 'Deocamdată nimeni nu primește date de acces. Conturile se fac mai târziu, când decide Alex. Voi doar completați emailurile în fișe.'
 const note = [
   [],
@@ -240,7 +240,7 @@ const htmlDoc = `<!doctype html><html lang="ro"><head><meta charset="utf-8"><tit
     <li>Sunăm și cerem adresa de email a părintelui sau a adultului.</li>
     <li>O scriem pe foaie, apoi o completăm în fișa din aplicație.</li>
     <li>Bifăm căsuța când e gata.</li>
-    <li>${NIVEL ? 'Când ai completat emailuri, spune-i lui Alex: contul pleacă pe email.' : 'Nimeni nu primește încă date de acces — deocamdată doar strângem emailurile.'}</li>
+    <li>${NIVEL ? 'Creăm contul din fișă: Detalii personale → Cont portal membru → Creează cont (Pe email).' : 'Nimeni nu primește încă date de acces — deocamdată doar strângem emailurile.'}</li>
   </ol>
 </div>
 ${sectiuni}
