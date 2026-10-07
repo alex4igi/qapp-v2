@@ -200,6 +200,15 @@ export function buildSms(tip: SmsTip, params: SmsParams): string | null {
   }
 }
 
+// Confirmarea preinscrierii Valea Lupului (Alex, 07.10.2026). Fara nume: in formular
+// „Numele tau" vine des cu familia inainte („Popescu Maria"), deci salutul ar iesi cu
+// numele de familie. Fara adresa, deci nu trece prin LOCATII_FARA_DATE_SMS. 154 caractere.
+// Promite apelul din vacanta: dupa CONFIRMARE_PREINSCRIERE_PANA nu se mai trimite.
+export const CONFIRMARE_PREINSCRIERE_PANA = '2026-10-30'
+export function buildPreinscriereSms(): string {
+  return 'Buna ziua! Am primit preinscrierea la Quasar Dance Valea Lupului. In vacanta, 26-30 oct., va sunam sa stabilim ora gratuita si programul. Info: 0730534172'
+}
+
 // Confirmare inrolare recurenta — trimisa la cronul de a doua zi (cron-afternoon, 16:00),
 // nu imediat: lasa o fereastra de undo de ore intregi. Spre deosebire de lead-uri,
 // parametrii vin direct din curs/client, deci foloseste un builder propriu (nu

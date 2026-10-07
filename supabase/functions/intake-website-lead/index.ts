@@ -41,7 +41,7 @@ import {
   campanieRecomandareActiva,
   inregistreazaRecomandare,
 } from '../_shared/intake.ts'
-import { parsePreinscriere, salveazaPreinscriere, stariCampaniiPreinscriere } from '../_shared/preinscriere.ts'
+import { confirmaPreinscriereSms, parsePreinscriere, salveazaPreinscriere, stariCampaniiPreinscriere } from '../_shared/preinscriere.ts'
 import { clientIp, raspuns429, verificaPlafon } from '../_shared/rateLimit.ts'
 
 const SECRET = Deno.env.get('INTAKE_SECRET') ?? ''
@@ -195,6 +195,11 @@ Deno.serve(async (req) => {
         detalii: urma,
       })
       console.log(`[intake/website] preinscriere ${r.duplicat ? 'retry' : 'salvata'}: ${r.participanti} participanti, ${r.leaduriNoi} leaduri noi`)
+      if (!r.duplicat) {
+        const sms = await confirmaPreinscriereSms(supabase, pre.value.trimitere_id)
+          .catch((e) => `eroare: ${e instanceof Error ? e.message : e}`)
+        console.log(`[intake/website] preinscriere sms: ${sms}`)
+      }
       if (!areSecret) return json({ ok: true })
       return json({ ok: true, preinscriere: r, ...(warnings.length ? { warnings } : {}) })
     }

@@ -22,6 +22,7 @@ const TIP_SMS: Record<string, string> = {
   review: 'Cerere de recenzie',
   followup: 'După neprezentare',
   waiting_list: 'Listă de așteptare',
+  preinscriere: 'Confirmare preînscriere',
   confirmare_inrolare: 'Confirmare înscriere',
   start_sezon: 'Reminder început de sezon',
   prima_sedinta: 'Reminder prima ședință',

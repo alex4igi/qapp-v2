@@ -13,6 +13,8 @@ import {
   roMobileNational,
   type IntakeCanal,
 } from './intake.ts'
+import { CONFIRMARE_PREINSCRIERE_PANA, buildPreinscriereSms, sendSms } from './sms.ts'
+import { deferUntil, getQuietHoursConfig, isQuiet } from './quietHours.ts'
 
 // Ce oferim acum la Valea Lupului, doar copiilor (Zumba scoasă, Alex 30.09.2026). CHECK-ul din DB
 // o mai acceptă, ca s-o putem readuce fără migrație.
@@ -327,3 +329,50 @@ export async function salveazaPreinscriere(
 
   return { participanti: randuri.length, leaduriNoi, duplicat: false }
 }
+
+// SMS-ul de confirmare după o preînscriere nouă. Unul pe telefon, nu pe formular: o
+// familie care revine cu un alt copil a primit deja confirmarea. Noaptea intră în
+// sms_amanate (process-sms-amanate îl trimite; în sms_logs îl scrie doar dacă are lead, deci
+// dublura se verifică în ambele tabele). Best-effort:
+// apelantul nu lasă un SMS picat să strice preînscrierea.
+export async function confirmaPreinscriereSms(
+  supabase: SupabaseClient,
+  trimitereId: string,
+): Promise<string> {
+  const azi = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' })
+  if (azi > CONFIRMARE_PREINSCRIERE_PANA) return 'după perioada de contact'
+
+  const { data: rand } = await supabase
+    .from('preinscrieri_campanie')
+    .select('telefon, lead_id')
+    .eq('trimitere_id', trimitereId)
+    .order('lead_id', { ascending: true, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+  const telefon = rand?.telefon
+  if (!telefon) return 'fără telefon'
+
+  const [{ count: trimise }, { count: inCoada }] = await Promise.all([
+    supabase.from('sms_logs').select('id', { count: 'exact', head: true })
+      .eq('telefon', telefon).eq('tip', SMS_TIP_PREINSCRIERE),
+    supabase.from('sms_amanate').select('id', { count: 'exact', head: true })
+      .eq('telefon', telefon).eq('tip', SMS_TIP_PREINSCRIERE).neq('status', 'esuat'),
+  ])
+  if ((trimise ?? 0) + (inCoada ?? 0) > 0) return 'deja confirmat'
+
+  const mesaj = buildPreinscriereSms()
+  const now = new Date()
+  const quietCfg = await getQuietHoursConfig(supabase)
+  if (isQuiet(now, quietCfg)) {
+    await supabase.from('sms_amanate').insert({
+      telefon, mesaj, tip: SMS_TIP_PREINSCRIERE, lead_id: rand.lead_id, send_after: deferUntil(now, quietCfg),
+    })
+    return 'amânat'
+  }
+  const r = await sendSms(telefon, mesaj)
+  if (!r.ok) return `eșuat: ${r.error ?? 'necunoscut'}`
+  await supabase.from('sms_logs').insert({ lead_id: rand.lead_id, tip: SMS_TIP_PREINSCRIERE, telefon, mesaj })
+  return 'trimis'
+}
+
+export const SMS_TIP_PREINSCRIERE = 'preinscriere'
