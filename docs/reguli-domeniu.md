@@ -286,7 +286,7 @@ cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functi
   împarte pragul la o rată de conversie presupusă (reglabilă) și o afișează ca ipoteză.
 - **Leadurile Valea Lupului intră în `nou`** și deci în lista de sunat de seară (`leads_de_flagat_seara`), cu termenul
   de prim apel ca orice lead. **Decizie Alex (07.10.2026):** le răspunde **Petruța** (recepția Ștefan cel Mare, numărul
-  0730 534 172), în 24 h — informează și trimite linkul, dar **nu programează**. Orarul și demonstrația le stabilește la
+  0730 534 172), în 24 h (doar stegulețul din kanban — leadurile VL **nu** intră în K4-ul Petruței, Alex 07.10) — informează și trimite linkul, dar **nu programează**. Orarul și demonstrația le stabilește la
   telefon, în 26–30 oct., cine va fi desemnat (nedecis). Preferințele familiei **nu se introduc în qapp**: părintele
   completează (sau retrimite) formularul de pe site. Scriptul recepției: `docs/handoff/2026-10-07-scripturi-receptie-valea-lupului.md`.
 - **Reducerea de familie (−10%, §2 din reguli-preturi-reduceri) se aplică și la Valea Lupului** (Alex, 07.10.2026).
