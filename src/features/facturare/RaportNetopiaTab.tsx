@@ -5,7 +5,7 @@ import { downloadCsv } from '@/lib/csv'
 import { humanizeError } from '@/lib/errorMessage'
 import { getRaportNetopia, importaDecont, type RaportPlata } from './raport-netopia/api'
 import { citesteFisiereDecont } from './raport-netopia/parseDecont'
-import { printRaportNetopia } from './raport-netopia/printRaportNetopia'
+import { descarcaRaportNetopiaPdf } from './raport-netopia/pdfRaportNetopia'
 import {
   dataRo,
   etichetaLuna,
@@ -41,6 +41,8 @@ export function RaportNetopiaTab() {
     onError: (e: unknown) => setImportError(humanizeError(e, 'Fișierele nu au putut fi încărcate.')),
     meta: { erroareAfisata: true },
   })
+
+  const pdf = useMutation({ mutationFn: descarcaRaportNetopiaPdf })
 
   const r = raport.data
   const t = r ? totaluri(r) : null
@@ -140,8 +142,8 @@ export function RaportNetopiaTab() {
             <Button variant="secondary" onClick={exportCsv} disabled={!r || r.plati.length === 0}>
               Export Excel (CSV)
             </Button>
-            <Button onClick={() => r && printRaportNetopia(r)} disabled={!r}>
-              Generează PDF
+            <Button onClick={() => r && pdf.mutate(r)} disabled={!r || pdf.isPending}>
+              {pdf.isPending ? 'Se generează…' : 'Descarcă PDF'}
             </Button>
           </div>
         </div>
