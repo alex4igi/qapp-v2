@@ -310,6 +310,11 @@ cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functi
 - Pe un lead WhatsApp, **`leads.sursa` rămâne „WhatsApp”** (canalul de contact), iar `utm_source/medium/campaign`
   spun **de unde a venit omul înainte** (ex. `google / cpc` = Google Ads, `google / organic` = căutare). `utm_*` gol =
   omul a scris fără butonul de pe site sau recepția n-a lipit mesajul — **nu** înseamnă „direct”.
+- **Textul mesajului precompletat** (Alex, 07.10.2026): cine a intrat pe site din QR-ul flyerelor Valea Lupului
+  (`/vl/<lot>` → `flyer / print / valea_lupului_deschidere`) primește pe ORICE buton de WhatsApp, cât ține tabul,
+  „Bună! Am primit flyerul Quasar Dance de la Școala Verde…”; oricine altcineva primește mesajul standard, inclusiv pe
+  `/valea-lupului`. Textul e doar un indiciu pentru recepție — sursa reală o dă tot codul invizibil.
+  Sursa: `lib/whatsapp.ts` pe site.
 - Legătura stă pe lead (`leads.wa_click_id`): un click poate avea mai multe leaduri (frați).
 - Click-urile fără lead nu sunt o eroare: recepția notează doar conversațiile serioase. Raportul „click-uri vs.
   leaduri” măsoară tocmai asta.
