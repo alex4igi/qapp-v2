@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { RezultatConfirmare, SalarizareLuna } from './types'
-import type { SalariuStaffComponenta } from '@/types/db'
+import type { ManagerLuna, ReceptieLuna, RezultatConfirmare, SalarizareLuna } from './types'
 
 export async function getSalarizareLuna(anul: number, luna: number): Promise<SalarizareLuna> {
   const { data, error } = await supabase.rpc('get_salarizare_luna', { p_anul: anul, p_luna: luna })
@@ -38,23 +37,16 @@ export async function adaugaGrupeNoiInPool(): Promise<number> {
   return data as number
 }
 
-export type ComponentaProprie = Pick<
-  SalariuStaffComponenta,
-  'id' | 'post' | 'anul' | 'luna' | 'eticheta' | 'suma' | 'stare' | 'platit_in_luna'
->
+export type SalariulMeuStaff = {
+  anul: number
+  luna: number
+  manager: ManagerLuna | null
+  receptie: ReceptieLuna | null
+}
 
-/**
- * Componentele confirmate ale salariului de manager / recepție pentru `userId`.
- * Filtrul pe user e obligatoriu: pentru admin RLS-ul întoarce rândurile tuturor.
- */
-export async function listSalariiStaffProprii(userId: string): Promise<ComponentaProprie[]> {
-  const { data, error } = await supabase
-    .from('salarii_staff_componente')
-    .select('id, post, anul, luna, eticheta, suma, stare, platit_in_luna')
-    .eq('user_id', userId)
-    .order('anul', { ascending: false })
-    .order('luna', { ascending: false })
-    .order('confirmat_la')
+/** Simularea proprie de manager / recepție pentru o lună încheiată (DB-ul refuză luna în curs). */
+export async function getSalariulMeuStaff(anul: number, luna: number): Promise<SalariulMeuStaff> {
+  const { data, error } = await supabase.rpc('get_salariul_meu_staff', { p_anul: anul, p_luna: luna })
   if (error) throw error
-  return data ?? []
+  return data as unknown as SalariulMeuStaff
 }

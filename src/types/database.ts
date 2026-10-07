@@ -7095,6 +7095,54 @@ export type Database = {
         }
         Relationships: []
       }
+      netopia_decont: {
+        Row: {
+          batch_id: number
+          comerciant: string | null
+          comision: number
+          data_operatiei: string | null
+          data_platii: string | null
+          descriere: string | null
+          importat_de: string | null
+          importat_la: string
+          linie: number
+          moneda: string | null
+          order_ref: string | null
+          procesat: number
+          tva: number
+        }
+        Insert: {
+          batch_id: number
+          comerciant?: string | null
+          comision?: number
+          data_operatiei?: string | null
+          data_platii?: string | null
+          descriere?: string | null
+          importat_de?: string | null
+          importat_la?: string
+          linie: number
+          moneda?: string | null
+          order_ref?: string | null
+          procesat?: number
+          tva?: number
+        }
+        Update: {
+          batch_id?: number
+          comerciant?: string | null
+          comision?: number
+          data_operatiei?: string | null
+          data_platii?: string | null
+          descriere?: string | null
+          importat_de?: string | null
+          importat_la?: string
+          linie?: number
+          moneda?: string | null
+          order_ref?: string | null
+          procesat?: number
+          tva?: number
+        }
+        Relationships: []
+      }
       netopia_orders: {
         Row: {
           amount: number
@@ -11156,6 +11204,7 @@ export type Database = {
           auth_user_id: string | null
           created: string
           id: string
+          in_afara_grilei: boolean
           nivelul: Database["public"]["Enums"]["nivel_teacher"] | null
           nume: string
           old_teacher_id: number | null
@@ -11168,6 +11217,7 @@ export type Database = {
           auth_user_id?: string | null
           created?: string
           id?: string
+          in_afara_grilei?: boolean
           nivelul?: Database["public"]["Enums"]["nivel_teacher"] | null
           nume: string
           old_teacher_id?: number | null
@@ -11180,6 +11230,7 @@ export type Database = {
           auth_user_id?: string | null
           created?: string
           id?: string
+          in_afara_grilei?: boolean
           nivelul?: Database["public"]["Enums"]["nivel_teacher"] | null
           nume?: string
           old_teacher_id?: number | null
@@ -13654,6 +13705,10 @@ export type Database = {
           ramas: number
         }[]
       }
+      _salariu_propriu_vizibil: {
+        Args: { p_anul: number; p_luna: number; p_user: string }
+        Returns: boolean
+      }
       _salarizare_parametri: {
         Args: { p_luna: string; p_post: string }
         Returns: Json
@@ -14139,6 +14194,10 @@ export type Database = {
       deschide_raport_kpi: {
         Args: { p_anul: number; p_grila: string; p_luna: number }
         Returns: string
+      }
+      detaliu_cursanti_salariu: {
+        Args: { p_anul: number; p_cursuri: string[]; p_luna: number }
+        Returns: Json
       }
       detecteaza_absente_21z: {
         Args: { p_min_sedinte?: number; p_ref_date?: string; p_zile?: number }
@@ -15410,6 +15469,10 @@ export type Database = {
           stare: string
         }[]
       }
+      get_salariul_meu_staff: {
+        Args: { p_anul: number; p_luna: number }
+        Returns: Json
+      }
       get_salarizare_luna: {
         Args: { p_anul: number; p_luna: number }
         Returns: Json
@@ -15744,6 +15807,7 @@ export type Database = {
         Args: { p_client: string; p_sesiune: string }
         Returns: Json
       }
+      importa_decont_netopia: { Args: { p_linii: Json }; Returns: Json }
       incaseaza_plata_integrala_sezon: {
         Args: {
           p_client: string
@@ -16208,6 +16272,7 @@ export type Database = {
         Args: { p_motiv: string; p_order_ref: string }
         Returns: number
       }
+      notifica_raport_netopia_lunar: { Args: never; Returns: number }
       notifications_mark_all_read: { Args: never; Returns: number }
       notifications_resolve: {
         Args: { p_id: string; p_raspuns?: string }
@@ -16476,6 +16541,7 @@ export type Database = {
       proceseaza_cozi_sms: { Args: never; Returns: undefined }
       proceseaza_sesiuni_evaluare: { Args: never; Returns: Json }
       prune_expired_leads: { Args: never; Returns: Json }
+      raport_netopia_luna: { Args: { p_luna: string }; Returns: Json }
       raport_recomandari: {
         Args: { p_campanie?: string }
         Returns: {

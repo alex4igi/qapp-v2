@@ -1,12 +1,55 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge, type BadgeTone } from '@/components/ui'
 import { formatLocuri, formatRON } from '@/lib/format'
 import {
   BANDA_ETICHETA,
   NIVEL_PLATA_ETICHETA,
   type BandaSalariu,
+  type DetaliuCursantiGrupa,
   type LocEchivalent,
   type SalariuTeacherCalc,
 } from '@/lib/salariuTeacher'
+
+// Grupa recurentă, doar pentru admin: câți au plătit abonamentul întreg și câți au intrat cu pro-rata.
+function CursantiRecurenti({ det, cursanti }: { det: DetaliuCursantiGrupa; cursanti: number }) {
+  const [deschis, setDeschis] = useState(false)
+  // Detaliul se calculează azi; la o lună confirmată înrolările se pot schimba după confirmare.
+  const altNumar = det.integral + det.prorata !== Math.round(cursanti)
+  return (
+    <div className="mt-0.5 text-xs text-muted">
+      <div>
+        {det.integral} integral ({formatRON(det.suma_integral)}) · {det.prorata} pro-rata
+      </div>
+      {altNumar && <div className="text-warn">azi: {det.integral + det.prorata} cursanți</div>}
+      {det.prorata > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setDeschis((v) => !v)}
+            className="text-left underline underline-offset-2"
+          >
+            {deschis
+              ? 'ascunde pro-rata'
+              : `pro-rata: ${formatRON(det.suma_prorata)} · ${det.prezente_prorata} prezențe`}
+          </button>
+          {deschis && (
+            <ul className="mt-1 space-y-0.5">
+              {det.lista_prorata.map((p) => (
+                <li key={p.client_id}>
+                  <Link to={`/clienti/${p.client_id}`} className="text-ink hover:underline">
+                    {p.nume}
+                  </Link>{' '}
+                  — {formatRON(p.suma)} · {p.prezente} {p.prezente === 1 ? 'prezență' : 'prezențe'}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
 
 // Grupa facultativă: din ce se compune numărul de locuri.
 function LocEchivalentDetaliu({ loc }: { loc: LocEchivalent }) {
@@ -47,8 +90,17 @@ function Treapta({ banda, suma, detaliu }: { banda: BandaSalariu; suma: number; 
   )
 }
 
-/** Salariul unei luni pe grila 2026-2027: pe grupe, apoi liniile pe om. */
-export function SalariuTeacherDetaliu({ calc }: { calc: SalariuTeacherCalc }) {
+/**
+ * Salariul unei luni pe grila 2026-2027: pe grupe, apoi liniile pe om.
+ * `detaliuCursanti` (doar admin) desparte cursanții grupelor recurente în integral / pro-rata.
+ */
+export function SalariuTeacherDetaliu({
+  calc,
+  detaliuCursanti,
+}: {
+  calc: SalariuTeacherCalc
+  detaliuCursanti?: Record<string, DetaliuCursantiGrupa>
+}) {
   const vara = calc.perioada === 'vara'
 
   return (
@@ -96,6 +148,9 @@ export function SalariuTeacherDetaliu({ calc }: { calc: SalariuTeacherCalc }) {
                     {formatLocuri(g.cursanti)}
                     {g.capacitate ? <span className="text-muted"> / {g.capacitate}</span> : null}
                     {g.loc_echivalent && <LocEchivalentDetaliu loc={g.loc_echivalent} />}
+                    {detaliuCursanti?.[g.curs_id] && (
+                      <CursantiRecurenti det={detaliuCursanti[g.curs_id]} cursanti={g.cursanti} />
+                    )}
                   </td>
                   <td className="py-2 pr-3 text-right text-ink">{formatRON(g.baza)}</td>
                   {!vara && (

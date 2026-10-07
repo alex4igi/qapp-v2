@@ -2,10 +2,11 @@
 
 > **Stare:** reguli decise de Alex pe 14 sept. 2026, revizuite pe **17 sept. 2026**
 > (capacitatea se fixează la începutul sezonului) și pe **25 sept. 2026**. **IMPLEMENTAT în aplicație
-> pe 25 sept. 2026, în test** — vezi §9.
+> pe 25 sept. 2026;** **ACTIVATĂ pe 7 oct. 2026** (Alex) pentru tot staff-ul, **cu excepția Biancăi David**: fiecare își vede simularea lunilor încheiate în „Salariul meu”, adminul confirmă luna — vezi §9.
 >
-> ⭐ **Deciziile din 25 sept. 2026** (Alex): **Q4K rămâne fără manager deocamdată** · **septembrie 2026:
-> ocuparea la standard** (2 lei × locuri), ca la instructori · capacitatea = grupele sezonului care au
+> ⭐ **Deciziile din 25 sept. 2026** (Alex): **Q4K rămâne fără manager deocamdată** · ~~septembrie 2026:
+> ocuparea la standard~~ — **înlocuit pe 6 oct.: septembrie 2026 se plătește după date**, ca la
+> instructori (`mod_ocupare_manageri = 'masurat'`, migrația `20261006120000`) · capacitatea = grupele sezonului care au
 > funcționat măcar o lună de la start, **păstrată efectiv** într-un pool (§3).
 >
 > ⭐ **SUMELE SUNT NETE** (Alex, 23 sept. 2026) — ca la [instructori](./grila-salarizare-instructori.md)
@@ -211,8 +212,9 @@ nu 2. Diferența până la standard: 47 de locuri ocupate în plus.
 
 ## 7. Decizii încă deschise
 
-- ~~**Ocuparea din septembrie**~~ — **ÎNCHIS (25 sept.)**: septembrie 2026 la standard (2 lei × locuri).
-  Din 2027, regula campaniei, ca la instructori.
+- ~~**Ocuparea din septembrie**~~ — **ÎNCHIS (6 oct.)**: septembrie 2026 după date (Nicolina 49,84% ⇒
+  1 leu × 209,33 locuri). Decizia din 25 sept. (standard, 2 lei × locuri) a fost înlocuită înainte de
+  confirmare. Din 2027, regula campaniei, ca la instructori.
 - **Bonusurile de vară** — nedefinite.
 - ⭐ **Bonus de maturizare a unei grupe noi** — idee a lui Alex (17 sept. 2026), **cu calculul
   nedus până la capăt**, de notat și eventual implementat: grupa nouă mărește pool-ul de capacitate,
@@ -246,7 +248,7 @@ nu 2. Diferența până la standard: 47 de locuri ocupate în plus.
 | Pool-ul de capacitate | `capacitate_pool` — capacitatea și locația copiate la adăugare; rândurile nu se șterg. Umplut pe 2026-2027 cu grupele care au funcționat în septembrie (Ștefan 612, Nicolina 420, Q4K 105); cronul `capacitate-pool-zilnic` adaugă grupele noi. Corecție doar prin `corecteaza_pool_capacitate` (owner, cu motiv) |
 | Calculul lunii | `calculeaza_salariu_manager(user, an, lună)` |
 | Confirmarea pe componente | `confirma_salariu_staff` → `salarii_staff_componente`. Baza se confirmă oricând, ocuparea după finalul lunii, încasarea după finalul lunii M+1 |
-| Ecran | `/salarizare` → tab „Manageri" (owner/admin); managerul își vede doar lunile lui confirmate în „Salariul meu" (politica `salarii_staff_self_select`, migrația `20260926163900`) |
+| Ecran | `/salarizare` → tab „Manageri" (owner/admin); managerul își vede în „Salariul meu" simularea lunilor încheiate, cu ce e deja confirmat (`get_salariul_meu_staff`, din 7 oct. 2026, migrația `20261007100000`) |
 
 🔒 Nota internă din §3 rămâne valabilă: faptul că pool-ul **nu scade** nu se publică în materialele
 pentru manageri.

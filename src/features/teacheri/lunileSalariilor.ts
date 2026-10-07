@@ -66,3 +66,15 @@ export function cuLuniConfirmate(
   }
   return out.sort((a, b) => cheie(b) - cheie(a))
 }
+
+// Prima lună calculată pe grila 2026-2027; lunile dinainte n-au parametri (RPC-ul dă P0002).
+export const PRIMA_LUNA_GRILA: Luna = { y: 2026, m: 9 }
+
+// Lunile pe care omul își vede simularea în „Salariul meu": doar cele încheiate (Alex,
+// 7 oct. 2026 — o cifră pe jumătate de lună ar fi luată drept salariu), de la grilă încoace.
+// Aceeași regulă o impune și DB-ul (`_salariu_propriu_vizibil`).
+export function luniSimulare(sezonIncepere: string | null | undefined, lunaCurenta: Luna): Luna[] {
+  const start = primaLunaSalarii(sezonIncepere, lunaCurenta)
+  const deLa = cheie(start) >= cheie(PRIMA_LUNA_GRILA) ? start : PRIMA_LUNA_GRILA
+  return monthRange(deLa, minusLuni(lunaCurenta, 1))
+}

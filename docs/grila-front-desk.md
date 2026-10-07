@@ -1,6 +1,6 @@
 # Grila de salarizare — recepție (front-desk), sezon 2026-2027
 
-> **Stare: IMPLEMENTAT în aplicație pe 25 sept. 2026, în test** — vezi §9.
+> **Stare: IMPLEMENTAT în aplicație pe 25 sept. 2026;** **ACTIVATĂ pe 7 oct. 2026** (Alex) pentru tot staff-ul, **cu excepția Biancăi David**: fiecare își vede simularea lunilor încheiate în „Salariul meu”, adminul confirmă luna — vezi §9.
 >
 > ⭐ **Decizia din 25 sept. 2026** (Alex): **K2 = rata de încasare a managerului**, pe locația
 > recepției — „sincronizează-le cu KPI-ul de la manager; la manager e % din încasări pe prag, la
@@ -307,7 +307,8 @@ Ce lipsește:
 | K3 | fără poarta de 48 h din șablonul MOA (grila nu o cere) |
 | Partea fixă | `salarizare_receptie` pe om (normă, facturare, fidelitate, abonament, bonusuri ocazionale) + sumele din `salarizare_grila` (post `receptie`) |
 | Salariul lunii | `calculeaza_salariu_receptie(user, an, lună)`; confirmarea pe componente (`confirma_salariu_staff`): fixul oricând, bonusul KPI după finalul lunii, K2 după finalul lunii M+1 |
-| Ecrane | `/salarizare` → tab „Recepție"; detaliul indicatorilor în `/raport-kpi`; omul își vede doar lunile lui confirmate în „Salariul meu" (politica `salarii_staff_self_select`, migrația `20260926163900`) |
+| Ecrane | `/salarizare` → tab „Recepție"; detaliul indicatorilor în `/raport-kpi`; omul își vede în „Salariul meu" simularea lunilor încheiate, cu ce e deja confirmat (`get_salariul_meu_staff`, din 7 oct. 2026, migrația `20261007100000`) |
+| Redeschiderea lunii KPI închise | `redeschide_raport_kpi` — admin și owner (de la 7 oct. 2026, înainte doar owner), motiv obligatoriu, urmă în `audit_log`; valorile înghețate se șterg (migrația `20261007140000`) |
 | Ponderea | nu se afișează în `/raport-kpi`, în print și în editorul grilei când toate liniile au „fără date = standard" — atunci nu se redistribuie nimic și ponderea nu schimbă suma (28 sept. 2026). Rămâne vizibilă pe MOA și oriunde suma ponderilor nu dă 100% |
 
 ⭐ **Indicatorul care nu se poate măsura se plătește la STANDARD** (Alex, 25 sept. 2026), fără

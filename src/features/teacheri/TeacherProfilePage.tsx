@@ -162,7 +162,7 @@ export function TeacherProfilePage() {
 
         {tab === 'cursuri' && <TeacherTabCursuri teacherId={teacher.id} />}
         {tab === 'salarii' && canSeeSalarii && (
-          <TeacherTabSalarii teacherId={teacher.id} />
+          <TeacherTabSalarii teacherId={teacher.id} inAfaraGrilei={teacher.in_afara_grilei} />
         )}
         {tab === 'personale' && (
           <TeacherTabPersonale teacher={teacher} canEdit={canEditPersonale} />

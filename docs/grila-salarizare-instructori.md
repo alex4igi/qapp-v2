@@ -1,13 +1,16 @@
 # Grila de salarizare instructori — sezon 2026-2027
 
-> **Stare: IMPLEMENTAT în aplicație pe 25 sept. 2026, în test.** Grila a înlocuit în aplicație modelul
-> vechi pe praguri de cursanți (`calculeaza_salariu_teacher`). Plata reală se face încă în afara
-> aplicației, până decide Alex altfel. Vezi §10 pentru unde stă fiecare regulă în cod.
+> **Stare: IMPLEMENTAT în aplicație pe 25 sept. 2026,** **ACTIVATĂ pe 7 oct. 2026** (Alex) pentru tot staff-ul, **cu excepția Biancăi David**: fiecare își vede simularea lunilor încheiate în „Salariul meu”, adminul confirmă luna (§10).
+> Grila a înlocuit în aplicație modelul vechi pe praguri de cursanți (`calculeaza_salariu_teacher`).
+> Vezi §10 pentru unde stă fiecare regulă în cod.
 >
 > ⭐ **Deciziile din 25 sept. 2026** (Alex): 410 lei confirmat · trupa condusă de un non-Expert se
 > plătește ca intermediar, la rangul omului · retenția din prima lună a grupei = standard ·
-> septembrie 2026 = ocuparea la standard la toate grupele (**înlocuire**, nu podea) · evenimentele
-> trupelor (150 lei) vin într-o etapă separată.
+> ~~septembrie 2026 = ocuparea la standard la toate grupele~~ (înlocuit pe 6 oct., vezi mai jos) ·
+> evenimentele trupelor (150 lei) vin într-o etapă separată.
+>
+> ⭐ **6 oct. 2026 (Alex): septembrie 2026 = ocuparea DUPĂ DATE, retenția la standard** — retenția pe
+> motiv că septembrie n-are lună anterioară. Aceeași regulă și la manageri.
 > Stabilit împreună cu Alex pe 8–9 septembrie 2026, revizuit pe 12 septembrie și pe
 > **13 septembrie 2026** (KPI-uri identice la începător și intermediar, ocupare pe mărime
 > stabilită manual, **KPI-ul de vară fixat la 6 lei de fiecare prezență**) și pe 14 septembrie
@@ -227,11 +230,12 @@ singură lună pe an.
 3 iunie 2026) s-a ținut în registre Excel, fără target: `campanii_reinscriere` are 0 rânduri, iar
 registrele au doar totaluri (292 de reînscrieri complete, 31 nefinalizate).
 
-⭐ **Septembrie 2026 (Alex, 25 sept.): ocuparea la standard la TOATE grupele, ca ÎNLOCUIRE** — și
-grupele pline (ex. `S SD Kpop 12+`, 33/25) iau exact standard, nu peste. Motivul: campania din
-primăvară n-a avut target în aplicație. **Regula campaniei intră din septembrie 2027**, cu target-ul
-fixat înainte de campanie. În aplicație: `salarizare_sezon.mod_ocupare_instructori` (`standard_fix`
-pentru 2026-2027), aplicat **doar în luna septembrie**.
+⭐ **Septembrie 2026 (Alex, 6 oct.): ocuparea se plătește DUPĂ DATE, ca în orice altă lună**;
+retenția rămâne la standard („nu avem luna în plus" — vezi §8 punctul 5). Înlocuiește decizia din
+25 sept. (ocupare la standard la toate grupele), înainte de orice confirmare. În aplicație:
+`salarizare_sezon.mod_ocupare_instructori = 'masurat'` pentru 2026-2027 (migrația
+`20261006120000`). Efect pe instructori: ocuparea scade de la ~5.095 la cât e măsurat (la Alin
+1.080 → 360). **Regula campaniei intră din septembrie 2027**, cu target-ul fixat înainte de campanie.
 
 **Încă de lămurit pentru 2027** (§9): ce se întâmplă sub 95%; dacă regula e podea sau înlocuiește
 măsurarea; ce se numără ca „realizat".
@@ -575,7 +579,8 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
   - **Ce înseamnă „realizat":** contract semnat, înrolare cu preț de reînscriere activă la 20 sept.
     (termenul primei rate), sau prima rată plătită? Recomand plata primei rate, singura care nu se
     mai pierde după campanie.
-  - ~~**Septembrie 2026**~~ — **ÎNCHIS (25 sept.)**: standard la toate grupele, înlocuire (§2).
+  - ~~**Septembrie 2026**~~ — **ÎNCHIS (6 oct.)**: ocuparea după date, retenția la standard (§2).
+    Decizia din 25 sept. (standard la toate grupele) a fost înlocuită înainte de confirmare.
 - ~~**Retenția din septembrie**~~ — **ÎNCHIS (25 sept.)**: prima lună = standard (§8 punctul 5).
 - **Retenția rămâne pe jumătate în standard sau urcă la ~2/3**, ca ocuparea? Azi grila are două
   logici diferite pentru „în standard" (§2).
@@ -606,7 +611,8 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 | Testul de maturitate | `_grupa_matura(curs, parametri)` |
 | Confirmarea (înghețare) | `confirma_salariu_teacher` — refuză o lună deja confirmată, o lună în curs sau cu date lipsă |
 | Corecția unei luni confirmate | `corecteaza_salariu_teacher(…, motiv)` — doar owner, cu urmă în `audit_log` |
-| Ecrane | profilul instructorului → „Detalii salarii"; pagina `/salarizare` (owner/admin); „Salariul meu" arată doar lunile confirmate |
+| Ecrane | profilul instructorului → „Detalii salarii"; pagina `/salarizare` (owner/admin); „Salariul meu" arată lunile confirmate + simularea lunilor încheiate (din 7 oct. 2026) |
+| În afara grilei | `teacheri.in_afara_grilei` (doar adminul îl schimbă, trigger `trg_garda_in_afara_grilei`); azi doar Bianca David — migrația `20261007100000` |
 
 **Reguli de calcul pe care le-am fixat la implementare:**
 - Pe grupă, în sezon: `factor × (bază + retenție + ocupare)`; factor ½ la o ședință pe săptămână
@@ -615,12 +621,31 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 - Datele lipsă (rang, nivel, orar, capacitate) nu dau 0 lei: grupa e marcată „blocant", iar luna nu
   se poate confirma până nu se completează.
 - O lună se confirmă doar după ce s-a încheiat (retenția și ocuparea se numără pe toată luna).
-- **Cine vede (Alex, 26 sept. 2026):** salariile tuturor se văd de la admin în sus (owner/admin, pagina
-  `/salarizare`); fiecare om își vede doar salariul lui. Instructorii — prin „Salariul meu", doar lunile
-  confirmate. Managerii și recepția — în aceeași pagină, secțiunea lor: doar componentele confirmate
-  din `salarii_staff_componente`, fiecare pe rândurile lui (politica `salarii_staff_self_select`,
-  migrația `20260926163900`). Pagina se deschide pentru profilul de instructor sau rolurile
-  `manager` / `front_desk` (`hasSalariulMeu` în `rolesMatrix.ts`).
+- **Cine vede (Alex, 26 sept. 2026, extins pe 7 oct. 2026):** salariile tuturor se văd de la admin în
+  sus (owner/admin, pagina `/salarizare`); fiecare om își vede doar salariul lui, în „Salariul meu".
+  **Din 7 oct. 2026 grila e activă:** fiecare își vede și **simularea lunilor încheiate** (luna în curs
+  NU — o cifră pe jumătate de lună ar fi luată drept salariu), de la septembrie 2026 încoace; adminul
+  confirmă luna. Instructorii prin `calculeaza_salariu_teacher`, managerii și recepția prin
+  `get_salariul_meu_staff` (calculul propriu cu ce e deja confirmat suprapus). Regula „doar luna mea,
+  doar luna încheiată" stă în DB: `_salariu_propriu_vizibil(user, anul, luna)`, în gărzile din
+  `calculeaza_salariu_teacher/manager/receptie` și `calculeaza_raport_kpi` (recepția are nevoie de raportul
+  grilei ei). Pagina se deschide pentru profilul de instructor sau rolurile `manager` / `front_desk`
+  (`hasSalariulMeu` în `rolesMatrix.ts`).
+- **În afara grilei (Alex, 7 oct. 2026): Bianca David.** Nu-și vede simularea, luna ei nu se confirmă
+  din grilă (`confirma_salariu_teacher` refuză), iar în `/salarizare` apare orientativ, fără să intre în
+  totaluri. Se plătește separat. Steagul e `teacheri.in_afara_grilei`, schimbat doar de admin.
+- **Nota pe lună** (de ex. septembrie 2026: retenția la standard, ocuparea după date) se afișează lângă
+  salariu în toate trei ecranele — `src/lib/notaLunaSalarizare.ts`.
+- **Integral vs pro-rata (Alex, 7 oct. 2026):** în „Detalii salarii", doar pentru admini, fiecare grupă
+  recurentă arată câți cursanți numărați au plătit abonamentul întreg și câți au intrat cu pro-rata, cu
+  lista pro-rata (nume, sumă, prezențe). Informativ — grila îi numără pe toți ca un loc. Pro-rata =
+  `suma_baza` a lunii sub prețul plin (minimul dintre `pret_lunar` și `pret_lunar_promo`); „Per an" e integral.
+  RPC `detaliu_cursanti_salariu(cursuri[], anul, luna)`, admin-only, migrația `20261007170000` — nu stă în
+  calculul instructorului, ca numele și sumele clienților să nu ajungă la el. Sept. 2026: 483 integral,
+  83 pro-rata pe 43 de grupe recurente.
+- **Ghidul pentru admin** (traseul lunar, citirea KPI, ajustări, confirmări) stă în
+  `docs/procedura-salarizare-admin.html`, tipărit în `output/pdf/procedura-salarizare-admin.pdf`. La orice
+  schimbare de grilă sau de ecran se actualizează și el.
 - Lunile de dinainte de septembrie 2026 nu se mai pot calcula în aplicație (grila n-are parametri
   pentru ele, RPC-ul refuză). Nicio lună nu fusese confirmată pe modelul vechi. Lista orientativă pe
   modelul vechi (sept. 2025 – aug. 2026, plus sept. 2026 pentru comparație) și definiția funcției vechi

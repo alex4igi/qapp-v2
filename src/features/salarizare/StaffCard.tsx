@@ -87,13 +87,16 @@ function RezultatMesaj({ r }: { r: RezultatConfirmare }) {
   )
 }
 
+/** `doarCitire`: varianta din „Salariul meu" — fără confirmare, corecții și link spre raportul KPI. */
 export function StaffCard({
-  post, om, anul, luna,
+  post, om, anul, luna, doarCitire = false, titlu,
 }: {
   post: 'manager' | 'receptie'
   om: ManagerLuna | ReceptieLuna
   anul: number
   luna: number
+  doarCitire?: boolean
+  titlu?: string
 }) {
   const { role } = useAuth()
   const queryClient = useQueryClient()
@@ -120,7 +123,7 @@ export function StaffCard({
     <div className="rounded-xl border border-line bg-card p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="font-semibold text-ink">{om.titular_nume}</div>
+          <div className="font-semibold text-ink">{titlu ?? om.titular_nume}</div>
           <div className="text-xs text-muted">
             {post === 'manager'
               ? (om as ManagerLuna).locatii.map((l) => l.locatie_nume).join(', ') || 'vara: doar baza'
@@ -171,12 +174,14 @@ export function StaffCard({
             <span className="text-xs font-semibold uppercase tracking-wide text-muted">
               Indicatori · raport {(om as ReceptieLuna).kpi?.stare_raport === 'inchis' ? 'închis (înghețat)' : 'live'}
             </span>
-            <Link
-              to={`/raport-kpi?luna=${anul}-${String(luna).padStart(2, '0')}&grila=${(om as ReceptieLuna).kpi?.grila_id}`}
-              className="text-xs text-muted underline underline-offset-2"
-            >
-              Deschide raportul KPI
-            </Link>
+            {!doarCitire && (
+              <Link
+                to={`/raport-kpi?luna=${anul}-${String(luna).padStart(2, '0')}&grila=${(om as ReceptieLuna).kpi?.grila_id}`}
+                className="text-xs text-muted underline underline-offset-2"
+              >
+                Deschide raportul KPI
+              </Link>
+            )}
           </div>
           <ul className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
             {(om as ReceptieLuna).kpi?.linii.map((k) => (
@@ -197,7 +202,7 @@ export function StaffCard({
 
       <ListaComponente
         componente={om.componente}
-        onCorecteaza={role === 'owner' ? (id) => {
+        onCorecteaza={role === 'owner' && !doarCitire ? (id) => {
           const motiv = window.prompt('De ce corectezi componenta confirmată? Motivul rămâne în jurnal.')
           if (motiv?.trim()) corecteaza.mutate({ id, motiv: motiv.trim() })
         } : undefined}
@@ -213,7 +218,7 @@ export function StaffCard({
         <p key={a} className="mt-1 text-xs text-warn">{a}</p>
       ))}
 
-      <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
+      {!doarCitire && <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
         {eroare && <span className="text-sm text-danger">{humanizeError(eroare, 'Operația nu a reușit.')}</span>}
         <Button
           variant={deConfirmat ? 'primary' : 'secondary'}
@@ -222,7 +227,7 @@ export function StaffCard({
         >
           {confirma.isPending ? 'Se confirmă…' : 'Confirmă ce e definitiv'}
         </Button>
-      </div>
+      </div>}
       {rezultat && <div className="mt-2"><RezultatMesaj r={rezultat} /></div>}
     </div>
   )

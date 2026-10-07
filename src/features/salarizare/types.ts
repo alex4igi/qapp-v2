@@ -19,6 +19,8 @@ export type InstructorLuna = {
   user_id: string | null
   nume: string
   rang: string | null
+  /** Nu intră în totaluri și nu se confirmă din grilă (Bianca David, 7 oct. 2026). */
+  in_afara_grilei: boolean
   nr_grupe: number
   totaluri: {
     baza: number

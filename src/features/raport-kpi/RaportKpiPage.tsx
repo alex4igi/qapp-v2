@@ -7,6 +7,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { humanizeError } from '@/lib/errorMessage'
 import { formatRON } from '@/lib/format'
+import { isAdminOrHigher } from '@/lib/rolesMatrix'
 import {
   calculeazaRaport, deschideRaport, getCampuriManuale, getManual, getRapoarte,
   inchideLuna, redeschideLuna, salveazaManual,
@@ -288,12 +289,12 @@ function RaportDetaliu({
                 Închide luna
               </Button>
             )}
-            {readOnly && role === 'owner' && (
+            {readOnly && isAdminOrHigher(role) && (
               <Button
                 variant="secondary"
                 onClick={() => {
-                  const motiv = window.prompt('De ce redeschizi luna?')
-                  if (motiv) redeschide.mutate(motiv)
+                  const motiv = window.prompt('De ce redeschizi luna? Motivul rămâne în jurnal.')
+                  if (motiv?.trim()) redeschide.mutate(motiv.trim())
                 }}
               >
                 Redeschide

@@ -129,6 +129,45 @@ export async function previewSalariuTeacher(
   return data as unknown as SalariuTeacherCalc
 }
 
+/**
+ * Cursanții numărați pe o grupă recurentă, despărțiți în abonament integral și pro-rata
+ * (`detaliu_cursanti_salariu`, doar admin). Informativ: grila îi numără pe toți la fel.
+ */
+export type DetaliuCursantiGrupa = {
+  pret_lunar: number
+  integral: number
+  prorata: number
+  suma_integral: number
+  suma_prorata: number
+  prezente_prorata: number
+  lista_prorata: { client_id: string; nume: string; suma: number; prezente: number }[]
+}
+
+export async function getDetaliuCursanti(
+  cursuri: string[],
+  anul: number,
+  luna: number,
+): Promise<Record<string, DetaliuCursantiGrupa>> {
+  const { data, error } = await supabase.rpc('detaliu_cursanti_salariu', {
+    p_cursuri: cursuri,
+    p_anul: anul,
+    p_luna: luna,
+  })
+  if (error) throw error
+  return (data ?? {}) as unknown as Record<string, DetaliuCursantiGrupa>
+}
+
+/** Instructorul din afara grilei nu are simulare și nici confirmare din grilă. */
+export async function getInAfaraGrilei(teacherId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('teacheri')
+    .select('in_afara_grilei')
+    .eq('id', teacherId)
+    .single()
+  if (error) throw error
+  return data.in_afara_grilei
+}
+
 export async function listSalariiTeacher(teacherId: string): Promise<SalariuTeacher[]> {
   const { data, error } = await supabase
     .from('salarii_teacher')

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Salarizare - ghid pentru admin</title>
+<meta name="author" content="Quasar Dance">
+<!--
+  Sursa ghidului PDF pentru admin (output/pdf/procedura-salarizare-admin.pdf).
+  Prima versiune: Codex, 7 oct. 2026 (handoff docs/handoff/2026-10-07-procedura-salarizare-admin-pdf.md).
+  Verificată și completată de Claude pe 7 oct. 2026, pe parametrii din DB și pe cod (completările nu mai
+  sunt marcate: versiunea e cea care se dă adminului). Redeschiderea raportului KPI: admin + owner (20261007140000).
+  Regenerare: tipărit în PDF cu Chrome (A4, antet galben + număr de pagină în subsol).
+  La orice schimbare de grilă sau de ecran, actualizează și ghidul.
+-->
+<style>
+  @page { size: A4; margin: 22mm 18mm 18mm 18mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 10.5pt; line-height: 1.42; margin: 0; }
+  section { page-break-after: always; }
+  section:last-child { page-break-after: auto; }
+  .eyebrow { font-size: 8.5pt; color: #555; letter-spacing: .02em; margin: 0 0 6px; }
+  h1 { font-size: 26pt; line-height: 1.1; margin: 0 0 6px; }
+  .sub { color: #333; margin: 0 0 14px; }
+  h2 { font-size: 13pt; margin: 16px 0 6px; }
+  p { margin: 0 0 6px; }
+  .box { background: #FFF6B8; border: 1px solid #E8D46A; padding: 8px 10px; margin: 8px 0 10px; }
+  .nou { background: #EAF4FF; border: 1px solid #9CC3EE; padding: 8px 10px; margin: 8px 0 10px; }
+  .tag { display: inline-block; font-size: 7.5pt; font-weight: bold; background: #1F6FC5; color: #fff; padding: 1px 5px; border-radius: 3px; vertical-align: 1px; margin-right: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; }
+  th { background: #FFD600; text-align: left; font-weight: normal; font-size: 9pt; padding: 6px 8px; }
+  td { padding: 6px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+  tr:nth-child(even) td { background: #F6F6F6; }
+  ol, ul { margin: 0 0 6px; padding-left: 20px; }
+  li { margin: 0 0 2px; }
+  .mic { font-size: 8.5pt; color: #555; }
+</style>
+</head>
+<body>
+
+<section>
+  <p class="eyebrow">01 / FIȘA DE PORNIRE</p>
+  <h1>Salarizare, pas cu pas</h1>
+  <p class="sub">Ghid pentru admin · Quasar Dance · 7 octombrie 2026</p>
+  <div class="box"><b>Traseul lunar:</b> alegi luna → verifici datele → citești calculul → corectezi sursa → confirmi ce e definitiv → revii pentru bonusurile amânate.</div>
+  <p><b>Intră în Echipă → Salarizare.</b> Pagina se deschide pe luna curentă: <b>schimbă luna</b> din selectorul de sus. Alegi luna pentru care se câștigă salariul. Exemplu: în octombrie verifici <b>septembrie</b>.</p>
+  <table>
+    <tr><th style="width:22%">Tab</th><th>Ce faci aici</th></tr>
+    <tr><td>Pe om</td><td>Vezi totalul fiecăruia. Rolurile se adună: instructor + manager sau instructor + recepție. Aici nu se confirmă nimic.</td></tr>
+    <tr><td>Instructori</td><td>Apeși numele → Detalii salarii → deschizi luna. Verifici fiecare grupă și confirmi acolo.</td></tr>
+    <tr><td>Manageri</td><td>Verifici locația, baza, încasarea și ocuparea. Confirmi componentele definitive.</td></tr>
+    <tr><td>Recepție</td><td>Verifici fixul și bonusurile. „Deschide raportul KPI" arată detaliile indicatorilor.</td></tr>
+  </table>
+  <h2>Cele 7 lucruri de ținut minte</h2>
+  <ol>
+    <li><b>Toate sumele sunt NETE.</b> Voucherele și abonamentele-beneficiu sunt separate de banii de plată.</li>
+    <li><b>Totalul poate conține sume provizorii.</b> Verifică starea fiecărei componente.</li>
+    <li><b>Confirmarea fixează calculul.</b> Nu înseamnă că s-a făcut transferul bancar.</li>
+    <li><b>După confirmare, corectează doar owner-ul (Alex)</b>, cu motiv.</li>
+    <li><b>Bianca David este în afara grilei.</b> Apare cu eticheta „în afara grilei" și totalul tăiat, fără buton de confirmare; nu intră în totaluri. Se plătește separat.</li>
+    <li><b>Oamenii își văd simularea.</b> Din 7 octombrie, fiecare vede în „Salariul meu" calculul lunilor încheiate. Ce confirmi tu devine suma lui finală (pagina 2).</li>
+    <li><b>Un om cu două roluri se confirmă în două locuri.</b> Alin și Andrei: instructor (profil) + manager (card). Theo: instructor (profil) + recepție (card).</li>
+  </ol>
+  <h2>Ce înseamnă KPI?</h2>
+  <p><b>KPI = indicator de performanță.</b> O cifră măsoară rezultatul; pragul îi dă o treaptă; treapta îi dă o sumă. Citești mereu: <b>din ce date → ce procent → ce treaptă → câți lei</b>.</p>
+</section>
+
+<section>
+  <p class="eyebrow">02 / CE VĂD OAMENII</p>
+  <h1>Simularea din „Salariul meu"</h1>
+  <p class="sub">De la 7 octombrie 2026, pentru tot staff-ul pe grilă</p>
+  <table>
+    <tr><th style="width:28%">Cine</th><th>Ce vede</th></tr>
+    <tr><td>Instructorii</td><td>Fiecare lună încheiată, pe grupe, marcată <b>„simulare · de confirmat"</b>. După ce confirmi: <b>„✓ Confirmat"</b>.</td></tr>
+    <tr><td>Managerii și recepția</td><td>Același card ca în Salarizare, fără butoane. Fiecare componentă are starea ei: de confirmat, provizoriu, blocat, confirmat.</td></tr>
+    <tr><td>Bianca David</td><td>Nu vede simularea (în afara grilei).</td></tr>
+  </table>
+  <ul>
+    <li><b>Luna în curs nu se vede.</b> Octombrie apare de la 1 noiembrie. O cifră pe jumătate de lună ar fi luată drept salariu.</li>
+    <li><b>Fiecare își vede doar salariul lui.</b> Salariile tuturor se văd doar de la admin în sus.</li>
+    <li><b>Nota lunii apare lângă salariu.</b> Septembrie 2026: retenția la standard (nu avem august ca referință), ocuparea după situația actuală, la instructori și la manageri.</li>
+  </ul>
+  <h2>De ce se schimbă cifra până la confirmare</h2>
+  <table>
+    <tr><th style="width:28%">Post</th><th>Ce o mișcă</th></tr>
+    <tr><td>Instructor</td><td>Înrolările lunii: o reziliere cu dată, o mutare între grupe, o înrolare adăugată târziu, ședințele facultative. <b>Nu plățile:</b> „plătitor" înseamnă înrolare cu sumă, nu bani încasați.</td></tr>
+    <tr><td>Manager</td><td>Bonusul pe încasări: plățile pentru ratele lunii, până la sfârșitul lunii următoare. Ocuparea: aceleași înrolări ca la instructori.</td></tr>
+    <tr><td>Recepție</td><td>Datele KPI: K4 completat de manager, K2 și K3 până la sfârșitul lunii următoare.</td></tr>
+  </table>
+  <div class="box"><b>Ce înseamnă pentru tine:</b> confirmarea îngheață ce vede omul în acel moment. O corecție de înrolare făcută după confirmare nu mai schimbă salariul. Dacă cineva întreabă de ce suma diferă de ce a văzut ieri, răspunsul e aproape mereu o înrolare corectată.</div>
+</section>
+
+<section>
+  <p class="eyebrow">03 / INSTRUCTORI</p>
+  <h1>Citește fiecare grupă</h1>
+  <p class="sub">Echipă → Salarizare → Instructori → numele omului → Detalii salarii → luna</p>
+  <div class="box"><b>Total grupă = (bază + retenție + ocupare) × factor.</b><br>1 ședință/săptămână: factor ½. La 2 sau 3 ședințe: factor 1.<br>Total instructor = suma grupelor + eventualele linii bănești pe persoană.</div>
+  <table>
+    <tr><th>Rang instructor</th><th>Începător</th><th>Intermediar / Avansat</th><th>Trupă eligibilă</th></tr>
+    <tr><td>Junior</td><td>300</td><td>410</td><td>-</td></tr>
+    <tr><td>Senior</td><td>350</td><td>480</td><td>-</td></tr>
+    <tr><td>Expert</td><td>400</td><td>550</td><td>700</td></tr>
+  </table>
+  <p><b>Rangul</b> este Junior / Senior / Expert. <b>Nivelul grupei</b> este Începător / Intermediar / Avansat / Trupă. Sunt două câmpuri diferite. Sumele din tabel sunt lei/lună, înainte de factor.</p>
+  <h2>Retenție = câți au rămas din luna trecută</h2>
+  <table>
+    <tr><th>Nivel plătit</th><th>Sub 85%</th><th>85-95%</th><th>Peste 95%</th></tr>
+    <tr><td>Începător</td><td>0 lei</td><td>105 lei</td><td>210 lei</td></tr>
+    <tr><td>Intermediar / Avansat</td><td>0 lei</td><td>75 lei</td><td>150 lei</td></tr>
+    <tr><td>Trupă</td><td>0 lei</td><td>50 lei</td><td>100 lei</td></tr>
+  </table>
+  <p>Prima lună fără bază de comparație: retenție la standard. <b>Septembrie 2026: retenție standard, ocupare după date.</b></p>
+  <h2>Ocupare = locuri ocupate ÷ capacitatea grupei</h2>
+  <table>
+    <tr><th>Capacitate</th><th>Standard: 60-80%</th><th>Peste: &gt;80%</th></tr>
+    <tr><td>10</td><td>6-8 locuri → 60 lei</td><td>9+ → 100 lei</td></tr>
+    <tr><td>15</td><td>9-12 → 90 lei</td><td>13+ → 140 lei</td></tr>
+    <tr><td>20</td><td>12-16 → 120 lei</td><td>17+ → 180 lei</td></tr>
+    <tr><td>25</td><td>15-20 → 150 lei</td><td>21+ → 220 lei</td></tr>
+    <tr><td>30</td><td>18-24 → 180 lei</td><td>25+ → 260 lei</td></tr>
+  </table>
+  <p>Sub 60%: 0 lei ocupare. La 1 ședință/săptămână înjumătățești banii, nu pragurile. Pentru locuri fracționare compari procentul exact: de exemplu 16,5/20 este deja peste 80%.</p>
+</section>
+
+<section>
+  <p class="eyebrow">04 / INSTRUCTORI</p>
+  <h1>Numără corect. Verifică excepțiile.</h1>
+  <p class="sub">Cifra „Cursanți" din salariu privește luna aleasă; poate diferi de ocuparea de azi.</p>
+  <h2>Abonament sau ședință?</h2>
+  <p><b>Recurente / trupe:</b> un cursant eligibil = 1 loc. Se urmăresc perioada înrolării, suma și data rezilierii. „Plătitor" în acest calcul nu este o verificare că toate datoriile lui sunt achitate.<br>
+  <b>Facultative:</b> abonat = 1 loc; plata pe ședință = ședințele omului ÷ ședințele grupei din lună, cel mult 1 loc/om. Vacanțele și suspendările contează.</p>
+  <p><b>Integral sau pro-rata (grupe recurente):</b> sub numărul de cursanți vezi câți au plătit abonamentul întreg și câți au intrat cu pro-rata. Apasă pe „pro-rata" pentru listă: nume, sumă, prezențe în lună. Grila îi numără pe toți la fel (un loc); detaliul îți arată cât valorează de fapt grupa. Pro-rata = suma lunii sub prețul lunar plin; reducerile de familie sau voucherul nu fac din cineva pro-rata.</p>
+  <div class="box"><b>Exemplu:</b> 8 abonați + 10 ședințe plătite, din 6 ședințe ale grupei = 9,67 locuri, dacă nimeni nu depășește plafonul de 1 loc. La capacitate 20: 48,33% → 0 lei ocupare.</div>
+  <p><b>Retenția la facultative:</b> omul păstrează greutatea din luna trecută. Dacă revine luna aceasta, contează ca păstrat, chiar dacă vine mai rar. Nu împărți simplu oamenii reveniți la totalul oamenilor.</p>
+  <h2>Trupe și alte excepții</h2>
+  <ul>
+    <li>Tarif de trupă: <b>Expert + minimum 14 cursanți</b> în luna verificată.</li>
+    <li>Sub 14 sau titular non-Expert: calcul de intermediar, la rangul omului.</li>
+    <li>Grupa plătită ca trupă: retenție, fără bonus de ocupare.</li>
+    <li>Se plătește titularul grupei. Open Class și cursurile one-time nu intră în această grilă de instructor.</li>
+    <li>Voucher: <b>300 lei/lună</b>, beneficiu separat. Buget deplasări: <b>1.200 lei/trupă/sezon</b>, informativ, nu îl adaugi lunar.</li>
+    <li>Evenimente: referință 150 lei/eveniment, sumă convenită și aprobată înainte. Plata evenimentelor este etapă separată; nu presupune că intră automat.</li>
+    <li><b>„Date lipsă"</b> (roșu): lipsește rangul omului, nivelul, orarul sau capacitatea grupei. Luna nu se poate confirma până nu completezi; lipsa nu înseamnă 0 lei.</li>
+  </ul>
+  <h2>Exemplu de salariu pe o grupă</h2>
+  <p>Senior, intermediar, 2 ședințe/săpt., capacitate 20, 16 locuri; retenție 90%:<br>
+  <b>480 bază + 75 retenție + 120 ocupare = 675 lei.</b><br>Aceleași date, 1 ședință/săpt.: <b>337,50 lei</b>. Aduni apoi celelalte grupe.</p>
+  <h2>Iulie și august</h2>
+  <p><b>Bonus: 6 lei × prezențe</b>, fără înjumătățire. Baza intră doar pentru grupele mature: după 3 luni de test, minimum 8 locuri timp de 5 luni consecutive. Testul este pe grupă; prezențele se plătesc și fără maturitate. Detaliile de vară încă marcate pentru validare se verifică cu Alex înainte de prima plată de vară.</p>
+</section>
+
+<section>
+  <p class="eyebrow">05 / MANAGERI</p>
+  <h1>Două bonusuri, două calcule</h1>
+  <p class="sub">Echipă → Salarizare → Manageri → luna aleasă</p>
+  <p><b>Salariu manager = bază + bonus ocupare + bonus încasare.</b><br>Instructorul-manager are și salariul de instructor, separat. Andrei: Ștefan cel Mare. Alin: Nicolina. Q4K: fără manager.</p>
+  <h2>1. Baza: după numărul de locații</h2>
+  <p>1 locație = <b>1.000 lei</b>; 2 = 1.700; 3 = 2.400; 4 = 2.900; 5 = 3.400. Baza se plătește tot anul. Sala nu este o locație separată.</p>
+  <h2>2. Ocuparea: pe locație și lună</h2>
+  <p><b>Ocupare = locuri ocupate ÷ capacitatea fixată a locației.</b> Un copil în două grupe ocupă două locuri. Facultativele folosesc locuri echivalente, inclusiv Open Class.</p>
+  <table>
+    <tr><th>Ocupare</th><th>Bonus</th></tr>
+    <tr><td>Sub 40%</td><td>0 lei</td></tr>
+    <tr><td>40-59,99%</td><td>1 leu × locuri ocupate</td></tr>
+    <tr><td>60-80%</td><td>2 lei × locuri ocupate</td></tr>
+    <tr><td>De la 80,01%</td><td>3 lei × locuri ocupate</td></tr>
+  </table>
+  <p>Capacitatea se păstrează pe sezon. Grupele noi o cresc; închiderea unei grupe nu o scade. Dacă apare avertismentul, verifică grupele și apasă <b>„Adaugă grupele noi"</b>. O capacitate greșită se trimite lui Alex.</p>
+  <h2>3. Încasarea: rata alege procentul</h2>
+  <p><b>Rata = cât s-a plătit pentru ratele lunii M ÷ valoarea ratelor lunii M.</b> Se așteaptă până la sfârșitul lunii următoare. Procentul câștigat se aplică la <b>toate încasările din luna M, la locație</b>, inclusiv avansuri, restanțe și alte încasări.</p>
+  <table>
+    <tr><th>Rata de încasare</th><th>Procent aplicat încasărilor</th></tr>
+    <tr><td>Sub 90%</td><td>0%</td></tr>
+    <tr><td>90-91,99%</td><td>0,5%</td></tr>
+    <tr><td>92-95%</td><td>0,7%</td></tr>
+    <tr><td>De la 95,01%</td><td>1%</td></tr>
+  </table>
+  <div class="box"><b>Exemplu:</b> rate 50.000 lei, plătit 47.000 → rată 94%. Încasări în lună 60.000 → bonus 420 lei. Ocupare 300/500 = 60% → 600 lei. Cu o locație: <b>1.000 + 420 + 600 = 2.020 lei</b>.</div>
+  <p>Procentele managerului se compară la 2 zecimale. <b>Vara: doar baza</b>; bonusurile de vară nu sunt definite.</p>
+</section>
+
+<section>
+  <p class="eyebrow">06 / RECEPȚIE</p>
+  <h1>Cei cinci KPI, pe înțeles</h1>
+  <p class="sub">Echipă → Salarizare → Recepție → Deschide raportul KPI</p>
+  <p><b>Pe locația omului:</b> Petruța - Ștefan cel Mare; Theo - Nicolina.<br>
+  <b>Fix:</b> 2.722 lei la normă întreagă. Facturare: 200 lei, potrivit configurării. Fidelitate: 100 lei, dacă este acordată. Abonament: 290 lei, beneficiu separat.</p>
+  <table>
+    <tr><th>KPI / ce citești</th><th style="width:18%">Standard</th><th style="width:18%">Peste standard</th></tr>
+    <tr><td><b>K1 · Încasare la termen</b><br>Lei încasați la termen ÷ ratele eligibile ale lunii.</td><td>70-76%<br>100 lei</td><td>&gt;76%<br>240 lei</td></tr>
+    <tr><td><b>K2 · Rata de încasare</b><br>Aceeași rată ca la manager, la finalul lunii următoare.</td><td>92-95%<br>90 lei</td><td>&gt;95%<br>300 lei</td></tr>
+    <tr><td><b>K3 · Reactivare absenți</b><br>Cazuri reactivate ÷ cazuri deschise în luna aleasă.</td><td>32-39%<br>120 lei</td><td>&gt;39%<br>280 lei</td></tr>
+    <tr><td><b>K4 · Răspuns la cereri</b><br>Media canalelor cu date: leaduri, telefon, Meta unde se cere.</td><td>85-95%<br>60 lei</td><td>&gt;95%<br>140 lei</td></tr>
+    <tr><td><b>K5 · Conversie lead → client</b><br>Leaduri din luna trecută cu o plată în 30 zile ÷ leadurile cohortei.</td><td>28-36%<br>60 lei</td><td>&gt;36%<br>140 lei</td></tr>
+  </table>
+  <p><b>Sub pragul standard: 0 lei.</b> Toate standard = 430 lei bonus; toate peste = 1.100 lei. La normă parțială, fixul și KPI-ul se reduc proporțional; procentele-prag rămân.</p>
+  <h2>Detalii care schimbă citirea</h2>
+  <p><b>K1:</b> scadență + 5 zile. În mod obișnuit: ziua 20; septembrie: 25; iunie: 12.<br>
+  <b>K3:</b> cazul apare după 21 zile de absență. Revenirea contează dacă, la evaluare, nu există restanță scadentă pentru luna revenirii. Nu este obligatoriu să fi revenit după apelul recepției.<br>
+  <b>K5:</b> orice plată pozitivă pe înrolare poate însemna conversie, inclusiv ședință sau OPEN. Plata după 30 zile nu intră.</p>
+  <div class="box"><b>„Nemăsurabil" ≠ „necompletat".</b><br>Fără cazuri/date eligibile: grila recepției plătește standardul.<br>K4 manual necompletat: 0 în simulare, <b>„blocat" la confirmarea bonusului KPI</b> și blocaj la închiderea raportului.</div>
+  <p>KPI-ul se plătește septembrie-iunie. Vara rămâne partea fixă conform configurării; bonusurile de vară sunt nedefinite. Bonusurile ocazionale se tratează separat.</p>
+</section>
+
+<section>
+  <p class="eyebrow">07 / RECEPȚIE</p>
+  <h1>K4: cine completează și din ce</h1>
+  <p class="sub">Echipă → Raport KPI → „Interacțiuni zilnice · K4 recepție"</p>
+  <div class="box"><b>Managerul completează zilnic.</b> Adminul poate verifica toate locațiile. Recepția nu se autoevaluează.</div>
+  <table>
+    <tr><th style="width:8%">Pas</th><th>Acțiune</th></tr>
+    <tr><td>1</td><td>Alege data și locația.</td></tr>
+    <tr><td>2</td><td>Din telefon: numără apelurile intrate, inclusiv pierdute.</td></tr>
+    <tr><td>3</td><td>La „Cu răspuns": apeluri preluate sau sunate înapoi în 24 h.</td></tr>
+    <tr><td>4</td><td>La Ștefan: completează și Meta, din Inbox-ul Business Suite. Include Messenger, Instagram și comentariile-întrebare Facebook / Instagram.</td></tr>
+    <tr><td>5</td><td>Apasă „Salvează ziua". Zero cereri se scrie 0; nu se lasă o zi presupus verificată.</td></tr>
+    <tr><td>6</td><td>Verifică luna întreagă. „Cu răspuns" nu poate depăși „Intrate".</td></tr>
+  </table>
+  <h2>Cum se calculează</h2>
+  <p>Pe canal: <b>total răspunse în termen ÷ total intrate în lună</b>.<br>K4: <b>media simplă a procentelor canalelor care au date</b>. Nu aduni toate cererile canalelor într-un singur procent.</p>
+  <div class="box"><b>Exemplu:</b> leaduri 90%, telefon 80%, Meta 100%.<br>(90 + 80 + 100) ÷ 3 = <b>90% → standard → 60 lei</b>, la normă întreagă.</div>
+  <h2>Leadurile sunt măsurate automat</h2>
+  <p>Contează intervenția omului în aplicație: contact notat, mutare, notă, SMS sau creare manuală. Termenul urmărește programul de lucru:</p>
+  <ul>
+    <li>cerere până la 18:00: până la 23:59;</li>
+    <li>după 18:00: următoarea zi de lucru, până la 12:00;</li>
+    <li>Petruța: luni-vineri; Theo: luni-duminică.</li>
+  </ul>
+  <p>Exemplu: vineri seara la Ștefan → luni, ora 12:00.</p>
+  <h2>Înainte să închizi luna</h2>
+  <p>Verifică toate zilele, nu doar existența unei înregistrări. Un canal obligatoriu fără nicio zi completată blochează raportul. Nu transforma lipsa completării în „fără date". Telefonul se cere la ambele recepții; Meta doar la Ștefan.</p>
+</section>
+
+<section>
+  <p class="eyebrow">08 / AJUSTĂRI</p>
+  <h1>Unde corectezi</h1>
+  <p class="sub">Întâi corectezi cauza. Apoi revii la luna salarială și verifici rezultatul.</p>
+  <table>
+    <tr><th style="width:34%">Ce este greșit</th><th>Unde intervii</th></tr>
+    <tr><td>Rangul instructorului</td><td>Echipă → Teacheri → fișa omului → Editează teacher → Nivel. Rangul se stabilește cu Alex.</td></tr>
+    <tr><td>Nivel, titular, orar, capacitate grupă</td><td>Fișa cursului → editare. Verifică și perioada, vacanțele, suspendările. Capacitatea nu se schimbă ca să obții un bonus.</td></tr>
+    <tr><td>Cursant lipsă / număr neașteptat</td><td>Fișa clientului → înrolarea: grupă, perioadă, sumă, data rezilierii. Compară aceeași lună.</td></tr>
+    <tr><td>Încasare lipsă sau greșită</td><td>Verifică încasarea, data plății, locația și legătura cu înrolarea. Folosește fluxul de corecție cu motiv.</td></tr>
+    <tr><td>Telefon / Meta greșit</td><td>Echipă → Raport KPI → Interacțiuni zilnice → zi + locație → Salvează ziua.</td></tr>
+    <tr><td>Prag / sumă KPI recepție</td><td>Administrare → Grile KPI → Grile active → angajat → linia KPI. Schimbi valoarea aprobată → Salvează și revalidează.</td></tr>
+    <tr><td>Grupe noi lipsă din capacitatea managerului</td><td>Salarizare → Manageri → Adaugă grupele noi, după verificarea avertismentului.</td></tr>
+    <tr><td>Fix, normă, fidelitate, facturare; alocare manager; tarife instructor/manager; corecție capacitate fixată; cine e „în afara grilei"</td><td>Nu au editor în aplicație. Trimiți lui Alex: om, lună, valoare actuală, valoare corectă, motiv.</td></tr>
+  </table>
+  <h2>Grila KPI: trei lucruri diferite</h2>
+  <p><b>Prag</b> = procentul necesar. <b>Sumă</b> = lei primiți la treaptă. <b>Parametri</b> = regulile măsurării. Schimbă numai ce s-a decis. La recepție, ponderile nu sunt procente de tăiat din bonus; cu „fără date = standard", sumele se adună.</p>
+  <p>Grila omului este o copie a șablonului. Modificarea șablonului nu schimbă automat grilele deja atribuite. Nu modifica reguli pentru a repara o singură încasare greșită.</p>
+  <div class="box"><b>După modificare:</b> redeschide ecranul lunii și verifică suma. O lună deja confirmată rămâne fixată; simpla reparare a datelor nu îi schimbă salariul.</div>
+</section>
+
+<section>
+  <p class="eyebrow">09 / ÎNCHIDERE</p>
+  <h1>Confirmă în două etape</h1>
+  <p class="sub">Exemplu de calendar: salariul pentru septembrie 2026</p>
+  <table>
+    <tr><th style="width:22%">Moment</th><th>Ce poți definitiva</th></tr>
+    <tr><td>Din 1 octombrie</td><td>Instructori: luna completă. Manageri: baza + ocuparea. Recepție: partea fixă + KPI-urile lunii (K1, K4, K5), dacă nu sunt blocaje.</td></tr>
+    <tr><td>După 31 octombrie</td><td>Manageri: bonusul pe încasarea lui septembrie. Recepție: K2 + K3, în componenta „Bonus KPI — luna următoare". Revii pe septembrie, nu muți indicatorii în octombrie.</td></tr>
+  </table>
+  <p><b>Luna de plată:</b> la manageri și recepție, fiecare componentă se marchează „se plătește în" luna în care o confirmi. Bonusul pe încasări din septembrie, confirmat în noiembrie, intră în plata din noiembrie.</p>
+  <h2>Butoanele, în ordinea de lucru</h2>
+  <p><b>Instructori:</b> nume → Detalii salarii → septembrie → verifici grupele → <b>Confirmă luna</b>.<br>
+  <b>Manageri / Recepție:</b> pe cardul omului → <b>Confirmă ce e definitiv</b>. Citești mesajul: confirmate / rămase deschise / blocate. Revii pentru partea amânată.</p>
+  <p><b>Raport KPI recepție:</b> alegi luna și grila omului → <b>Deschide luna</b>, dacă este nedeschisă. După definitivarea tuturor indicatorilor și rezolvarea blocajelor: <b>Închide luna</b>. Apoi verifici componentele salariale în Salarizare. Închiderea raportului și confirmarea salariului sunt operații distincte.</p>
+  <table>
+    <tr><th style="width:24%">Stare</th><th>Ce înseamnă / ce faci</th></tr>
+    <tr><td>Provizoriu</td><td>Mai aștepți termenul afișat; cifra se poate schimba.</td></tr>
+    <tr><td>Blocat / date lipsă</td><td>Completezi cauza indicată; nu tratezi lipsa drept zero.</td></tr>
+    <tr><td>De confirmat</td><td>Date definitive, încă nefixate. Verifici și confirmi.</td></tr>
+    <tr><td>Confirmat parțial</td><td>O parte este fixată. Revii pentru componentele rămase.</td></tr>
+    <tr><td>Confirmat / corectat</td><td>Calcul salvat. Corecții doar prin owner, cu motiv.</td></tr>
+  </table>
+  <h2>Dacă găsești o eroare după confirmare</h2>
+  <p>Trimiți lui Alex omul, luna, componenta și dovada. Se repară sursa, apoi owner-ul folosește <b>„Corectează (recalculează)"</b> la instructor sau <b>„corectează"</b> la componenta staff. Un raport KPI închis îl poate redeschide un admin sau owner-ul (<b>„Redeschide"</b>, cu motiv obligatoriu, care rămâne în jurnal); valorile înghețate se șterg, apoi închizi luna din nou. Reconfirmi și verifici separat salariul; nu presupui că raportul l-a actualizat.</p>
+  <div class="box"><b>Control final:</b> luna corectă · omul și rolurile corecte (două roluri = două confirmări) · fără blocaje · beneficii separate · componente amânate notate · sume confirmate verificate înainte de plată.</div>
+  <p class="mic">Bază: regulile interne pentru instructori, manageri și recepție; reguli-domeniu.md; ecranele Salarizare, Detalii salarii, Salariul meu, Raport KPI și Grile KPI. Actualizat la 07.10.2026. Exemplele sunt ilustrative.</p>
+</section>
+
+</body>
+</html>

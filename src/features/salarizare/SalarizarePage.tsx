@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, MonthPicker, PageHeader, Spinner, Tabs } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
 import { formatRON } from '@/lib/format'
+import { notaLunaSalarizare } from '@/lib/notaLunaSalarizare'
 import { adaugaGrupeNoiInPool, getSalarizareLuna } from './api'
 import { StaffCard } from './StaffCard'
 import type { InstructorLuna, SalarizareLuna } from './types'
@@ -21,6 +22,7 @@ function lunaCurenta(): string {
 }
 
 function StareInstructor({ i }: { i: InstructorLuna }) {
+  if (i.in_afara_grilei) return <Badge tone="neutral">în afara grilei</Badge>
   if (i.confirmat) return <Badge tone="success">✓ confirmat</Badge>
   if (i.blocante.length > 0) return <Badge tone="danger">date lipsă</Badge>
   if (i.provizoriu) return <Badge tone="warn">luna în curs</Badge>
@@ -30,20 +32,23 @@ function StareInstructor({ i }: { i: InstructorLuna }) {
 type RandPeOm = {
   cheie: string
   nume: string
-  roluri: { rol: string; total: number }[]
+  roluri: { rol: string; total: number | null }[]
   total: number
 }
 
 /** Un om cu două roluri (manager + instructor, recepție + instructor) apare o singură dată. */
 function peOm(d: SalarizareLuna): RandPeOm[] {
   const m = new Map<string, RandPeOm>()
-  const add = (cheie: string, nume: string, rol: string, total: number) => {
+  const add = (cheie: string, nume: string, rol: string, total: number | null) => {
     const r = m.get(cheie) ?? { cheie, nume, roluri: [], total: 0 }
     r.roluri.push({ rol, total })
-    r.total += total
+    r.total += total ?? 0
     m.set(cheie, r)
   }
-  for (const i of d.instructori) add(i.user_id ?? `t:${i.teacher_id}`, i.nume, 'instructor', Number(i.total))
+  for (const i of d.instructori) {
+    if (i.in_afara_grilei) add(i.user_id ?? `t:${i.teacher_id}`, i.nume, 'instructor în afara grilei', null)
+    else add(i.user_id ?? `t:${i.teacher_id}`, i.nume, 'instructor', Number(i.total))
+  }
   for (const x of d.manageri) add(x.user_id, m.get(x.user_id)?.nume ?? x.titular_nume, 'manager', Number(x.total))
   for (const x of d.receptie) add(x.user_id, m.get(x.user_id)?.nume ?? x.titular_nume, 'recepție', Number(x.total))
   return [...m.values()].sort((a, b) => b.total - a.total)
@@ -82,6 +87,7 @@ export default function SalarizarePage() {
     ? d.instructori.some((i) => i.provizoriu) ||
       [...d.manageri, ...d.receptie].some((x) => x.componente.some((c) => c.stare === 'provizoriu'))
     : false
+  const nota = notaLunaSalarizare(anul, lunaNr)
   const lipsaPool = d?.manageri.some((x) => x.locatii.some((l) => l.ocupare.grupe_lipsa_din_pool.length > 0))
 
   return (
@@ -95,6 +101,9 @@ export default function SalarizarePage() {
         <div className="w-56"><MonthPicker value={luna} onChange={setLuna} /></div>
         {provizoriu && <Badge tone="warn">unele sume sunt provizorii</Badge>}
       </div>
+      {nota && (
+        <p className="mb-4 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink">{nota}</p>
+      )}
 
       {q.isLoading ? (
         <Spinner />
@@ -128,7 +137,7 @@ export default function SalarizarePage() {
                   <tr key={r.cheie} className="border-t border-line">
                     <td className="py-2 pr-3 font-medium text-ink">{r.nume}</td>
                     <td className="py-2 pr-3 text-muted">
-                      {r.roluri.map((x) => `${x.rol} ${formatRON(x.total)}`).join(' + ')}
+                      {r.roluri.map((x) => (x.total == null ? x.rol : `${x.rol} ${formatRON(x.total)}`)).join(' + ')}
                     </td>
                     <td className="py-2 text-right font-semibold text-ink">{formatRON(r.total)}</td>
                   </tr>
@@ -166,7 +175,9 @@ export default function SalarizarePage() {
                       <td className="py-2 pr-3 text-right">{formatRON(i.totaluri?.retentie ?? 0)}</td>
                       <td className="py-2 pr-3 text-right">{formatRON(i.totaluri?.ocupare ?? 0)}</td>
                       <td className="py-2 pr-3 text-right">{formatRON(i.totaluri?.prezente_vara ?? 0)}</td>
-                      <td className="py-2 pr-3 text-right font-semibold text-ink">{formatRON(i.total)}</td>
+                      <td className={`py-2 pr-3 text-right font-semibold ${i.in_afara_grilei ? 'text-muted line-through' : 'text-ink'}`}>
+                        {formatRON(i.total)}
+                      </td>
                       <td className="py-2"><StareInstructor i={i} /></td>
                     </tr>
                   ))}
@@ -174,7 +185,7 @@ export default function SalarizarePage() {
               </table>
               <p className="mt-2 text-xs text-muted">
                 Detaliul pe grupe și confirmarea lunii sunt în profilul fiecărui instructor. Voucherul de 300 lei
-                intră la beneficii, nu în total.
+                intră la beneficii, nu în total. Cine e „în afara grilei” apare doar orientativ și nu intră în totaluri.
               </p>
             </div>
           )}

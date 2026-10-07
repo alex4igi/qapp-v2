@@ -6,20 +6,19 @@ import { useCurrentTeacherId } from '@/hooks/useCurrentTeacherId'
 import { SalariuTeacherDetaliu } from '@/components/salarii/SalariuTeacherDetaliu'
 import {
   calculDinSnapshot,
+  getInAfaraGrilei,
   listSalariiTeacher,
   previewSalariuTeacher,
   type SalariuTeacherCalc,
 } from '@/lib/salariuTeacher'
 import { getSezonActiv } from '@/features/setari/api'
-import {
-  cuLuniConfirmate,
-  monthRange,
-  primaLunaSalarii,
-} from '@/features/teacheri/lunileSalariilor'
-import { formatMonth, formatRON } from '@/lib/format'
+import { cuLuniConfirmate, luniSimulare } from '@/features/teacheri/lunileSalariilor'
+import { formatRON } from '@/lib/format'
+import { notaLunaSalarizare } from '@/lib/notaLunaSalarizare'
 import { useAuth } from '@/hooks/useAuth'
 import { hasTeacherLens, ROLURI_CU_SALARIU_STAFF } from '@/lib/rolesMatrix'
-import { listSalariiStaffProprii, type ComponentaProprie } from '@/features/salarizare/api'
+import { getSalariulMeuStaff } from '@/features/salarizare/api'
+import { StaffCard } from '@/features/salarizare/StaffCard'
 import type { SalariuTeacher } from '@/types/db'
 
 // Identitate stabilă: `?? []` ar face un array nou la fiecare render.
@@ -30,15 +29,9 @@ const RO_LUNI = [
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie',
 ]
 
-// Estimările (preview live pentru lunile neconfirmate) rămân ASCUNSE: grila
-// 2026-2027 e în test, iar instructorul vede doar lunile confirmate de admin.
-// Cu flag-ul pe `true` pagina arată și lunile neconfirmate, cu badge „estimare".
-// Garda de acces pe RPC rămâne activă indiferent de flag.
-const SHOW_ESTIMARI = false
-
-// O lună e ori snapshot confirmat de admin (imutabil, „plătit"), ori preview
-// recalculat la fiecare load („estimare"). Aceeași distincție ca în tabul de
-// salarii din profilul instructorului.
+// Grila 2026-2027 e activă (Alex, 7 oct. 2026): fiecare își vede simularea lunilor
+// încheiate, adminul o confirmă. O lună e ori snapshot confirmat (imutabil),
+// ori simulare recalculată la fiecare load. Cine e în afara grilei vede doar ce s-a confirmat.
 type LunaItem =
   | { kind: 'snapshot'; anul: number; luna: number; data: SalariuTeacher }
   | { kind: 'preview'; anul: number; luna: number; data: SalariuTeacherCalc }
@@ -52,6 +45,7 @@ function SalariuCard({ item }: { item: LunaItem }) {
   const calc = calculFor(item)
   const total =
     item.kind === 'preview' ? item.data.total : Number(item.data.total)
+  const nota = notaLunaSalarizare(item.anul, item.luna)
 
   return (
     <article className="rounded-lg border border-quasar-gray-light bg-white">
@@ -68,19 +62,20 @@ function SalariuCard({ item }: { item: LunaItem }) {
         </strong>
         <span className="w-40 max-md:w-full">
           {item.kind === 'snapshot' ? (
-            <span className="text-emerald-700">✓ Plătit</span>
+            <span className="text-emerald-700">✓ Confirmat</span>
           ) : (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-              estimare · neconfirmat
+              simulare · de confirmat
             </span>
           )}
         </span>
         <span className="text-sm text-quasar-gray">
           {item.kind === 'snapshot' && item.data.data_plata
-            ? `Plătit: ${item.data.data_plata}`
+            ? `Plătit pe ${item.data.data_plata}`
             : ''}
         </span>
       </button>
+      {nota && <p className="px-4 pb-3 text-sm text-quasar-gray">{nota}</p>}
 
       {open && (
         <div className="border-t border-quasar-gray-light px-4 py-3">
@@ -106,6 +101,13 @@ function SectiuneInstructor({ myTeacherId }: { myTeacherId: string | null }) {
 
   const sezonQ = useQuery({ queryKey: ['sezon-activ'], queryFn: getSezonActiv })
 
+  const grilaQ = useQuery({
+    queryKey: ['in-afara-grilei', teacherId],
+    queryFn: () => getInAfaraGrilei(teacherId),
+    enabled: Boolean(teacherId),
+  })
+  const peGrila = grilaQ.data === false
+
   const salariiQ = useQuery({
     queryKey: ['my-salarii', teacherId],
     queryFn: () => listSalariiTeacher(teacherId),
@@ -114,24 +116,18 @@ function SectiuneInstructor({ myTeacherId }: { myTeacherId: string | null }) {
 
   const snapshots = salariiQ.data ?? FARA_SNAPSHOTS
 
-  // Fereastra afișată: de la începutul sezonului activ (fallback: ultimele 12 luni)
-  // până la luna curentă, plus lunile confirmate — aceeași regulă ca în tabul de
-  // salarii al adminului.
+  // Lunile încheiate ale sezonului (de la grilă încoace), plus lunile confirmate.
   const months = useMemo(
     () =>
       cuLuniConfirmate(
-        monthRange(
-          primaLunaSalarii(sezonQ.data?.data_incepere, {
-            y: currentYear,
-            m: currentMonth,
-          }),
-          { y: currentYear, m: currentMonth },
-        ),
+        peGrila
+          ? luniSimulare(sezonQ.data?.data_incepere, { y: currentYear, m: currentMonth })
+          : [],
         snapshots,
       ),
-    [sezonQ.data, currentYear, currentMonth, snapshots],
+    [peGrila, sezonQ.data, currentYear, currentMonth, snapshots],
   )
-  const monthsNeedingPreview = SHOW_ESTIMARI
+  const monthsNeedingPreview = peGrila
     ? months.filter(
         (mo) => !snapshots.some((s) => s.anul === mo.y && s.luna === mo.m),
       )
@@ -175,8 +171,12 @@ function SectiuneInstructor({ myTeacherId }: { myTeacherId: string | null }) {
     .filter((x): x is LunaItem => x !== null)
 
   const loading =
-    salariiQ.isLoading || sezonQ.isLoading || previewQueries.some((q) => q.isLoading)
-  const error = salariiQ.error ?? previewQueries.find((q) => q.error)?.error
+    salariiQ.isLoading ||
+    sezonQ.isLoading ||
+    grilaQ.isLoading ||
+    previewQueries.some((q) => q.isLoading)
+  const error =
+    salariiQ.error ?? grilaQ.error ?? previewQueries.find((q) => q.error)?.error
   const hasPreview = items.some((i) => i.kind === 'preview')
 
   return (
@@ -187,17 +187,18 @@ function SectiuneInstructor({ myTeacherId }: { myTeacherId: string | null }) {
         <p className="text-sm text-red-600">Eroare: {humanizeError(error)}</p>
       ) : items.length === 0 ? (
         <p className="text-sm text-quasar-gray">
-          {SHOW_ESTIMARI
-            ? 'Nu ai grupe în sezonul curent, deci nu e nimic de calculat.'
-            : 'Salariile apar aici după ce managerul confirmă luna.'}
+          {peGrila
+            ? 'Simularea apare aici după ce se încheie o lună în care ai avut grupe.'
+            : 'Salariul tău nu se calculează pe grila de salarizare, așa că aici nu apare o simulare.'}
         </p>
       ) : (
         <>
           {hasPreview && (
             <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              Lunile marcate <strong>„estimare"</strong> sunt calculate live după
-              modelul actual și se pot schimba până când managerul confirmă luna.
-              Doar lunile <strong>„Plătit"</strong> sunt sume finale.
+              Lunile marcate <strong>„simulare"</strong> sunt calculate pe grila
+              2026-2027 și se pot schimba până când administratorul confirmă luna
+              (de exemplu, dacă se corectează o înrolare pe luna respectivă). Doar
+              lunile <strong>„Confirmat"</strong> sunt sume finale.
             </p>
           )}
           <div className="space-y-2">
@@ -214,84 +215,55 @@ function SectiuneInstructor({ myTeacherId }: { myTeacherId: string | null }) {
   )
 }
 
-const POST_ETICHETA: Record<string, string> = {
-  manager: 'Manager de studio',
-  receptie: 'Recepție',
-}
+// Simularea lunilor încheiate, cu ce e deja confirmat suprapus (aceeași formă ca în /salarizare).
+function SectiuneStaff() {
+  const today = new Date()
+  const lunaCurenta = { y: today.getFullYear(), m: today.getMonth() + 1 }
+  const sezonQ = useQuery({ queryKey: ['sezon-activ'], queryFn: getSezonActiv })
+  const luni = sezonQ.isLoading ? [] : luniSimulare(sezonQ.data?.data_incepere, lunaCurenta)
 
-type LunaStaff = {
-  cheie: string
-  anul: number
-  luna: number
-  post: string
-  componente: ComponentaProprie[]
-}
-
-function grupeazaPeLuna(rows: ComponentaProprie[]): LunaStaff[] {
-  const luni = new Map<string, LunaStaff>()
-  for (const r of rows) {
-    const cheie = `${r.anul}-${r.luna}-${r.post}`
-    const l = luni.get(cheie) ?? { cheie, anul: r.anul, luna: r.luna, post: r.post, componente: [] }
-    l.componente.push(r)
-    luni.set(cheie, l)
-  }
-  return [...luni.values()]
-}
-
-// Doar componentele confirmate (tabelul nu ține altceva), ca la instructori.
-function SectiuneStaff({ userId }: { userId: string }) {
-  const q = useQuery({
-    queryKey: ['my-salarii-staff', userId],
-    queryFn: () => listSalariiStaffProprii(userId),
+  const qs = useQueries({
+    queries: luni.map((l) => ({
+      queryKey: ['salariul-meu-staff', l.y, l.m],
+      queryFn: () => getSalariulMeuStaff(l.y, l.m),
+    })),
   })
 
-  if (q.isLoading) return <Spinner />
-  if (q.error) return <p className="text-sm text-red-600">Eroare: {humanizeError(q.error)}</p>
+  if (sezonQ.isLoading || qs.some((q) => q.isLoading)) return <Spinner />
+  const error = sezonQ.error ?? qs.find((q) => q.error)?.error
+  if (error) return <p className="text-sm text-red-600">Eroare: {humanizeError(error)}</p>
 
-  const luni = grupeazaPeLuna(q.data ?? [])
-  if (luni.length === 0) {
+  const carduri = qs.flatMap((q, idx) => {
+    const d = q.data
+    const l = luni[idx]
+    if (!d || !l) return []
+    const titlu = `${RO_LUNI[l.m - 1]} ${l.y}`
+    const out = []
+    if (d.manager) out.push({ cheie: `m-${titlu}`, post: 'manager' as const, om: d.manager, l, titlu })
+    if (d.receptie) out.push({ cheie: `r-${titlu}`, post: 'receptie' as const, om: d.receptie, l, titlu })
+    return out
+  })
+
+  if (carduri.length === 0) {
     return (
-      <p className="text-sm text-quasar-gray">Salariul apare aici după ce e confirmată luna.</p>
+      <p className="text-sm text-quasar-gray">Simularea apare aici după ce se încheie prima lună a sezonului.</p>
     )
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-sm text-quasar-gray">
-        Bonusurile care depind de luna următoare (încasările, rata de încasare) se confirmă
-        separat, după ce se încheie și ea, și apar aici atunci.
+    <div className="space-y-3">
+      <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        Simularea pe grila 2026-2027. Ce e <strong>„de confirmat"</strong> devine final după ce îl confirmă
+        administratorul; ce e <strong>„provizoriu"</strong> (încasările, rata de încasare) se definitivează după
+        ce se încheie și luna următoare.
       </p>
-      {luni.map((l) => {
-        const total = l.componente.reduce((s, c) => s + Number(c.suma), 0)
-        const platitIn = l.componente.find((c) => c.platit_in_luna)?.platit_in_luna
+      {carduri.map((c) => {
+        const nota = c.post === 'manager' ? notaLunaSalarizare(c.l.y, c.l.m) : null
         return (
-          <article key={l.cheie} className="rounded-lg border border-quasar-gray-light bg-white">
-            <div className="flex items-center gap-4 px-4 py-3 max-md:flex-wrap max-md:gap-x-3 max-md:gap-y-1">
-              <span className="w-40 font-medium text-quasar-black max-md:w-auto">
-                {RO_LUNI[l.luna - 1]} {l.anul}
-              </span>
-              <strong className="w-32 text-right text-quasar-black max-md:ml-auto max-md:w-auto">
-                {formatRON(total)}
-              </strong>
-              <span className="text-sm text-quasar-gray max-md:w-full">
-                {POST_ETICHETA[l.post] ?? l.post}
-                {platitIn ? ` · se plătește în ${formatMonth(platitIn)}` : ''}
-              </span>
-            </div>
-            <ul className="divide-y divide-quasar-gray-light border-t border-quasar-gray-light px-4 text-sm">
-              {l.componente.map((c) => (
-                <li key={c.id} className="flex justify-between gap-3 py-1.5">
-                  <span>
-                    {c.eticheta}
-                    {c.stare === 'corectat' && (
-                      <span className="ml-2 text-xs text-amber-700">corectat</span>
-                    )}
-                  </span>
-                  <span className="tabular-nums">{formatRON(Number(c.suma))}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
+          <div key={c.cheie}>
+            {nota && <p className="mb-1 text-sm text-quasar-gray">{nota}</p>}
+            <StaffCard post={c.post} om={c.om} anul={c.l.y} luna={c.l.m} doarCitire titlu={c.titlu} />
+          </div>
         )
       })}
     </div>
@@ -301,7 +273,7 @@ function SectiuneStaff({ userId }: { userId: string }) {
 export function SalariulMeuPage() {
   // Profilul vine din context (rezolvat o dată la login) — nu depinde de rol,
   // deci pagina merge și pentru un manager care predă.
-  const { role, user } = useAuth()
+  const { role } = useAuth()
   const { teacherId, loading } = useCurrentTeacherId()
   if (loading) return <Spinner />
 
@@ -325,10 +297,10 @@ export function SalariulMeuPage() {
             <SectiuneInstructor myTeacherId={teacherId} />
           </section>
         )}
-        {areStaff && user && (
+        {areStaff && (
           <section>
             {titlu(role === 'manager' ? 'Manager de studio' : 'Recepție')}
-            <SectiuneStaff userId={user.id} />
+            <SectiuneStaff />
           </section>
         )}
       </div>

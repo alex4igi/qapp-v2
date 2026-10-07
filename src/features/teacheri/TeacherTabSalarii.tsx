@@ -10,11 +10,13 @@ import {
   calculDinSnapshot,
   confirmaSalariuTeacher,
   corecteazaSalariuTeacher,
+  getDetaliuCursanti,
   listSalariiTeacher,
   previewSalariuTeacher,
   type SalariuTeacherCalc,
 } from '@/lib/salariuTeacher'
 import type { SalariuTeacher } from '@/types/db'
+import { notaLunaSalarizare } from '@/lib/notaLunaSalarizare'
 import { getSezonActiv } from '../setari/api'
 import { cuLuniConfirmate, monthRange, primaLunaSalarii } from './lunileSalariilor'
 
@@ -34,6 +36,7 @@ function LunaAccordion({
   item,
   isAdmin,
   isOwner,
+  inAfaraGrilei,
   defaultOpen,
   onConfirm,
   onCorecteaza,
@@ -42,12 +45,20 @@ function LunaAccordion({
   item: LunaItem
   isAdmin: boolean
   isOwner: boolean
+  inAfaraGrilei: boolean
   defaultOpen: boolean
   onConfirm: () => void
   onCorecteaza: (motiv: string) => void
   seLucreaza: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
+  const nota = notaLunaSalarizare(item.anul, item.luna)
+  const cursuri = (item.calc?.grupe ?? []).map((g) => g.curs_id)
+  const detaliuQ = useQuery({
+    queryKey: ['detaliu-cursanti', item.anul, item.luna, cursuri],
+    queryFn: () => getDetaliuCursanti(cursuri, item.anul, item.luna),
+    enabled: open && isAdmin && cursuri.length > 0 && item.calc?.perioada !== 'vara',
+  })
   const total = item.kind === 'preview' ? item.calc.total : Number(item.row.total)
   const calc = item.calc
   const cursanti = (calc?.grupe ?? []).reduce((s, g) => s + g.cursanti, 0)
@@ -92,12 +103,13 @@ function LunaAccordion({
       </button>
       {open && (
         <div className="border-t border-line px-4 py-3">
+          {nota && <p className="mb-3 text-sm text-muted">{nota}</p>}
           {calc ? (
-            <SalariuTeacherDetaliu calc={calc} />
+            <SalariuTeacherDetaliu calc={calc} detaliuCursanti={detaliuQ.data} />
           ) : (
             <p className="text-sm text-muted">Luna a fost confirmată pe modelul vechi.</p>
           )}
-          {item.kind === 'preview' && isAdmin && (
+          {item.kind === 'preview' && isAdmin && !inAfaraGrilei && (
             <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
               {item.calc.provizoriu && (
                 <span className="text-xs text-muted">
@@ -129,7 +141,13 @@ function LunaAccordion({
   )
 }
 
-export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
+export function TeacherTabSalarii({
+  teacherId,
+  inAfaraGrilei = false,
+}: {
+  teacherId: string
+  inAfaraGrilei?: boolean
+}) {
   const { role } = useAuth()
   const isAdmin = isAdminOrHigher(role)
   const isOwner = role === 'owner'
@@ -217,6 +235,12 @@ export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
 
   return (
     <div className="space-y-4">
+      {inAfaraGrilei && (
+        <p className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink">
+          În afara grilei de salarizare: calculul de mai jos e doar orientativ, luna nu se confirmă din grilă,
+          iar instructorul nu-și vede simularea.
+        </p>
+      )}
       {eroare && (
         <p className="rounded-md border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-danger">
           {humanizeError(eroare, 'Operația nu a reușit.')}
@@ -237,6 +261,7 @@ export function TeacherTabSalarii({ teacherId }: { teacherId: string }) {
               item={item}
               isAdmin={isAdmin}
               isOwner={isOwner}
+              inAfaraGrilei={inAfaraGrilei}
               defaultOpen={idx === 0}
               onConfirm={() => confirm.mutate({ y: item.anul, m: item.luna })}
               onCorecteaza={(motiv) => corecteaza.mutate({ y: item.anul, m: item.luna, motiv })}

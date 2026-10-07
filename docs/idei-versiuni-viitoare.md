@@ -6,7 +6,7 @@ Lista unică a ideilor bune care **nu se construiesc acum**: amânate sau parcat
 Stări: **amânat** = da, dar mai târziu · **parcat** = construit sau planificat, oprit printr-o decizie ·
 **de decis** = întâi o discuție cu Alex.
 
-Ultima actualizare: 5 octombrie 2026.
+Ultima actualizare: 7 octombrie 2026.
 
 ## Din lista de inspirație (2 oct. 2026)
 
@@ -60,6 +60,7 @@ Rămase din grupele mari: **facturile în portal**, **costume**, **suspendarea a
 | Jurnalul metodologic intră în evaluarea profesorului | amânat | Criteriul „Pregătirea lecției”. |
 | Instructorul semnalează „A venit, de verificat” pentru un copil fără acces la facultativ | de decis (5 oct., din alternativa Codex la rosterul facultativelor) | Instructorul e în sală, recepția e în altă parte. Semnalul nu creează înrolare, datorie sau prezență; cere o stare nouă, o notificare la recepție și un flux de rezolvare. Analiza: `docs/handoff/2026-10-05-alternativa-roster-facultative-participanti.md`. |
 | Plata evenimentelor trupelor (150 lei) în salarizare | amânat (25 sept.) | Etapa următoare a grilelor. |
+| Pro-rata la salariu: client întreg sau parțial la grupele recurente | de decis (7 oct.) | Azi orice înrolare cu sumă ține un loc întreg la retenție și ocupare — și cel cu 45 lei și o prezență. Alternativa: cântărit ca la facultative (loc echivalent). Sept. 2026: 83 pro-rata din 566 pe 43 de grupe; ar schimba salariile. Detaliul e vizibil deja în „Detalii salarii” (admin). |
 | Trupele modelate explicit (UNIQ, MiniQ's…) | amânat | Azi o trupă e doar `nivelul='Trupa'`; rapoartele nu le pot deosebi. |
 | Calendar pentru cursuri private 1-la-1 | amânat (28 mai) | Programare + cost pentru instructor + încasare per sesiune. |
 
