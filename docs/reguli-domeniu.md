@@ -290,6 +290,9 @@ cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functi
   telefon, în 26–30 oct., cine va fi desemnat (nedecis). Preferințele familiei **nu se introduc în qapp**: părintele
   completează (sau retrimite) formularul de pe site. Scriptul recepției: `docs/handoff/2026-10-07-scripturi-receptie-valea-lupului.md`.
 - **Reducerea de familie (−10%, §2 din reguli-preturi-reduceri) se aplică și la Valea Lupului** (Alex, 07.10.2026).
+- **Școala Verde** = noul corp școlar din Valea Lupului, unde învață în principal clasele primare; **strada Privighetorii, lângă
+  Carrefour Express** (Alex, 07.10.2026). Grupele vor fi după orele de școală, în intervalele din formular. Intrarea și sala:
+  încă necunoscute, deci Valea Lupului rămâne în `LOCATII_FARA_DATE_SMS`.
 - **Calendarul campaniei (Alex, 07.10.2026):** până în vacanța de toamnă strângem preînscrieri (sondaj de piață); în
   **26–30 octombrie 2026** sunăm familiile ca să stabilim împreună orarul și ședința demonstrativă gratuită. Pe LP stă în
   `PERIOADA_CONTACT` (`app/valea-lupului/campaign.ts`, site).

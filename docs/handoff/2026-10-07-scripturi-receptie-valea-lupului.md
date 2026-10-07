@@ -1,6 +1,6 @@
 # Scripturi recepție - Valea Lupului
 
-**Stare:** v2, 2026-10-07 — corectat de Claude după deciziile lui Alex (vezi mai jos). Scriptul PDF: `tmp/pdfs/build_vl_v2.py`.
+**Stare:** v3, 2026-10-07 — corectat de Claude după deciziile lui Alex (vezi mai jos). Scriptul PDF: `tmp/pdfs/build_vl_v3.py` (Chrome, ca să se vadă emoticoanele). Mesajul de WhatsApp de copiat: `output/pdf/mesaj-whatsapp-valea-lupului.txt`.
 
 - **confirmat de Alex:** dorește un PDF pentru recepție despre oferta Valea Lupului și scenarii de conversație.
 - **confirmat de Alex:** Alin Stoleru a predat mult timp în școala în care s-a promovat campania; mulți copii îl cunosc și rezonează cu el. Alin va preda cu certitudine gimnastică la Valea Lupului; în funcție de program și disponibilitate se alocă Alin sau alți instructori Quasar.
@@ -36,35 +36,53 @@ Ca la orice lead: notați contactul în kanban și treceți leadul la „Contact
 ### Familia a completat deja?
 
 Verificați în qapp, la Preînscrieri: căutați după numele părintelui, al copilului sau după telefon.
-## Răspunsul de bază
-
-### De reținut
-
-Oferta actuală: Street Dance, Gimnastică (acrobatică) și K-pop pentru copii. Pregătim deschiderea din noiembrie 2026, la Școala Verde, în Valea Lupului. Grupele și orarul se stabilesc din preînscrieri.
-
-### Mesaj complet pentru WhatsApp
-
-Bună ziua! Pregătim din noiembrie cursuri Quasar Dance pentru copii la Școala Verde, în Valea Lupului: Street Dance, Gimnastică și K-pop. Grupele și programul se stabilesc în funcție de vârste și de disponibilitatea familiilor.
-Orientativ, prețurile sunt 180 lei/lună pentru o ședință pe săptămână sau 270 lei/lună pentru două ședințe pe săptămână. Frecvența și prețul final le confirmăm odată cu orarul.
-Acum puteți completa preînscrierea gratuită, fără obligații: https://www.quasardance.ro/valea-lupului
-În 26-30 octombrie vă sunăm pentru a stabili împreună orarul și ședința demonstrativă gratuită. După demonstrație decideți dacă doriți să continuați. Ce vârstă are copilul și ce activitate îl atrage?
-
-### Deschidere la telefon
-
-Bună ziua! Sunt de la recepția Quasar Dance. Vă pot ajuta cu informații despre cursurile din Valea Lupului. Ce vârstă are copilul și ce i-ar plăcea: dans, gimnastică sau K-pop?
-
-### Încheierea conversației
-
-Vă trimit formularul de preînscriere. Bifați toate zilele și intervalele în care ați putea ajunge. În 26-30 octombrie revenim telefonic cu detalii despre program și demonstrația gratuită.
 
 ### Notă internă
 
 Textele sunt formulări pentru recepție, pe regulile campaniei din 7 octombrie. Răspundeți întâi la întrebarea omului, apoi indicați următorul pas. Nu trimiteți automat întregul mesaj unei persoane care cere un singur detaliu.
+## Răspunsul de bază
+
+### De reținut
+
+Oferta actuală: Street Dance, Gimnastică (acrobatică) și K-pop pentru copii. Pregătim deschiderea din noiembrie 2026, la Școala Verde: noul corp școlar din Valea Lupului, unde învață în principal clasele primare, pe strada Privighetorii, lângă Carrefour Express. Grupele se vor forma după orele de școală, în intervalele de pe site (luni–vineri 13–15, 15–17, 17–19; weekend 10–12, 12–14). Orarul exact nu e stabilit; se face din preînscrieri.
+Mesajul de mai jos e formatat pentru WhatsApp (*text* = bold). Din PDF, rândurile se pot rupe la copiere: luați textul din fișierul mesaj-whatsapp-valea-lupului.txt sau, mai simplu, salvați-l o dată ca răspuns rapid în WhatsApp Business (Instrumente de business → Răspunsuri rapide, scurtătura /vl).
+
+### Mesaj complet pentru WhatsApp
+
+Bună ziua! 💛
+
+Din *noiembrie*, *Quasar Dance* vine în *Valea Lupului*, la *Școala Verde* 🏫 (str. Privighetorii, lângă Carrefour Express), cu cursuri pentru copii:
+
+💃 *Street Dance*
+🤸 *Gimnastică*
+🎤 *K-pop*
+
+🕒 *Când:* grupele se formează după orele de școală, *luni–vineri între 13:00 și 19:00* sau *în weekend între 10:00 și 14:00*. Orarul exact îl stabilim după preînscrieri.
+
+💰 *Prețuri orientative:*
+• *180 lei/lună* – o ședință pe săptămână
+• *270 lei/lună* – două ședințe pe săptămână
+👫 Pentru frați: *10% reducere* la al doilea abonament din familie.
+Prețul final îl confirmăm odată cu orarul.
+
+📝 *Preînscrierea e gratuită și fără obligații:*
+👉 https://www.quasardance.ro/valea-lupului
+
+📞 În *26–30 octombrie* vă sunăm ca să stabilim împreună orarul și *ședința demonstrativă gratuită* 🎉
+
+### Deschidere la telefon
+
+Bună ziua! Sunt de la recepția Quasar Dance. Vă mulțumim pentru interesul pentru cursurile din Valea Lupului. Pe scurt: din noiembrie, la Școala Verde, avem Street Dance, Gimnastică și K-pop pentru copii, după orele de școală sau în weekend. Ca să vă luăm în calcul când formăm grupele, e nevoie să completați preînscrierea pe quasardance.ro/valea-lupului; vă trimit linkul acum pe WhatsApp. În 26–30 octombrie vă sunăm pentru orar și ședința demonstrativă gratuită.
+Intern: recepția informează și trimite linkul. Nu cere vârsta, activitatea sau orele la telefon: le completează părintele în formular.
+
+### Încheierea conversației
+
+Vă trimit linkul de preînscriere pe WhatsApp. Bifați toate zilele și intervalele în care ați putea ajunge. În 26-30 octombrie revenim telefonic cu detalii despre program și demonstrația gratuită.
 ## Cele cinci întrebări esențiale
 
 ### „Ce grupe aveți?”
 
-Pregătim Street Dance, Gimnastică și K-pop pentru copii. Grupele se vor forma în funcție de vârste și de cererile primite; încă nu avem un orar final. Ce vârstă are copilul și ce activitate preferă?
+Pregătim Street Dance, Gimnastică și K-pop pentru copii. Grupele se vor forma pe vârste, după orele de școală: luni–vineri între 13 și 19 sau în weekend între 10 și 14. Orarul final îl stabilim din preînscrieri, așa că vă rugăm să completați formularul de pe quasardance.ro/valea-lupului cu vârsta copilului, activitățile și intervalele potrivite.
 Intern: formularul acceptă vârste de 4-18 ani. Aceasta nu garantează o grupă pentru fiecare vârstă și fiecare stil.
 
 ### „Cât costă?”
@@ -77,8 +95,8 @@ Deschiderea este anunțată pentru noiembrie 2026. Acum strângem preînscrieril
 
 ### „Unde se țin cursurile?”
 
-La Școala Verde, în Valea Lupului. Campania este în parteneriat cu Școala „Profesor Mihai Dumitriu”, iar detaliile de acces la sala de curs le veți primi odată cu programul.
-Intern: școala parteneră și locul de desfășurare trebuie numite separat. Nu trimiteți o adresă sau un pin aproximativ.
+La Școala Verde: noul corp școlar din Valea Lupului, unde învață în principal clasele primare, pe strada Privighetorii, lângă Carrefour Express. Campania este în parteneriat cu Școala „Profesor Mihai Dumitriu”. Detaliile de acces (intrarea, sala) le primiți odată cu programul.
+Intern: școala parteneră și locul de desfășurare se numesc separat.
 
 ### „Cum înscriu copilul?”
 
@@ -99,11 +117,11 @@ Da, Alin Stoleru este colegul nostru de la Quasar și știm că mulți copii îl
 
 ### „Copilul meu vine doar dacă predă Alin.”
 
-Înțeleg, contează mult că are deja încredere în el. Notez că participarea copilului depinde de o grupă cu Alin. Vă confirmăm instructorul înainte să decideți dacă veniți la demonstrație.
+Înțeleg, contează mult că are deja încredere în el. Scrieți acest lucru la Observații în formularul de preînscriere, ca să îl avem în vedere când formăm grupele. Vă confirmăm instructorul înainte să decideți dacă veniți la demonstrație.
 
 ### „Va fi Alin la toate orele? Și la demonstrație?”
 
-Alin va preda gimnastică aici, dar aceasta nu înseamnă că va ține toate grupele sau toate orele. Instructorul fiecărei grupe și participarea la demonstrație se confirmă odată cu programul. Notez că acest lucru este important pentru dumneavoastră.
+Alin va preda gimnastică aici, dar aceasta nu înseamnă că va ține toate grupele sau toate orele. Instructorul fiecărei grupe și participarea la demonstrație se confirmă odată cu programul. Dacă e important pentru dumneavoastră, scrieți-l la Observații în formular.
 
 ### „Dacă este alt profesor, copilul nu va vrea.”
 
@@ -124,11 +142,11 @@ Nu. Cursurile sunt deschise tuturor copiilor din zonă, inclusiv celor care înv
 
 ### „Aveți seara sau în weekend? Cât durează o oră?”
 
-În formular puteți indica luni-vineri intervalele 13-15, 15-17, 17-19 și în weekend 10-12 sau 12-14. Sunt intervale de disponibilitate, nu ore de curs deja stabilite. Durata ședinței și ora exactă le confirmăm odată cu programul.
+Grupele vor fi după orele de școală: luni-vineri în intervalele 13-15, 15-17, 17-19 și în weekend 10-12 sau 12-14. Seara târziu nu avem. În formular bifați toate intervalele în care puteți ajunge; orele exacte nu sunt încă stabilite. Durata ședinței și ora exactă le confirmăm odată cu programul.
 
 ### „Pot înscrie doi frați? Pot alege două activități?”
 
-Da. Pentru frați folosiți „Mai adaug un copil” și completați preferințele fiecăruia. Puteți bifa mai multe activități. Spuneți-ne dacă sunt alternative sau dacă doriți efectiv două cursuri, ca să înțelegem corect cererea.
+Da. Pentru frați folosiți „Mai adaug un copil” și completați preferințele fiecăruia. Puteți bifa mai multe activități. Dacă doriți efectiv două cursuri (nu doar alternative), scrieți asta la Observații în formular.
 
 ### „Există reducere pentru frați?”
 
@@ -141,16 +159,16 @@ Prețurile publicate acum sunt orientative. Ce include abonamentul pentru grupa 
 
 ### „Nu a mai dansat / e timid / nu știe ce să aleagă.”
 
-Spuneți-ne vârsta și ce îi place. Notăm că este la început și că are nevoie de acomodare. La demonstrația gratuită poate cunoaște instructorul și activitatea, apoi decideți dacă i se potrivește.
+Completați preînscrierea și scrieți la Observații că este la început. La demonstrația gratuită poate cunoaște instructorul și activitatea, apoi decideți dacă i se potrivește.
 
 ### „Am completat deja. Mai trebuie să fac ceva?”
 
-Dacă datele și preferințele au rămas aceleași, nu este nevoie să retrimiteți formularul. Revenim în 26-30 octombrie. Dacă s-a schimbat ceva, spuneți-ne ce trebuie actualizat.
+Dacă datele și preferințele au rămas aceleași, nu este nevoie să retrimiteți formularul. Revenim în 26-30 octombrie. Dacă s-a schimbat ceva, retrimiteți formularul cu datele noi.
 Intern: verificați cererea în qapp, la Preînscrieri (căutare după nume sau telefon), înainte să spuneți că este înregistrată. Dacă s-a schimbat ceva, rugați părintele să retrimită formularul de pe site; nu modificați voi cererea.
 
 ### „Copilul merge deja la Quasar. Îl pot muta aici?”
 
-Notăm dorința de transfer și verificăm ce grupă i s-ar potrivi când avem programul. Preînscrierea pentru Valea Lupului nu modifică automat locul sau abonamentul actual.
+Completați preînscrierea și scrieți la Observații că doriți transferul; verificăm ce grupă i s-ar potrivi când avem programul. Preînscrierea pentru Valea Lupului nu modifică automat locul sau abonamentul actual.
 
 ### „Aveți Zumba, cursuri pentru adulți sau sub 4 ani?”
 
