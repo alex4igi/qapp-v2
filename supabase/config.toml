@@ -499,6 +499,11 @@ verify_jwt = false
 [functions.netopia-refund]
 verify_jwt = true
 
+# Importul zilnic al deconturilor Netopia, chemat de Google Apps Script din contul alex@
+# (fără JWT de la noi; header x-decont-secret = NETOPIA_DECONT_SECRET, verificat în funcție).
+[functions.netopia-decont-import]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

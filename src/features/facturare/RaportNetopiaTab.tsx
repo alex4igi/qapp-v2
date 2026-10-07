@@ -154,9 +154,10 @@ export function RaportNetopiaTab() {
           <div className="max-w-2xl space-y-1">
             <p className="text-sm font-semibold text-ink">Fișierele de decont Netopia</p>
             <p className="text-xs text-muted">
-              Din panoul Netopia, descarcă fișierele loturilor virate (batchId….csv.zip) și încarcă-le aici —
-              merge și arhiva întreagă, cu toate loturile deodată. Din ele vin comisioanele și data virării.
-              Un lot încărcat a doua oară se înlocuiește, nu se dublează.
+              Se încarcă singure, în fiecare dimineață, din emailurile „Detalii decontare” pe care Netopia le
+              trimite pe alex@quasardance.ro. Din ele vin comisioanele și data virării. Dacă lipsește un lot,
+              îl poți încărca și manual (batchId….csv.zip sau arhiva întreagă); un lot încărcat a doua oară se
+              înlocuiește, nu se dublează.
               {r?.ultim_lot && (
                 <>
                   {' '}
