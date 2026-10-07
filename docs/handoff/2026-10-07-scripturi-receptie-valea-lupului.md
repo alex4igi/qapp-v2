@@ -4,7 +4,7 @@
 
 - **confirmat de Alex:** dorește un PDF pentru recepție despre oferta Valea Lupului și scenarii de conversație.
 - **confirmat de Alex:** Alin Stoleru a predat mult timp în școala în care s-a promovat campania; mulți copii îl cunosc și rezonează cu el. Alin va preda cu certitudine gimnastică la Valea Lupului; în funcție de program și disponibilitate se alocă Alin sau alți instructori Quasar.
-- **confirmat de Alex (07.10):** Petruța (recepția Ștefan cel Mare) răspunde familiilor din Valea Lupului, cu termen de 24 h, dar nu programează; cine sună în 26-30 oct. rămâne de stabilit.
+- **confirmat de Alex (07.10):** recepția Ștefan cel Mare (SCM) răspunde familiilor din Valea Lupului, cu termen de 24 h, dar nu programează; cine sună în 26-30 oct. rămâne de stabilit.
 - **confirmat de Alex (07.10):** preferințele nu se introduc în qapp; familia completează formularul de pe site.
 - **confirmat de Alex (07.10):** reducerea de familie (−10%) se aplică și la Valea Lupului.
 - **propunere:** restul formulărilor; grupele concrete ale lui Alin și participarea la demonstrație rămân de clarificat.
@@ -13,15 +13,15 @@ PDF: `output/pdf/scripturi-receptie-valea-lupului.pdf`
 
 ## Cine face ce
 
-### Petruța răspunde familiilor din Valea Lupului
+### Recepția SCM răspunde familiilor din Valea Lupului
 
-Mesajele și apelurile pentru Valea Lupului vin pe 0730 534 172, la recepția Ștefan cel Mare. Le preia Petruța. Termenul de răspuns este același ca la orice lead: 24 de ore. Leadurile din Valea Lupului apar în kanban, la „Nou”, cu steguleț când termenul a trecut.
+Mesajele și apelurile pentru Valea Lupului vin pe 0730 534 172, la recepția Ștefan cel Mare (SCM), care le preia. Termenul de răspuns este același ca la orice lead: 24 de ore. Leadurile din Valea Lupului apar în kanban, la „Nou”, cu steguleț când termenul a trecut.
 
-### Ce face Petruța
+### Ce face recepția SCM
 
 Răspunde la întrebări (oferta, prețurile orientative, locul, perioada de start) și trimite linkul de preînscriere: https://www.quasardance.ro/valea-lupului
 
-### Ce NU face Petruța
+### Ce NU face recepția SCM
 
 Nu programează la ședința demonstrativă și nu promite o zi, o oră sau o grupă. Orarul și demonstrația se stabilesc la telefon, în 26-30 octombrie, de persoana desemnată pentru Valea Lupului (se anunță separat).
 
@@ -51,7 +51,7 @@ Acum puteți completa preînscrierea gratuită, fără obligații: https://www.q
 
 ### Deschidere la telefon
 
-Bună ziua! Sunt Petruța, de la Quasar Dance. Vă pot ajuta cu informații despre cursurile din Valea Lupului. Ce vârstă are copilul și ce i-ar plăcea: dans, gimnastică sau K-pop?
+Bună ziua! Sunt de la recepția Quasar Dance. Vă pot ajuta cu informații despre cursurile din Valea Lupului. Ce vârstă are copilul și ce i-ar plăcea: dans, gimnastică sau K-pop?
 
 ### Încheierea conversației
 
@@ -183,5 +183,5 @@ Propunere: responsabil clar pentru fiecare cerere și listă separată cu lucrur
 
 ### Baza documentului și statut
 
-Versiune 07.10.2026, după verificarea lui Claude pe pagina live și pe qapp. Deciziile lui Alex din 07.10: Petruța răspunde (termen 24 h), nu programează; datele le introduce familia în formular; reducerea de familie se aplică și la Valea Lupului. Contextul despre Alin este confirmat de Alex.
+Versiune 07.10.2026, după verificarea lui Claude pe pagina live și pe qapp. Deciziile lui Alex din 07.10: recepția SCM răspunde (termen 24 h), nu programează; datele le introduce familia în formular; reducerea de familie se aplică și la Valea Lupului. Contextul despre Alin este confirmat de Alex.
 Link pentru familii: https://www.quasardance.ro/valea-lupului
