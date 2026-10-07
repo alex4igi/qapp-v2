@@ -23,6 +23,7 @@ const DOAR_SERVER = new Set([
   'gdpr_fisiere_de_sters', // fișierele clienților anonimizați, de șters din Storage/Drive
   'remindere_prima_sedinta', // urma SMS-urilor de start sezon / prima ședință, scrisă de cron-morning
   'locatii_retele', // IP-urile locațiilor; doar prin locatia_retelei / asociaza_reteaua_curenta
+  'netopia_decont', // liniile din fișierele loturilor Netopia; doar prin importa_decont_netopia / raport_netopia_luna
 ])
 
 const env = Object.fromEntries(
