@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher } from '@/lib/rolesMatrix'
-import { Badge, Button, DataTable, PageHeader, Select, Tabs, type Column } from '@/components/ui'
+import { Badge, Button, DataTable, PageHeader, Select, Tabs, TextInput, type Column } from '@/components/ui'
 import { downloadCsv } from '@/lib/csv'
 import { formatDate } from '@/lib/format'
+import { matchesWords } from '@/lib/search'
 import { supabase } from '@/lib/supabase'
 import { LeadModal } from '@/features/leads/LeadModal'
 import type { Lead } from '@/types/db'
@@ -36,6 +37,9 @@ const TONE: Record<StatusPreinscriere, 'neutral' | 'warn' | 'success' | 'danger'
 
 type TabId = 'lista' | 'decizie'
 
+// Recepția caută des fără diacritice („Stefan”, „Ionut”).
+const faraDiacritice = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '')
+
 // Preînscrierile campaniei „Quasar Dance vine în Valea Lupului": lista de lucru pentru
 // cine sună familiile și datele din care se decid grupele și cererea de închiriere.
 // Reguli: docs/reguli-domeniu.md §11.
@@ -44,6 +48,7 @@ export default function PreinscrieriPage() {
   const [status, setStatus] = useState('')
   const [scoala, setScoala] = useState('')
   const [sursa, setSursa] = useState('')
+  const [cauta, setCauta] = useState('')
   const [deschisa, setDeschisa] = useState<Preinscriere | null>(null)
   const [leadDeschis, setLeadDeschis] = useState<Lead | null>(null)
   const q = useQuery({ queryKey: ['preinscrieri'], queryFn: listPreinscrieri })
@@ -74,9 +79,13 @@ export default function PreinscrieriPage() {
         (r) =>
           (!status || r.status === status) &&
           (!scoala || String(r.elev_scoala_partenera) === scoala) &&
-          (!sursa || r.utm_content === sursa || r.utm_source === sursa),
+          (!sursa || r.utm_content === sursa || r.utm_source === sursa) &&
+          (!cauta || matchesWords(
+            faraDiacritice([r.nume_participant, r.nume_contact, r.telefon, r.email].filter(Boolean).join(' ')),
+            faraDiacritice(cauta),
+          )),
       ),
-    [toate, status, scoala, sursa],
+    [toate, status, scoala, sursa, cauta],
   )
   const active = useMemo(
     () =>
@@ -228,7 +237,11 @@ export default function PreinscrieriPage() {
         <Kpi label={`Elevi ${SCOALA_PARTENERA_SCURT}`} value={String(elevi)} />
       </div>
 
-      <div className="mb-4 grid gap-2 md:grid-cols-3">
+      <div className="mb-4 grid gap-2 md:grid-cols-4">
+        {tab === 'lista' && (
+          <TextInput type="search" value={cauta} onChange={(e) => setCauta(e.target.value)}
+            placeholder="Caută: copil, părinte, telefon" aria-label="Caută în preînscrieri" />
+        )}
         <Select value={scoala} onChange={(e) => setScoala(e.target.value)}
           options={[{ value: '', label: 'Toți' }, { value: 'true', label: `Elevi ${SCOALA_PARTENERA_SCURT}` }, { value: 'false', label: 'Din afara școlii partenere' }]} />
         <Select value={sursa} onChange={(e) => setSursa(e.target.value)}

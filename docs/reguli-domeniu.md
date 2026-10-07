@@ -284,8 +284,17 @@ cod: migrația `20260929180000_preinscrieri_valea_lupului.sql`, `supabase/functi
   separat de status (`disponibilitate_confirmata_la`); o grilă schimbată după confirmare redevine declarată (trigger).
 - **Pragul pentru o grupă**: reperul de 8 e în cursanți **plătitori** (§2), nu în preînscrieri. Ecranul „Decizie grupe”
   împarte pragul la o rată de conversie presupusă (reglabilă) și o afișează ca ipoteză.
-- **Leadurile Valea Lupului intră în `nou`** și deci în lista de sunat de seară (`leads_de_flagat_seara`). Locația n-are
-  recepție: cine le sună trebuie decis **înainte** de distribuirea flyerelor.
+- **Leadurile Valea Lupului intră în `nou`** și deci în lista de sunat de seară (`leads_de_flagat_seara`), cu termenul
+  de prim apel ca orice lead. **Decizie Alex (07.10.2026):** le răspunde **Petruța** (recepția Ștefan cel Mare, numărul
+  0730 534 172), în 24 h — informează și trimite linkul, dar **nu programează**. Orarul și demonstrația le stabilește la
+  telefon, în 26–30 oct., cine va fi desemnat (nedecis). Preferințele familiei **nu se introduc în qapp**: părintele
+  completează (sau retrimite) formularul de pe site. Scriptul recepției: `docs/handoff/2026-10-07-scripturi-receptie-valea-lupului.md`.
+- **Reducerea de familie (−10%, §2 din reguli-preturi-reduceri) se aplică și la Valea Lupului** (Alex, 07.10.2026).
+- **Calendarul campaniei (Alex, 07.10.2026):** până în vacanța de toamnă strângem preînscrieri (sondaj de piață); în
+  **26–30 octombrie 2026** sunăm familiile ca să stabilim împreună orarul și ședința demonstrativă gratuită. Pe LP stă în
+  `PERIOADA_CONTACT` (`app/valea-lupului/campaign.ts`, site).
+- **Prețuri pe LP = orientative**, fără orar stabilit: 180 lei/lună la 1×/săpt., 270 lei/lună la 2×/săpt. (`PRETURI_ORIENTATIVE`,
+  fixate pe campanie, nu citite din /program-si-preturi). Fără mențiuni de recurent/facultativ, fără comparație cu „studiourile din Iași”.
 - `leads.interes` pe un lead de preînscriere e doar primul stil bifat (proiecție); lista completă e în preînscriere.
 - GDPR: tabelul intră în `gdpr_export_client` și `anonimizeaza_client`, legat pe lead/client, nu pe telefon.
 
