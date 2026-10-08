@@ -141,6 +141,12 @@ mai primește caz, iar o reziliere făcută în afara contactului (din fișa cli
 calcul (`exclus_k3`). Ceasul de 48 h numără doar orele de luni până vineri, iar un apel notat „Nu răspunde" îl
 oprește. Procedura pe stări: [procedura-absenti-21z.md](./procedura-absenti-21z.md).
 
+**Revenit singur înainte de termen (Alex, 8 oct. 2026).** Cine vine din nou la curs înainte să-l sune cineva
+iese din listă și nu pică poarta de 48 h — dar doar dacă a revenit cât ceasul încă mergea (prima prezență nouă
+în ziua în care se împlineau cele 48 h lucrătoare sau mai devreme). După termen, apelul ratat rămâne ratat: o
+revenire de mai târziu nu-l șterge. În raport: „Reveniți singuri, înainte de termen" (`revenit_singur`).
+Migrația `20261008160000`.
+
 ### ⭐ K5 — conversie = orice plată pe o înrolare (confirmat de Alex, 29 sept. 2026)
 
 „Orice plată înseamnă conversie — OPEN, K-pop, studenți, abonamente — adică o înrolare." Deci K5 rămâne

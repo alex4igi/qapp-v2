@@ -1,21 +1,60 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { PageHeader, DataTable, Badge, Button, Tabs, Tooltip, type Column } from '@/components/ui'
+import { PageHeader, DataTable, Badge, Button, Tabs, Tooltip, Pills, Select, type Column } from '@/components/ui'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
 import { useAuth } from '@/hooks/useAuth'
 import { isManagerOrHigher } from '@/lib/rolesMatrix'
+import { sezoaneOptions, sezonActivId } from '@/lib/lookups'
 import { getWorklistAbsente } from './api'
 import { ContactAbsentaModal, type CerereReziliere } from './ContactAbsentaModal'
 import { ReziliereDinAbsentaModal } from './ReziliereDinAbsentaModal'
 import { DecizieManagerModal } from './DecizieManagerModal'
 import { CerereReziliereModal } from './CerereReziliereModal'
 import { ProceduraAbsenteModal } from './ProceduraAbsenteModal'
-import { STARE_PROCEDURA, STARI_INCHISE } from './procedura'
+import { STARE_PROCEDURA, STARI_DE_LUCRU, STARI_INCHISE } from './procedura'
 import { urgenta, type CazAbsenta } from './types'
 
 type Tab = 'de_sunat' | 'asteptare' | 'de_confirmat' | 'istoric'
 const TABURI: Tab[] = ['de_sunat', 'asteptare', 'de_confirmat', 'istoric']
+
+// Istoricul se cere pe perioade după data intrării în listă. Fereastra de reactivare
+// ține 30 de zile, deci „Ultimele 30 de zile" = cazurile cu verdictul K3 încă deschis.
+type Perioada = '7' | '30' | 'inchise' | 'arhiva'
+const PERIOADE: { value: Perioada; label: string }[] = [
+  { value: '7', label: 'Ultimele 7 zile' },
+  { value: '30', label: 'Ultimele 30 de zile' },
+  { value: 'inchise', label: 'Închise în ultimele 30 de zile' },
+  { value: 'arhiva', label: 'Arhivă pe sezon' },
+]
+const PE_PAGINA = 50
+const FEREASTRA_ZILE = 30
+
+function aziMinus(zile: number): string {
+  const azi = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date())
+  const d = new Date(`${azi}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - zile)
+  return d.toISOString().slice(0, 10)
+}
+
+function intervalPerioada(p: Perioada): { deLa: string | null; panaLa: string | null } {
+  switch (p) {
+    case '7':
+      return { deLa: aziMinus(6), panaLa: null }
+    case '30':
+      return { deLa: aziMinus(FEREASTRA_ZILE - 1), panaLa: null }
+    case 'inchise':
+      return { deLa: aziMinus(2 * FEREASTRA_ZILE - 1), panaLa: aziMinus(FEREASTRA_ZILE) }
+    case 'arhiva':
+      return { deLa: null, panaLa: aziMinus(2 * FEREASTRA_ZILE) }
+  }
+}
+
+function plusZile(iso: string, zile: number): string {
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + zile)
+  return d.toISOString().slice(0, 10)
+}
 
 function dataRo(iso: string | null): string {
   if (!iso) return ''
@@ -116,22 +155,49 @@ export default function Absente21zPage() {
     [locatieId],
   )
 
+  const [perioada, setPerioada] = useState<Perioada>('30')
+  const [sezonAles, setSezonAles] = useState<string | null>(null)
+  const [pagina, setPagina] = useState(0)
+
   const q = useQuery({
-    queryKey: ['absente-21z', locatii],
-    queryFn: () => getWorklistAbsente(locatii),
+    queryKey: ['absente-21z', 'deschise', locatii],
+    queryFn: () => getWorklistAbsente({ locatii, stari: STARI_DE_LUCRU }),
     staleTime: 60_000,
   })
 
-  const toate = q.data ?? []
+  const sezoane = useQuery({ queryKey: ['sezoane-options'], queryFn: sezoaneOptions, staleTime: 30 * 60_000 })
+  const sezonActiv = useQuery({ queryKey: ['sezon-activ-id'], queryFn: sezonActivId, staleTime: 30 * 60_000 })
+  const sezonId = sezonAles ?? sezonActiv.data ?? sezoane.data?.[0]?.value ?? null
+
+  const interval = intervalPerioada(perioada)
+  const istoricQ = useQuery({
+    queryKey: ['absente-21z', 'istoric', locatii, perioada, interval, perioada === 'arhiva' ? sezonId : null, pagina],
+    queryFn: () =>
+      getWorklistAbsente({
+        locatii,
+        stari: STARI_INCHISE,
+        ...interval,
+        sezonId: perioada === 'arhiva' ? sezonId : null,
+        limit: PE_PAGINA,
+        offset: pagina * PE_PAGINA,
+      }),
+    enabled: perioada !== 'arhiva' || sezonId != null,
+    staleTime: 60_000,
+  })
+  const totalIstoric = istoricQ.data?.total ?? 0
+  const pagini = Math.max(1, Math.ceil(totalIstoric / PE_PAGINA))
+
+  const deschise = q.data?.randuri ?? []
   const grupe: Record<Tab, CazAbsenta[]> = {
-    de_sunat: toate.filter((c) => c.de_sunat),
-    asteptare: toate.filter(
+    de_sunat: deschise.filter((c) => c.de_sunat),
+    asteptare: deschise.filter(
       (c) => !c.de_sunat && ['reincercare', 'amanat', 'fara_raspuns'].includes(c.stare),
     ),
-    de_confirmat: toate.filter((c) => c.stare === 'de_confirmat'),
-    istoric: toate.filter((c) => STARI_INCHISE.includes(c.stare)),
+    de_confirmat: deschise.filter((c) => c.stare === 'de_confirmat'),
+    istoric: istoricQ.data?.randuri ?? [],
   }
   const randuri = grupe[tab]
+  const seIncarca = tab === 'istoric' ? istoricQ.isLoading : q.isLoading
   const depasite = grupe.de_sunat.filter(
     (c) => c.stare === 'de_contactat' && c.ore_de_la_intrare >= 48,
   ).length
@@ -185,7 +251,11 @@ export default function Absente21zPage() {
         r.exclus_k3 ? (
           <span className="text-xs text-quasar-gray">în afara K3</span>
         ) : r.reactivat == null ? (
-          <span className="text-xs text-quasar-gray">fereastră deschisă</span>
+          <Tooltip content="Verdictul K3 vine la 30 de zile de la intrarea în listă: reactivat dacă a venit la curs și n-are restanță scadentă pe luna revenirii.">
+            <span className="cursor-help text-xs text-quasar-gray">
+              verdict pe {dataRo(plusZile(r.data_intrare, FEREASTRA_ZILE))}
+            </span>
+          </Tooltip>
         ) : r.reactivat ? (
           <Badge tone="success">reactivat {r.reactivat_la}</Badge>
         ) : (
@@ -260,7 +330,7 @@ export default function Absente21zPage() {
     de_sunat: 'Nimic de sunat azi. Lista se completează automat în fiecare dimineață.',
     asteptare: 'Niciun caz în așteptare.',
     de_confirmat: 'Nicio reziliere de confirmat.',
-    istoric: 'Niciun caz închis încă.',
+    istoric: 'Niciun caz închis în perioada aleasă.',
   }
 
   return (
@@ -298,14 +368,50 @@ export default function Absente21zPage() {
           { id: 'de_sunat', label: `De sunat azi (${grupe.de_sunat.length})` },
           { id: 'asteptare', label: `În așteptare (${grupe.asteptare.length})` },
           { id: 'de_confirmat', label: `La manager (${grupe.de_confirmat.length})` },
-          { id: 'istoric', label: `Istoric (${grupe.istoric.length})` },
+          { id: 'istoric', label: 'Istoric' },
         ]}
         active={tab}
         onChange={(id) => setTab(id as Tab)}
       />
 
+      {tab === 'istoric' && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Pills
+            aria-label="Perioada"
+            options={PERIOADE}
+            value={perioada}
+            clearable={false}
+            onChange={(v) => {
+              setPerioada(v as Perioada)
+              setPagina(0)
+            }}
+          />
+          {perioada === 'arhiva' && (
+            <div className="w-48">
+              <Select
+                aria-label="Sezon"
+                value={sezonId ?? ''}
+                onChange={(e) => {
+                  setSezonAles(e.target.value)
+                  setPagina(0)
+                }}
+                options={sezoane.data ?? []}
+              />
+            </div>
+          )}
+          <span className="text-xs text-quasar-gray">
+            {perioada === 'arhiva'
+              ? `cazuri intrate în listă acum mai bine de ${2 * FEREASTRA_ZILE} de zile`
+              : perioada === 'inchise'
+                ? `intrate acum ${FEREASTRA_ZILE}–${2 * FEREASTRA_ZILE - 1} de zile, cu verdictul K3 dat`
+                : 'după data intrării în listă'}
+            {istoricQ.data && ` · ${totalIstoric} ${totalIstoric === 1 ? 'caz' : 'cazuri'}`}
+          </span>
+        </div>
+      )}
+
       <div className="mt-4">
-        {q.isLoading ? (
+        {seIncarca ? (
           <p className="text-sm text-quasar-gray">Se încarcă…</p>
         ) : (
           <DataTable
@@ -318,6 +424,23 @@ export default function Absente21zPage() {
               r.stare === 'de_contactat' && r.ore_de_la_intrare >= 48 ? 'bg-red-50/60' : undefined
             }
           />
+        )}
+        {tab === 'istoric' && pagini > 1 && (
+          <div className="mt-3 flex items-center justify-end gap-2 text-sm">
+            <Button variant="secondary" disabled={pagina === 0} onClick={() => setPagina((p) => p - 1)}>
+              ← Anterioare
+            </Button>
+            <span className="text-quasar-gray">
+              pagina {pagina + 1} din {pagini}
+            </span>
+            <Button
+              variant="secondary"
+              disabled={pagina + 1 >= pagini}
+              onClick={() => setPagina((p) => p + 1)}
+            >
+              Următoare →
+            </Button>
+          </div>
         )}
       </div>
 

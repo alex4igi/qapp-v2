@@ -53,6 +53,7 @@ function drillDown(l: LinieRaport): [string, string][] {
     out.push(['Cazuri intrate în jurnal', n('numitor')])
     out.push(['Reveniți la curs', n('numarator')])
     out.push([`Contactate în ${n('poarta_ore') ?? '48'}h`, n('contactate_la_timp')])
+    out.push(['Reveniți singuri, înainte de termen', n('revenit_singur')])
     out.push(['Contactate târziu', n('contactate_tarziu')])
     out.push(['Necontactate', n('necontactate')])
     out.push(['Cu fereastra încă deschisă', n('neevaluate')])

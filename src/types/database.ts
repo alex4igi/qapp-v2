@@ -14399,7 +14399,16 @@ export type Database = {
       }
       genereaza_runde_sezon: { Args: { p_sezon: string }; Returns: number }
       get_absente_21z_worklist: {
-        Args: { p_doar_necontactate?: boolean; p_locatii?: string[] }
+        Args: {
+          p_de_la?: string
+          p_doar_necontactate?: boolean
+          p_limit?: number
+          p_locatii?: string[]
+          p_offset?: number
+          p_pana_la?: string
+          p_sezon_id?: string
+          p_stari?: string[]
+        }
         Returns: {
           client_id: string
           client_nume: string
@@ -14425,6 +14434,7 @@ export type Database = {
           sms_fara_raspuns_la: string
           stare: string
           telefon: string
+          total: number
           ultima_prezenta: string
           urmatoarea_incercare: string
           zile_tacere: number

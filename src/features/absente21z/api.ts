@@ -5,18 +5,35 @@ import type {
   CazAbsenta,
   MotivAbandon,
   RezultatContact,
+  StareAbsenta,
 } from './types'
 
+export type FiltruWorklist = {
+  locatii: string[] | null
+  stari?: StareAbsenta[]
+  /** Data intrării în listă, inclusiv (YYYY-MM-DD). */
+  deLa?: string | null
+  panaLa?: string | null
+  sezonId?: string | null
+  limit?: number
+  offset?: number
+}
+
 export async function getWorklistAbsente(
-  locatii: string[] | null,
-  doarNecontactate = false,
-): Promise<CazAbsenta[]> {
+  f: FiltruWorklist,
+): Promise<{ randuri: CazAbsenta[]; total: number }> {
   const { data, error } = await supabase.rpc('get_absente_21z_worklist', {
-    p_locatii: locatii && locatii.length > 0 ? locatii : undefined,
-    p_doar_necontactate: doarNecontactate,
+    p_locatii: f.locatii && f.locatii.length > 0 ? f.locatii : undefined,
+    p_stari: f.stari,
+    p_de_la: f.deLa ?? undefined,
+    p_pana_la: f.panaLa ?? undefined,
+    p_sezon_id: f.sezonId ?? undefined,
+    p_limit: f.limit,
+    p_offset: f.offset,
   })
   if (error) throw error
-  return (data ?? []) as CazAbsenta[]
+  const randuri = (data ?? []) as CazAbsenta[]
+  return { randuri, total: Number(data?.[0]?.total ?? 0) }
 }
 
 // Câte cazuri sunt de sunat AZI: intrate și nesunate, plus reîncercările și amânările
