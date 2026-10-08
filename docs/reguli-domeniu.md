@@ -183,8 +183,9 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
     managerul confirmă rezilierea: se anulează lunile **fără prezență și fără bani încasați**; cele cu prezențe rămân cu datoria.
     Nurture vine prin jobul EXclient, nu direct: un lead Nurture pentru un client încă înscris ar fi șters noaptea ca „umbră".
   - **Cererea de reziliere** („Cerere Reziliere" din Contracte) se trimite după rezilierea din caz, printr-un buton;
-    rezilierea e valabilă imediat, cererea semnată e pentru dosar. Pleacă **pe email**, prin SMS doar dacă familia n-are
-    email — invers decât contractele obișnuite (SMS întâi).
+    rezilierea e valabilă imediat, cererea semnată e pentru dosar. Pleacă **doar pe email**; fără email nu se
+    trimite deloc (Alex: cine n-a răspuns la telefon n-o completează nici pe asta, iar SMS-ul costă). Contractele
+    obișnuite rămân pe SMS întâi.
   - **Trupele nu se reziliază automat** la „fără răspuns": rezilierea unei trupe are un cost, regula se discută separat.
   - **„Amână" eliberează locul** (rezilierea lunilor viitoare, din caz), cu dată de revenire; la data aceea cazul reapare,
     iar revenirea se discută cu managerul.

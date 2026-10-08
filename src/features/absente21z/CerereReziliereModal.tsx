@@ -1,7 +1,8 @@
-import { useMutation } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Modal, Button } from '@/components/ui'
 import { humanizeError } from '@/lib/errorMessage'
-import { trimiteCerereReziliere } from './api'
+import { getEmailFamilie, trimiteCerereReziliere } from './api'
 
 type Props = {
   client: { id: string; nume: string } | null
@@ -24,20 +25,28 @@ export function CerereReziliereModal({ client, dupaReziliere, onClose }: Props) 
     meta: { erroareAfisata: true },
     mutationFn: () => trimiteCerereReziliere(client!.id),
   })
+  const email = useQuery({
+    queryKey: ['absente-21z', 'email-familie', client?.id],
+    queryFn: () => getEmailFamilie(client!.id),
+    enabled: Boolean(client),
+  })
+  const faraEmail = email.isSuccess && !email.data
 
-  if (!client) return null
+  // După reziliere, fără email pasul n-are rost: nu se trimite nimic.
+  useEffect(() => {
+    if (dupaReziliere && faraEmail) onClose()
+  }, [dupaReziliere, faraEmail, onClose])
+
+  if (!client || email.isLoading || (dupaReziliere && faraEmail)) return null
   const r = trimite.data
 
   let rezultat: string | null = null
   if (r?.statusExistent) {
     rezultat = `Există deja o cerere de reziliere pentru ${client.nume}: ${STATUS_EXISTENT[r.statusExistent] ?? r.statusExistent}. N-am trimis-o din nou.`
   } else if (r?.ok) {
-    const canal = r.canal === 'email' ? 'pe email' : r.canal === 'sms' ? 'prin SMS (familia n-are email)' : ''
     rezultat = r.notificat
-      ? `Cererea a plecat ${canal}. O găsești și în Contracte.`
-      : r.amanat
-        ? `Cererea e creată; SMS-ul pleacă dimineață (ore de liniște). O găsești în Contracte.`
-        : `Cererea e creată în Contracte, dar mesajul nu a plecat${r.notificareEroare ? `: ${r.notificareEroare}` : ''}. Retrimite linkul de acolo.`
+      ? `Cererea a plecat pe email${email.data ? ` la ${email.data}` : ''}. O găsești și în Contracte.`
+      : `Cererea e creată în Contracte, dar emailul nu a plecat${r.notificareEroare ? `: ${r.notificareEroare}` : ''}. Retrimite linkul de acolo.`
   }
 
   return (
@@ -46,7 +55,7 @@ export function CerereReziliereModal({ client, dupaReziliere, onClose }: Props) 
       title={`Cerere de reziliere — ${client.nume}`}
       onClose={onClose}
       footer={
-        r ? (
+        r || faraEmail ? (
           <Button onClick={onClose}>Închide</Button>
         ) : (
           <>
@@ -66,10 +75,15 @@ export function CerereReziliereModal({ client, dupaReziliere, onClose }: Props) 
             Rezilierea s-a înregistrat și e valabilă de acum.
           </p>
         )}
-        {!r && (
+        {!r && !faraEmail && (
           <p>
-            Pentru dosar, familia primește cererea de reziliere de completat și semnat online —{' '}
-            <strong>pe email</strong>, sau prin SMS dacă n-are email în fișă. Semnătura nu condiționează rezilierea.
+            Pentru dosar, familia primește pe email ({email.data}) cererea de reziliere de completat și semnat
+            online. Semnătura nu condiționează rezilierea.
+          </p>
+        )}
+        {faraEmail && (
+          <p className="rounded-md bg-quasar-gray-light px-3 py-2">
+            Familia nu are email în fișă, așa că cererea nu se trimite. Rezilierea rămâne valabilă.
           </p>
         )}
         {rezultat && <p className="rounded-md bg-quasar-gray-light px-3 py-2">{rezultat}</p>}

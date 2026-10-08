@@ -1,6 +1,7 @@
 // Notificarea familiei despre un contract de semnat — UN SINGUR CANAL per familie:
 // SMS dacă are telefon, email doar ca rezervă. (Decis 2026-09-10.) Excepție: cererea de
-// reziliere pleacă pe email, SMS doar dacă familia n-are email — ca să rămână la dosar
+// reziliere pleacă DOAR pe email, ca să rămână la dosar. Fără email nu se trimite deloc:
+// o familie care n-a răspuns la telefon n-o completează nici pe asta, iar SMS-ul costă
 // (Alex, 08.10.2026).
 //
 // De ce un singur canal: familia semnează dintr-un mesaj și primește degeaba
@@ -29,8 +30,8 @@ export type NotificareContract = {
   email: string | null
   clientId?: string | null
   codMesaj: 'contract' | 'contract_reminder'
-  /** Cererea de reziliere: email întâi, SMS doar fără email. */
-  emailIntai?: boolean
+  /** Cererea de reziliere: doar email; fără email nu pleacă nimic. */
+  doarEmail?: boolean
   smsText: string
   emailSubject: string
   emailHtml: string
@@ -43,7 +44,7 @@ export type RezultatNotificare = {
   error?: string
 }
 
-export function emailIntai(tipTemplate: string | null | undefined): boolean {
+export function doarEmail(tipTemplate: string | null | undefined): boolean {
   return tipTemplate === 'cerere_reziliere'
 }
 
@@ -84,7 +85,10 @@ export async function notificaContract(
   admin: SupabaseClient,
   n: NotificareContract,
 ): Promise<RezultatNotificare> {
-  if (n.emailIntai && n.email) return await prinEmail(admin, n)
+  if (n.doarEmail) {
+    if (n.email) return await prinEmail(admin, n)
+    return { canal: 'niciunul', ok: false, error: 'familie fără email' }
+  }
   if (n.telefon) return await prinSms(admin, n)
   if (n.email) return await prinEmail(admin, n)
   return { canal: 'niciunul', ok: false, error: 'familie fără telefon și email' }

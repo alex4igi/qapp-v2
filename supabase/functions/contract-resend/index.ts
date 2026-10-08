@@ -4,7 +4,7 @@
 // remindere noi la 3/7 zile. Merge pe contracte trimise, deschise sau expirate —
 // un contract expirat redevine semnabil pe linkul lui, dar doar dacă familia n-a
 // primit între timp alt contract pe același șablon (gardul de dublură din contract-send).
-import { emailIntai, mesajContract, notificaContract } from '../_shared/contractNotify.ts'
+import { doarEmail, mesajContract, notificaContract } from '../_shared/contractNotify.ts'
 import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
 import { requireStaffRole } from '../_shared/staffAuth.ts'
 
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       email: familie.email,
       clientId: c.client_id,
       codMesaj: 'contract',
-      emailIntai: emailIntai(tipTemplate),
+      doarEmail: doarEmail(tipTemplate),
       ...mesajContract(prenumeCopil, link, zile, tipTemplate),
     })
 

@@ -142,10 +142,10 @@ export const STARE_PROCEDURA: Record<StareAbsenta, ProceduraStare> = {
     ceFaci: [
       'După salvare se deschide rezilierea, cu motivul completat. Confirm-o — e valabilă imediat.',
       'Bifează „Nurture" dacă familia ar putea reveni într-un sezon viitor.',
-      'Apasă „Trimite cererea la semnat": familia completează și semnează cererea de reziliere, pentru dosar.',
+      'Dacă familia are email, apasă „Trimite cererea la semnat": o completează și o semnează, pentru dosar.',
     ],
     aplicatia: [
-      'Trimite cererea de reziliere pe email; prin SMS doar dacă familia n-are email. O găsești apoi în Contracte.',
+      'Trimite cererea de reziliere doar pe email. Dacă familia n-are email, nu se trimite nimic. O găsești apoi în Contracte.',
       'Păstrează cazul la calculul K3 ca nereactivat — decizia s-a luat în urma contactului.',
     ],
     iesiri: 'cap de drum',

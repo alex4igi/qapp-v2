@@ -46,7 +46,7 @@ din afara cazului** (fișa clientului, suspendarea grupei) îl închide ca „Re
 | Decizia managerului | `decide_reziliere_absenta` (owner/admin/manager) |
 | Amână = locul se eliberează | `ContactAbsentaModal` → `ReziliereDinAbsentaModal` (aceeași reziliere ca din fișa clientului) |
 | Nurture după reziliere | jobul EXclient (`auto_mark_exclient`), în noaptea de după |
-| Cererea de reziliere la dosar (buton după reziliere și în Istoric) | `CerereReziliereModal` → `trimiteCerereReziliere` → `contract-send` cu șablonul `cerere_reziliere`; email întâi, SMS doar fără email (`emailIntai` în `_shared/contractNotify.ts`) |
+| Cererea de reziliere la dosar (buton după reziliere și în Istoric) | `CerereReziliereModal` → `trimiteCerereReziliere` → `contract-send` cu șablonul `cerere_reziliere`; doar pe email, fără email nu pleacă nimic (`doarEmail` în `_shared/contractNotify.ts`; contract-send refuză fără email) |
 | Trupele nu ajung la manager | `absenta_inrolari_de_reziliat` exclude `nivelul = 'Trupa'` — rezilierea unei trupe are cost; regula se discută separat (Alex, 08.10.2026) |
 
 ## De ce așa

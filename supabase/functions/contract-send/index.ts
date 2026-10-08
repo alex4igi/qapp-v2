@@ -1,7 +1,7 @@
 // Edge Function: creează contracte din template și trimite linkurile de semnare.
 // Apelată din staff app (JWT staff). Notificarea merge pe UN SINGUR canal —
 // SMS dacă familia are telefon, altfel email — vezi ../_shared/contractNotify.ts.
-import { emailIntai, mesajContract, notificaContract } from '../_shared/contractNotify.ts'
+import { doarEmail, mesajContract, notificaContract } from '../_shared/contractNotify.ts'
 import { linkSemnare, logEvent, serviceClient, type TemplateField } from '../_shared/contracte.ts'
 import { requireStaffRole } from '../_shared/staffAuth.ts'
 
@@ -100,6 +100,11 @@ Deno.serve(async (req) => {
       }
       if (!familie.telefon && !familie.email) {
         results.push({ familieId: t.familieId, ok: false, error: 'familie fără telefon și email' })
+        continue
+      }
+
+      if (doarEmail(tpl.tip) && !familie.email) {
+        results.push({ familieId: t.familieId, ok: false, error: 'Familia nu are email în fișă — cererea nu se trimite.' })
         continue
       }
 
@@ -221,7 +226,7 @@ Deno.serve(async (req) => {
         email: familie.email,
         clientId: t.clientId ?? null,
         codMesaj: 'contract',
-        emailIntai: emailIntai(tpl.tip),
+        doarEmail: doarEmail(tpl.tip),
         ...mesajContract(prenumeCopil, link, tpl.valabilitate_zile, tpl.tip),
       })
 

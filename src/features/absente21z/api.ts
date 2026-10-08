@@ -85,9 +85,21 @@ export async function decideReziliere(input: {
   return data as { stare: string; inrolari_reziliate: number }
 }
 
+// Emailul familiei, din care pleacă cererea de reziliere. Fără email cererea nu se trimite.
+export async function getEmailFamilie(clientId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('clienti')
+    .select('familii(email)')
+    .eq('id', clientId)
+    .single()
+  if (error) throw error
+  const fam = data.familii as { email: string | null } | null
+  return fam?.email?.trim() || null
+}
+
 // Cererea de reziliere la dosar (Alex, 08.10.2026): rezilierea e valabilă imediat, iar
-// familia primește șablonul „Cerere Reziliere" de completat și semnat — pe email, SMS
-// doar dacă n-are email (canalul îl alege contract-send după tipul șablonului).
+// familia primește șablonul „Cerere Reziliere" de completat și semnat — DOAR pe email.
+// Fără email nu se trimite nimic (contract-send refuză și el).
 export async function trimiteCerereReziliere(clientId: string): Promise<SendResult> {
   const { data: client, error: eClient } = await supabase
     .from('clienti')

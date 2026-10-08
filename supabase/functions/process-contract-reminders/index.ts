@@ -9,7 +9,7 @@
 //
 // Idempotent: praguri pe zile + reminder_count; apeluri repetate în aceeași zi
 // nu dublează SMS-uri.
-import { emailIntai, notificaContract } from '../_shared/contractNotify.ts'
+import { doarEmail, notificaContract } from '../_shared/contractNotify.ts'
 import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
 import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
@@ -103,14 +103,14 @@ Deno.serve(async (req) => {
         : `Buna ziua! Contractul${cine} nu este inca semnat. Il puteti verifica si semna aici: ${link}. Linkul mai este valabil ${zileRamase} zile.`
 
       // Un singur canal, ca la prima trimitere: SMS dacă are telefon, altfel email
-      // (cererea de reziliere: invers, vezi _shared/contractNotify.ts).
+      // (cererea de reziliere: doar email, vezi _shared/contractNotify.ts).
       const notif = await notificaContract(admin, {
         contractId: c.id,
         telefon: familie.telefon,
         email: familie.email,
         clientId: c.client_id,
         codMesaj: 'contract_reminder',
-        emailIntai: emailIntai(tipTemplate),
+        doarEmail: doarEmail(tipTemplate),
         smsText: mesaj,
         emailSubject: `Quasar Dance — reminder ${cerere ? 'cerere de reziliere' : 'contract'} de semnat${cine}`,
         emailHtml:
