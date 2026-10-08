@@ -49,16 +49,26 @@ export type Database = {
           curs: string
           data_intrare: string
           evaluat_la: string | null
+          exclus_k3: boolean
           id: string
+          incercari: number
           locatie: string | null
           motiv_declarat: string | null
           motiv_liber: string | null
           pas_urmator: string | null
           reactivat: boolean | null
           reactivat_la: string | null
+          reziliere_decisa_de: string | null
+          reziliere_decisa_la: string | null
+          reziliere_nota: string | null
+          reziliere_propusa_la: string | null
           sedinte_fereastra: number
+          sms_fara_raspuns_eroare: string | null
+          sms_fara_raspuns_la: string | null
+          stare: string
           ultima_prezenta: string | null
           updated: string
+          urmatoarea_incercare: string | null
           zile_tacere: number
         }
         Insert: {
@@ -70,16 +80,26 @@ export type Database = {
           curs: string
           data_intrare?: string
           evaluat_la?: string | null
+          exclus_k3?: boolean
           id?: string
+          incercari?: number
           locatie?: string | null
           motiv_declarat?: string | null
           motiv_liber?: string | null
           pas_urmator?: string | null
           reactivat?: boolean | null
           reactivat_la?: string | null
+          reziliere_decisa_de?: string | null
+          reziliere_decisa_la?: string | null
+          reziliere_nota?: string | null
+          reziliere_propusa_la?: string | null
           sedinte_fereastra: number
+          sms_fara_raspuns_eroare?: string | null
+          sms_fara_raspuns_la?: string | null
+          stare?: string
           ultima_prezenta?: string | null
           updated?: string
+          urmatoarea_incercare?: string | null
           zile_tacere: number
         }
         Update: {
@@ -91,16 +111,26 @@ export type Database = {
           curs?: string
           data_intrare?: string
           evaluat_la?: string | null
+          exclus_k3?: boolean
           id?: string
+          incercari?: number
           locatie?: string | null
           motiv_declarat?: string | null
           motiv_liber?: string | null
           pas_urmator?: string | null
           reactivat?: boolean | null
           reactivat_la?: string | null
+          reziliere_decisa_de?: string | null
+          reziliere_decisa_la?: string | null
+          reziliere_nota?: string | null
+          reziliere_propusa_la?: string | null
           sedinte_fereastra?: number
+          sms_fara_raspuns_eroare?: string | null
+          sms_fara_raspuns_la?: string | null
+          stare?: string
           ultima_prezenta?: string | null
           updated?: string
+          urmatoarea_incercare?: string | null
           zile_tacere?: number
         }
         Relationships: [
@@ -13735,6 +13765,27 @@ export type Database = {
         }
         Returns: string
       }
+      absenta_inchide_notificari: {
+        Args: { p_absenta_id: string }
+        Returns: undefined
+      }
+      absenta_inrolari_de_reziliat: {
+        Args: { p_client: string; p_curs: string }
+        Returns: string[]
+      }
+      absenta_notifica_reziliere: {
+        Args: { p_absenta_id: string }
+        Returns: number
+      }
+      absenta_reziliata: {
+        Args: {
+          p_ancora: string
+          p_client: string
+          p_curs: string
+          p_pana_la: string
+        }
+        Returns: boolean
+      }
       activate_eligible_sezoane: { Args: never; Returns: number }
       activate_reinscriere: {
         Args: { p_client_id: string; p_curs_id: string }
@@ -14165,6 +14216,10 @@ export type Database = {
           rest_oneoff: number
         }[]
       }
+      decide_reziliere_absenta: {
+        Args: { p_absenta_id: string; p_nota?: string; p_reziliaza: boolean }
+        Returns: Json
+      }
       deduce_motiv_categorie: {
         Args: { p_lead: string; p_status_vechi: string }
         Returns: string
@@ -14349,17 +14404,29 @@ export type Database = {
           client_id: string
           client_nume: string
           contactat_la: string
+          curs_id: string
           curs_nume: string
           data_intrare: string
+          de_sunat: boolean
+          exclus_k3: boolean
           id: string
+          incercari: number
           locatie_nume: string
+          luni_de_reziliat: number
           motiv: string
           ore_de_la_intrare: number
           pas_urmator: string
           reactivat: boolean
           reactivat_la: string
+          reziliere_decisa_la: string
+          reziliere_nota: string
+          reziliere_propusa_la: string
+          sms_fara_raspuns_eroare: string
+          sms_fara_raspuns_la: string
+          stare: string
           telefon: string
           ultima_prezenta: string
+          urmatoarea_incercare: string
           zile_tacere: number
         }[]
       }
@@ -16148,6 +16215,7 @@ export type Database = {
         Args: {
           p_absenta_id: string
           p_canal: Database["public"]["Enums"]["canal_contact"]
+          p_data_revenire?: string
           p_motiv_id?: string
           p_motiv_liber?: string
           p_observatii?: string
@@ -16163,16 +16231,26 @@ export type Database = {
           curs: string
           data_intrare: string
           evaluat_la: string | null
+          exclus_k3: boolean
           id: string
+          incercari: number
           locatie: string | null
           motiv_declarat: string | null
           motiv_liber: string | null
           pas_urmator: string | null
           reactivat: boolean | null
           reactivat_la: string | null
+          reziliere_decisa_de: string | null
+          reziliere_decisa_la: string | null
+          reziliere_nota: string | null
+          reziliere_propusa_la: string | null
           sedinte_fereastra: number
+          sms_fara_raspuns_eroare: string | null
+          sms_fara_raspuns_la: string | null
+          stare: string
           ultima_prezenta: string | null
           updated: string
+          urmatoarea_incercare: string | null
           zile_tacere: number
         }
         SetofOptions: {
@@ -17030,7 +17108,7 @@ export type Database = {
       nivel_curs: "Incepator" | "Intermediar" | "Avansat" | "Trupa"
       nivel_teacher: "Junior" | "Senior" | "Expert"
       prezenta_lead: "programat" | "prezent" | "absent"
-      rezultat_contact: "reusit" | "follow_up" | "pierdut"
+      rezultat_contact: "reusit" | "follow_up" | "pierdut" | "nu_raspunde"
       sex: "B" | "F"
       status_client: "Activ" | "Inactiv" | "EXclient"
       status_eveniment: "Urmator" | "Finalizat" | "Anulat"
@@ -17301,7 +17379,7 @@ export const Constants = {
       nivel_curs: ["Incepator", "Intermediar", "Avansat", "Trupa"],
       nivel_teacher: ["Junior", "Senior", "Expert"],
       prezenta_lead: ["programat", "prezent", "absent"],
-      rezultat_contact: ["reusit", "follow_up", "pierdut"],
+      rezultat_contact: ["reusit", "follow_up", "pierdut", "nu_raspunde"],
       sex: ["B", "F"],
       status_client: ["Activ", "Inactiv", "EXclient"],
       status_eveniment: ["Urmator", "Finalizat", "Anulat"],

@@ -4,6 +4,7 @@
 // cron-morning la 10:00, când nu răspundea nimeni.
 //   1. confirmarea înrolării recurente, a doua zi
 //   2. post_demo — la 2–4 zile după demo, pentru cine n-a mai venit să se înscrie
+//   3. absenți 21 de zile — SMS-ul după al doilea apel fără răspuns (a treia încercare)
 // Aici pleca și „ne pare rău că nu ai ajuns", la prima neprezentare. Scos pe
 // 19.09.2026: neprezentarea se lucrează la telefon, nu prin SMS (vezi
 // docs/procedura-leads-kanban.md).
@@ -11,6 +12,7 @@
 // luni la 16:00. Reminderul ședinței rămâne dimineața, în cron-morning.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
+  buildAbsentaFaraRaspunsSms,
   buildConfirmareInrolareSms,
   buildSms,
   sendSms,
@@ -291,12 +293,90 @@ Deno.serve(async (req) => {
     }
   }
 
+  // --- 4. Absenți 21 de zile: SMS-ul de după al doilea apel fără răspuns ---
+  // Recepția notează „Nu răspunde" a doua oară, cazul trece în „fara_raspuns", iar SMS-ul
+  // pleacă aici (Alex, 08.10.2026). Mesaj de serviciu despre înscrierea existentă, nu
+  // marketing. Un eșec de provider se reîncearcă o singură dată, a doua zi; la al doilea
+  // eșec cazul merge mai departe, cu eroarea afișată managerului.
+  let absenteSms = 0
+  {
+    const { data: cazuri, error: eCazuri } = await supabase
+      .from('absente_21z')
+      .select('id, client, data_intrare, locatie, sms_fara_raspuns_eroare')
+      .eq('stare', 'fara_raspuns')
+      .is('sms_fara_raspuns_la', null)
+    if (eCazuri) errors.push(`absenti 21z: ${eCazuri.message}`)
+
+    for (const caz of cazuri ?? []) {
+      const { data: client } = await supabase
+        .from('clienti')
+        .select('prenume, nume, telefon, familia')
+        .eq('id', caz.client)
+        .maybeSingle()
+      // A venit azi la curs, înainte de jobul de noapte care închide cazul.
+      const { count: aVenit } = await supabase
+        .from('prezente')
+        .select('id', { count: 'exact', head: true })
+        .eq('client', caz.client)
+        .eq('status', 'Prezent')
+        .gt('data', caz.data_intrare)
+      if ((aVenit ?? 0) > 0) continue
+
+      let telefon: string | null = client?.telefon ?? null
+      if (!telefon && client?.familia) {
+        const { data: fam } = await supabase
+          .from('familii')
+          .select('telefon')
+          .eq('id', client.familia)
+          .maybeSingle()
+        telefon = fam?.telefon ?? null
+      }
+      if (!telefon) {
+        await supabase
+          .from('absente_21z')
+          .update({ sms_fara_raspuns_la: now.toISOString(), sms_fara_raspuns_eroare: 'fără telefon' })
+          .eq('id', caz.id)
+        continue
+      }
+
+      const { data: loc } = caz.locatie
+        ? await supabase.from('locatii').select('nume').eq('id', caz.locatie).maybeSingle()
+        : { data: null }
+      const mesaj = buildAbsentaFaraRaspunsSms(client?.prenume || client?.nume || null, loc?.nume ?? null)
+      const result = await sendSms(telefon, mesaj)
+      await supabase.from('sms_logs').insert({
+        tip: 'absenta_fara_raspuns',
+        telefon,
+        mesaj,
+        status: result.ok ? 'sent' : 'failed',
+        error: result.ok ? null : result.error,
+      })
+      if (result.ok) {
+        absenteSms++
+        await supabase
+          .from('absente_21z')
+          .update({ sms_fara_raspuns_la: now.toISOString(), sms_fara_raspuns_eroare: null })
+          .eq('id', caz.id)
+      } else {
+        errors.push(`absent 21z ${caz.id}: ${result.error}`)
+        await supabase
+          .from('absente_21z')
+          .update({
+            sms_fara_raspuns_eroare: result.error ?? 'eroare necunoscuta',
+            ...(caz.sms_fara_raspuns_eroare ? { sms_fara_raspuns_la: now.toISOString() } : {}),
+          })
+          .eq('id', caz.id)
+      }
+    }
+  }
+
   console.log(
-    `[cron/afternoon] confirmari: ${confirmariSent}, postDemo: ${postDemoSent}, erori: ${errors.length}`,
+    `[cron/afternoon] confirmari: ${confirmariSent}, postDemo: ${postDemoSent}, absenti21z: ${absenteSms}, erori: ${errors.length}`,
   )
   return Response.json({
     confirmari: confirmariSent,
     postDemo: postDemoSent,
+    absenti21z: absenteSms,
     errors,
     rulatLa: now.toISOString(),
   })

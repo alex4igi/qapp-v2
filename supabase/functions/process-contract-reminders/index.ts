@@ -9,7 +9,7 @@
 //
 // Idempotent: praguri pe zile + reminder_count; apeluri repetate în aceeași zi
 // nu dublează SMS-uri.
-import { notificaContract } from '../_shared/contractNotify.ts'
+import { emailIntai, notificaContract } from '../_shared/contractNotify.ts'
 import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
 import { refuzaApelStrain } from '../_shared/cronAuth.ts'
 
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     // 2) remindere
     const { data: pending } = await admin
       .from('contracte')
-      .select('id, familie_id, client_id, trimis_la, reminder_count, token_expira_la, contract_templates(nume, valabilitate_zile)')
+      .select('id, familie_id, client_id, trimis_la, reminder_count, token_expira_la, contract_templates(nume, valabilitate_zile, tip)')
       .in('status', ['trimis', 'deschis'])
       .lt('reminder_count', REMINDER_DAYS.length)
     for (const c of pending ?? []) {
@@ -94,20 +94,27 @@ Deno.serve(async (req) => {
       const zileRamase = c.token_expira_la
         ? Math.max(1, Math.ceil((new Date(c.token_expira_la).getTime() - now) / 86400_000))
         : 7
-      const mesaj =
-        `Buna ziua! Contractul${cine} nu este inca semnat. Il puteti verifica si semna aici: ${link}. Linkul mai este valabil ${zileRamase} zile.`
+      const tipTemplate =
+        (c.contract_templates as unknown as { tip: string | null } | null)?.tip ?? null
+      const cerere = tipTemplate === 'cerere_reziliere'
+      const doc = cerere ? 'Cererea de reziliere' : 'Contractul'
+      const mesaj = cerere
+        ? `Buna ziua! Cererea de reziliere${cine} nu este inca semnata. O puteti completa si semna aici: ${link}. Linkul mai este valabil ${zileRamase} zile.`
+        : `Buna ziua! Contractul${cine} nu este inca semnat. Il puteti verifica si semna aici: ${link}. Linkul mai este valabil ${zileRamase} zile.`
 
-      // Un singur canal, ca la prima trimitere: SMS dacă are telefon, altfel email.
+      // Un singur canal, ca la prima trimitere: SMS dacă are telefon, altfel email
+      // (cererea de reziliere: invers, vezi _shared/contractNotify.ts).
       const notif = await notificaContract(admin, {
         contractId: c.id,
         telefon: familie.telefon,
         email: familie.email,
         clientId: c.client_id,
         codMesaj: 'contract_reminder',
+        emailIntai: emailIntai(tipTemplate),
         smsText: mesaj,
-        emailSubject: `Quasar Dance — reminder contract de semnat${cine}`,
+        emailSubject: `Quasar Dance — reminder ${cerere ? 'cerere de reziliere' : 'contract'} de semnat${cine}`,
         emailHtml:
-          `<p>Bună ziua,</p><p>Contractul${cine} așteaptă încă semnătura dumneavoastră. ` +
+          `<p>Bună ziua,</p><p>${doc}${cine} așteaptă încă semnătura dumneavoastră. ` +
           `Deschideți linkul de mai jos, verificați datele și semnați:</p>` +
           `<p><a href="${link}">${link}</a></p>` +
           `<p>Linkul este valabil ${zileRamase} zile.</p><p>Quasar Dance</p>`,

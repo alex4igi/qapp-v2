@@ -136,6 +136,11 @@ definitivează la finalul lunii M+1, ca K2**. În salariu, K2 și K3 stau în co
 lunii M. Migrația `20260929100000`. Primele cazuri din sezon apar la începutul lui octombrie — septembrie
 e „fără date = standard" (120 lei).
 
+**Ce nu intră la K3 și ceasul fără weekend (Alex, 8 oct. 2026).** Cine a reziliat înainte să intre în listă nu
+mai primește caz, iar o reziliere făcută în afara contactului (din fișa clientului, nu din caz) scoate cazul din
+calcul (`exclus_k3`). Ceasul de 48 h numără doar orele de luni până vineri, iar un apel notat „Nu răspunde" îl
+oprește. Procedura pe stări: [procedura-absenti-21z.md](./procedura-absenti-21z.md).
+
 ### ⭐ K5 — conversie = orice plată pe o înrolare (confirmat de Alex, 29 sept. 2026)
 
 „Orice plată înseamnă conversie — OPEN, K-pop, studenți, abonamente — adică o înrolare." Deci K5 rămâne

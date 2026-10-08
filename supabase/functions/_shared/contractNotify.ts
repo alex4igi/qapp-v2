@@ -1,5 +1,7 @@
 // Notificarea familiei despre un contract de semnat — UN SINGUR CANAL per familie:
-// SMS dacă are telefon, email doar ca rezervă. (Decis 2026-09-10.)
+// SMS dacă are telefon, email doar ca rezervă. (Decis 2026-09-10.) Excepție: cererea de
+// reziliere pleacă pe email, SMS doar dacă familia n-are email — ca să rămână la dosar
+// (Alex, 08.10.2026).
 //
 // De ce un singur canal: familia semnează dintr-un mesaj și primește degeaba
 // celălalt — dublu cost pe mesaj, fără câștig.
@@ -27,6 +29,8 @@ export type NotificareContract = {
   email: string | null
   clientId?: string | null
   codMesaj: 'contract' | 'contract_reminder'
+  /** Cererea de reziliere: email întâi, SMS doar fără email. */
+  emailIntai?: boolean
   smsText: string
   emailSubject: string
   emailHtml: string
@@ -39,14 +43,31 @@ export type RezultatNotificare = {
   error?: string
 }
 
+export function emailIntai(tipTemplate: string | null | undefined): boolean {
+  return tipTemplate === 'cerere_reziliere'
+}
+
 // Mesajul „contract de semnat" — prima trimitere și „Retrimite link".
 // SMS fără diacritice (regulă casă).
 export function mesajContract(
   prenumeCopil: string | null,
   link: string,
   zile: number,
+  tipTemplate?: string | null,
 ): Pick<NotificareContract, 'smsText' | 'emailSubject' | 'emailHtml'> {
   const cine = prenumeCopil ? ` pentru ${prenumeCopil}` : ''
+  if (tipTemplate === 'cerere_reziliere') {
+    return {
+      smsText:
+        `Buna ziua! Cererea de reziliere${cine} este pregatita. Va rugam sa o completati si sa o semnati aici: ${link}. Linkul este valabil ${zile} zile.`,
+      emailSubject: `Quasar Dance — cererea de reziliere${cine}`,
+      emailHtml:
+        `<p>Bună ziua,</p><p>Am înregistrat rezilierea${cine}. Pentru dosar, vă rugăm să completați ` +
+        `și să semnați cererea de reziliere din linkul de mai jos:</p>` +
+        `<p><a href="${link}">${link}</a></p>` +
+        `<p>Linkul este valabil ${zile} zile.</p><p>Quasar Dance</p>`,
+    }
+  }
   return {
     smsText:
       `Buna ziua! Contractul${cine} este pregatit pentru semnare. Va rugam sa verificati datele si sa il semnati aici: ${link}. Linkul este valabil ${zile} zile.`,
@@ -63,6 +84,7 @@ export async function notificaContract(
   admin: SupabaseClient,
   n: NotificareContract,
 ): Promise<RezultatNotificare> {
+  if (n.emailIntai && n.email) return await prinEmail(admin, n)
   if (n.telefon) return await prinSms(admin, n)
   if (n.email) return await prinEmail(admin, n)
   return { canal: 'niciunul', ok: false, error: 'familie fără telefon și email' }

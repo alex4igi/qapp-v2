@@ -13,8 +13,8 @@ const INFO_ABSENTE = (
   <>
     <p className="font-semibold">Ce numără</p>
     <p className="mt-1">
-      Cazurile deschise din lista de recuperare: cursanți fără prezență de 21+
-      zile, încă necontactați și nereactivați, din sezonul curent.
+      Cazurile de sunat azi din lista de recuperare: cursanți fără prezență de
+      21+ zile, încă nesunați, plus reîncercările și amânările ajunse la termen.
     </p>
   </>
 )
@@ -119,7 +119,7 @@ export function useDeUrmarit(locatieId: string | null, ready: boolean) {
         key: 'absente',
         valoare: absenteQ.data,
         tone: 'danger',
-        text: 'cursanți tăcuți de 21+ zile, necontactați',
+        text: 'absenți de 21+ zile de sunat azi',
         to: '/absente-21z',
         info: INFO_ABSENTE,
       })

@@ -34,6 +34,7 @@ const TIP_SMS: Record<string, string> = {
   cont_portal: 'Date cont portal',
   manual: 'SMS manual',
   mesaj_liber: 'Mesaj liber',
+  absenta_fara_raspuns: 'Absent 21 zile — fără răspuns',
 }
 
 const TIP_CONTRACT: Record<string, string> = {
@@ -51,7 +52,12 @@ const SCOP_CONTACT: Record<string, string> = {
 // Aceleași etichete ca în modalurile din care se loghează contactul.
 const REZULTAT_CONTACT: Record<string, Record<string, string>> = {
   recuperare: { reusit: 'A plătit / promite', follow_up: 'Revine cu plata', pierdut: 'Refuză' },
-  reactivare: { reusit: 'Revine la curs', follow_up: 'De revenit', pierdut: 'Renunță' },
+  reactivare: {
+    reusit: 'Revine la curs',
+    follow_up: 'Amână',
+    pierdut: 'Renunță',
+    nu_raspunde: 'Nu răspunde',
+  },
   lead: { reusit: 'Contact reușit', follow_up: 'Follow-up', pierdut: 'Pierdut' },
 }
 

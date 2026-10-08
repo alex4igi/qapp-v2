@@ -92,6 +92,10 @@ secțiunile pe coloane din ghidul public. **După orice modificare în `procedur
 `npm run gen:ghid`** (`-- --check` verifică). Citește documentul înainte să atingi `cron-evening`,
 `cron-morning`, `prune_expired_leads` sau pragurile de nurture.
 
+**Procedura „Absenți de 21 de zile"** (stări, „nu răspunde" → SMS → confirmarea managerului, ce iese din K3) stă în
+**[docs/procedura-absenti-21z.md](./docs/procedura-absenti-21z.md)**; textele pentru recepție, în
+`src/features/absente21z/procedura.ts` — se schimbă împreună.
+
 **Regulile de preț și reduceri** (promo reînscriere, −10% family/cross-sell,
 penalizarea pe scadență) stau în **[docs/reguli-preturi-reduceri.md](./docs/reguli-preturi-reduceri.md)** —
 sursa de adevăr, cu maparea regulă → loc în cod. Citește-o înainte să atingi

@@ -58,6 +58,9 @@ function targetFor(n: Notification): string | null {
     const cid = (n.payload as { client_id?: string } | null)?.client_id
     return cid ? `/clienti/${cid}` : '/plati'
   }
+  if (n.kind === 'absenta_reziliere_de_confirmat') {
+    return '/absente-21z?tab=de_confirmat'
+  }
   if (n.kind === 'raport_netopia_lunar') {
     return '/facturare?tab=netopia'
   }

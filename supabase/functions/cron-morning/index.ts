@@ -7,7 +7,7 @@
 // digestul de securitate (email către owner/admin, doar în zilele cu semnale).
 // Followup-ul, confirmarea înrolării și post_demo pleacă din cron-afternoon, la
 // 16:00, când e cineva la sală să răspundă (decizie 2026-09-15).
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import {
   adresaSms,
   buildPrimaSedintaSms,
@@ -63,7 +63,7 @@ const APP_URL = Deno.env.get('APP_URL') ?? 'https://qapp.quasardance.ro'
 // Destinatarii = conturile de staff cu rol de decizie. Lista se întreține singură:
 // cine devine manager primește emailul, fără configurare separată.
 async function getManagerEmails(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
 ): Promise<string[]> {
   const { data, error } = await supabase.auth.admin.listUsers({ perPage: 200 })
   if (error) throw error
@@ -114,6 +114,90 @@ function buildSuspendariEmail(rows: SuspendatRow[]): { subject: string; html: st
     `\n\nAnularea locului o confirmi din ${APP_URL}/datorii. La reziliere, pretul promo se incheie odata cu locul.`
 
   return { subject, html, text }
+}
+
+// Rezilierile „absent 21 zile, fără răspuns" care așteaptă managerul (Alex, 08.10.2026:
+// „cum ar putea să nu uite"). Email în fiecare zi lucrătoare cât timp lista nu e goală —
+// lista e mică și e de acțiune, nu de informare. Managerul primește doar locația lui
+// (`app_metadata.locatie_id`); owner/admin și managerii fără locație primesc tot.
+type AbsentaDeConfirmat = {
+  id: string
+  locatie: string | null
+  reziliere_propusa_la: string | null
+  ultima_prezenta: string | null
+  clienti: { prenume: string | null; nume: string | null } | null
+  cursuri: { numele: string | null } | null
+  locatii: { nume: string | null } | null
+}
+
+async function trimiteRezilieriDeConfirmat(
+  supabase: SupabaseClient,
+  errors: string[],
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('absente_21z')
+    .select('id, locatie, reziliere_propusa_la, ultima_prezenta, clienti(prenume, nume), cursuri(numele), locatii(nume)')
+    .eq('stare', 'de_confirmat')
+    .order('reziliere_propusa_la')
+  if (error) {
+    errors.push(`absenti de confirmat: ${error.message}`)
+    return 0
+  }
+  const cazuri = (data ?? []) as unknown as AbsentaDeConfirmat[]
+  if (cazuri.length === 0) return 0
+
+  const { data: useri, error: eUseri } = await supabase.auth.admin.listUsers({ perPage: 200 })
+  if (eUseri) {
+    errors.push(`absenti de confirmat (useri): ${eUseri.message}`)
+    return 0
+  }
+  const roluri = new Set(['owner', 'admin', 'manager'])
+  let trimise = 0
+  for (const u of useri?.users ?? []) {
+    const rol = String(u.app_metadata?.role ?? '')
+    if (!roluri.has(rol) || !u.email) continue
+    const loc = rol === 'manager' ? String(u.app_metadata?.locatie_id ?? '') : ''
+    const ale = loc ? cazuri.filter((c) => c.locatie === loc) : cazuri
+    if (ale.length === 0) continue
+
+    const zile = (iso: string | null) =>
+      iso ? Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)) : 0
+    const linii = ale.map((c) => ({
+      nume: `${c.clienti?.prenume ?? ''} ${c.clienti?.nume ?? ''}`.trim() || 'Client fără nume',
+      curs: [c.cursuri?.numele, c.locatii?.nume].filter(Boolean).join(' · '),
+      zile: zile(c.reziliere_propusa_la),
+    }))
+    const n = linii.length
+    const subject =
+      n === 1
+        ? 'Quasar: 1 reziliere de confirmat (absent 21 zile, fără răspuns)'
+        : `Quasar: ${n} rezilieri de confirmat (absenți 21 zile, fără răspuns)`
+    const rowsHtml = linii
+      .map(
+        (l) =>
+          `<tr><td style="padding:6px 12px 6px 0">${l.nume}</td>` +
+          `<td style="padding:6px 12px 6px 0">${l.curs}</td>` +
+          `<td style="padding:6px 0;text-align:right">așteaptă de ${l.zile} zile</td></tr>`,
+      )
+      .join('')
+    const link = `${APP_URL}/absente-21z?tab=de_confirmat`
+    const html =
+      `<p>Cursanții de mai jos n-au mai venit de 45 de zile. Recepția a sunat de două ori, la o săptămână ` +
+      `distanță, și a plecat și SMS-ul — fără niciun răspuns.</p>` +
+      `<table style="border-collapse:collapse;font-family:system-ui,sans-serif;font-size:14px">${rowsHtml}</table>` +
+      `<p>Decizia e a ta: <strong>Reziliază</strong> (se anulează lunile fără prezențe și fără bani încasați; ` +
+      `lunile cu prezențe rămân cu datoria) sau <strong>Păstrează locul</strong>. ` +
+      `<a href="${link}">Deschide lista</a>.</p>` +
+      `<p style="color:#666;font-size:12px">Mesaj automat Qapp, în fiecare zi lucrătoare cât timp lista nu e goală.</p>`
+    const text =
+      `N-au mai venit de 45 de zile; doua apeluri si un SMS fara raspuns:\n\n` +
+      linii.map((l) => `- ${l.nume} (${l.curs}) - asteapta de ${l.zile} zile`).join('\n') +
+      `\n\nReziliaza sau pastreaza locul din ${link}`
+    const res = await sendEmail({ to: u.email, subject, html, text })
+    if (res.ok) trimise++
+    else errors.push(`email absenti de confirmat → ${u.email}: ${res.error ?? 'eșec'}`)
+  }
+  return trimise
 }
 
 Deno.serve(async (req) => {
@@ -511,11 +595,14 @@ Deno.serve(async (req) => {
     }
   }
 
+  const ziLucru = !['Sat', 'Sun'].includes(localWeekdayBucharest(now))
+  const emailuriAbsenti = ziLucru ? await trimiteRezilieriDeConfirmat(supabase, errors) : 0
+
   const emailuriSecuritate = await trimiteDigestSecuritate(supabase, APP_URL, errors)
   const fisiereGdpr = await stergeFisiereGdpr(supabase, errors)
 
   console.log(
-    `[cron/morning] remindere: ${sent.length}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, startSezon: ${remindereStart}, primaSedinta: ${reminderePrima}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, securitate: ${emailuriSecuritate}, fisiereGdpr: ${fisiereGdpr}, erori: ${errors.length}`,
+    `[cron/morning] remindere: ${sent.length}, aVenitFlag: ${aVenitFlagged}, aVenitNurture: ${aVenitNurtured}, startSezon: ${remindereStart}, primaSedinta: ${reminderePrima}, suspendati50z: ${suspendati}, emailuri: ${emailuriTrimise}, absentiDeConfirmat: ${emailuriAbsenti}, securitate: ${emailuriSecuritate}, fisiereGdpr: ${fisiereGdpr}, erori: ${errors.length}`,
   )
   return Response.json({
     sent,
@@ -526,6 +613,7 @@ Deno.serve(async (req) => {
     suspendati50z: suspendati,
     emailuriSuspendari: emailuriTrimise,
     emailuriSecuritate,
+    emailuriAbsentiDeConfirmat: emailuriAbsenti,
     fisiereGdpr,
     errors,
     rulatLa: now.toISOString(),

@@ -333,6 +333,17 @@ export function buildPrimaSedintaSms(s: SedintaSms): string {
   )
 }
 
+// A treia încercare pe un caz „Absent 21 de zile" (Alex, 08.10.2026): după două apeluri
+// fără răspuns la o săptămână distanță. Pleacă din cron-afternoon, la 16:00, când e cineva
+// la sală să răspundă. Telefonul e al locației unde venea copilul. Text aprobat de Alex;
+// 194–203 caractere = 2 segmente SMS, asumat (mesajele sunt puține).
+export function buildAbsentaFaraRaspunsSms(prenume: string | null, locatie: string | null): string {
+  const cine = faraDiacritice((prenume ?? '').trim()).split(/\s+/)[0] || 'Copilul dvs.'
+  return faraDiacritice(
+    `Buna ziua! ${cine} nu a mai venit la dans de cateva saptamani si nu v-am putut prinde la telefon. Pentru pastrarea locului la grupa, va rugam sa ne contactati la ${getTelefon(locatie)}. Multumim! Quasar Dance`,
+  )
+}
+
 // Re-export `sendSms` din messaging.ts pentru backwards compat la callsite-uri.
 // Toate edge functions care făceau `import { sendSms } from '../_shared/sms.ts'`
 // continuă să meargă fără modificări — provider-ul de jos e themarketer.

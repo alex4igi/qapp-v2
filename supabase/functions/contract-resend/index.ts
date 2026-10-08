@@ -4,7 +4,7 @@
 // remindere noi la 3/7 zile. Merge pe contracte trimise, deschise sau expirate —
 // un contract expirat redevine semnabil pe linkul lui, dar doar dacă familia n-a
 // primit între timp alt contract pe același șablon (gardul de dublură din contract-send).
-import { mesajContract, notificaContract } from '../_shared/contractNotify.ts'
+import { emailIntai, mesajContract, notificaContract } from '../_shared/contractNotify.ts'
 import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
 import { requireStaffRole } from '../_shared/staffAuth.ts'
 
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     const { data: c } = await admin
       .from('contracte')
-      .select('id, status, template_id, familie_id, client_id, deschis_prima_data_la, contract_templates(valabilitate_zile)')
+      .select('id, status, template_id, familie_id, client_id, deschis_prima_data_la, contract_templates(valabilitate_zile, tip)')
       .eq('id', contractId)
       .maybeSingle()
     if (!c) return json({ error: 'Contract inexistent' }, 404)
@@ -79,8 +79,9 @@ Deno.serve(async (req) => {
       prenumeCopil = copil?.prenume ?? copil?.nume ?? null
     }
 
-    const tpl = c.contract_templates as unknown as { valabilitate_zile: number } | null
+    const tpl = c.contract_templates as unknown as { valabilitate_zile: number; tip: string | null } | null
     const zile = tpl?.valabilitate_zile ?? 30
+    const tipTemplate = tpl?.tip ?? null
     const acum = new Date()
     const expiraLa = new Date(acum.getTime() + zile * 86400_000).toISOString()
     const link = await linkSemnare(admin, c.id)
@@ -114,7 +115,8 @@ Deno.serve(async (req) => {
       email: familie.email,
       clientId: c.client_id,
       codMesaj: 'contract',
-      ...mesajContract(prenumeCopil, link, zile),
+      emailIntai: emailIntai(tipTemplate),
+      ...mesajContract(prenumeCopil, link, zile, tipTemplate),
     })
 
     return json({

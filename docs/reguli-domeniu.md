@@ -170,6 +170,24 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - Prezența se bifează din **rosterul grupei**; diagnosticul oricărei probleme de prezență pornește de la `getGrupaDashboard`.
 - **Absențele aproape nu există ca date** (82% din ședințe n-au niciun `Absent`): instructorii bifează doar prezenții.
   Retenția și riscul se măsoară în **ședințe ratate / zile de tăcere**, nu în rânduri `Absent`.
+- **Absenți de 21 de zile — cine intră și cine iese din K3 (Alex, 08.10.2026).** Procedura completă, pe stări:
+  [procedura-absenti-21z.md](./procedura-absenti-21z.md).
+  - **Cine a reziliat nu intră în listă.** Reziliere = `data_reziliere` înainte de ziua deschiderii, care atinge perioada de după
+    ultima prezență, fără nicio înrolare nouă creată după ea (reînscriere, mutare, conversie abonament ↔ ședințe). Regula
+    stă într-un singur loc: `absenta_reziliata()`. Motivul: rezilierea are motivul scris, deci s-a vorbit deja cu familia.
+  - **Rezilierea făcută în afara contactului scoate cazul din K3** (`absente_21z.exclus_k3`, stare `reziliat_separat`):
+    din fișa clientului, din suspendarea grupei. Cea hotărâtă în contact („Renunță", „Amână" din caz) sau confirmată de
+    manager după „fără răspuns" rămâne la K3, ca nereactivat.
+  - **Ceasul de 48 h nu numără sâmbăta și duminica** (`ore_lucratoare`). Un apel notat „Nu răspunde" oprește ceasul.
+  - **„Fără răspuns" = două apeluri la 7 zile distanță + SMS-ul de a doua zi la 16:00.** La 45 de zile de la ultima prezență
+    managerul confirmă rezilierea: se anulează lunile **fără prezență și fără bani încasați**; cele cu prezențe rămân cu datoria.
+    Nurture vine prin jobul EXclient, nu direct: un lead Nurture pentru un client încă înscris ar fi șters noaptea ca „umbră".
+  - **Cererea de reziliere** („Cerere Reziliere" din Contracte) se trimite după rezilierea din caz, printr-un buton;
+    rezilierea e valabilă imediat, cererea semnată e pentru dosar. Pleacă **pe email**, prin SMS doar dacă familia n-are
+    email — invers decât contractele obișnuite (SMS întâi).
+  - **Trupele nu se reziliază automat** la „fără răspuns": rezilierea unei trupe are un cost, regula se discută separat.
+  - **„Amână" eliberează locul** (rezilierea lunilor viitoare, din caz), cu dată de revenire; la data aceea cazul reapare,
+    iar revenirea se discută cu managerul.
 
 ## 6. Nomenclatoare închise
 
