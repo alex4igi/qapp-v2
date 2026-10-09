@@ -65,17 +65,21 @@ function drillDown(l: LinieRaport): [string, string][] {
     // Cifra asta separă „a lucrat slab" de „leadurile n-au fost atribuite".
     out.push(['Leaduri fără punct de lucru (pe club)', n('fara_locatie')])
   } else if (l.cheie === 'raspuns_24h' && d.mod === 'interactiuni_manager') {
-    const canal = (zile: string, ok: string, inn: string, rata: string) =>
-      d[zile] == null || Number(d[zile]) === 0
+    const exclus = (k: string) => Array.isArray(d.canale_excluse) && d.canale_excluse.includes(k)
+    const canal = (zile: string, ok: string, inn: string, rata: string, acop: string, cheie: string) => {
+      const acoperire = d[acop] == null ? '' : `, ${n(acop)}% din ${n('zile_lucru_luna')} zile lucrătoare`
+      const baza = d[zile] == null || Number(d[zile]) === 0
         ? 'nicio zi introdusă'
-        : `${n(ok)} din ${n(inn)} · ${n(rata)}% (${n(zile)} zile introduse)`
+        : `${n(ok)} din ${n(inn)} · ${n(rata)}% (${n(zile)} zile introduse${acoperire})`
+      return exclus(cheie) ? `${baza} — nu intră, sub ${n('prag_acoperire') ?? '70'}%` : baza
+    }
     out.push(['Leaduri din aplicație, atinse în termen',
       d.rata_leaduri == null ? 'fără leaduri' : `${n('leaduri_in_termen')} din ${n('leaduri_numitor')} · ${n('rata_leaduri')}%`])
     out.push(['Leaduri cu termenul încă deschis (nu intră)', n('leaduri_in_asteptare')])
     out.push(['Program de lucru', d.zile_lucru_saptamana === 5 ? 'luni–vineri' : d.zile_lucru_saptamana === 7 ? 'luni–duminică' : `${n('zile_lucru_saptamana')} zile/săpt.`])
-    out.push(['Telefon, cu răspuns în 24 h (de la manager)', canal('telefon_zile', 'telefon_cu_raspuns', 'telefon_intrate', 'rata_telefon')])
+    out.push(['Telefon, cu răspuns în 24 h (de la manager)', canal('telefon_zile', 'telefon_cu_raspuns', 'telefon_intrate', 'rata_telefon', 'telefon_acoperire', 'telefonul')])
     if (d.include_meta) {
-      out.push(['Meta, cu răspuns în 24 h (de la manager)', canal('meta_zile', 'meta_cu_raspuns', 'meta_intrate', 'rata_meta')])
+      out.push(['Meta, cu răspuns în 24 h (de la manager)', canal('meta_zile', 'meta_cu_raspuns', 'meta_intrate', 'rata_meta', 'meta_acoperire', 'Meta')])
     }
     out.push(['K4 = media surselor cu date', n('surse') ? `${n('surse')} surse` : null])
     out.push(['Leaduri din lună fără locație (la nimeni)', n('leaduri_fara_locatie')])

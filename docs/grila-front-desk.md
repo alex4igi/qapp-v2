@@ -130,15 +130,19 @@ K4 = **media simplă** a surselor care au date în luna respectivă:
    linia K4 a Petruței are `include_meta` = 1, a lui Theo 0.
 
 Rata unui canal = Σ cu răspuns / Σ intrate pe lună; o zi introdusă cu 0 intrate = nimeni fără răspuns.
-**Un canal fără nicio zi introdusă** (telefonul, și Meta unde se cere) → K4 „necompletat": contează 0 și
-blochează închiderea lunii — asta obligă managerul să completeze.
+⭐ **Prag de acoperire 70%** (Alex, 10 oct. 2026): un canal de la manager (telefonul, și Meta unde se cere)
+intră în medie doar dacă are introduse **cel puțin 70% din zilele lucrătoare ale lunii** (pe programul omului;
+pe luna în curs, până ieri). Sub prag, canalul nu intră în medie și **nu blochează** nimic — K4 rămâne pe
+celelalte surse (de regulă doar leadurile). Înainte, zero zile blocau luna, iar o singură zi trecea: la Nicolina,
+30 sept. (3 apeluri) urca K4 de la 61% la 81%, deși era la fel de necompletat ca Ștefanul. Septembrie 2026
+iese astfel doar pe leaduri la amândoi. Pragul e parametrul `prag_acoperire` pe linia K4 (lipsă = 70).
 
 De ce nu statistica Meta: cardul „Conversations" din Insights arăta 0 conversații și „Response rate: --"
 pe septembrie, cu inboxul plin — numără doar o parte din conversații. Variantele intermediare din 29 sept.
 (completare săptămânală cumulată, toleranță de 5 mesaje omise, bifă „telefon verificat", notare zilnică de
 către recepție) au fost înlocuite de varianta de mai sus.
 
-Implementare: `kpi_k4_receptie` (migrațiile `20260929110000` și `20260929130000`); MOA rămâne pe `kpi_k4`.
+Implementare: `kpi_k4_receptie` (migrațiile `20260929110000`, `20260929130000`, `20261010180000`); MOA rămâne pe `kpi_k4`.
 Pe septembrie (doar leadurile): Ștefan 67%, Nicolina 62%, Q4K 68% — sub pragul de 85%; după
 procedura din 17 sept. Ștefan urcă la 77%. ⏳ Pragurile de 85 / 95 sunt de revăzut după octombrie.
 
@@ -337,7 +341,7 @@ Ce lipsește:
 | Linii | K1 30% · K2 **0% (forfetar)** · K3 35% · K4 17,5% · K5 17,5%; „fără date = standard" pe toate, **în afară de K3: „fără date = 0"** (9 oct. 2026); sumele pe trepte ca în §3; „peste X%" = X,01 (motorul compară cu ≥); bonus doar septembrie–iunie; fără eliminatorii; `cota_manager` 0 |
 | K2 | cheia nouă `rata_incasare_m1` → `kpi_rata_incasare` (aceeași ca la manager); marcată „provizoriu" până la finalul lunii M+1 — luna nu se poate închide în raportul KPI până atunci |
 | Partea amânată | liniile care își declară `final_la` (K2, K3) formează componenta „Bonus KPI — luna următoare", separat de bonusul lunii **indiferent dacă sunt încă provizorii** — altfel, după ce se definitivează, suma lor ar trece în bonusul deja confirmat și s-ar pierde (reparat pe 29 sept., migrația `20260929100000`) |
-| K4 | `rata_standard` 85, `rata_peste` 95,01; media leaduri (automat) + telefon + Meta (introduse zilnic de manager în `/raport-kpi`, tabelul `k4_interactiuni_zi`); canal fără nicio zi introdusă = blochează închiderea lunii (vezi §3) |
+| K4 | `rata_standard` 85, `rata_peste` 95,01; media leaduri (automat) + telefon + Meta (introduse zilnic de manager în `/raport-kpi`, tabelul `k4_interactiuni_zi`); canal sub 70% din zilele lucrătoare introduse = nu intră în medie, nu blochează (`prag_acoperire`, 10 oct. 2026) |
 | K3 | fără poarta de 48 h din șablonul MOA (grila nu o cere) |
 | Partea fixă | `salarizare_receptie` pe om (normă, facturare, fidelitate, abonament, bonusuri ocazionale) + sumele din `salarizare_grila` (post `receptie`) |
 | Salariul lunii | `calculeaza_salariu_receptie(user, an, lună)`; confirmarea pe componente (`confirma_salariu_staff`): fixul oricând, bonusul KPI după finalul lunii, K2 după finalul lunii M+1 |
@@ -352,5 +356,4 @@ redistribuire pe ceilalți. Motivul: K3 n-are încă niciun caz în jurnal, iar 
 date = standard"), bifată pe toate liniile șablonului „Recepție 2026-2027" în afară de K3; șablonul MOA păstrează
 redistribuirea. A treia variantă, `na_zero` („fără date = 0", 9 oct. 2026), e doar pe K3: luna fără
 cazuri plătește 0, tot fără redistribuire. În editorul grilei cele trei variante sunt o singură alegere,
-„Lună fără date". **K4 necompletat nu intră aici**: e o cifră de completat manual, deci contează 0 în
-previzualizare și blochează închiderea lunii până se completează.
+„Lună fără date". K4 nu mai blochează (10 oct. 2026): canalele manuale sub pragul de acoperire ies din medie.
