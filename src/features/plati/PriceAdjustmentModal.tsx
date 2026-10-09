@@ -5,7 +5,12 @@ import { Button, Field, Modal, TextArea, TextInput, Spinner } from '@/components
 import { supabase } from '@/lib/supabase'
 import { formatDate } from '@/lib/format'
 import type { Curs } from '@/types/db'
-import { adjustEnrollmentPrice, getEnrollmentPaid, type SurplusAction } from './api'
+import {
+  adjustEnrollmentPrice,
+  getEnrollmentPaid,
+  setProrataInrolare,
+  type SurplusAction,
+} from './api'
 import { derivePreviewRecurent } from './components/EnrollmentForm/helpers'
 
 type Props = {
@@ -23,7 +28,13 @@ type EnrollmentInfo = {
   nume_client: string | null
   paid: number
   explicatie: ExplicatieSuma | null
+  prorata: ProrataInfo | null
 }
+
+// Semnul de prorata: doar la grupele recurente, pe rata lunară. `intratTarziu` = rata e
+// prima din serie și înrolarea a fost făcută după începutul lunii (în septembrie, după
+// startul sezonului) — atunci e probabil ca o reducere să fie prorata.
+type ProrataInfo = { marcat: boolean; intratTarziu: boolean }
 
 // Ce a pus aplicația singură pe rată — ca managerul să nu refacă de mână un
 // calcul care e deja făcut, sau unul pe care regula îl exclude.
@@ -104,11 +115,44 @@ async function explicaSuma(row: {
   }
 }
 
+async function prorataInfo(row: {
+  client: string | null
+  created: string | null
+  data_incepere: string | null
+  tip_plata: string | null
+  prorata: boolean
+  cursul: CursCuSezon | null
+}): Promise<ProrataInfo | null> {
+  const curs = row.cursul
+  if (!curs || row.tip_plata !== 'Per luna' || !row.data_incepere) return null
+  if (curs.facultativ || curs.nivelul === 'Trupa') return null
+  const { data: anterioare, error } = await supabase
+    .from('enrollments')
+    .select('id')
+    .eq('client', row.client ?? '')
+    .eq('cursul', curs.id)
+    .eq('tip_plata', 'Per luna')
+    .gt('suma', 0)
+    .lt('data_incepere', row.data_incepere)
+    .limit(1)
+  if (error) throw error
+  const prima = (anterioare ?? []).length === 0
+  const luna = row.data_incepere.slice(0, 7) + '-01'
+  const startSezon = curs.sezon?.data_incepere ?? null
+  const inceputLuna =
+    startSezon && startSezon.slice(0, 7) === luna.slice(0, 7) ? startSezon : luna
+  const creat = row.created?.slice(0, 10) ?? null
+  return {
+    marcat: row.prorata,
+    intratTarziu: prima && creat != null && creat > inceputLuna,
+  }
+}
+
 async function fetchEnrollmentInfo(id: string): Promise<EnrollmentInfo> {
   const { data, error } = await supabase
     .from('enrollments')
     .select(
-      'id, client, suma, suma_baza, este_reinscriere, data_incepere, tip_plata, cursul(*, sezon(data_incepere, data_final)), client_info:client(nume, prenume)',
+      'id, client, created, suma, suma_baza, este_reinscriere, data_incepere, tip_plata, prorata, cursul(*, sezon(data_incepere, data_final)), client_info:client(nume, prenume)',
     )
     .eq('id', id)
     .single()
@@ -116,17 +160,20 @@ async function fetchEnrollmentInfo(id: string): Promise<EnrollmentInfo> {
   const row = data as unknown as {
     id: string
     client: string | null
+    created: string | null
     suma: number | null
     suma_baza: number | null
     este_reinscriere: boolean | null
     data_incepere: string | null
     tip_plata: string | null
+    prorata: boolean
     cursul: CursCuSezon | null
     client_info: { nume: string | null; prenume: string | null } | null
   }
-  const [paid, explicatie] = await Promise.all([
+  const [paid, explicatie, prorata] = await Promise.all([
     getEnrollmentPaid(id),
     explicaSuma(row).catch(() => null),
+    prorataInfo(row),
   ])
   return {
     id: row.id,
@@ -139,6 +186,7 @@ async function fetchEnrollmentInfo(id: string): Promise<EnrollmentInfo> {
       : null,
     paid,
     explicatie,
+    prorata,
   }
 }
 
@@ -152,6 +200,7 @@ export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
   // La surplus, implicit lăsăm creditul în cont; alocarea la altă datorie se face
   // ulterior din profil („Folosește credit"). Aici doar credit vs restituire.
   const [surplusAction, setSurplusAction] = useState<SurplusAction>('credit')
+  const [prorata, setProrata] = useState(false)
 
   const infoQ = useQuery({
     queryKey: ['enrollment-info', enrollmentId],
@@ -163,25 +212,38 @@ export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
   const n = Number(newSuma)
   const surplus = Number.isFinite(n) && n >= 0 ? round2(paid - n) : 0
   const hasSurplus = surplus > 0.004
+  const prorataInfo = infoQ.data?.prorata ?? null
+  const prorataSchimbat = prorataInfo != null && prorata !== prorataInfo.marcat
+  const pretSchimbat = Number.isFinite(n) && n !== (infoQ.data?.suma ?? null)
 
   useEffect(() => {
-    if (open && infoQ.data) setNewSuma(String(infoQ.data.suma ?? ''))
+    if (open && infoQ.data) {
+      setNewSuma(String(infoQ.data.suma ?? ''))
+      setProrata(infoQ.data.prorata?.marcat ?? false)
+    }
     if (!open) {
       setNewSuma('')
       setMotiv('')
       setError(null)
       setSurplusAction('credit')
+      setProrata(false)
     }
   }, [open, infoQ.data])
 
   const save = useMutation({
-    mutationFn: () =>
-      adjustEnrollmentPrice({
-        enrollmentId,
-        newSuma: n,
-        motiv,
-        surplusAction: hasSurplus ? surplusAction : 'none',
-      }),
+    mutationFn: async () => {
+      if (pretSchimbat || !prorataSchimbat) {
+        await adjustEnrollmentPrice({
+          enrollmentId,
+          newSuma: n,
+          motiv,
+          surplusAction: hasSurplus ? surplusAction : 'none',
+        })
+      }
+      if (prorataSchimbat) {
+        await setProrataInrolare({ enrollmentId, prorata, motiv })
+      }
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['client'] })
       void queryClient.invalidateQueries({ queryKey: ['client-inrolari-sezon'] })
@@ -287,6 +349,33 @@ export function PriceAdjustmentModal({ enrollmentId, open, onClose }: Props) {
               onChange={(e) => setNewSuma(e.target.value)}
             />
           </Field>
+
+          {prorataInfo && (
+            <div className="space-y-1">
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={prorata}
+                  onChange={(e) => setProrata(e.target.checked)}
+                />
+                <span className="flex-1 font-medium text-quasar-black">
+                  E prorata — a intrat după începutul lunii
+                  <span className="block text-xs font-normal text-quasar-gray">
+                    Rata redusă pentru ședințele pierdute la intrare nu se numără la ocuparea
+                    lunii (bonusuri, prag minim). Reducerile, voucherele și ajustările la
+                    reziliere nu sunt prorata.
+                  </span>
+                </span>
+              </label>
+              {prorataInfo.intratTarziu && !prorata && (
+                <p className="text-xs text-amber-700">
+                  Înrolarea a fost făcută după începutul lunii. Dacă reduci rata pentru
+                  ședințele pierdute, bifează prorata.
+                </p>
+              )}
+            </div>
+          )}
 
           <Field label="Motiv ajustare" required htmlFor="adj-motiv">
             <TextArea

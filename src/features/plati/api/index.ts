@@ -95,6 +95,7 @@ export {
   recalcUltimaLunaReziliere,
   getMotivareAbsentaContext,
   aprobaMotivareAbsenta,
+  setProrataInrolare,
 } from './enrollment-admin'
 export type {
   SurplusAction,

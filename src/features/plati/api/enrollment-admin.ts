@@ -112,6 +112,21 @@ export async function adjustEnrollmentPrice(params: {
   return result
 }
 
+// Semnul de prorata (rata primei luni redusă pentru intrarea târzie) — o rată marcată nu
+// se numără la ocuparea lunii. Se schimbă doar prin RPC: lasă urmă în audit_log.
+export async function setProrataInrolare(params: {
+  enrollmentId: string
+  prorata: boolean
+  motiv: string
+}): Promise<void> {
+  const { error } = await supabase.rpc('seteaza_prorata_inrolare', {
+    p_enrollment: params.enrollmentId,
+    p_prorata: params.prorata,
+    p_motiv: params.motiv.trim(),
+  })
+  if (error) throw error
+}
+
 // Total încasat pe o înrolare (pentru a detecta surplusul în modalul de ajustare).
 export async function getEnrollmentPaid(enrollmentId: string): Promise<number> {
   const incasari = await getEnrollmentIncasari(enrollmentId)

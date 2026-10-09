@@ -93,6 +93,12 @@ suma cuprinde tot ce a intrat. Dacă și rata s-ar calcula pe tot ce a intrat, a
   ies cât media celor veniți pe ședință. Capacitatea lui (30) intră la capacitate. (Pe 15 sept. media
   pe ședință fusese înlocuită cu „fiecare rezervare = un loc"; din 26 sept. revine, prin regula
   generală a facultativelor.)
+- ⭐ **Prorata nu se numără** (Alex, 9 oct. 2026): „nu pot da bonusul pentru ocupare pentru un client care nu a achitat
+  înrolarea completă". Rata primei luni a celui intrat mai târziu (calculată de aplicație sau făcută de mână de manager)
+  iese din locuri, chiar dacă omul pleacă după ea; se numără din prima lună întreagă. Reducerile, voucherele, promo,
+  ajustările la reziliere și cine a intrat târziu dar a plătit luna întreagă se numără. Semnul: `enrollments.prorata` (reguli-domeniu.md §2). Efect pe sept. 2026: Ștefan 420,33 → 399,33
+  locuri (68,68% → 65,25%, în standard, 841 → 799 lei), Nicolina 198,33 → 173,33 (47,22% → 41,27%, sub standard,
+  198 → 173 lei), Q4K 62,33 → 58,33. Nicio treaptă nu se schimbă.
 - Intră trupele și cursurile facultative. Cursurile one-time nu intră.
 - Același număr de clienți se folosește și la ocupare, și la înmulțirea cu leii din treaptă.
 

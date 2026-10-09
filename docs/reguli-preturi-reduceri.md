@@ -281,6 +281,10 @@ se uită la **ședințele pierdute**, nu la ziua din calendar:
   pierd ședințe, ~5.472 RON) rămân la rata întreagă — decizie Alex, fără corecție retroactivă.
 - Cu 39, pe grupele de 2×/săpt. plafonul face singur ca **1–2 ședințe pierdute să însemne luna
   întreagă** (7 × 39 = 273 > 270). Exemplu: înscris pe 7 octombrie ⇒ 270.
+- **Rata de prorata poartă semnul `enrollments.prorata`** (9 oct. 2026): nu se numără la ocuparea lunii (bonusuri,
+  prag minim) — vezi reguli-domeniu.md §2. Îl pune `buildRecurentPerLuna` când rata iese sub rata lunii (plafonată =
+  luna întreagă, fără semn); la invitatul din recomandare semnul merge cu suma redusă, pe luna a doua. Prorata făcută
+  de mână se bifează în „Ajustează preț".
 - **Trupele n-au prorata** (toți încep la 1 septembrie, contractul e ferm pe sezon).
 - **Facultativele n-au prorata** — luna se plătește integral, indiferent de zi.
 

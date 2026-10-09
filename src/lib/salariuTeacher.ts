@@ -130,14 +130,13 @@ export async function previewSalariuTeacher(
 }
 
 /**
- * Cursanții numărați pe o grupă recurentă, despărțiți în abonament integral și pro-rata
- * (`detaliu_cursanti_salariu`, doar admin). Informativ: grila îi numără pe toți la fel.
+ * Cursanții unei grupe recurente pe lună: numărați la salariu și pe prorata, nenumărați
+ * (`detaliu_cursanti_salariu`, doar admin; regula din 9 oct. 2026).
  */
 export type DetaliuCursantiGrupa = {
-  pret_lunar: number
-  integral: number
+  numarati: number
   prorata: number
-  suma_integral: number
+  suma_numarati: number
   suma_prorata: number
   prezente_prorata: number
   lista_prorata: { client_id: string; nume: string; suma: number; prezente: number }[]

@@ -61,6 +61,20 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   de grupă (orar minus `vacante` și luni suspendate), max 1. Nu se rotunjește (9,67). Se aplică la bonusuri, prag minim,
   Overview, statistici. Retenția și numărătorile de OAMENI rămân neatinse (retenția la facultative = subiect deschis).
   Pe lună, o ședință se numără o singură dată, în luna în care s-a ținut; fereastra de 30 de zile e doar pentru ocuparea pe ZI.
+- **Prorata nu se numără la ocuparea lunii (Alex, 9.10.2026):** „nu pot da bonusul pentru ocupare pentru un client care
+  nu a achitat înrolarea completă". Rata de prorata (a intrat după începutul lunii și plătește doar ședințele prinse) iese
+  din numărătoarea LUNARĂ — bonusul pe ocupare al managerului, ocuparea instructorului, pragul minim de 8, maturitatea —
+  și omul se numără din prima lună întreagă. Contează motivul, nu cine a calculat: prorata făcută de mână de manager e tot
+  prorata. Nu se numără nici dacă omul pleacă după luna de prorata (Alex, 9.10: o condiție „rămâne client" ar fi
+  recompensat plecarea — managerul câștiga locul exact când copilul pleca).
+  **Se numără:** reducerile, voucherele, promo de reînscriere, reducerea de frați, ajustările de mână ale managerului din
+  alt motiv (cu excepția ajustării la 0), ajustările la reziliere, cine a intrat târziu dar a plătit luna întreagă
+  (plafonul). Ocupările pe ZI (Overview, agendă, liste, roster) și retenția instructorului rămân neatinse.
+  Prorata nu se poate deduce din sume (o „reducere zpd" de 220 arată la fel), deci stă ca semn: `enrollments.prorata`, pus
+  de aplicație la înrolare și de manager din „Ajustează preț" (`seteaza_prorata_inrolare`, cu audit); din browser
+  coloana nu se schimbă direct. În SQL: `_locuri_ponderate(..., p_fara_prorata)`; `locuri_ocupate_luna` îl cere mereu.
+  Sept. 2026: 50 de rate marcate (Ștefan 21, Nicolina 25, Q4K 4), ocuparea lunii 420,33 → 399,33 / 198,33 → 173,33 /
+  62,33 → 58,33. Migrațiile `20261009210000` + `20261010100000` (scoate condiția „rămâne client").
 - **Excepție: cardul din agenda dashboard-ului, la facultative, arată ziua aleasă (9.10)** — „39 / 35 locuri" = rosterul
   zilei (rezervări OPEN + abonați + ședința plătită pe ziua aia) / limita sesiunii OPEN (`open_sesiuni.capacitate`,
   altfel `capacitate_maxima`); roșu peste limită. E doar afișaj operațional pentru recepție, nu intră în nicio numărătoare.

@@ -11,17 +11,18 @@ import {
   type SalariuTeacherCalc,
 } from '@/lib/salariuTeacher'
 
-// Grupa recurentă, doar pentru admin: câți au plătit abonamentul întreg și câți au intrat cu pro-rata.
+// Grupa recurentă, doar pentru admin: câți sunt numărați și câți au intrat cu pro-rata (nenumărați).
 function CursantiRecurenti({ det, cursanti }: { det: DetaliuCursantiGrupa; cursanti: number }) {
   const [deschis, setDeschis] = useState(false)
   // Detaliul se calculează azi; la o lună confirmată înrolările se pot schimba după confirmare.
-  const altNumar = det.integral + det.prorata !== Math.round(cursanti)
+  const altNumar = det.numarati !== Math.round(cursanti)
   return (
     <div className="mt-0.5 text-xs text-muted">
       <div>
-        {det.integral} integral ({formatRON(det.suma_integral)}) · {det.prorata} pro-rata
+        {det.numarati} numărați ({formatRON(det.suma_numarati)})
+        {det.prorata > 0 && ` · ${det.prorata} pro-rata, nenumărați`}
       </div>
-      {altNumar && <div className="text-warn">azi: {det.integral + det.prorata} cursanți</div>}
+      {altNumar && <div className="text-warn">azi: {det.numarati} numărați</div>}
       {det.prorata > 0 && (
         <>
           <button
@@ -92,7 +93,7 @@ function Treapta({ banda, suma, detaliu }: { banda: BandaSalariu; suma: number; 
 
 /**
  * Salariul unei luni pe grila 2026-2027: pe grupe, apoi liniile pe om.
- * `detaliuCursanti` (doar admin) desparte cursanții grupelor recurente în integral / pro-rata.
+ * `detaliuCursanti` (doar admin) desparte cursanții grupelor recurente în numărați / pro-rata.
  */
 export function SalariuTeacherDetaliu({
   calc,

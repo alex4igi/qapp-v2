@@ -475,6 +475,9 @@ function buildRecurentPerLuna(
         activ: true,
         voucher: voucher?.id ?? null,
         este_reinscriere: esteReinscriere,
+        // Rata redusă pentru intrarea târzie nu se numără la ocuparea lunii (Alex,
+        // 9 oct. 2026). Plafonată la rata întreagă = a plătit luna, se numără.
+        prorata: sumaLunara == null || sumaBaza < sumaLunara,
       })
     } else if (isFirst && esteLunaDeStart) {
       // Prima lună la START de sezon (septembrie): rată întreagă, data_incepere
@@ -510,12 +513,19 @@ function buildRecurentPerLuna(
   // rata 1, ca la toată lumea; dacă e o singură lună, nu e nimic de mutat.
   if (params.prorataInLunaDoi && aplicProrata && sumaLunara != null && inserts.length > 1) {
     const prorata = inserts[0].suma_baza ?? null
+    // Semnul de prorata merge cu suma redusă: luna plătită întreg se numără.
+    inserts[1] = {
+      ...inserts[1],
+      suma_baza: prorata,
+      suma: sumaCuVoucher(prorata, null),
+      prorata: inserts[0].prorata,
+    }
     inserts[0] = {
       ...inserts[0],
       suma_baza: sumaLunara,
       suma: sumaCuVoucher(sumaLunara, voucher),
+      prorata: false,
     }
-    inserts[1] = { ...inserts[1], suma_baza: prorata, suma: sumaCuVoucher(prorata, null) }
   }
   return inserts
 }

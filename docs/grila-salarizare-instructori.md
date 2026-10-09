@@ -379,6 +379,10 @@ Un client se numără la grupa C în luna X dacă are în `enrollments` un rând
 > ⚠️ `.in()` din supabase-js **taie tăcut la 1000 de rânduri**. `enrollments` are 42.798 rânduri —
 > numărătoarea se face paginat cu `.range()`, per curs.
 
+> ⭐ **Prorata nu se numără (Alex, 9 oct. 2026).** Rata primei luni a celui intrat după începutul lunii (`enrollments.prorata`)
+> iese din cursanții lunii — la ocupare, la pragul minim de 8 și la testul de maturitate. Retenția rămâne pe oameni, neatinsă. Regula completă: reguli-domeniu.md §2. Sept. 2026: două grupe coboară
+> din standard în sub — N Dans Junior INC MJ (15 → 11) și N Gimnastică Junior INC MJ (12 → 8).
+
 ### 5.1 Grupele facultative: loc echivalent (Alex, 26 sept. 2026)
 
 „Nu ar fi corect să dăm pentru capacitate maximă când un client a venit o singură dată în acea
@@ -643,9 +647,9 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 - **Nota pe lună** (de ex. septembrie 2026: retenția la standard, ocuparea după date) se afișează lângă
   salariu în toate trei ecranele — `src/lib/notaLunaSalarizare.ts`.
 - **Integral vs pro-rata (Alex, 7 oct. 2026):** în „Detalii salarii", doar pentru admini, fiecare grupă
-  recurentă arată câți cursanți numărați au plătit abonamentul întreg și câți au intrat cu pro-rata, cu
-  lista pro-rata (nume, sumă, prezențe). Informativ — grila îi numără pe toți ca un loc. Pro-rata =
-  `suma_baza` a lunii sub prețul plin (minimul dintre `pret_lunar` și `pret_lunar_promo`); „Per an" e integral.
+  recurentă arată câți cursanți sunt numărați și câți au intrat cu pro-rata (nenumărați, din 9 oct. 2026), cu
+  lista pro-rata (nume, sumă, prezențe). Pro-rata = semnul `enrollments.prorata` — exact ce
+  scade din numărătoare (până pe 9 oct.: suma sub prețul plin, care punea la pro-rata și reducerile comerciale).
   RPC `detaliu_cursanti_salariu(cursuri[], anul, luna)`, admin-only, migrația `20261007170000` — nu stă în
   calculul instructorului, ca numele și sumele clienților să nu ajungă la el. Sept. 2026: 483 integral,
   83 pro-rata pe 43 de grupe recurente.
