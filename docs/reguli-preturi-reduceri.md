@@ -229,6 +229,20 @@ A10 (plata integrală merge pe −5% din contract, §4) și LATESTART (prorata e
 - Plata online (webhook) nu mai e reverificată la confirmare: codul e validat la crearea
   comenzii, iar un refuz după ce banii au intrat ar lăsa plata fără înrolare.
 
+### 6.1 Voucherul de angajat și gratuitatea specială (Alex, 9 oct. 2026)
+
+Nu sunt coduri din `vouchere`, ci un semn pe rată (`enrollments.gratuitate`), pus doar de owner/admin din
+fișa clientului („Voucher angajat"), pe rata aleasă și lunile de după la aceeași grupă.
+
+| | Cât acoperă | Pentru cine |
+|---|---|---|
+| **Voucher de angajat** | 300 lei pe lună, împărțiți pe grupele din lună în ordinea ratelor; peste 300 se plătește | toți angajații (instructori, recepție, staff) |
+| **Gratuitate specială** | toată rata | favoare asumată de owner |
+
+Rata acoperită nu se plătește, nu intră în clasamentul reducerilor de familie și **se numără ca loc plătit**
+(salariul instructorului, ocuparea). Banii deja încasați pe o rată care devine acoperită rămân credit, de
+restituit din „Folosește credit". Regula de numărare: reguli-domeniu.md §1.
+
 ## 7. Prima rată la înscriere târzie (prorata)
 
 Cine se înscrie după startul sezonului plătește prima lună **prorata**, dar regula

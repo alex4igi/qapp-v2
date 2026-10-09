@@ -26,7 +26,7 @@ import { ConvertAbonamentSedinteModal } from '@/features/plati/ConvertAbonamentS
 import { ConvertSedinteAbonamentModal } from '@/features/plati/ConvertSedinteAbonamentModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import { isAdminOrHigher, isManagerOrHigher, isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { ChecklistBadge } from '@/components/checklist'
 import { evalueazaChecklist, type StareItem } from '@/lib/checklist'
 import {
@@ -49,6 +49,7 @@ import { ClientSidebar } from './ClientSidebar'
 import { RestanteAlteSezoaneBanner } from './RestanteAlteSezoaneBanner'
 import { ConfirmReziliereModal } from './ConfirmReziliereModal'
 import { ConfirmDeleteInrolareModal } from './ConfirmDeleteInrolareModal'
+import { GratuitateModal } from './GratuitateModal'
 import { humanizeError } from '@/lib/errorMessage'
 import { GdprModal } from './GdprModal'
 import { calcAge, getInitials } from './helpers'
@@ -89,6 +90,7 @@ export function ClientProfilePage() {
   const [useCreditOpen, setUseCreditOpen] = useState(false)
   const [moveEnrollmentId, setMoveEnrollmentId] = useState<string | null>(null)
   const [mutaPlataRow, setMutaPlataRow] = useState<ClientInrolareSezon | null>(null)
+  const [gratuitateRow, setGratuitateRow] = useState<ClientInrolareSezon | null>(null)
   const [corectDataEnrollmentId, setCorectDataEnrollmentId] = useState<string | null>(null)
   const [motivareEnrollmentId, setMotivareEnrollmentId] = useState<string | null>(null)
   const [convertSedintaId, setConvertSedintaId] = useState<string | null>(null)
@@ -515,6 +517,8 @@ export function ClientProfilePage() {
                     }
                   : undefined
               }
+              // Voucherul de angajat / gratuitatea mută bani (salariul instructorului): doar owner/admin.
+              onGratuitate={isAdminOrHigher(role) ? (r) => setGratuitateRow(r) : undefined}
             />
           )}
 
@@ -614,6 +618,14 @@ export function ClientProfilePage() {
           clientNume={`${client.nume ?? ''} ${client.prenume ?? ''}`.trim()}
           luna={mutaPlataRow}
           onClose={() => setMutaPlataRow(null)}
+        />
+      )}
+
+      {gratuitateRow && (
+        <GratuitateModal
+          clientId={client.id}
+          row={gratuitateRow}
+          onClose={() => setGratuitateRow(null)}
         />
       )}
 

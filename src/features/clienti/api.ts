@@ -226,7 +226,11 @@ export type ClientInrolareSezon = {
   rest: number | null
   id_curs: string
   nume_curs: string
+  gratuitate: TipGratuitate | null
+  acoperit_gratuitate: number
 }
+
+export type TipGratuitate = 'angajat' | 'special'
 
 export async function getClientInrolariSezon(params: {
   clientId: string
@@ -243,7 +247,52 @@ export async function getClientInrolariSezon(params: {
     .lte('data_incepere', params.sezonEnd)
     .order('data_incepere', { ascending: true })
   if (error) throw error
-  return (data ?? []) as unknown as ClientInrolareSezon[]
+  const rows = (data ?? []) as unknown as Omit<
+    ClientInrolareSezon,
+    'gratuitate' | 'acoperit_gratuitate'
+  >[]
+
+  // View-ul plăților nu poartă semnul; un client are câteva zeci de rate pe sezon.
+  const { data: semne, error: semneErr } = await supabase
+    .from('enrollments')
+    .select('id, gratuitate, acoperit_gratuitate')
+    .eq('client', params.clientId)
+    .not('gratuitate', 'is', null)
+    .gte('data_incepere', params.sezonStart)
+    .lte('data_incepere', params.sezonEnd)
+  if (semneErr) throw semneErr
+  const byId = new Map((semne ?? []).map((s) => [s.id, s]))
+
+  return rows.map((r) => {
+    const s = byId.get(r.id_enrollment)
+    return {
+      ...r,
+      gratuitate: (s?.gratuitate as TipGratuitate | null) ?? null,
+      acoperit_gratuitate: Number(s?.acoperit_gratuitate ?? 0),
+    }
+  })
+}
+
+// Voucherul de angajat / gratuitatea specială: owner/admin, pe rata aleasă și lunile de după
+// la aceeași grupă. `tip = null` scoate semnul (omul reintră la plată).
+export async function seteazaGratuitate(params: {
+  clientId: string
+  cursId: string
+  deLa: string
+  tip: TipGratuitate | null
+  motiv: string
+}): Promise<number> {
+  const { data, error } = await supabase.rpc('seteaza_gratuitate_inrolare', {
+    p_client: params.clientId,
+    p_curs: params.cursId,
+    p_de_la: params.deLa,
+    // null = până la capătul seriei; tipurile generate nu știu că parametrii acceptă null.
+    p_pana: null as unknown as string,
+    p_tip: params.tip as string,
+    p_motiv: params.motiv.trim(),
+  })
+  if (error) throw error
+  return data ?? 0
 }
 
 export type ClientPrezentaSezon = {

@@ -29,6 +29,18 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **Cursant plătitor pe lună:** `suma > 0`, intervalul acoperă luna, fără `data_reziliere <= 1 ale lunii`.
   În SQL există o singură implementare: `cursanti_platitori_luna(curs, luna)` — nu scrie alta.
   Din 2026-2027 înrolările „Per ședință" au `data_final` NULL; funcția le leagă de luna ședinței.
+- **Voucher de angajat și gratuitate specială = loc plătit (Alex, 9.10.2026).** Fiecare angajat (instructor, recepție,
+  staff) are **300 lei pe lună** (`voucher_lunar` din grila instructorilor), de folosit la orice grupă Quasar; ce rămâne
+  se consumă la a doua grupă din aceeași lună, iar peste 300 omul plătește diferența. **Gratuitatea specială** e o
+  favoare asumată de owner (ex. familia proprietarului, cineva care a ajutat firma) și acoperă rata integral. În
+  amândouă cazurile omul nu mai are nimic de plată, dar **se numără ca loc plătit** peste tot unde se numără plătitori:
+  salariul instructorului (inclusiv pragul de 14 al trupei), ocuparea, pragul minim de 8, bonusul de ocupare al
+  managerului. **Nu pune rata pe 0 de mână** pentru un angajat: cu `suma = 0` omul dispare din numărătoare (cazul
+  S Rock On Q, sept. 2026: 15 oameni numărați 9–10, trainerul plătit ca intermediar). Semnul: `enrollments.gratuitate`
+  (`angajat` / `special`) + `acoperit_gratuitate` (calculat de trigger; `suma_baza` rămâne prețul real, `suma` = ce mai
+  are de plată). Îl pune doar owner/admin, din fișa clientului → „Voucher angajat" (`seteaza_gratuitate_inrolare`, motiv
+  + audit); din browser coloana nu se schimbă direct. Rata acoperită nu intră în clasamentul reducerilor de familie.
+  Predicatul: `_inrolari_platite_randuri` cere `suma > 0 OR acoperit_gratuitate > 0`. Migrația `20261009230000`.
 - **`clienti.status`** (cron nocturn `auto_mark_exclient`, 06.10.2026): doar `Activ` / `EXclient`. **EXclient** = fără
   `Prezent` de peste 45 z **și fără acces** (abonament care acoperă azi sau o lună viitoare, ori ședință rezervată de azi
   încolo) → opt-out marketing + reziliere luni viitoare + lead nurture. Revine pe Activ când are din nou acces.

@@ -20,6 +20,7 @@ type Props = {
   onConvertToSedinte?: (enrollmentId: string) => void
   facultativCursIds?: Set<string>
   onDelete?: (row: ClientInrolareSezon) => void
+  onGratuitate?: (row: ClientInrolareSezon) => void
 }
 
 export function InrolariSezonTab({
@@ -39,6 +40,7 @@ export function InrolariSezonTab({
   onConvertToSedinte,
   facultativCursIds,
   onDelete,
+  onGratuitate,
 }: Props) {
   // Creditul e la nivel de client (poate proveni din alt sezon), deci se afișează
   // și când sezonul curent n-are înrolări.
@@ -160,6 +162,14 @@ export function InrolariSezonTab({
                       'Convertește abonamentul în ședințe (încasează doar ședințele prezente; restul rămâne credit)',
                     onClick: () => onConvertToSedinte(r.id_enrollment),
                   })
+                if (onGratuitate)
+                  actions.push({
+                    icon: '🎟️',
+                    label: 'Voucher angajat',
+                    title:
+                      'Voucher de angajat sau gratuitate specială, de la luna asta înainte (se numără ca loc plătit)',
+                    onClick: () => onGratuitate(r),
+                  })
                 if (onDelete)
                   actions.push({
                     icon: '🗑️',
@@ -181,6 +191,15 @@ export function InrolariSezonTab({
                       {r.tip_plata ?? '—'}
                     </span>
                     <span className="flex-1 text-right">
+                      {r.gratuitate && (
+                        <span
+                          className="mr-1 inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700"
+                          title="Acoperit de firmă; se numără la grupă ca loc plătit"
+                        >
+                          {r.gratuitate === 'angajat' ? 'Voucher angajat' : 'Gratuitate'}{' '}
+                          {r.acoperit_gratuitate} RON
+                        </span>
+                      )}
                       {achitat ? (
                         <span className="inline-flex flex-wrap items-center justify-end gap-1">
                           <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">

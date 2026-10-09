@@ -352,7 +352,8 @@ S SD Varsity Avanasati).
 
 Un client se numără la grupa C în luna X dacă are în `enrollments` un rând cu:
 - `cursul = C`
-- `suma > 0`
+- `suma > 0` **sau** rata e acoperită de firmă: voucher de angajat (300 lei/lună) ori gratuitate specială
+  (`acoperit_gratuitate > 0`, din 9 oct. 2026 — vezi reguli-domeniu.md §1)
 - fereastra acoperă cel puțin o zi din luna X — la abonament `[data_incepere, data_final]`, la
   ședință `[data_incepere, data_incepere + 29]`
 - **NU** are `data_reziliere <= prima zi a lunii X`
