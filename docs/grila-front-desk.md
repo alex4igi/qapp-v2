@@ -187,8 +187,17 @@ Migrația `20261008160000`.
 ### ⭐ K5 — conversie = orice plată pe o înrolare (confirmat de Alex, 29 sept. 2026)
 
 „Orice plată înseamnă conversie — OPEN, K-pop, studenți, abonamente — adică o înrolare." Deci K5 rămâne
-cum e implementat (`kpi_k5`): leadul din luna M−1 e convertit dacă clientul are o încasare > 0 în 30 de
-zile de la lead. Nu se restrânge la abonamentul lunar (la Ștefan, cohorta august: 25 convertiți, dintre
+cum e implementat (`kpi_k5`): leadul e convertit dacă clientul are o încasare > 0 în 30 de zile de la lead.
+
+⭐ **K5 = leadurile LUNII cardului, plătit AMÂNAT cu K2 + K3** (Alex, 10 oct. 2026: „de ce rămâne la bonusul
+lunii, când e de fapt pe luna anterioară?"). Până atunci cardul lunii M lua leadurile din M−1 (`decalaj_luni` 1)
+și le plătea în bonusul lunii. Acum `decalaj_luni` = 0 pe grilele recepției și pe șablonul „Recepție 2026-2027":
+conversia lunii M se închide la 30 de zile după ultima ei zi (septembrie → 30 oct.), K5 își declară `final_la` și
+intră în componenta „Bonus KPI K2 + K3 + K5", plătită cu salariul lunii următoare. Leadurile din august nu mai
+intră la nimeni. Pe septembrie: Petruța K5 = 60 lei (32,5%, provizoriu) în loc de 140 (august, 45,5%); Theo 0
+în ambele variante. Lunile de 31 de zile urmate de februarie se închid cu 1–2 zile după finalul lunii următoare
+(ianuarie → 2 martie): componenta amânată rămâne provizorie până atunci. Șablonul RRC (MOA) rămâne pe
+decalaj 1. Migrația `20261010200000`. Nu se restrânge la abonamentul lunar (la Ștefan, cohorta august: 25 convertiți, dintre
 care 16 pe abonament; restul pe cursurile de vară plătite pe ședință).
 
 **De unde vin pragurile 28 / 36%:** din specificația CBC pentru „Responsabil Relații Clienți" (1 sept. 2026,
