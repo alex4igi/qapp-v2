@@ -48,6 +48,8 @@ export type LinieGrila = {
   are_poarta: boolean
   /** Luna în care indicatorul n-are ce măsura plătește standardul, fără redistribuire. */
   na_standard: boolean
+  /** Luna în care indicatorul n-are ce măsura nu se plătește, fără redistribuire. */
+  na_zero: boolean
   parametri: Record<string, number | boolean | string>
   activ: boolean
   ordine: number

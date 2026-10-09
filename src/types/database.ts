@@ -6002,6 +6002,7 @@ export type Database = {
           luni_active: number[] | null
           mod_calcul: string
           na_standard: boolean
+          na_zero: boolean
           ordine: number
           parametri: Json
           pondere: number
@@ -6027,6 +6028,7 @@ export type Database = {
           luni_active?: number[] | null
           mod_calcul?: string
           na_standard?: boolean
+          na_zero?: boolean
           ordine?: number
           parametri?: Json
           pondere?: number
@@ -6052,6 +6054,7 @@ export type Database = {
           luni_active?: number[] | null
           mod_calcul?: string
           na_standard?: boolean
+          na_zero?: boolean
           ordine?: number
           parametri?: Json
           pondere?: number
@@ -6308,6 +6311,7 @@ export type Database = {
           luni_active: number[] | null
           mod_calcul: string
           na_standard: boolean
+          na_zero: boolean
           ordine: number
           parametri: Json
           pondere: number
@@ -6333,6 +6337,7 @@ export type Database = {
           luni_active?: number[] | null
           mod_calcul?: string
           na_standard?: boolean
+          na_zero?: boolean
           ordine?: number
           parametri?: Json
           pondere?: number
@@ -6358,6 +6363,7 @@ export type Database = {
           luni_active?: number[] | null
           mod_calcul?: string
           na_standard?: boolean
+          na_zero?: boolean
           ordine?: number
           parametri?: Json
           pondere?: number

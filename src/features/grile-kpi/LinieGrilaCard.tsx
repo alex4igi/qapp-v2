@@ -1,4 +1,4 @@
-import { Badge, Checkbox, TextInput, TextArea, Field } from '@/components/ui'
+import { Badge, Checkbox, TextInput, TextArea, Field, Select } from '@/components/ui'
 import { ParametriFields } from './ParametriFields'
 import { LUNI_SCURT, type KpiDefinitie, type LinieGrila } from './types'
 
@@ -211,7 +211,7 @@ export function LinieGrilaCard({ linie, definitie, readOnly, cuPondere, onChange
         </div>
       )}
 
-      <div className="mt-3 flex gap-4">
+      <div className="mt-3 flex flex-wrap items-center gap-4">
         <Checkbox
           label="Activ în grilă"
           checked={linie.activ}
@@ -219,12 +219,25 @@ export function LinieGrilaCard({ linie, definitie, readOnly, cuPondere, onChange
           onChange={(e) => onChange({ activ: e.target.checked })}
         />
         {!linie.eliminatoriu && (
-          <Checkbox
-            label="Fără date în lună = se plătește standardul (nu se împarte pe ceilalți)"
-            checked={linie.na_standard}
-            disabled={readOnly}
-            onChange={(e) => onChange({ na_standard: e.target.checked })}
-          />
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <span className="whitespace-nowrap">Lună fără date:</span>
+            <Select
+              className="w-auto"
+              value={linie.na_standard ? 'standard' : linie.na_zero ? 'zero' : 'redistribuie'}
+              disabled={readOnly}
+              onChange={(e) =>
+                onChange({
+                  na_standard: e.target.value === 'standard',
+                  na_zero: e.target.value === 'zero',
+                })
+              }
+              options={[
+                { value: 'redistribuie', label: 'ponderea se împarte pe ceilalți' },
+                { value: 'standard', label: 'se plătește standardul' },
+                { value: 'zero', label: 'nu se plătește (0 lei)' },
+              ]}
+            />
+          </label>
         )}
       </div>
     </div>

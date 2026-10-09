@@ -37,7 +37,7 @@ export default function GrilaEditorPage() {
   )
   // Activarea cere în continuare Σ = 100%: dacă nu dă, ponderea rămâne vizibilă ca să poată fi reparată.
   const cuPondere =
-    linii.some((l) => l.activ && !l.eliminatoriu && !l.na_standard) ||
+    linii.some((l) => l.activ && !l.eliminatoriu && !l.na_standard && !l.na_zero) ||
     Math.abs(ponderea - 100) > 0.01
 
   const save = useMutation({

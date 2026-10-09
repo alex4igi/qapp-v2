@@ -133,8 +133,13 @@ luna revenirii. **Contează orice revenire**, nu doar cea după telefonul recep�
 K3 al lunii M = cazurile intrate în M; ultimul primește verdictul ~30 de zile mai târziu, deci **K3 se
 definitivează la finalul lunii M+1, ca K2**. În salariu, K2 și K3 stau în componenta
 „Bonus KPI — luna următoare", care se confirmă după acea dată; restul bonusului se confirmă la finalul
-lunii M. Migrația `20260929100000`. Primele cazuri din sezon apar la începutul lui octombrie — septembrie
-e „fără date = standard" (120 lei).
+lunii M. Migrația `20260929100000`. Primele cazuri din sezon apar la începutul lui octombrie.
+
+⭐ **K3 fără niciun caz în lună = 0 lei** (Alex, 9 oct. 2026): „nu a avut pe cine să sune, deci nu oferim
+bonusul". Singura linie a recepției care nu e „fără date = standard": e „fără date = 0" (`na_zero`) —
+nu plătește nimic și nici nu-și mută ponderea pe ceilalți indicatori. Se aplică și pe septembrie 2026
+(nicio lună a recepției nu era confirmată): Petruța 450 → 330 lei, Theo 360 → 240. Migrația
+`20261010130000`.
 
 **Ce nu intră la K3 și ceasul fără weekend (Alex, 8 oct. 2026).** Cine a reziliat înainte să intre în listă nu
 mai primește caz, iar o reziliere făcută în afara contactului (din fișa clientului, nu din caz) scoate cazul din
@@ -311,7 +316,7 @@ Ce lipsește:
 | Ce | Unde |
 |---|---|
 | Grila KPI | șablonul **„Recepție 2026-2027"** + câte o grilă activă pe om, de la 2026-09-01: Petruța → Galeriile Ștefan cel Mare, Theo → Nicolina. Șablonul vechi „Responsabil Relații Clienți" (MOA) a rămas neatins |
-| Linii | K1 30% · K2 **0% (forfetar)** · K3 35% · K4 17,5% · K5 17,5%; „fără date = standard" pe toate; sumele pe trepte ca în §3; „peste X%" = X,01 (motorul compară cu ≥); bonus doar septembrie–iunie; fără eliminatorii; `cota_manager` 0 |
+| Linii | K1 30% · K2 **0% (forfetar)** · K3 35% · K4 17,5% · K5 17,5%; „fără date = standard" pe toate, **în afară de K3: „fără date = 0"** (9 oct. 2026); sumele pe trepte ca în §3; „peste X%" = X,01 (motorul compară cu ≥); bonus doar septembrie–iunie; fără eliminatorii; `cota_manager` 0 |
 | K2 | cheia nouă `rata_incasare_m1` → `kpi_rata_incasare` (aceeași ca la manager); marcată „provizoriu" până la finalul lunii M+1 — luna nu se poate închide în raportul KPI până atunci |
 | Partea amânată | liniile care își declară `final_la` (K2, K3) formează componenta „Bonus KPI — luna următoare", separat de bonusul lunii **indiferent dacă sunt încă provizorii** — altfel, după ce se definitivează, suma lor ar trece în bonusul deja confirmat și s-ar pierde (reparat pe 29 sept., migrația `20260929100000`) |
 | K4 | `rata_standard` 85, `rata_peste` 95,01; media leaduri (automat) + telefon + Meta (introduse zilnic de manager în `/raport-kpi`, tabelul `k4_interactiuni_zi`); canal fără nicio zi introdusă = blochează închiderea lunii (vezi §3) |
@@ -320,11 +325,13 @@ Ce lipsește:
 | Salariul lunii | `calculeaza_salariu_receptie(user, an, lună)`; confirmarea pe componente (`confirma_salariu_staff`): fixul oricând, bonusul KPI după finalul lunii, K2 după finalul lunii M+1 |
 | Ecrane | `/salarizare` → tab „Recepție"; detaliul indicatorilor în `/raport-kpi`; omul își vede în „Salariul meu" simularea lunilor încheiate, cu ce e deja confirmat (`get_salariul_meu_staff`, din 7 oct. 2026, migrația `20261007100000`) |
 | Redeschiderea lunii KPI închise | `redeschide_raport_kpi` — admin și owner (de la 7 oct. 2026, înainte doar owner), motiv obligatoriu, urmă în `audit_log`; valorile înghețate se șterg (migrația `20261007140000`) |
-| Ponderea | nu se afișează în `/raport-kpi`, în print și în editorul grilei când toate liniile au „fără date = standard" — atunci nu se redistribuie nimic și ponderea nu schimbă suma (28 sept. 2026). Rămâne vizibilă pe MOA și oriunde suma ponderilor nu dă 100% |
+| Ponderea | nu se afișează în `/raport-kpi`, în print și în editorul grilei când nicio linie nu redistribuie („fără date = standard" sau „= 0") — atunci nu se redistribuie nimic și ponderea nu schimbă suma (28 sept. 2026). Rămâne vizibilă pe MOA și oriunde suma ponderilor nu dă 100% |
 
 ⭐ **Indicatorul care nu se poate măsura se plătește la STANDARD** (Alex, 25 sept. 2026), fără
 redistribuire pe ceilalți. Motivul: K3 n-are încă niciun caz în jurnal, iar redistribuirea motorului
 îi dădea Petruței 295 lei doar pe K5 (140 × 2,1). În motor e opțiunea pe linie `na_standard` („fără
-date = standard"), bifată pe toate liniile șablonului „Recepție 2026-2027"; șablonul MOA păstrează
-redistribuirea. **K4 necompletat nu intră aici**: e o cifră de completat manual, deci contează 0 în
+date = standard"), bifată pe toate liniile șablonului „Recepție 2026-2027" în afară de K3; șablonul MOA păstrează
+redistribuirea. A treia variantă, `na_zero` („fără date = 0", 9 oct. 2026), e doar pe K3: luna fără
+cazuri plătește 0, tot fără redistribuire. În editorul grilei cele trei variante sunt o singură alegere,
+„Lună fără date". **K4 necompletat nu intră aici**: e o cifră de completat manual, deci contează 0 în
 previzualizare și blochează închiderea lunii până se completează.

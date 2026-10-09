@@ -151,9 +151,11 @@ export function KpiSectiune({ linie, cuPondere }: { linie: LinieRaport; cuPonder
         <div className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm text-muted">
           {linie.motiv === 'numitor_zero'
             ? 'N-a existat ce măsura luna asta — ponderea se redistribuie peste ceilalți indicatori.'
-            : linie.na_standard
-              ? `${linie.motiv_text ?? 'Datele manuale nu sunt completate.'} Până se completează, linia contează 0 și luna nu se poate închide.`
-              : (linie.motiv_text ?? 'Datele manuale nu sunt completate.')}
+            : linie.motiv === 'numitor_zero_zero'
+              ? 'N-a existat ce măsura luna asta — indicatorul nu se plătește.'
+              : linie.na_standard || linie.na_zero
+                ? `${linie.motiv_text ?? 'Datele manuale nu sunt completate.'} Până se completează, linia contează 0 și luna nu se poate închide.`
+                : (linie.motiv_text ?? 'Datele manuale nu sunt completate.')}
         </div>
       )}
 

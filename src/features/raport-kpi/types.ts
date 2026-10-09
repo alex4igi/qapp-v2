@@ -24,6 +24,7 @@ export type LinieRaport = {
   are_poarta: boolean
   poarta_ok: boolean | null
   na_standard?: boolean
+  na_zero?: boolean
   mod_calcul: 'fix' | 'comision'
   comision_procent: number | null
   comision_plafon: number | null
@@ -131,10 +132,9 @@ export const ETICHETA_BANDA: Record<Banda, string> = {
 }
 
 /**
- * Ponderea lucrează doar la redistribuire. Când toate liniile plătesc standardul
- * în lipsa datelor (grila recepției), nu se redistribuie nimic și ponderea n-are
- * ce căuta pe ecran.
+ * Ponderea lucrează doar la redistribuire. Când nicio linie nu redistribuie în lipsa
+ * datelor (grila recepției: standard sau 0 lei), ponderea n-are ce căuta pe ecran.
  */
-export function ponderaConteaza(linii: Pick<LinieRaport, 'na_standard'>[]): boolean {
-  return linii.some((l) => !l.na_standard)
+export function ponderaConteaza(linii: Pick<LinieRaport, 'na_standard' | 'na_zero'>[]): boolean {
+  return linii.some((l) => !l.na_standard && !l.na_zero)
 }
