@@ -59,8 +59,12 @@ intrări: rangul instructorului × nivelul grupei.
 - **410 lei (Junior × Intermediar) — confirmat de Alex pe 25 sept. 2026.** Păstrează pasul de 70 de
   lei din coloană (410 → 480 → 550).
 - **Trupa condusă de un non-Expert se plătește ca intermediar, la rangul omului** (Alex, 25 sept.
-  2026): bază rang × Intermediar, KPI de intermediar (retenție + ocupare), fără buget de deplasări.
-  Atinge `S 1Up Crew` (Giulia, Junior → 410) și `S UNIQ Crew` (Eva, Senior → 480).
+  2026): bază rang × Intermediar, fără buget de deplasări. Atinge `S 1Up Crew` (Giulia, Junior → 410)
+  și `S UNIQ Crew` (Eva, Senior → 480).
+- ⭐ **Trupa retrogradată (non-Expert sau sub 14) ia tot bonusurile de TRUPĂ, nu pe cele de intermediar**
+  (Alex, 9 oct. 2026): doar baza coboară la rang × Intermediar; retenția rămâne pe sumele de trupă
+  (50 / 100) și **nu ia ocupare**. Până pe 9 oct. aplicația îi dădea KPI de intermediar (retenție 75 / 150
+  + ocupare) — efect pe sept. 2026: Alin −50, Giulia −25, Eva −175 (din care 150 ocuparea la `S UNIQ Crew`).
 
 Ranguri la 12 sept. 2026: **Expert** — Alin Stoleru, Bianca David, Ioana Perju, Andrei Chiriac,
 **Laura Roșca**. **Senior** — Eva Manolică. **Junior** — Theo Todica, Ana Plesescu, Laura Petria,
@@ -95,7 +99,8 @@ Iulie și august au propriul indicator, **6 lei de fiecare prezență** — vezi
 | Trupă | Evenimente | performanță | — | — | — | **150 lei / eveniment aprobat în prealabil**, separat |
 
 Banda 80–81% de la ocupare, semnalată ca gaură în versiunea anterioară, s-a închis: peste standard
-înseamnă acum **> 80%**. Trupele NU au ocupare — creșterea lor se măsoară în evenimente.
+înseamnă acum **> 80%**. Trupele NU au ocupare — creșterea lor se măsoară în evenimente. Nici trupa
+plătită ca intermediar: păstrează KPI-ul de trupă (Alex, 9 oct. 2026).
 
 La grupele **facultative**, ocuparea și retenția se numără în **locuri echivalente**, nu în oameni
 (abonatul = 1, ședința = o parte din lună) — vezi §5.1 și §5.2.
@@ -222,8 +227,8 @@ reînscrieri** a sezonului. Se aplică la toți instructorii deodată:
 | **peste 105%** | **peste standard**, la toate grupele |
 
 Sumele sunt cele din tabelul de ocupare (după mărimea grupei, înjumătățite la o ședință pe săptămână).
-Cele 7 trupe cu statut nu au ocupare, deci regula nu le atinge; trupele sub 14, plătite ca
-intermediar, intră.
+Trupele nu au ocupare, deci regula nu le atinge — nici pe cele plătite ca intermediar (Alex, 9 oct. 2026;
+înainte, trupele sub 14 intrau).
 
 **Cât costă, pe orarul de la 13 sept.:** ocuparea măsurată pe grupă ar plăti **1.550 lei**. Cu campania
 la 95–105%, regula plătește **5.095 lei** (+3.545), iar peste 105% plătește **7.680 lei** (+6.130). E o
@@ -308,7 +313,7 @@ deosebire de restul grilei, aici nu e nimic de construit: `prezente` există și
 | Prag | Se aplică | Când se măsoară | Ce se întâmplă sub prag |
 |---|---|---|---|
 | **8 cursanți plătitori** (**6** în SCM Studio 2) | orice grupă, fără open class | **3 luni încheiate la rând** sub prag, după luna lansării (⇒ primul semnal posibil 1 ian. 2027) | grupa e **propusă pentru suspendare**, cu cursanții repartizați — **nu automat**, decide managerul |
-| **14 cursanți plătitori** | trupe | **din prima lună**, apoi lunar | plătită ca intermediar, **pierde bugetul de deplasări**, **păstrează** cei 150 lei/eveniment |
+| **14 cursanți plătitori** | trupe | **din prima lună**, apoi lunar | baza ca intermediar, **pierde bugetul de deplasări**, **păstrează** retenția de trupă (fără ocupare) și cei 150 lei/eveniment |
 
 ### Pragul minim în aplicație (LIVE în DB din 14 sept. 2026)
 
@@ -493,7 +498,7 @@ Laura Petria 900 / 2.040 / 1.310 / 1.230 / 15.240.
 
 **Trupe, la 23 septembrie 2026:** din cele 10 trupe, doar **6 au statut complet** (Expert și ≥14
 cursanți): `S Q The Crew` 22, `S Rock On Q` 15, `N Q Monsters` 16, `N Q Strike` 25, `S MQS Crew` 26,
-`S Q Motion` 21. Celelalte patru se plătesc ca intermediar și fără buget de deplasări:
+`S Q Motion` 21. Celelalte patru au baza de intermediar și sunt fără buget de deplasări (bonusurile rămân de trupă, din 9 oct.):
 - **sub pragul de 14**: `N Acro Q LM` 11 și `N Acrobatics SD` 12 (ambele la Alin);
 - **conduse de non-Experți**, deci fără tarif de trupă în grilă: `S 1Up Crew` 14 (Giulia, Junior) și
   `S UNIQ Crew` 15 (Eva, Senior). `S 1Up Crew` a urcat înapoi la 14 — problema nu se mai stinge
@@ -621,6 +626,8 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 | Confirmarea (înghețare) | `confirma_salariu_teacher` — refuză o lună deja confirmată, o lună în curs sau cu date lipsă |
 | Corecția unei luni confirmate | `corecteaza_salariu_teacher(…, motiv)` — doar owner, cu urmă în `audit_log` |
 | Ecrane | profilul instructorului → „Detalii salarii"; pagina `/salarizare` (owner/admin); „Salariul meu" arată lunile confirmate + simularea lunilor încheiate (din 7 oct. 2026) |
+| Grupe scoase din salarizare (de tot sau doar retenția), pe luni, cu motiv | `salarizare_excluderi` (doar prin calcul, fără editor în UI), citit de `_salarizare_exclusa` în `calculeaza_salariu_teacher` — migrațiile `20261010110000`, `20261010111000` |
+| Trupa retrogradată: bază de intermediar, bonusuri de trupă (retenție 50 / 100, fără ocupare) | `calculeaza_salariu_teacher` — migrațiile `20261010120000`, `20261010121000` |
 | În afara grilei | `teacheri.in_afara_grilei` (doar adminul îl schimbă, trigger `trg_garda_in_afara_grilei`); azi nimeni — Bianca David a stat în afara grilei 7–9 oct. 2026 (migrațiile `20261007100000`, `20261009200000`) |
 
 **Reguli de calcul pe care le-am fixat la implementare:**
@@ -644,6 +651,17 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
   confirmă din grilă (`confirma_salariu_teacher` refuză), iar în `/salarizare` apare orientativ, fără să
   intre în totaluri — se plătește separat. Steagul îl schimbă doar adminul. Bianca David a fost singurul
   caz (Alex, 7 oct. 2026); **din 9 oct. 2026 intră și ea pe grilă** (Alex) — azi nimeni nu e în afara grilei.
+- **Grupe scoase din salarizare (Alex, 9 oct. 2026):** o grupă poate ieși *de tot* din salariul instructorului
+  (`ce = 'grupa'`: nici bază, nici retenție, nici ocupare, nici prezențe de vară; apare doar în `grupe_excluse`,
+  cu motivul) sau doar din *bonusul de retenție* (`ce = 'retentie'`: banda `exclus`, 0 lei, baza și ocuparea
+  rămân). Bonusul de ocupare al managerului **nu** e atins — capacitatea lui stă în `capacitate_pool` (Alex: „doar
+  din salariul instructorului"). Deciziile din 9 oct. 2026:
+  - de tot, tot sezonul: `N MTV Commercial V` (Mara, −202,50 lei în sept.), `S SD Teen` (Eva; e oricum suspendată);
+  - de tot, doar septembrie: `S LMi Students` (Eva, −455 lei);
+  - fără retenție, doar septembrie (adică fără „prima lună = standard"): `S LMi Tiny` (Giulia), `N Dans Teen INC SD`
+    (Theo), `S-S2 SD Teen` (Adrian) — −105 lei fiecare.
+  Din octombrie, retenția acestor grupe se măsoară normal. `S LMi Students` n-a avut niciun cursant numărat în
+  septembrie, deci în octombrie cade pe „prima lună = standard" (105 lei) — ✅ **rămâne așa** (Alex, 9 oct. 2026).
 - **Nota pe lună** (de ex. septembrie 2026: retenția la standard, ocuparea după date) se afișează lângă
   salariu în toate trei ecranele — `src/lib/notaLunaSalarizare.ts`.
 - **Integral vs pro-rata (Alex, 7 oct. 2026):** în „Detalii salarii", doar pentru admini, fiecare grupă

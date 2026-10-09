@@ -76,6 +76,7 @@ const TON: Record<BandaSalariu, BadgeTone> = {
   peste: 'success',
   standard: 'brand',
   prima_luna: 'brand',
+  exclus: 'neutral',
   sub: 'danger',
 }
 
@@ -161,11 +162,13 @@ export function SalariuTeacherDetaliu({
                           banda={g.retentie.banda}
                           suma={g.retentie.suma}
                           detaliu={
-                            g.retentie.banda === 'prima_luna'
-                              ? 'fără lună anterioară'
-                              : g.retentie.ponderat
-                                ? `${formatLocuri(g.retentie.pastrati)} din ${formatLocuri(g.retentie.n_luna_trecuta)} locuri au revenit (${g.retentie.oameni_pastrati ?? 0} din ${g.retentie.oameni_luna_trecuta ?? 0} oameni) · ${formatLocuri(g.retentie.procent)}%`
-                                : `${g.retentie.pastrati} din ${g.retentie.n_luna_trecuta} au rămas · ${formatLocuri(g.retentie.procent)}%`
+                            g.retentie.banda === 'exclus'
+                              ? (g.retentie.motiv ?? 'scoasă din salariu pe luna asta')
+                              : g.retentie.banda === 'prima_luna'
+                                ? 'fără lună anterioară'
+                                : g.retentie.ponderat
+                                  ? `${formatLocuri(g.retentie.pastrati)} din ${formatLocuri(g.retentie.n_luna_trecuta)} locuri au revenit (${g.retentie.oameni_pastrati ?? 0} din ${g.retentie.oameni_luna_trecuta ?? 0} oameni) · ${formatLocuri(g.retentie.procent)}%`
+                                  : `${g.retentie.pastrati} din ${g.retentie.n_luna_trecuta} au rămas · ${formatLocuri(g.retentie.procent)}%`
                           }
                         />
                       )}
@@ -185,7 +188,9 @@ export function SalariuTeacherDetaliu({
                         />
                       ) : (
                         <span className="text-xs text-muted">
-                          {g.nivel_plata === 'trupa' ? 'trupă: fără ocupare' : '—'}
+                          {g.nivel_plata === 'trupa' || g.nivel_plata === 'trupa_ca_intermediar'
+                            ? 'trupă: fără ocupare'
+                            : '—'}
                         </span>
                       )}
                     </td>
@@ -205,6 +210,22 @@ export function SalariuTeacherDetaliu({
         </div>
       ) : (
         <p className="text-sm text-muted">Nicio grupă n-a trecut testul de maturitate: vara nu se plătește baza.</p>
+      )}
+
+      {(calc.grupe_excluse?.length ?? 0) > 0 && (
+        <div>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+            Grupe care nu intră în salariu luna asta
+          </h4>
+          <ul className="space-y-0.5 text-sm">
+            {calc.grupe_excluse!.map((g) => (
+              <li key={g.curs_id}>
+                <span className="text-ink">{g.curs_nume}</span>
+                <span className="text-muted"> — {g.motiv}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {vara && calc.prezente_vara.length > 0 && (

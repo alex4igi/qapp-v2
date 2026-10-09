@@ -7,7 +7,7 @@ import type { SalariuTeacher } from '@/types/db'
  * „Salariul meu" și pagina de salarizare; de aceea stă în lib, nu într-un modul.
  */
 
-export type BandaSalariu = 'sub' | 'standard' | 'peste' | 'prima_luna'
+export type BandaSalariu = 'sub' | 'standard' | 'peste' | 'prima_luna' | 'exclus'
 
 export type NivelPlata = 'incepator' | 'intermediar' | 'trupa' | 'trupa_ca_intermediar'
 
@@ -22,11 +22,13 @@ export type RetentieGrupa = {
   ponderat?: boolean
   oameni_luna_trecuta?: number | null
   oameni_pastrati?: number | null
+  /** Banda `exclus`: retenția scoasă din salariu pe luna asta (`salarizare_excluderi`). */
+  motiv?: string | null
 }
 
 export type OcupareGrupa = {
-  banda: Exclude<BandaSalariu, 'prima_luna'>
-  banda_masurata: Exclude<BandaSalariu, 'prima_luna'>
+  banda: Exclude<BandaSalariu, 'prima_luna' | 'exclus'>
+  banda_masurata: Exclude<BandaSalariu, 'prima_luna' | 'exclus'>
   mod: 'masurat' | 'standard_fix' | 'standard_podea'
   cursanti: number
   capacitate: number
@@ -87,6 +89,9 @@ export type LiniePersoana = {
   nota?: string
 }
 
+/** Grupă scoasă din salarizare pe luna asta: nici bază, nici bonusuri (`salarizare_excluderi`). */
+export type GrupaExclusa = { curs_id: string; curs_nume: string; motiv: string }
+
 export type PrezenteVara = { curs_id: string; curs_nume: string; nr: number; suma: number }
 
 export type SalariuTeacherCalc = {
@@ -98,6 +103,8 @@ export type SalariuTeacherCalc = {
   rang: string | null
   perioada: 'sezon' | 'vara'
   grupe: SalariuGrupaV2[]
+  /** Lipsă în calculele înghețate înainte de 9 oct. 2026. */
+  grupe_excluse?: GrupaExclusa[]
   prezente_vara: PrezenteVara[]
   linii_persoana: LiniePersoana[]
   totaluri: {
@@ -227,4 +234,5 @@ export const BANDA_ETICHETA: Record<BandaSalariu, string> = {
   standard: 'standard',
   peste: 'peste standard',
   prima_luna: 'prima lună · standard',
+  exclus: 'exclusă',
 }

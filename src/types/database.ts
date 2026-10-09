@@ -10041,6 +10041,110 @@ export type Database = {
           },
         ]
       }
+      salarizare_excluderi: {
+        Row: {
+          adaugat_de: string | null
+          adaugat_la: string
+          ce: string
+          curs_id: string
+          de_la: string
+          id: string
+          motiv: string
+          pana_la: string | null
+        }
+        Insert: {
+          adaugat_de?: string | null
+          adaugat_la?: string
+          ce: string
+          curs_id: string
+          de_la: string
+          id?: string
+          motiv: string
+          pana_la?: string | null
+        }
+        Update: {
+          adaugat_de?: string | null
+          adaugat_la?: string
+          ce?: string
+          curs_id?: string
+          de_la?: string
+          id?: string
+          motiv?: string
+          pana_la?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "incasari_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "lista_clienti"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "lista_cursuri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "plati_inrolari_toate"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "raport_financiar"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "raport_incasari"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "restante_curs_luna"
+            referencedColumns: ["id_curs"]
+          },
+          {
+            foreignKeyName: "salarizare_excluderi_curs_id_fkey"
+            columns: ["curs_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_curs_stats"
+            referencedColumns: ["curs_id"]
+          },
+        ]
+      }
       salarizare_grila: {
         Row: {
           creat_de: string | null
@@ -13772,6 +13876,10 @@ export type Database = {
       _salariu_propriu_vizibil: {
         Args: { p_anul: number; p_luna: number; p_user: string }
         Returns: boolean
+      }
+      _salarizare_exclusa: {
+        Args: { p_ce: string; p_curs: string; p_luna: string }
+        Returns: string
       }
       _salarizare_parametri: {
         Args: { p_luna: string; p_post: string }
