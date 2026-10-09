@@ -188,10 +188,16 @@ Format celulă: bază + bonus încasări + bonus ocupare. Cost total pentru club
 
 **Artifactul integrat** (14 sept. 2026, cerut de Alex): <https://claude.ai/code/artifact/37b33603-edc7-44e0-8a97-49c9435afdae>.
 Conține regulile instructorilor și ale managerilor plus câte o pagină per om. La Andrei și Alin salariul e defalcat pe
-cele două roluri. Se reconstruiește cu `_sursa/build.py`, care preia paginile de instructor din artifactul
-658605e1.
+cele două roluri. Se reconstruiește din `Management/Grila salarizare 2026-2027/_sursa/` (README-ul de acolo are
+ordinea scripturilor). **Versiunea 15 (9 oct. 2026)**: septembrie 2026 resimulat exact pe calculul aplicației (fără
+prorata, pragul pe procent, excluderile), fără insigna „În test".
 
-**Materialele pentru discuțiile cu managerii** (14 sept. 2026) sunt în
+**Fișa de salariu pe septembrie 2026 a lui Alin** stă în `Management/Salarii septembrie 2026/` și se regenerează din
+aplicație: `node _sursa/date.mjs` apoi `python3 _sursa/build.py` (refăcută pe 9 oct.: 7.938,33 lei fără bonusul pe
+încasări; varianta din 6 oct., 8.214,33, păstrată în `_sursa/`).
+
+~~**Materialele pentru discuțiile cu managerii** (14 sept. 2026)~~ — înlocuite de artifactul integrat; nu se mai
+actualizează. Erau în
 `Management/Salarizare manageri studio/`, în rădăcina workspace-ului: `grila-manager-studio.html`
 (regulile, fără cifre personale), `index.html` și câte o pagină per manager. Se regenerează cu
 `_sursa/mgr_sim.cjs` (DB → `mgr_sim.json`) și apoi `python3 _sursa/gen.py <folder> [url-reguli]`.
