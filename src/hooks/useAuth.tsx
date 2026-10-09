@@ -3,9 +3,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Session, User } from '@supabase/supabase-js'
 import {
   AUTH_STORAGE_KEY,
@@ -121,6 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [stallReason, setStallReason] = useState<string | null>(null)
   const [teacherId, setTeacherId] = useState<string | null>(null)
   const [teacherLoading, setTeacherLoading] = useState(true)
+  const queryClient = useQueryClient()
+  const cacheUserId = useRef<string | null>(bootSession?.user?.id ?? null)
 
   useEffect(() => {
     // Pornit optimist ⇒ întrebarea „avem sesiune?" are deja răspuns, deci nici
@@ -130,6 +134,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const decide = (next: Session | null) => {
       decided = true
+      // Pornirea optimistă poate randa aplicația cu o sesiune moartă: cererile
+      // pleacă atunci cu cheia anonimă și RLS-ul răspunde cu liste goale, nu cu
+      // eroare. Fără golire, `[]`-ul rămâne în cache și după login (9 oct. 2026:
+      // recepția vedea doar „Toate locațiile" în bara de sus).
+      const nextUserId = next?.user?.id ?? null
+      if (nextUserId !== cacheUserId.current) {
+        cacheUserId.current = nextUserId
+        queryClient.removeQueries()
+      }
       setSession(next)
       setAuthStalled(false)
       setStallReason(null)
@@ -178,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(stallTimer)
       sub.subscription.unsubscribe()
     }
-  }, [bootSession])
+  }, [bootSession, queryClient])
 
   // Rezolvă profilul de instructor al contului curent. Un singur query per login,
   // ținut în context ca gating-ul „am profil de instructor" să fie sincron peste tot.
