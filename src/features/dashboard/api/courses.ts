@@ -60,7 +60,7 @@ export async function getDashboardCourses(params: {
 
   let cursQ = supabase
     .from('cursuri')
-    .select(`id, numele, ora, capacitate_maxima, ${saliRel}, teacher:teacheri!fk_cursuri_teacher(nume, prenume)`)
+    .select(`id, numele, ora, capacitate_maxima, facultativ, ${saliRel}, teacher:teacheri!fk_cursuri_teacher(nume, prenume)`)
     .contains('zile', [dow])
     .eq('suspendat', false)
 
@@ -76,6 +76,7 @@ export async function getDashboardCourses(params: {
     numele: string
     ora: string | null
     capacitate_maxima: number | null
+    facultativ: boolean | null
     sala: { nume: string } | null
     teacher: { nume: string; prenume: string | null } | null
   }>
@@ -85,7 +86,11 @@ export async function getDashboardCourses(params: {
   // Cele trei surse de mai jos nu depind una de alta — rulează în paralel (înainte
   // erau 5-6 cereri strict secvențiale, ~1,3 s doar din așteptare).
   const [clientsByCurs, prezByCurs, programariRows, locuriRes] = await Promise.all([
-    loadClientsByCurs(cursIds, params.date),
+    loadClientsByCurs(
+      cursIds,
+      new Set(cursRows.filter((c) => c.facultativ).map((c) => c.id)),
+      params.date,
+    ),
     loadPrezentiByCurs(params.date),
     loadProgramari(cursIds, params.date),
     supabase.rpc('locuri_ocupate', {
@@ -155,6 +160,7 @@ export async function getDashboardCourses(params: {
 // poate depăși limita PostgREST de 1000 → trunchiere și count subevaluat.
 async function loadClientsByCurs(
   cursIds: string[],
+  facultativIds: Set<string>,
   date: string,
 ): Promise<Map<string, Set<string>>> {
   const monthStart = date.slice(0, 7) + '-01'
@@ -172,11 +178,16 @@ async function loadClientsByCurs(
   // Înrolările și rezervările OPEN nu depind una de alta — în paralel.
   const [enrRows, sesiuni] = await Promise.all([
     (async () => {
-      const all: Array<{ cursul: string | null; client: string | null }> = []
+      const all: Array<{
+        cursul: string | null
+        client: string | null
+        tip_plata: string | null
+        data_incepere: string | null
+      }> = []
       for (let offset = 0; ; offset += 1000) {
         const { data: enr, error: enrErr } = await supabase
           .from('enrollments')
-          .select('cursul, client')
+          .select('cursul, client, tip_plata, data_incepere')
           .in('cursul', cursIds)
           .eq('reziliat', false)
           .lte('data_incepere', monthEnd)
@@ -199,7 +210,11 @@ async function loadClientsByCurs(
     })(),
   ])
   for (const e of enrRows) {
-    if (e.cursul && e.client) add(e.cursul, e.client)
+    if (!e.cursul || !e.client) continue
+    // Facultativ „Per ședință" = o singură ședință (data_incepere), ca în rosterul
+    // grupei — altfel cardul OPEN număra toți cumpărătorii de ședințe din lună.
+    if (facultativIds.has(e.cursul) && e.tip_plata === 'Per sedinta' && e.data_incepere !== date) continue
+    add(e.cursul, e.client)
   }
 
   // Cursuri facultative: clienții cu rezervare OPEN ne-anulată pe ziua afișată au
