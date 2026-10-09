@@ -10183,7 +10183,6 @@ export type Database = {
       }
       salarizare_receptie: {
         Row: {
-          abonament_trupa: boolean
           bonus_kpi: boolean
           bonusuri_ocazionale: boolean
           created: string
@@ -10198,9 +10197,9 @@ export type Database = {
           user_id: string | null
           valabil_de_la: string
           valabil_pana_la: string | null
+          voucher_angajat: boolean
         }
         Insert: {
-          abonament_trupa?: boolean
           bonus_kpi?: boolean
           bonusuri_ocazionale?: boolean
           created?: string
@@ -10215,9 +10214,9 @@ export type Database = {
           user_id?: string | null
           valabil_de_la: string
           valabil_pana_la?: string | null
+          voucher_angajat?: boolean
         }
         Update: {
-          abonament_trupa?: boolean
           bonus_kpi?: boolean
           bonusuri_ocazionale?: boolean
           created?: string
@@ -10232,6 +10231,7 @@ export type Database = {
           user_id?: string | null
           valabil_de_la?: string
           valabil_pana_la?: string | null
+          voucher_angajat?: boolean
         }
         Relationships: []
       }

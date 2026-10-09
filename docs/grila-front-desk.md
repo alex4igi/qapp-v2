@@ -45,7 +45,7 @@ Se plătește în **fiecare lună a anului**, inclusiv în iulie și august.
 | Salariu fix | norma întreagă | **2.840** (corectat de Alex pe 10 oct. 2026; inițial 2.722) |
 | Facturare la timp | facturile lunii ies la termen — **doar Petruța** | 200 |
 | Recepție Quasar 4 Kids | ajută la recepția Q4K — **doar Theo**, în locul facturării | 400 |
-| Abonament la trupa proprie | gratuit, tot anul | 290 (beneficiu, nu bani în mână) |
+| Voucher clase Quasar | ca instructorii: 300 lei/lună la orice grupă, restul rămâne pentru a doua grupă din lună (înrolarea primește semnul „angajat”) — înlocuiește „abonamentul la trupa proprie” de 290 (Alex, 10 oct. 2026) | 300 (beneficiu, nu bani în mână) |
 | Fidelitate | de la 2 ani vechime în firmă | 100 |
 
 **La normă parțială, fixul și bonusul KPI se reduc proporțional; pragurile procentuale rămân
