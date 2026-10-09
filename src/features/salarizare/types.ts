@@ -107,6 +107,7 @@ export type LinieKpiRezumat = {
   prag_peste?: number | null
   suma_standard?: number | null
   suma_peste?: number | null
+  detalii?: { mentiune?: string } | null
 }
 
 export type ReceptieLuna = {

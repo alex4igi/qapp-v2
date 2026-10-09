@@ -151,6 +151,12 @@ export function KpiSectiune({ linie, cuPondere }: { linie: LinieRaport; cuPonder
         </div>
       )}
 
+      {typeof linie.detalii?.mentiune === 'string' && (
+        <div className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm font-medium text-ink">
+          {linie.detalii.mentiune}
+        </div>
+      )}
+
       {linie.banda === 'na' && (
         <div className="mt-3 rounded-md border border-line bg-surface px-3 py-2 text-sm text-muted">
           {linie.motiv === 'numitor_zero'

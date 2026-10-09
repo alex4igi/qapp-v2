@@ -137,11 +137,13 @@ celelalte surse (de regulă doar leadurile). Înainte, zero zile blocau luna, ia
 30 sept. (3 apeluri) urca K4 de la 61% la 81%, deși era la fel de necompletat ca Ștefanul. Septembrie 2026
 iese astfel doar pe leaduri la amândoi. Pragul e parametrul `prag_acoperire` pe linia K4 (lipsă = 70).
 
-⭐ **Excepție septembrie 2026: K4 = standard la toată recepția** (Alex, 10 oct. 2026). Termenul măsurat e cel
-de prim apel din procedură (intrat până la 18:00 → în aceeași zi; seara → a doua zi la 12:00), nu 24 h
-reale, iar în septembrie recepția nu-l știa. Pe septembrie: Ștefan 67% (81% pe 24 h reale), Nicolina 61% (83%).
-Valoarea reală rămâne afișată, treapta e forțată la „standard" (+60 lei fiecare). Din octombrie, regula normală.
-Implementare: `20261010183000`.
+⭐ **Excepție septembrie 2026 — „Campania ZPD": K4 = PESTE standard la toată recepția** (Alex, 10 oct. 2026;
+inițial standard, mutat la peste în aceeași zi). Termenul măsurat e cel de prim apel din procedură (intrat până la
+18:00 → în aceeași zi; seara → a doua zi la 12:00), nu 24 h reale, iar în septembrie recepția nu-l știa. Cifra
+reală rămâne afișată (Ștefan 67%, Nicolina 61%; pe 24 h reale 81% / 83%); treapta e forțată la „peste" (140 lei
+fiecare), cu mențiunea „Campania ZPD… Din octombrie se plătește conform cifrei înregistrate." pe card, în
+„Salariul meu" și în Raport KPI (`detalii.mentiune`). **Altă excepție nu există** — din octombrie, regula normală.
+Implementare: `20261010183000`, `20261010220000`.
 
 ⭐ **K5 rămâne pe TOATE leadurile cohortei** (confirmat de Alex, 10 oct. 2026), nu pe cei veniți la probă —
 pragurile 28/36% sunt puse pe numitorul ăsta. Raportul de leaduri (/leads → Rapoarte) arată ceva mai mult

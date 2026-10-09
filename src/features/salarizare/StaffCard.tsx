@@ -127,6 +127,7 @@ function IndicatoriKpi({ linii }: { linii: LinieKpiRezumat[] }) {
                 {k.cod && <span className="mr-1.5 font-semibold">{k.cod}</span>}
                 {numeKpi(k)}
                 {pragKpi(k) && <div className="text-xs text-muted">{pragKpi(k)}</div>}
+                {k.detalii?.mentiune && <div className="text-xs font-medium text-brand">{k.detalii.mentiune}</div>}
               </td>
               <td className="whitespace-nowrap py-0.5 pr-3 text-right text-ink">
                 {k.valoare == null ? '—' : `${k.valoare}${k.unitate ?? ''}`}
