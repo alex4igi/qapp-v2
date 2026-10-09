@@ -180,6 +180,12 @@ Deno.serve(async (req) => {
             seen.add(lead.id)
 
             const parsed = parseLeadFields(lead.field_data ?? [])
+            // Leadurile de test din Meta („<test lead: dummy data …>”) intrau pe board.
+            const blob = `${parsed.nume ?? ''}${parsed.telefon ?? ''}${parsed.email ?? ''}`.toLowerCase()
+            if (blob.includes('test lead') || blob.includes('dummy')) {
+              skipped++
+              continue
+            }
             const implicit = implicitDinFormular(form.name)
             if (simulare) {
               candidati.push({
@@ -230,7 +236,7 @@ Deno.serve(async (req) => {
                 form_id: form.id,
               },
               await sursa(),
-              { canal: 'meta_poller' },
+              { canal: 'meta_poller', retrimitere: `formularul Meta „${form.name ?? form.id}”` },
             )
             if (result.created) created++
             else skipped++

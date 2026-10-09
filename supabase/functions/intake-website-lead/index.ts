@@ -227,7 +227,12 @@ Deno.serve(async (req) => {
         gclid: cap(body.gclid, MAX_SCURT),
       },
       sursaId,
-      { canal: 'website', detalii: urma },
+      {
+        canal: 'website',
+        detalii: urma,
+        // Fără secret oricine ar putea scrie pe leadul unui telefon cunoscut.
+        ...(areSecret ? { retrimitere: 'formularul de pe site' } : {}),
+      },
     )
 
     const invitatDe = cap(body.invitat_de, MAX_SCURT)

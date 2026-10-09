@@ -116,11 +116,16 @@ export function parseLeadFields(fields: FieldDatum[]): ParsedLead {
 // Formularele fără întrebare de locație/disciplină (gimnastică, teatru) le au
 // implicite: gimnastica se ține doar la Nicolina, teatrul doar la Quasar 4 Kids.
 // Fără asta leadul cădea pe board la „fără locație" și fără interes.
+// Formularul Valea Lupului întreabă disciplina (și gimnastică), deci locația lui
+// se verifică ÎNAINTEA regulii de gimnastică, iar interesul vine din răspuns.
 // Valorile sunt canonice — trec prin mapLocatie/mapInteres din insertLead.
 export function implicitDinFormular(
   formName: string | null | undefined,
 ): { locatia: string | null; interes: string | null } {
   const n = foldName(formName ?? '')
+  if (n.includes('valea lupului') || n.includes('scoala verde')) {
+    return { locatia: 'Valea Lupului', interes: null }
+  }
   if (n.includes('gimnast') || n.includes('acrobat')) {
     return { locatia: 'Nicolina', interes: 'Acrobatică' }
   }

@@ -324,6 +324,45 @@ export async function logIntake(
   }
 }
 
+// Omul care completează din nou (altă campanie, altă locație) nu primește card
+// nou, dar recepția trebuie să afle: notă datată în observații + steguleț, ca
+// leadul să urce în coloană și în „De revenit”. Retrimiterea din prima oră e
+// dublu-click, nu interes nou. Convertiții nu primesc steguleț — sunt clienți.
+async function semnaleazaRetrimitere(
+  supabase: SupabaseClient,
+  existing: {
+    id: string
+    status: string | null
+    observatii: string | null
+    created: string | null
+    flag_reminder: boolean | null
+  },
+  lead: IntakeLead,
+  unde: string,
+): Promise<void> {
+  if (existing.created && Date.now() - new Date(existing.created).getTime() < 3_600_000) return
+  const zi = new Date().toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })
+  const detalii = [
+    mapLocatie(lead.locatia) && `locație: ${mapLocatie(lead.locatia)}`,
+    mapInteres(lead.interes) && `interes: ${mapInteres(lead.interes)}`,
+  ].filter(Boolean).join(' · ')
+  const nota = [
+    `[${zi}] A completat din nou ${unde}${detalii ? ` · ${detalii}` : ''}`,
+    lead.observatii?.trim(),
+  ].filter(Boolean).join('\n')
+
+  const patch: Record<string, unknown> = {
+    observatii: existing.observatii?.trim() ? `${existing.observatii.trim()}\n\n${nota}` : nota,
+  }
+  // Un steguleț existent rămâne neatins: data lui măsoară escaladarea din cron.
+  if (existing.status !== 'convertit' && !existing.flag_reminder) {
+    patch.flag_reminder = true
+    patch.flag_reminder_at = new Date().toISOString()
+  }
+  const { error } = await supabase.from('leads').update(patch).eq('id', existing.id)
+  if (error) console.error('[intake] notă retrimitere eșuată:', error.message)
+}
+
 // Inserează un lead în status 'nou'. Deduplică pe telefon normalizat:
 // dacă există deja un lead cu același telefon, NU creează unul nou.
 export async function insertLead(
@@ -341,6 +380,10 @@ export async function insertLead(
     faraDedupTelefon?: boolean
     // Clientul decis de apelant; fără el se caută după telefon/email.
     potrivireClient?: { id_client: string | null; deja_client: boolean }
+    // Unde a completat omul din nou (ex. „formularul Meta «X»”). Dacă e dat, un
+    // duplicat pe telefon lasă notă + steguleț pe leadul existent. Opt-in: fluxul
+    // din Sheet re-trimite aceleași leaduri în masă și ar umple observațiile.
+    retrimitere?: string
   },
 ): Promise<{ created: boolean; leadId: string | null; reason?: string }> {
   const telefon = lead.telefon ? normalizeTelefon(lead.telefon) : null
@@ -348,11 +391,14 @@ export async function insertLead(
   if (telefon && !opts?.faraDedupTelefon) {
     const { data: existing } = await supabase
       .from('leads')
-      .select('id')
+      .select('id, status, observatii, created, flag_reminder')
       .eq('telefon', telefon)
       .limit(1)
       .maybeSingle()
     if (existing) {
+      if (opts?.retrimitere) {
+        await semnaleazaRetrimitere(supabase, existing, lead, opts.retrimitere)
+      }
       // Nu e „nimic” — e o persoană pe care campania a re-atins-o. O logăm, ca
       // diferența față de raportul platformei să fie explicabilă.
       if (opts?.canal) {
