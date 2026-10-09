@@ -46,7 +46,7 @@ Se plătește în **fiecare lună a anului**, inclusiv în iulie și august.
 | Facturare la timp | facturile lunii ies la termen — **doar Petruța** | 200 |
 | Recepție Quasar 4 Kids | ajută la recepția Q4K — **doar Theo**, în locul facturării | 400 |
 | Voucher clase Quasar | ca instructorii: 300 lei/lună la orice grupă, restul rămâne pentru a doua grupă din lună (înrolarea primește semnul „angajat”) — înlocuiește „abonamentul la trupa proprie” de 290 (Alex, 10 oct. 2026) | 300 (beneficiu, nu bani în mână) |
-| Fidelitate | de la 2 ani vechime în firmă | 100 |
+| Fidelitate | după data angajării (`salarizare_receptie.data_angajare`), ani împliniți la sfârșitul lunii: 2 ani → 100, 3 → 200, 4 → 300, 5+ → **400 (plafon)**, lunar (Alex, 10 oct. 2026). Petruța: angajată ian. 2025 → 100 din ian. 2027 | 100–400 |
 
 **La normă parțială, fixul și bonusul KPI se reduc proporțional; pragurile procentuale rămân
 aceleași** — se schimbă doar suma pe care o plătește fiecare treaptă.
@@ -350,8 +350,7 @@ Ce lipsește:
 - **Q4K** — K1 e de neatins acolo cu pragul de 70% (§6).
 - **Vara** — în iulie și august bonusul KPI de sezon nu se calculează; bonusurile de vară sunt
   **nedefinite**, ca la manageri.
-- **Fidelitatea**: „de la 2 ani" în tabel, dar Alex a notat și „vechimea peste 3 luni". De lămurit
-  care e pragul și dacă se aplică deja cuiva.
+- ~~**Fidelitatea**: 2 ani sau 3 luni?~~ Lămurit 10 oct. 2026: de la 2 ani, +100/an până la 400 la 5 ani (§2).
 - **Norma lui Theo** — simulată pe normă întreagă. Dacă în realitate e parțială (ține și 2 grupe),
   fixul și KPI-ul se reduc proporțional și pagina trebuie refăcută.
 
@@ -365,7 +364,7 @@ Ce lipsește:
 | Partea amânată | liniile care își declară `final_la` (K2, K3) formează componenta „Bonus KPI — luna următoare", separat de bonusul lunii **indiferent dacă sunt încă provizorii** — altfel, după ce se definitivează, suma lor ar trece în bonusul deja confirmat și s-ar pierde (reparat pe 29 sept., migrația `20260929100000`) |
 | K4 | `rata_standard` 85, `rata_peste` 95,01; media leaduri (automat) + telefon + Meta (introduse zilnic de manager în `/raport-kpi`, tabelul `k4_interactiuni_zi`); canal sub 70% din zilele lucrătoare introduse = nu intră în medie, nu blochează (`prag_acoperire`, 10 oct. 2026) |
 | K3 | fără poarta de 48 h din șablonul MOA (grila nu o cere) |
-| Partea fixă | `salarizare_receptie` pe om (normă, facturare, fidelitate, abonament, bonusuri ocazionale) + sumele din `salarizare_grila` (post `receptie`) |
+| Partea fixă | `salarizare_receptie` pe om (normă, facturare, data angajării → fidelitate, voucher angajat, bonusuri ocazionale) + sumele din `salarizare_grila` (post `receptie`) |
 | Salariul lunii | `calculeaza_salariu_receptie(user, an, lună)`; confirmarea pe componente (`confirma_salariu_staff`): fixul oricând, bonusul KPI după finalul lunii, K2 după finalul lunii M+1 |
 | ⭐ Plata părții amânate (Alex, 9 oct. 2026) | „Bonus KPI — luna următoare” (K2 + K3) al lunii M **se plătește cu salariul lunii M+1**: în cardul lui M apare „→ <luna următoare>”, în afara totalului; în cardul lui M+1 apare cu sufixul „ · <luna M>”, inclus în total, și se confirmă odată cu M+1. Rândul confirmat rămâne pe luna M, `platit_in_luna` spune cu ce salariu a plecat. `_staff_luna_platita`, migrația `20261010145500` |
 | Ecrane | `/salarizare` → tab „Recepție"; detaliul indicatorilor în `/raport-kpi`; omul își vede în „Salariul meu" simularea lunilor încheiate, cu ce e deja confirmat (`get_salariul_meu_staff`, din 7 oct. 2026, migrația `20261007100000`) |

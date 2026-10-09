@@ -10186,8 +10186,8 @@ export type Database = {
           bonus_kpi: boolean
           bonusuri_ocazionale: boolean
           created: string
+          data_angajare: string | null
           facturare_la_timp: boolean
-          fidelitate: boolean
           fix_lunar: number | null
           id: string
           norma: number
@@ -10203,8 +10203,8 @@ export type Database = {
           bonus_kpi?: boolean
           bonusuri_ocazionale?: boolean
           created?: string
+          data_angajare?: string | null
           facturare_la_timp?: boolean
-          fidelitate?: boolean
           fix_lunar?: number | null
           id?: string
           norma?: number
@@ -10220,8 +10220,8 @@ export type Database = {
           bonus_kpi?: boolean
           bonusuri_ocazionale?: boolean
           created?: string
+          data_angajare?: string | null
           facturare_la_timp?: boolean
-          fidelitate?: boolean
           fix_lunar?: number | null
           id?: string
           norma?: number
