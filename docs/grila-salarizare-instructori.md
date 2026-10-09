@@ -130,15 +130,19 @@ coloana „Mărime", ca „standard de la N".
 
 | Capacitate | Sală | În standard | Peste standard | Lei standard | Lei peste |
 |---|---|---|---|---|---|
-| 10 | SCM Studio 2 | 6–8 cursanți | 9+ | 60 | 100 |
-| 15 | Quasar 4 Kids | 9–12 | 13+ | 90 | 140 |
-| 20 | Nicolina | 12–16 | 17+ | 120 | 180 |
-| 25 | SCM Studio 1 | 15–20 | 21+ | 150 | 220 |
-| 30 | SCM Studio 1, doar `S Open Class` | 18–24 | 25+ | 180 | 260 |
+| 10 | SCM Studio 2 | 6–8 cursanți | peste 8 | 60 | 100 |
+| 15 | Quasar 4 Kids | 9–12 | peste 12 | 90 | 140 |
+| 20 | Nicolina | 12–16 | peste 16 | 120 | 180 |
+| 25 | SCM Studio 1 | 15–20 | peste 20 | 150 | 220 |
+| 30 | SCM Studio 1, doar `S Open Class` | 18–24 | peste 24 | 180 | 260 |
 
 La grupele cu o ședință pe săptămână sumele se înjumătățesc; **pragurile de cursanți rămân la fel**.
-Implementare: `ceil(0.6 × mărime)` pentru standard, `floor(0.8 × mărime) + 1` pentru peste standard.
-Banda 80–81% din prima versiune s-a închis: standardul e `>= 60%`, peste standard e `> 80%`.
+Implementare: standard = locuri `>= 0,6 × mărime`, peste standard = locuri `> 0,8 × mărime`, pe valoarea
+exactă. Banda 80–81% din prima versiune s-a închis: standardul e `>= 60%`, peste standard e `> 80%`.
+⭐ **10 oct. 2026:** până atunci pragurile erau convertite în cursanți întregi (`ceil(0,6 × mărime)`,
+`floor(0,8 × mărime) + 1`). Cu locurile echivalente de la facultative, o grupă de 8,50/10 (85%) ieșea
+„standard" pentru că 8,50 < 9 (S SD Kpop 15:30, Laura Petria, sept. 2026: 60 în loc de 100 lei). Migrația
+`20261010090000` compară procentul exact; în septembrie 2026 doar grupa asta s-a schimbat.
 
 **⚠️ Pragul de ocupare NU e pragul de existență a grupei** (întrebare a lui Alex, 12 sept.):
 

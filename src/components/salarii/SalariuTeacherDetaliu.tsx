@@ -179,7 +179,7 @@ export function SalariuTeacherDetaliu({
                           detaliu={
                             g.ocupare.mod === 'standard_fix'
                               ? `septembrie: standard la toți · măsurat ${formatLocuri(g.ocupare.cursanti)}/${g.ocupare.capacitate}`
-                              : `standard de la ${g.ocupare.prag_standard} · peste de la ${g.ocupare.prag_peste}`
+                              : `standard de la ${formatLocuri(g.ocupare.prag_standard)} · peste standard la mai mult de ${formatLocuri(g.ocupare.prag_peste)}`
                           }
                         />
                       ) : (
