@@ -4,6 +4,7 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { emitInvoice, type FgoFirma, type FgoLine } from './fgo.ts'
 import { buildFgoClientForClient } from './fgo-client.ts'
+import { incaseazaFacturaFgo } from './fgo-incasare.ts'
 
 // Firma care facturează online (singura cu cheie FGO) — Quasar Dance Studio SRL.
 const EMITENT_CUI = Deno.env.get('NETOPIA_FGO_CUI') || '49361270'
@@ -12,6 +13,8 @@ type ClientInvoiceResult = {
   status: 'emisa' | 'idempotent' | 'eroare' | 'skip' | 'dry'
   factura?: string | null
   error?: string
+  incasare?: string
+  incasareEroare?: string
   preview?: unknown
 }
 
@@ -97,7 +100,10 @@ export async function emitClientInvoice(
       },
       { onConflict: 'ref' },
     )
-    return { status: 'emisa', factura: numar }
+    const incasare = await incaseazaFacturaFgo(admin, ref, {
+      suma: lines.reduce((t, l) => t + Number(l.pretTotal), 0),
+    })
+    return { status: 'emisa', factura: numar, incasare: incasare.status, incasareEroare: incasare.eroare }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     await admin.from('facturi_fgo').upsert(

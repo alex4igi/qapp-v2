@@ -11,6 +11,7 @@ import {
   type PortalPendingRow,
 } from './api'
 import type { FacturaRow } from './types'
+import { IncasareFgo } from './IncasareFgo'
 
 const fmt = (n: number) =>
   n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -75,7 +76,10 @@ export function PortalTab() {
             ✗ {r.eroare_mesaj?.slice(0, 60)}
           </span>
         ) : (
-          <span className="text-green-700">✓ {r.factura_fgo}</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-green-700">✓ {r.factura_fgo}</span>
+            <IncasareFgo row={r} />
+          </div>
         ),
       sortValue: (r) => r.status,
     },

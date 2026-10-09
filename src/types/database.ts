@@ -4569,6 +4569,8 @@ export type Database = {
           factura_fgo: string | null
           factura_link: string | null
           familia_id: string | null
+          fgo_incasare_eroare: string | null
+          fgo_incasata_la: string | null
           firma_cui: string
           incasare_id: string | null
           linii: Json | null
@@ -4592,6 +4594,8 @@ export type Database = {
           factura_fgo?: string | null
           factura_link?: string | null
           familia_id?: string | null
+          fgo_incasare_eroare?: string | null
+          fgo_incasata_la?: string | null
           firma_cui: string
           incasare_id?: string | null
           linii?: Json | null
@@ -4615,6 +4619,8 @@ export type Database = {
           factura_fgo?: string | null
           factura_link?: string | null
           familia_id?: string | null
+          fgo_incasare_eroare?: string | null
+          fgo_incasata_la?: string | null
           firma_cui?: string
           incasare_id?: string | null
           linii?: Json | null

@@ -1,4 +1,4 @@
-// Helper comun FGO.ro — emitere factură + util SHA-1.
+// Helper comun FGO.ro — emitere, încasare, stornare factură + util SHA-1.
 // Folosit de edge functions `autofgo` (extras bancar) și `netopia-webhook` (plată portal).
 // Cheia API per firmă stă DOAR în secretul `FGO_KEYS` (JSON { "<cui>": "<privateKey>" }),
 // niciodată în DB sau în git.
@@ -36,10 +36,43 @@ export type FgoClient =
 
 export type FgoLine = { denumire: string; pretTotal: number; um?: string }
 
-export type FgoEmitResult = { numar: string; link: string | null }
+// numar = „SERIE NR" (forma din facturi_fgo); serie/nr separat pentru operațiile ulterioare.
+export type FgoEmitResult = { numar: string; link: string | null; serie?: string; nr?: string }
 
 const API_BASE = Deno.env.get('FGO_API_BASE') || 'https://api.fgo.ro/v1'
 const PLATFORMA_URL = Deno.env.get('FGO_PLATFORMA_URL') || 'https://quasardance.ro'
+
+// FGO limitează operațiile pe facturi la 1 cerere/secundă per utilizator API. Emiterea
+// urmată imediat de încasare (sau un lot de emiteri) ar depăși limita fără pauză.
+let ultimaCerereFgo = 0
+async function respectaLimitaFgo(): Promise<void> {
+  const asteapta = ultimaCerereFgo + 1100 - Date.now()
+  if (asteapta > 0) await new Promise((r) => setTimeout(r, asteapta))
+  ultimaCerereFgo = Date.now()
+}
+
+async function postFgo(path: string, params: URLSearchParams): Promise<Record<string, unknown>> {
+  await respectaLimitaFgo()
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+    signal: AbortSignal.timeout(30000),
+  })
+  const text = await res.text()
+  let body: Record<string, unknown> | null = null
+  try {
+    body = JSON.parse(text)
+  } catch {
+    body = null
+  }
+  if (!(body ? (body.Success ?? body.success) === true : false)) {
+    throw new Error(
+      (body?.Message as string) || (body?.message as string) || `HTTP ${res.status}: ${text.slice(0, 300)}`,
+    )
+  }
+  return body as Record<string, unknown>
+}
 
 export function sha1Upper(s: string): string {
   return createHash('sha1').update(s, 'utf-8').digest('hex').toUpperCase()
@@ -103,6 +136,7 @@ export async function emitInvoice(
     params.set(`Continut[${i}][PretTotal]`, line.pretTotal.toFixed(2))
   })
 
+  await respectaLimitaFgo()
   const res = await fetch(`${API_BASE}/factura/emitere`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -128,14 +162,65 @@ export async function emitInvoice(
   }
 
   const fact = (body?.Factura as Record<string, unknown>) || body || {}
-  const numar = [fact.Serie ?? firma.serie, fact.Numar ?? fact.numar ?? '']
-    .filter(Boolean)
-    .join(' ')
-    .trim()
+  const serie = String(fact.Serie ?? firma.serie ?? '')
+  const nr = String(fact.Numar ?? fact.numar ?? '')
+  const numar = [serie, nr].filter(Boolean).join(' ').trim()
   return {
     numar: numar || '(număr nealocat în răspuns)',
     link: (fact.Link as string) || (fact.link as string) || null,
+    serie,
+    nr,
   }
+}
+
+// „QDS 1697" → { serie: 'QDS', nr: '1697' }. Facturile marcate „manual (FGO)" n-au număr.
+export function parseNumarFactura(numar: string | null | undefined): { serie: string; nr: string } | null {
+  const m = numar?.trim().match(/^(\S+)\s+(\d+)$/)
+  return m ? { serie: m[1], nr: m[2] } : null
+}
+
+// Înregistrează plata pe o factură emisă (o trece „plătită" în FGO). Doar abonament
+// Premium/Enterprise. TipIncasare vine din nomenclatorul FGO /nomenclator/tipincasare
+// (Banca, Bon, Chitanta, Voucher, Retur Casa, Plata Speciala).
+export async function incaseazaInvoice(
+  cui: string,
+  serie: string,
+  nr: string,
+  suma: number,
+  dataIncasare: string, // yyyy-mm-dd hh:mm:ss
+  tipIncasare = 'Banca',
+): Promise<void> {
+  const privateKey = fgoPrivateKey(cui)
+  if (!privateKey) throw new Error(`Lipsește cheia API FGO pentru CUI ${cui} (secret FGO_KEYS).`)
+  const params = new URLSearchParams()
+  params.set('CodUnic', cui)
+  params.set('Hash', sha1Upper(cui + privateKey + nr))
+  params.set('PlatformaUrl', PLATFORMA_URL)
+  params.set('SerieFactura', serie)
+  params.set('NumarFactura', nr)
+  params.set('TipIncasare', tipIncasare)
+  params.set('SumaIncasata', suma.toFixed(2))
+  params.set('DataIncasare', dataIncasare)
+  await postFgo('/factura/incasare', params)
+}
+
+// Valoarea facturii și cât e deja achitat în FGO.
+export async function statusInvoice(
+  cui: string,
+  serie: string,
+  nr: string,
+): Promise<{ valoare: number; achitat: number }> {
+  const privateKey = fgoPrivateKey(cui)
+  if (!privateKey) throw new Error(`Lipsește cheia API FGO pentru CUI ${cui} (secret FGO_KEYS).`)
+  const params = new URLSearchParams()
+  params.set('CodUnic', cui)
+  params.set('Hash', sha1Upper(cui + privateKey + nr))
+  params.set('PlatformaUrl', PLATFORMA_URL)
+  params.set('Serie', serie)
+  params.set('Numar', nr)
+  const body = await postFgo('/factura/getstatus', params)
+  const f = (body.Factura as Record<string, unknown>) || {}
+  return { valoare: Number(f.Valoare ?? 0), achitat: Number(f.ValoareAchitata ?? 0) }
 }
 
 // Stornare TOTALĂ a unei facturi emise (FGO nu stornează parțial prin API).
@@ -151,25 +236,8 @@ export async function stornoInvoice(cui: string, serie: string, numar: string): 
   params.set('Serie', serie)
   params.set('Numar', numar)
 
-  const res = await fetch(`${API_BASE}/factura/stornare`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
-    signal: AbortSignal.timeout(30000),
-  })
-  const text = await res.text()
-  let body: Record<string, unknown> | null = null
-  try {
-    body = JSON.parse(text)
-  } catch {
-    body = null
-  }
-  if (!(body ? (body.Success ?? body.success) === true : false)) {
-    throw new Error(
-      (body?.Message as string) || (body?.message as string) || `HTTP ${res.status}: ${text.slice(0, 300)}`,
-    )
-  }
-  const fact = (body?.Factura as Record<string, unknown>) || body || {}
+  const body = await postFgo('/factura/stornare', params)
+  const fact = (body.Factura as Record<string, unknown>) || body
   const nr = [fact.Serie ?? serie, fact.Numar ?? fact.numar ?? ''].filter(Boolean).join(' ').trim()
   return {
     numar: nr || '(număr nealocat în răspuns)',

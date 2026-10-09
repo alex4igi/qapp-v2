@@ -49,6 +49,9 @@ export const emiteFacturi = (firmaCui: string, items: EmitItem[]) =>
 export const marcheazaFacturi = (firmaCui: string, items: MarkItem[]) =>
   invoke<{ results: EmitResult[] }>('marcheaza', { firmaCui, items })
 
+export const incaseazaFgo = (ref: string) =>
+  invoke<{ result: { status: 'incasata' | 'skip' | 'eroare'; eroare?: string } }>('incaseaza_fgo', { ref })
+
 export const retryPortal = (orderRef: string) =>
   invoke<{ result: { status: string; factura?: string | null; error?: string } }>(
     'retry_portal',

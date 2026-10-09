@@ -10,6 +10,7 @@ import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { createHash } from 'node:crypto'
 import { ADMIN_OR_OWNER, ALL_STAFF, requireStaffRole } from '../_shared/staffAuth.ts'
 import { emitInvoice, type FgoClient, type FgoFirma } from '../_shared/fgo.ts'
+import { incaseazaFacturaFgo } from '../_shared/fgo-incasare.ts'
 import { emitPortalInvoice } from '../_shared/portal-invoice.ts'
 import { emitClientInvoice } from '../_shared/client-invoice.ts'
 import { unu } from '../_shared/fgo-client.ts'
@@ -58,6 +59,10 @@ Deno.serve(async (req) => {
         .map((l) => ({ denumire: String(l.denumire), pretTotal: Number(l.suma) }))
       if (!lines.length) return json({ error: 'liniile trebuie să aibă articol și sumă' }, 400)
       const r = await emitPortalInvoice(admin, body.orderRef as string, { force: true, lines })
+      return json({ result: r })
+    }
+    if (action === 'incaseaza_fgo') {
+      const r = await incaseazaFacturaFgo(admin, body.ref as string)
       return json({ result: r })
     }
     if (action === 'portal_pending') {
@@ -242,7 +247,15 @@ async function handleEmite(admin: SupabaseClient, firmaCui: string, items: EmitI
     localitate: firmaRow.localitate,
   }
 
-  const results: { ref: string; client: string; status: string; factura?: string; mesaj?: string }[] = []
+  const results: {
+    ref: string
+    client: string
+    status: string
+    factura?: string
+    mesaj?: string
+    incasare?: string
+    incasareEroare?: string
+  }[] = []
   for (const item of items) {
     try {
       const fgoClient = await buildClient(admin, item)
@@ -270,8 +283,18 @@ async function handleEmite(admin: SupabaseClient, firmaCui: string, items: EmitI
         p_factura_link: link,
       })
       if (error) throw new Error(error.message)
-      results.push({ ref: item.ref, client: fgoClient.denumire, status: 'emisa', factura: numar })
       void data
+      const inc = await incaseazaFacturaFgo(admin, item.ref, {
+        suma: lines.reduce((t, l) => t + Number(l.pretTotal), 0),
+      })
+      results.push({
+        ref: item.ref,
+        client: fgoClient.denumire,
+        status: 'emisa',
+        factura: numar,
+        incasare: inc.status,
+        incasareEroare: inc.eroare,
+      })
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       await admin

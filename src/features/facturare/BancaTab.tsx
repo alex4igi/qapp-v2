@@ -8,6 +8,7 @@ import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import type { TipPlata } from '@/features/plati/modals/PlataNouaModal/helpers'
 import { ClientiAlocati } from './ClientiAlocati'
 import { FacturaDialog } from './FacturaDialog'
+import { IncasareFgo } from './IncasareFgo'
 import { MarcheazaDialog } from './MarcheazaDialog'
 import {
   ISTORIC_PAGE_SIZE,
@@ -245,6 +246,7 @@ export function BancaTab() {
               ) : (
                 <span className="text-green-700">✓ facturat {r.factura_fgo ?? ''}</span>
               ))}
+            <IncasareFgo row={r} />
             {r.status === 'Eroare' && (
               <span className="text-red-700">✗ {r.eroare_mesaj}</span>
             )}

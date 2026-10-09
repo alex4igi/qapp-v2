@@ -36,6 +36,8 @@ export type FacturaRow = {
   status: FacturaStatus
   eroare_mesaj: string | null
   emis_la: string | null
+  fgo_incasata_la: string | null
+  fgo_incasare_eroare: string | null
   platit_la: string | null
   linii: FacturaLinie[] | null
   alocari: Alocare[]
