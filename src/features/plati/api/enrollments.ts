@@ -9,6 +9,7 @@ import type {
   Voucher,
 } from '@/types/db'
 import { applyVoucher } from '@/features/vouchere/calc'
+import { recordAuditLog } from '@/lib/auditLog'
 import { countSessionsBetween, endOfMonth, enumerateMonths } from './calendar'
 import { getSezonById, getSezonForDate, type SezonOption } from './sezoane'
 
@@ -702,5 +703,15 @@ export async function rezilizaInrolari(params: {
     .gt('data_incepere', cutoff)
     .select('id')
   if (error) throw error
+  if (data?.length) {
+    await recordAuditLog({
+      action: 'enrollment_reziliata',
+      entityType: 'enrollment',
+      entityId: data[0].id,
+      newValue: { rate_anulate: data.length },
+      reason: params.motiv?.trim() || null,
+      locatieId: curs.locatie,
+    })
+  }
   return { deleted: data?.length ?? 0 }
 }

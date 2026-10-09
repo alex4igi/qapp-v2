@@ -58,9 +58,10 @@ import { PrezenteSezonTab } from './tabs/PrezenteSezonTab'
 import { DatePersonaleTab } from './tabs/DatePersonaleTab'
 import { DocumenteTab } from './tabs/DocumenteTab'
 import { IstoricComunicari } from '@/features/comunicari/IstoricComunicari'
+import { IstoricAjustari } from '@/features/ajustari/IstoricAjustari'
 
 // Tabul „fisa" există doar pe telefon: acolo cardul de identitate e tab, nu coloană.
-type TabId = 'fisa' | 'inrolari' | 'prezente' | 'date' | 'documente' | 'comunicari'
+type TabId = 'fisa' | 'inrolari' | 'prezente' | 'date' | 'documente' | 'comunicari' | 'ajustari'
 
 export function ClientProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -448,6 +449,7 @@ export function ClientProfilePage() {
                     { id: 'date',      label: 'Date personale' },
                     { id: 'documente', label: 'Documente' },
                     { id: 'comunicari', label: 'Comunicări' },
+                    ...(canManagerActions ? [{ id: 'ajustari', label: 'Ajustări' }] : []),
                   ]),
             ]}
             active={tabCurent}
@@ -542,6 +544,9 @@ export function ClientProfilePage() {
           )}
           {!teacherMode && tabCurent === 'comunicari' && (
             <IstoricComunicari clientId={client.id} />
+          )}
+          {!teacherMode && canManagerActions && tabCurent === 'ajustari' && (
+            <IstoricAjustari clientId={client.id} />
           )}
         </div>
       </ProfileScaffold>
