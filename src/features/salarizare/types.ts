@@ -1,6 +1,6 @@
 /** Forma întoarsă de `get_salarizare_luna`. */
 
-export type StareComponenta = 'confirmat' | 'corectat' | 'provizoriu' | 'blocat' | 'de_confirmat'
+export type StareComponenta = 'confirmat' | 'corectat' | 'provizoriu' | 'blocat' | 'de_confirmat' | 'reportat'
 
 export type Componenta = {
   cheie: string
@@ -12,6 +12,12 @@ export type Componenta = {
   blocant?: string | null
   confirmat_la?: string
   id?: string
+  /** `reportat`: se închide după finalul lunii, deci se plătește cu salariul lunii următoare. */
+  stare_reala?: StareComponenta
+  platit_cu?: string
+  /** Componentă a lunii trecute, plătită cu luna asta. */
+  din_anul?: number
+  din_luna?: number
 }
 
 export type InstructorLuna = {

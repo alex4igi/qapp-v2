@@ -124,6 +124,8 @@ Nicolina) și cu „KPI fără date = standard", bonusul pe istoric iese ~500 le
 nu se recalculează — instructorii în `salarii_teacher`, managerii și recepția pe componente în
 `salarii_staff_componente`; corecția trece doar prin `corecteaza_salariu_teacher` / `corecteaza_componenta_salariu`
 (owner, motiv obligatoriu, urmă în `audit_log`). Datele lipsă blochează confirmarea, nu dau 0 lei.
+Bonusurile care se închid la finalul lunii următoare (încasările managerului, K2/K3 la recepție) **se plătesc
+cu salariul lunii următoare**: cardul unei luni = suma de virat atunci (`_staff_luna_platita`, Alex, 9 oct. 2026).
 
 ⭐ **Toate cele trei grile sunt în NET** (Alex, 23 sept. 2026). Materialele care scriau „brute" au fost
 corectate — nu s-a schimbat nicio cifră, doar eticheta.

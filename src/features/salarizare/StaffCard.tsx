@@ -16,6 +16,7 @@ const STARE: Record<StareComponenta, { ton: BadgeTone; eticheta: string }> = {
   provizoriu: { ton: 'warn', eticheta: 'provizoriu' },
   blocat: { ton: 'danger', eticheta: 'blocat' },
   de_confirmat: { ton: 'neutral', eticheta: 'de confirmat' },
+  reportat: { ton: 'neutral', eticheta: 'luna următoare' },
 }
 
 const TREAPTA: Record<string, string> = {
@@ -40,17 +41,26 @@ function ListaComponente({ componente, onCorecteaza }: {
       {componente.map((c) => (
         <li key={c.cheie} className="flex flex-wrap items-start justify-between gap-2 py-1.5">
           <div className="min-w-0">
-            <span className="text-ink">{c.eticheta}</span>
+            <span className={c.stare === 'reportat' ? 'text-muted' : 'text-ink'}>{c.eticheta}</span>
             {c.stare === 'provizoriu' && c.final_la && (
               <span className="ml-2 text-xs text-muted">se definitivează după {c.final_la}</span>
+            )}
+            {c.stare === 'reportat' && (
+              <div className="text-xs text-muted">
+                se verifică la finalul lunii următoare și se plătește cu salariul din {c.platit_cu} — nu intră în totalul de aici
+              </div>
             )}
             {c.stare === 'blocat' && c.blocant && (
               <div className="text-xs text-danger">{c.blocant}</div>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Badge tone={STARE[c.stare].ton}>{STARE[c.stare].eticheta}</Badge>
-            <span className="w-24 text-right font-medium text-ink">{formatRON(c.suma)}</span>
+            <Badge tone={STARE[c.stare].ton}>
+              {c.stare === 'reportat' ? `→ ${c.platit_cu}` : STARE[c.stare].eticheta}
+            </Badge>
+            <span className={`w-24 text-right font-medium ${c.stare === 'reportat' ? 'text-muted' : 'text-ink'}`}>
+              {formatRON(c.suma)}
+            </span>
             {onCorecteaza && c.id && (c.stare === 'confirmat' || c.stare === 'corectat') && (
               <button
                 type="button"
@@ -126,7 +136,8 @@ export function StaffCard({
           <div className="font-semibold text-ink">{titlu ?? om.titular_nume}</div>
           <div className="text-xs text-muted">
             {post === 'manager'
-              ? (om as ManagerLuna).locatii.map((l) => l.locatie_nume).join(', ') || 'vara: doar baza'
+              ? (om as ManagerLuna).locatii.map((l) => l.locatie_nume).join(', ')
+                || ((om as ManagerLuna).perioada === 'vara' ? 'vara: doar baza' : 'doar bonusul rămas din luna trecută')
               : `recepție · normă ${(om as ReceptieLuna).norma}`}
           </div>
         </div>

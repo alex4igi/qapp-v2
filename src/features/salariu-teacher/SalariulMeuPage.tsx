@@ -254,8 +254,8 @@ function SectiuneStaff() {
     <div className="space-y-3">
       <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
         Simularea pe grila 2026-2027. Ce e <strong>„de confirmat"</strong> devine final după ce îl confirmă
-        administratorul; ce e <strong>„provizoriu"</strong> (încasările, rata de încasare) se definitivează după
-        ce se încheie și luna următoare.
+        administratorul. Bonusurile care se verifică la finalul lunii următoare (încasările, rata de încasare)
+        se plătesc cu salariul lunii următoare: apar acolo, cu numele lunii din care vin.
       </p>
       {carduri.map((c) => {
         const nota = c.post === 'manager' ? notaLunaSalarizare(c.l.y, c.l.m) : null

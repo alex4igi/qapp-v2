@@ -260,6 +260,7 @@ nu 2. Diferența până la standard: 47 de locuri ocupate în plus.
 | Pool-ul de capacitate | `capacitate_pool` — capacitatea și locația copiate la adăugare; rândurile nu se șterg. Umplut pe 2026-2027 cu grupele care au funcționat în septembrie (Ștefan 612, Nicolina 420, Q4K 105); cronul `capacitate-pool-zilnic` adaugă grupele noi. Corecție doar prin `corecteaza_pool_capacitate` (owner, cu motiv) |
 | Calculul lunii | `calculeaza_salariu_manager(user, an, lună)` |
 | Confirmarea pe componente | `confirma_salariu_staff` → `salarii_staff_componente`. Baza se confirmă oricând, ocuparea după finalul lunii, încasarea după finalul lunii M+1 |
+| ⭐ Plata bonusului pe încasări (Alex, 9 oct. 2026) | Bonusul pe încasări al lunii M **se plătește cu salariul lunii M+1**: în cardul lui M apare „→ <luna următoare>”, în afara totalului; în cardul lui M+1 apare ca linie „Bonus încasări · <locație> · <luna M>”, inclusă în total, și se confirmă odată cu M+1. Rândul confirmat rămâne pe luna lucrată (anul/luna = M), `platit_in_luna` spune cu ce salariu a plecat. Criteriul: `final_la` după ultima zi a lunii. Cardul = suma de virat. `_staff_luna_platita`, migrația `20261010145500` |
 | Ecran | `/salarizare` → tab „Manageri" (owner/admin); managerul își vede în „Salariul meu" simularea lunilor încheiate, cu ce e deja confirmat (`get_salariul_meu_staff`, din 7 oct. 2026, migrația `20261007100000`) |
 
 🔒 Nota internă din §3 rămâne valabilă: faptul că pool-ul **nu scade** nu se publică în materialele
