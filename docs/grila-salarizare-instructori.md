@@ -626,7 +626,7 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 | Confirmarea (înghețare) | `confirma_salariu_teacher` — refuză o lună deja confirmată, o lună în curs sau cu date lipsă |
 | Corecția unei luni confirmate | `corecteaza_salariu_teacher(…, motiv)` — doar owner, cu urmă în `audit_log` |
 | Ecrane | profilul instructorului → „Detalii salarii"; pagina `/salarizare` (owner/admin); „Salariul meu" arată lunile confirmate + simularea lunilor încheiate (din 7 oct. 2026) |
-| Grupe scoase din salarizare (de tot sau doar retenția), pe luni, cu motiv | `salarizare_excluderi` (doar prin calcul, fără editor în UI), citit de `_salarizare_exclusa` în `calculeaza_salariu_teacher` — migrațiile `20261010110000`, `20261010111000` |
+| Grupe scoase din salarizare (de tot sau doar retenția), pe luni, cu motiv | `salarizare_excluderi` (doar prin calcul, fără editor în UI), citit de `_salarizare_exclusa` în `calculeaza_salariu_teacher` — migrațiile `20261010110000`, `20261010111000`, `20261010170000` |
 | Trupa retrogradată: bază de intermediar, bonusuri de trupă (retenție 50 / 100, fără ocupare) | `calculeaza_salariu_teacher` — migrațiile `20261010120000`, `20261010121000` |
 | În afara grilei | `teacheri.in_afara_grilei` (doar adminul îl schimbă, trigger `trg_garda_in_afara_grilei`); azi nimeni — Bianca David a stat în afara grilei 7–9 oct. 2026 (migrațiile `20261007100000`, `20261009200000`) |
 
@@ -659,7 +659,7 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
   - de tot, tot sezonul: `N MTV Commercial V` (Mara, −202,50 lei în sept.), `S SD Teen` (Eva; e oricum suspendată);
   - de tot, doar septembrie: `S LMi Students` (Eva, −455 lei);
   - fără retenție, doar septembrie (adică fără „prima lună = standard"): `S LMi Tiny` (Giulia), `N Dans Teen INC SD`
-    (Theo), `S-S2 SD Teen` (Adrian) — −105 lei fiecare.
+    (Theo), `S-S2 SD Teen` (Adrian) — −105 lei fiecare; `K Tiny MaJ` (Ana Plesescu, −105 lei, Alex, 10 oct. 2026).
   Din octombrie, retenția acestor grupe se măsoară normal. `S LMi Students` n-a avut niciun cursant numărat în
   septembrie, deci în octombrie cade pe „prima lună = standard" (105 lei) — ✅ **rămâne așa** (Alex, 9 oct. 2026).
 - **Nota pe lună** (de ex. septembrie 2026: retenția la standard, ocuparea după date) se afișează lângă
