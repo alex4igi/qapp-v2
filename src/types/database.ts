@@ -2892,6 +2892,7 @@ export type Database = {
           locatie: string | null
           sezon: string | null
           suma_datorata: number
+          termen: string
           updated: string
           voucher: string | null
         }
@@ -2908,6 +2909,7 @@ export type Database = {
           locatie?: string | null
           sezon?: string | null
           suma_datorata: number
+          termen?: string
           updated?: string
           voucher?: string | null
         }
@@ -2924,6 +2926,7 @@ export type Database = {
           locatie?: string | null
           sezon?: string | null
           suma_datorata?: number
+          termen?: string
           updated?: string
           voucher?: string | null
         }
@@ -11950,6 +11953,7 @@ export type Database = {
           rest: number | null
           sezon: string | null
           suma_datorata: number | null
+          termen: string | null
         }
         Relationships: [
           {
@@ -13932,6 +13936,7 @@ export type Database = {
         }[]
       }
       backup_list_views: { Args: never; Returns: string[] }
+      build_fifo_plan_familie: { Args: { p_selectie: Json }; Returns: Json }
       build_fifo_plan_membru: {
         Args: {
           p_client: string
@@ -14690,6 +14695,7 @@ export type Database = {
           platit: number
           rest: number
           suma_datorata: number
+          termen: string
         }[]
       }
       get_datorii_dashboard: {
@@ -15122,6 +15128,17 @@ export type Database = {
           tip_curs: string
           tip_plata: Database["public"]["Enums"]["tip_plata"]
           total_de_plata: number
+        }[]
+      }
+      get_plati_in_curs: {
+        Args: never
+        Returns: {
+          amount: number
+          created: string
+          expira: string
+          membri: string[]
+          order_ref: string
+          randuri: string[]
         }[]
       }
       get_portal_invoice_lines: { Args: { p_order_ref: string }; Returns: Json }
@@ -16346,6 +16363,11 @@ export type Database = {
         Returns: Json
       }
       my_teacher_id: { Args: never; Returns: string }
+      netopia_order_client_ids: {
+        Args: { p_order_ref: string }
+        Returns: string[]
+      }
+      netopia_order_membri: { Args: { p_order_ref: string }; Returns: string }
       norm_unitate: { Args: { p_text: string }; Returns: string }
       notifica_demo_class_completa: {
         Args: { p_eveniment: string }
@@ -16395,6 +16417,7 @@ export type Database = {
       penalizare_activa: { Args: { p_enrollment: string }; Returns: boolean }
       plan_plata_integrala_sezon: { Args: { p_client: string }; Returns: Json }
       plan_plata_integrala_staff: { Args: { p_client: string }; Returns: Json }
+      plata_in_curs_ids: { Args: never; Returns: string[] }
       poate_evalua_cursul: { Args: { p_curs: string }; Returns: boolean }
       politici_publice_report: {
         Args: never

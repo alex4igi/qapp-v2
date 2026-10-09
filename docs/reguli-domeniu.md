@@ -122,7 +122,7 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **Restanță = DOAR ce a trecut de termenul de plată (30.09).** Termenul: plata pe **ședință** (OPEN, facultativ pe
   ședință) — **ziua ședinței** (omul plătește pe loc); **abonamentul** (și la facultative) — **15 ale lunii**, cu
   excepțiile sezonului (`sezoane.scadenta_prima_rata` / `scadenta_ultima_rata`, septembrie și iunie); datoriile
-  **one-off** (taxe, bilete, merch, închirieri) — ziua creării. Toate intră în **aceeași cifră**, iar un client se
+  **one-off** (taxe, bilete, merch, închirieri) — `datorii.termen` (implicit ziua creării, din 09.10.2026). Toate intră în **aceeași cifră**, iar un client se
   numără **o singură dată**, oricâte locații ar avea. Rata lunii încă nescadentă e „de încasat", nu restanță.
   Cod: `scadenta_inrolare(data, sezon, tip_plata)` (peste `scadenta_rata`, care rămâne pentru K1/K2, penalizare și
   suspendarea de 50 de zile — toate doar pe „Per luna") și `get_restante_scadente(p_locatie)` = cifra din Overview,
@@ -162,6 +162,24 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   Jobul EXclient bifează `reziliat` și pe lunile încheiate și achitate; `get_plati_client` (`20261004233000`) nu mai
   citește `plati_inrolari` (care le exclude), ci arată lunile reziliate CU plăți ca „achitat” (total = cât s-a plătit,
   fără rest de plată). Lunile reziliate fără nicio plată (viitoare anulate, conversii) rămân ascunse.
+- **Portal: o plată online poate acoperi mai mulți membri ai familiei (Alex, 09.10.2026).** Coșul e unic pe familie:
+  `build_fifo_plan_familie` (`20261009150000`) adună planul FIFO al fiecărui membru ales și pune `client_id` pe fiecare
+  rând. `netopia_orders.client_id` e doar primul membru; **`incasari.client` vine din înrolarea / datoria rândului**, la
+  confirmare. Raportul Netopia, exportul GDPR, factura și notificările citesc toți membrii (`netopia_order_membri`).
+  Plata integrală −5% rămâne o comandă separată, pe un singur membru.
+- **FIFO rămâne pe luna înrolării, pe fiecare membru (Alex, 09.10.2026).** Bifarea unei rate include toate ratele
+  neachitate ale membrului cu `data_incepere` mai veche sau egală. Ecranul arată aceste rânduri ca „Inclus obligatoriu”,
+  cu motivul; nu se ordonează după termen.
+- **Portal: ce se bifează implicit în coș (Alex, 09.10.2026)** = restanțele tuturor membrilor + rândurile cu **primul
+  termen al familiei**, doar dacă acel termen e **până la sfârșitul lunii curente**. Un termen din luna următoare e
+  informativ („Următoarea rată”), cu plată în avans opțională. Butonul de pe Acasă are suma acestui coș inițial; badge-ul
+  din meniu arată doar restanța.
+- **Fără plată dublă (Alex, 09.10.2026):** cât timp o comandă de abonament e `pending` (max. 30 de minute de la creare),
+  rândurile ei nu pot intra într-o comandă nouă (`build_fifo_plan_membru` refuză, `get_plati_in_curs` le arată în portal
+  ca „Plată în curs”). După 30 de minute, comanda neconfirmată nu mai blochează.
+- **Datoriile one-off au termen propriu (`datorii.termen`, Alex, 09.10.2026).** Implicit ziua creării; recepția îl
+  poate pune la creare (de exemplu data concursului). Restanța one-off = `termen < azi` (`get_restante_scadente`,
+  `get_rezumat_plati_familie`). Înainte termenul era ziua creării, deci o taxă pusă ieri apărea restantă azi.
 - **`/plati` e registrul unic al încasărilor**; restanțele stau în `/datorii`.
 
 ## 5. Prezențe

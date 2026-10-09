@@ -103,6 +103,8 @@ export function SimpleIncasareForm({
   // Cât se încasează ACUM (0..preț). Restul devine datorie one-off urmărită.
   const [incasat, setIncasat] = useState('')
   const [incasatTouched, setIncasatTouched] = useState(false)
+  // Până când are clientul de plătit restul (portalul îl arată „restant” abia după termen).
+  const [termen, setTermen] = useState(todayIso())
   const [guestMode, setGuestMode] = useState(false)
   const [guestNume, setGuestNume] = useState('')
   const [guestTelefon, setGuestTelefon] = useState('')
@@ -296,6 +298,7 @@ export function SimpleIncasareForm({
         bucati: tip === 'Merch' ? buc : null,
         voucher: voucherId || null,
         locatie: locatieId,
+        termen: termen || undefined,
       })
       if (collected <= 0) return { incasare: null, linii: [], clientId: clientField }
       const tenders = resolveTenders({ metoda, total: collected, cash, card })
@@ -504,6 +507,16 @@ export function SimpleIncasareForm({
           </Field>
         )}
       </div>
+
+      {restDatorie > 0 && !guestMode && (
+        <Field label="Termen de plată pentru rest">
+          <DateInput value={termen} min={azi} onChange={(e) => setTermen(e.target.value)} />
+          <p className="mt-1 text-xs text-quasar-gray">
+            Până atunci restul apare la client ca „de achitat”, nu ca restanță. Pentru o taxă de concurs,
+            pune de regulă data concursului.
+          </p>
+        </Field>
+      )}
 
       {collectedClamped > 0 && (
         <MetodaPlataField

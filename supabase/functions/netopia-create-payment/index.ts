@@ -1,5 +1,6 @@
 // Edge Function: inițiază o plată online Netopia (Payments API v2) pentru un membru
-// al portalului (rol `parinte`). Recalculează restanța FIFO server-side (sursa de adevăr
+// al portalului (rol `parinte`) sau pentru mai mulți membri ai familiei într-o singură comandă
+// (`membri`). Recalculează restanța FIFO server-side (sursa de adevăr
 // a sumei — clientul NU o trimite), creează un rând `netopia_orders` (pending) și întoarce
 // URL-ul de redirecționare spre pagina de plată Netopia.
 //
@@ -21,8 +22,20 @@ const NETOPIA_BASE = (Deno.env.get('NETOPIA_ENV') ?? 'sandbox') === 'live'
   ? 'https://secure.mobilpay.ro/pay'
   : 'https://secure-sandbox.netopia-payments.com'
 
-type Body = {
+// Plata pe familie (abonamente + datorii one-off, mai mulți membri într-o comandă).
+type MembruPlata = {
   clientId: string
+  includeInrolari: boolean
+  panaLa?: string
+  datorii?: string[]
+}
+
+type Body = {
+  clientId?: string
+  // abonament pe familie: exclude clientId/panaLa/datorii/includeInrolari/platesteIntegral.
+  membri?: MembruPlata[]
+  // suma văzută de părinte în previzualizare; dacă serverul calculează altceva, răspunde 409.
+  sumaAsteptata?: number
   kind?: 'abonament' | 'rezervare' | 'bilet'
   sesiuneId?: string
   // bilet: evenimentul pentru care se cumpără + câte bilete (preț server-side din eveniment).
@@ -85,7 +98,20 @@ Deno.serve(async (req) => {
     })
     if (!plafon.permis) return raspuns429(plafon.retryAfter, corsHeaders)
 
-    const { clientId, kind = 'abonament', sesiuneId, evenimentId, qty, panaLa, datorii, includeInrolari, voucherCod, platesteIntegral } = (await req.json()) as Body
+    const body = (await req.json()) as Body
+    const { membri, sumaAsteptata, kind = 'abonament', sesiuneId, evenimentId, qty, panaLa, datorii, includeInrolari, voucherCod, platesteIntegral } = body
+    const familie = Array.isArray(membri)
+    if (familie) {
+      if (kind !== 'abonament' || platesteIntegral || panaLa || datorii || includeInrolari !== undefined || body.clientId) {
+        return json({ error: 'Cererea de plată nu e validă. Reîncarcă pagina și încearcă din nou.' }, 400)
+      }
+      if (!membri.length || typeof sumaAsteptata !== 'number') {
+        return json({ error: 'Nu ai ales nimic de plătit. Bifează cel puțin o rată sau o datorie.' }, 400)
+      }
+    }
+    // La plata pe familie, comanda stă pe primul membru (FK + RLS neschimbate); încasările
+    // se scriu pe membrul fiecărui rând, la confirmare.
+    const clientId = familie ? membri[0]?.clientId : body.clientId
     if (!clientId) return json({ error: 'Alege membrul familiei pentru care plătești, apoi încearcă din nou.' }, 400)
 
     // Client scopat pe JWT-ul părintelui => RPC-urile validează apartenența la familie
@@ -154,6 +180,28 @@ Deno.serve(async (req) => {
         amount = redus
         voucherId = verdict.voucher_id as string
       }
+    } else if (familie) {
+      // Abonamente + datorii one-off pentru mai mulți membri. Planul (cu membrul pe fiecare
+      // rând) și suma vin din DB; validările de familie, dubluri și plată în curs sunt acolo.
+      const { data: planRes, error: planErr } = await userClient.rpc('build_fifo_plan_familie', {
+        p_selectie: membri.map((m) => ({
+          client: m.clientId,
+          include_inrolari: !!m.includeInrolari,
+          pana_la: m.panaLa ?? null,
+          datorii: m.datorii ?? [],
+        })),
+      })
+      if (planErr) return json({ error: planErr.message, cod: planErr.hint ?? null }, 400)
+      amount = Number(planRes?.amount ?? 0)
+      plan = planRes?.plan ?? []
+      if (amount <= 0) return json({ error: 'Nu ai nimic de plătit acum. Reîncarcă pagina ca să vezi soldul la zi.' }, 400)
+      if (Math.abs(amount - Number(sumaAsteptata)) > 0.005) {
+        return json({
+          error: `Suma de plată s-a schimbat între timp: acum este ${amount.toFixed(2).replace('.', ',')} lei. Verifică din nou coșul înainte să plătești.`,
+          cod: 'suma_schimbata',
+          amount,
+        }, 409)
+      }
     } else if (platesteIntegral) {
       // Plata integrală a sezonului (−5%): eligibilitatea ȘI prețurile vin din DB.
       const { data: planRes, error: planErr } = await userClient.rpc('plan_plata_integrala_sezon', {
@@ -190,6 +238,8 @@ Deno.serve(async (req) => {
       .single()
     let billingEmail = client?.email ?? null
     let billingPhone = client?.telefon ?? null
+    let billingFirst = client?.prenume ?? client?.nume ?? 'Membru'
+    let billingLast = client?.nume ?? 'Quasar'
     if (client?.familia) {
       const { data: fam } = await admin
         .from('familii')
@@ -198,6 +248,23 @@ Deno.serve(async (req) => {
         .single()
       billingEmail = billingEmail ?? fam?.email ?? null
       billingPhone = billingPhone ?? fam?.telefon ?? null
+      // Plata pe familie o face reprezentantul, nu primul copil din coș.
+      if (familie && fam?.nume_reprezentant) {
+        billingLast = fam.nume_reprezentant
+        billingFirst = fam.prenume_reprezentant ?? fam.nume_reprezentant
+        billingEmail = fam.email ?? billingEmail
+        billingPhone = fam.telefon ?? billingPhone
+      }
+    }
+    // Prenumele membrilor din coș, pentru descrierea de pe pagina Netopia.
+    let membriNume = ''
+    if (familie) {
+      const { data: cl } = await admin.from('clienti').select('id, prenume, nume').in('id', membri.map((m) => m.clientId))
+      membriNume = membri
+        .map((m) => cl?.find((c) => c.id === m.clientId))
+        .map((c) => c?.prenume ?? c?.nume)
+        .filter(Boolean)
+        .join(', ')
     }
 
     // Înregistrează intentul ÎNAINTE de a contacta Netopia (sursa de adevăr a sumei).
@@ -231,7 +298,9 @@ Deno.serve(async (req) => {
         ? `Bilete spectacol Quasar Dance (${orderRef})`
         : plataIntegrala
           ? `Plată integrală sezon Quasar Dance (${orderRef})`
-          : `Plată abonament Quasar Dance (${orderRef})`
+          : familie && membriNume
+            ? `Plată Quasar Dance — ${membriNume} (${orderRef})`
+            : `Plată abonament Quasar Dance (${orderRef})`
     const startReq = {
       config: {
         language: 'ro',
@@ -249,8 +318,8 @@ Deno.serve(async (req) => {
         billing: {
           email: billingEmail ?? 'plati@quasardance.ro',
           phone: billingPhone ?? '0700000000',
-          firstName: client?.prenume ?? client?.nume ?? 'Membru',
-          lastName: client?.nume ?? 'Quasar',
+          firstName: billingFirst,
+          lastName: billingLast,
           city: 'Iași',
           country: 642, // cod ISO numeric România
           countryName: 'Romania',
