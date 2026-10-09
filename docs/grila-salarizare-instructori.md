@@ -612,7 +612,7 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
 | Confirmarea (înghețare) | `confirma_salariu_teacher` — refuză o lună deja confirmată, o lună în curs sau cu date lipsă |
 | Corecția unei luni confirmate | `corecteaza_salariu_teacher(…, motiv)` — doar owner, cu urmă în `audit_log` |
 | Ecrane | profilul instructorului → „Detalii salarii"; pagina `/salarizare` (owner/admin); „Salariul meu" arată lunile confirmate + simularea lunilor încheiate (din 7 oct. 2026) |
-| În afara grilei | `teacheri.in_afara_grilei` (doar adminul îl schimbă, trigger `trg_garda_in_afara_grilei`); azi doar Bianca David — migrația `20261007100000` |
+| În afara grilei | `teacheri.in_afara_grilei` (doar adminul îl schimbă, trigger `trg_garda_in_afara_grilei`); azi nimeni — Bianca David a stat în afara grilei 7–9 oct. 2026 (migrațiile `20261007100000`, `20261009200000`) |
 
 **Reguli de calcul pe care le-am fixat la implementare:**
 - Pe grupă, în sezon: `factor × (bază + retenție + ocupare)`; factor ½ la o ședință pe săptămână
@@ -631,9 +631,10 @@ capacitățile declarate (13–35 locuri, media 26) trebuie confirmate sală cu 
   `calculeaza_salariu_teacher/manager/receptie` și `calculeaza_raport_kpi` (recepția are nevoie de raportul
   grilei ei). Pagina se deschide pentru profilul de instructor sau rolurile `manager` / `front_desk`
   (`hasSalariulMeu` în `rolesMatrix.ts`).
-- **În afara grilei (Alex, 7 oct. 2026): Bianca David.** Nu-și vede simularea, luna ei nu se confirmă
-  din grilă (`confirma_salariu_teacher` refuză), iar în `/salarizare` apare orientativ, fără să intre în
-  totaluri. Se plătește separat. Steagul e `teacheri.in_afara_grilei`, schimbat doar de admin.
+- **În afara grilei:** un instructor cu `teacheri.in_afara_grilei` nu-și vede simularea, luna lui nu se
+  confirmă din grilă (`confirma_salariu_teacher` refuză), iar în `/salarizare` apare orientativ, fără să
+  intre în totaluri — se plătește separat. Steagul îl schimbă doar adminul. Bianca David a fost singurul
+  caz (Alex, 7 oct. 2026); **din 9 oct. 2026 intră și ea pe grilă** (Alex) — azi nimeni nu e în afara grilei.
 - **Nota pe lună** (de ex. septembrie 2026: retenția la standard, ocuparea după date) se afișează lângă
   salariu în toate trei ecranele — `src/lib/notaLunaSalarizare.ts`.
 - **Integral vs pro-rata (Alex, 7 oct. 2026):** în „Detalii salarii", doar pentru admini, fiecare grupă
