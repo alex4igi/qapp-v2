@@ -98,6 +98,15 @@ export type LinieKpiRezumat = {
   suma: number
   provizoriu?: boolean
   aplicabil: boolean
+  /** K1…K5, poziția liniei în grilă. */
+  cod?: string
+  /** Se definitivează la finalul lunii următoare (K2, K3) și intră în „Bonus KPI K2 + K3". */
+  amanat?: boolean
+  /** „Peste X%" e salvat ca X,01 (motorul compară cu ≥). */
+  prag_standard?: number | null
+  prag_peste?: number | null
+  suma_standard?: number | null
+  suma_peste?: number | null
 }
 
 export type ReceptieLuna = {
@@ -105,6 +114,8 @@ export type ReceptieLuna = {
   titular_nume: string
   perioada: 'sezon' | 'vara'
   norma: number
+  fix_lunar: number | null
+  bonus_kpi: boolean
   kpi: {
     grila_id: string
     stare_raport: 'nedeschis' | 'draft' | 'inchis'

@@ -23,6 +23,7 @@
 |---|---|---|
 | **Petruța** (`pnitisor16@gmail.com`) | Galeriile Ștefan cel Mare | — |
 | **Theo Todica** (`todicatheodora@gmail.com`) | Nicolina | instructor Junior, 2 grupe la Nicolina |
+| **Andrei Chiriac** (din 1 oct. 2026) | — (fără KPI) | instructor Expert + manager Ștefan cel Mare |
 
 **Programul de lucru** (Alex, 28 sept. 2026): **Petruța luni–vineri, Theo luni–duminică.** Contează la
 termenele de răspuns (K4): un lead intrat vineri seara sau în weekend la Ștefan are termen luni.
@@ -42,12 +43,28 @@ Se plătește în **fiecare lună a anului**, inclusiv în iulie și august.
 | Componentă | Condiția | Pe lună (net) |
 |---|---|---|
 | Salariu fix | norma întreagă | **2.722** |
-| Facturare la timp | facturile lunii ies la termen | 200 |
+| Facturare la timp | facturile lunii ies la termen — **doar Petruța** | 200 |
+| Recepție Quasar 4 Kids | ajută la recepția Q4K — **doar Theo**, în locul facturării | 400 |
 | Abonament la trupa proprie | gratuit, tot anul | 290 (beneficiu, nu bani în mână) |
 | Fidelitate | de la 2 ani vechime în firmă | 100 |
 
 **La normă parțială, fixul și bonusul KPI se reduc proporțional; pragurile procentuale rămân
 aceleași** — se schimbă doar suma pe care o plătește fiecare treaptă.
+
+⭐ **Fix stabilit pe om, fără bonusuri** (Alex, 9 oct. 2026): **Andrei Chiriac** are și postul de recepție
+din 1 oct. 2026 cu **1.444 lei net fix** — fără bonus KPI, fără facturare la timp, fidelitate, abonament
+sau bonusuri ocazionale. În `salarizare_receptie`: `fix_lunar` înlocuiește fixul din grilă (fără normă),
+`bonus_kpi = false` scoate bonusul KPI (fără grilă KPI nu e blocant). Postul de recepție se confirmă
+separat de cel de manager (migrația `20261010150000`).
+
+⭐ **Diferența dintre cele două (Alex, 10 oct. 2026):** Petruța facturează (200), Theo nu facturează, dar
+ajută la recepția Quasar 4 Kids (400). Restul e identic: aceleași cinci KPI, aceleași praguri și sume; diferă
+doar locația măsurată și K4 (Petruța răspunde și în Meta, L–V; Theo L–D). În `salarizare_receptie`:
+`facturare_la_timp` / `receptie_q4k` pe om, suma în `salarizare_grila.parametri.receptie_q4k`. Cardul de
+salariu arată doar componentele care i se aplică omului (fără linii de 0 lei), iar bonusul KPI apare ca
+„Bonus KPI K1 + K4 + K5" (luna) și „Bonus KPI K2 + K3" (verificat la finalul lunii următoare), cu
+numele indicatorilor dedesubt; tabelul de indicatori arată la fiecare K pragurile și suma treptei (din grila
+omului) — la fel în „Salariul meu". Migrațiile `20261009211100` și `20261009212041`. Se aplică din septembrie 2026 (nicio lună a recepției nu era confirmată).
 
 ⚠️ **Theo a fost simulată pe normă întreagă** (decizie Alex, 23 sept.), deci cu același fix de 2.722
 ca Petruța, peste care vine salariul de instructor.

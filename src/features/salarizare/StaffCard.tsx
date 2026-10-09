@@ -7,7 +7,7 @@ import { humanizeError } from '@/lib/errorMessage'
 import { formatLocuri, formatRON } from '@/lib/format'
 import { confirmaSalariuStaff, corecteazaComponenta } from './api'
 import type {
-  Componenta, ManagerLuna, ReceptieLuna, RezultatConfirmare, StareComponenta,
+  Componenta, LinieKpiRezumat, ManagerLuna, ReceptieLuna, RezultatConfirmare, StareComponenta,
 } from './types'
 
 const STARE: Record<StareComponenta, { ton: BadgeTone; eticheta: string }> = {
@@ -32,9 +32,10 @@ function lunaPlatii(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
 }
 
-function ListaComponente({ componente, onCorecteaza }: {
+function ListaComponente({ componente, onCorecteaza, kpiLinii = [] }: {
   componente: Componenta[]
   onCorecteaza?: (id: string) => void
+  kpiLinii?: LinieKpiRezumat[]
 }) {
   return (
     <ul className="divide-y divide-line text-sm">
@@ -44,6 +45,9 @@ function ListaComponente({ componente, onCorecteaza }: {
             <span className={c.stare === 'reportat' ? 'text-muted' : 'text-ink'}>{c.eticheta}</span>
             {c.stare === 'provizoriu' && c.final_la && (
               <span className="ml-2 text-xs text-muted">se definitivează după {c.final_la}</span>
+            )}
+            {indicatoriComponenta(c.cheie, kpiLinii) && (
+              <div className="text-xs text-muted">{indicatoriComponenta(c.cheie, kpiLinii)}</div>
             )}
             {c.stare === 'reportat' && (
               <div className="text-xs text-muted">
@@ -74,6 +78,68 @@ function ListaComponente({ componente, onCorecteaza }: {
         </li>
       ))}
     </ul>
+  )
+}
+
+function treaptaKpi(k: LinieKpiRezumat): string {
+  if (k.banda !== 'na') return TREAPTA[k.banda]
+  if (k.motiv === 'necompletat') return 'necompletat'
+  return k.suma === 0 ? 'fără cazuri' : 'fără date'
+}
+
+function numeKpi(k: LinieKpiRezumat): string {
+  return k.denumire.replace(/\s*\(.*\)$/, '')
+}
+
+function pragKpi(k: LinieKpiRezumat): string | null {
+  if (k.prag_standard == null || k.prag_peste == null || k.suma_standard == null || k.suma_peste == null) return null
+  const u = k.unitate ?? ''
+  const peste = k.prag_peste % 1 === 0 ? `≥ ${k.prag_peste}${u}` : `> ${Math.floor(k.prag_peste)}${u}`
+  return `standard ≥ ${k.prag_standard}${u} → ${formatRON(k.suma_standard)} · peste ${peste} → ${formatRON(k.suma_peste)}`
+}
+
+/** Sub „Bonus KPI K1 + K4 + K5": numele indicatorilor din care e făcută suma. */
+function indicatoriComponenta(cheie: string, linii: LinieKpiRezumat[]): string | null {
+  const amanat = cheie.endsWith('bonus_kpi_m1') ? true : cheie.endsWith('bonus_kpi') ? false : null
+  if (amanat == null) return null
+  const ale = linii.filter((k) => Boolean(k.amanat) === amanat && k.cod)
+  return ale.length ? ale.map((k) => `${k.cod} ${numeKpi(k)}`).join(' · ') : null
+}
+
+function IndicatoriKpi({ linii }: { linii: LinieKpiRezumat[] }) {
+  const grupe = [
+    { titlu: 'Intră în bonusul lunii', linii: linii.filter((k) => !k.amanat) },
+    { titlu: 'Se verifică la finalul lunii următoare', linii: linii.filter((k) => k.amanat) },
+  ].filter((g) => g.linii.length > 0)
+
+  return (
+    <table className="w-full text-sm">
+      {grupe.map((g) => (
+        <tbody key={g.titlu}>
+          {grupe.length > 1 && (
+            <tr>
+              <td colSpan={4} className="pb-0.5 pt-2 text-xs text-muted">{g.titlu}</td>
+            </tr>
+          )}
+          {g.linii.map((k) => (
+            <tr key={k.cheie}>
+              <td className="py-1 pr-3 text-ink">
+                {k.cod && <span className="mr-1.5 font-semibold">{k.cod}</span>}
+                {numeKpi(k)}
+                {pragKpi(k) && <div className="text-xs text-muted">{pragKpi(k)}</div>}
+              </td>
+              <td className="whitespace-nowrap py-0.5 pr-3 text-right text-ink">
+                {k.valoare == null ? '—' : `${k.valoare}${k.unitate ?? ''}`}
+              </td>
+              <td className={`whitespace-nowrap py-0.5 pr-3 ${k.motiv === 'necompletat' ? 'text-danger' : 'text-muted'}`}>
+                {treaptaKpi(k)}{k.provizoriu && ' · provizoriu'}
+              </td>
+              <td className="w-20 whitespace-nowrap py-0.5 text-right font-medium text-ink">{formatRON(k.suma)}</td>
+            </tr>
+          ))}
+        </tbody>
+      ))}
+    </table>
   )
 }
 
@@ -138,7 +204,9 @@ export function StaffCard({
             {post === 'manager'
               ? (om as ManagerLuna).locatii.map((l) => l.locatie_nume).join(', ')
                 || ((om as ManagerLuna).perioada === 'vara' ? 'vara: doar baza' : 'doar bonusul rămas din luna trecută')
-              : `recepție · normă ${(om as ReceptieLuna).norma}`}
+              : (om as ReceptieLuna).fix_lunar != null
+                ? 'recepție · fix stabilit, fără bonusuri'
+                : `recepție · normă ${(om as ReceptieLuna).norma}`}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -194,17 +262,7 @@ export function StaffCard({
               </Link>
             )}
           </div>
-          <ul className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
-            {(om as ReceptieLuna).kpi?.linii.map((k) => (
-              <li key={k.cheie} className="flex justify-between gap-2">
-                <span className="text-muted">
-                  {k.denumire}: <span className="text-ink">{k.valoare == null ? '—' : `${k.valoare}${k.unitate ?? ''}`}</span>
-                  {k.provizoriu && ' · provizoriu'}
-                </span>
-                <span className="text-ink">{k.banda === 'na' ? (k.motiv === 'necompletat' ? 'necompletat' : 'nemăsurabil') : TREAPTA[k.banda]} · {formatRON(k.suma)}</span>
-              </li>
-            ))}
-          </ul>
+          <IndicatoriKpi linii={(om as ReceptieLuna).kpi?.linii ?? []} />
           {(om as ReceptieLuna).kpi?.avertismente.map((a) => (
             <p key={a} className="mt-1 text-xs text-warn">{a}</p>
           ))}
@@ -213,6 +271,7 @@ export function StaffCard({
 
       <ListaComponente
         componente={om.componente}
+        kpiLinii={post === 'receptie' ? (om as ReceptieLuna).kpi?.linii : undefined}
         onCorecteaza={role === 'owner' && !doarCitire ? (id) => {
           const motiv = window.prompt('De ce corectezi componenta confirmată? Motivul rămâne în jurnal.')
           if (motiv?.trim()) corecteaza.mutate({ id, motiv: motiv.trim() })

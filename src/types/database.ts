@@ -10192,6 +10192,7 @@ export type Database = {
           fix_lunar: number | null
           id: string
           norma: number
+          receptie_q4k: boolean
           titular_nume: string
           updated: string
           user_id: string | null
@@ -10208,6 +10209,7 @@ export type Database = {
           fix_lunar?: number | null
           id?: string
           norma?: number
+          receptie_q4k?: boolean
           titular_nume: string
           updated?: string
           user_id?: string | null
@@ -10224,6 +10226,7 @@ export type Database = {
           fix_lunar?: number | null
           id?: string
           norma?: number
+          receptie_q4k?: boolean
           titular_nume?: string
           updated?: string
           user_id?: string | null
