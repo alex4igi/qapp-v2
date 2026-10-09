@@ -49,6 +49,9 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
   de grupă (orar minus `vacante` și luni suspendate), max 1. Nu se rotunjește (9,67). Se aplică la bonusuri, prag minim,
   Overview, statistici. Retenția și numărătorile de OAMENI rămân neatinse (retenția la facultative = subiect deschis).
   Pe lună, o ședință se numără o singură dată, în luna în care s-a ținut; fereastra de 30 de zile e doar pentru ocuparea pe ZI.
+- **Excepție: cardul din agenda dashboard-ului, la facultative, arată ziua aleasă (9.10)** — „39 / 35 locuri" = rosterul
+  zilei (rezervări OPEN + abonați + ședința plătită pe ziua aia) / limita sesiunii OPEN (`open_sesiuni.capacitate`,
+  altfel `capacitate_maxima`); roșu peste limită. E doar afișaj operațional pentru recepție, nu intră în nicio numărătoare.
 - **Facultative: oamenii se afișează separat — „6 abonați + 7 pe ședință", nu „13 cursanți" (29.09).** Abonat = are în
   luna aia un rând lunar/anual real; cine are și abonament și ședințe e abonat. **Abonamentul reziliat la 0 lei nu e
   abonat** — e o conversie în plată pe ședință (rândul lunar se reziliază în aceeași clipă în care se creează ședințele)

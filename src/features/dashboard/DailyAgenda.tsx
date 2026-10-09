@@ -109,11 +109,12 @@ function GroupBarCard({
   to: string
   isToday: boolean
 }) {
-  const { numele, ora, sala, teacher, enrolled, prezenti, capacitate, ocupate, leads, leadsPrezenti } =
-    course
+  const {
+    numele, ora, sala, teacher, enrolled, prezenti, capacitate, ocupate, facultativ, leads, leadsPrezenti,
+  } = course
   // Inel = rata de prezență a zilei (prezenți / înscriși).
   const attPct = enrolled > 0 ? Math.min(100, Math.round((prezenti / enrolled) * 100)) : 0
-  // Bară = rata de ocupare (locuri ocupate / capacitate; la facultative, loc echivalent).
+  // Bară = rata de ocupare (locuri ocupate / capacitate; la facultative, rosterul zilei / limita sesiunii).
   const occPct =
     capacitate && capacitate > 0
       ? Math.min(100, Math.round((ocupate / capacitate) * 100))
@@ -163,10 +164,18 @@ function GroupBarCard({
 
       <div className="mt-3.5 flex items-center justify-between gap-2">
         <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
-          Ocupare
+          {facultativ ? 'Ocupare în ziua aleasă' : 'Ocupare'}
         </span>
-        <span className="fnum text-[12px] font-semibold text-muted-2">
-          {occPct != null ? `${occPct}%` : `${enrolled} înscriși`}
+        <span
+          className={`fnum text-[12px] font-semibold ${
+            facultativ && capacitate && ocupate > capacitate ? 'text-danger' : 'text-muted-2'
+          }`}
+        >
+          {facultativ && capacitate
+            ? `${ocupate} / ${capacitate} locuri`
+            : occPct != null
+              ? `${occPct}%`
+              : `${enrolled} înscriși`}
         </span>
       </div>
       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-line-2">

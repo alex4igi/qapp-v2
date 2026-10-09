@@ -11,11 +11,16 @@ export type DashboardCourse = {
   teacher: string | null
   enrolled: number
   prezenti: number
+  // La facultative = limita sesiunii OPEN din ziua afișată (sau a grupei, dacă
+  // sesiunea nu e creată încă).
   capacitate: number | null
   // Locuri ocupate în ziua afișată, după regula de 30 de zile (locuri_ocupate) —
   // numărătorul barei de ocupare. Diferit de `enrolled` (rosterul zilei, cu tot
   // cu cine vine fără plată), care rămâne numitorul inelului de prezență.
+  // La facultative = rosterul zilei (Alex, 9 oct. 2026): cardul arată cine e în
+  // sală în ziua aleasă, nu locul echivalent pe 30 de zile.
   ocupate: number
+  facultativ: boolean
   // Leads programați la grupă în ziua afișată. Stau în afara lui `enrolled`/`prezenti`
   // (aceia sunt cursanți înrolați), dar sunt oameni în sală — vezi cardul din agendă.
   leads: number
@@ -85,7 +90,7 @@ export async function getDashboardCourses(params: {
 
   // Cele trei surse de mai jos nu depind una de alta — rulează în paralel (înainte
   // erau 5-6 cereri strict secvențiale, ~1,3 s doar din așteptare).
-  const [clientsByCurs, prezByCurs, programariRows, locuriRes] = await Promise.all([
+  const [{ clientsByCurs, capacitateSesiune }, prezByCurs, programariRows, locuriRes] = await Promise.all([
     loadClientsByCurs(
       cursIds,
       new Set(cursRows.filter((c) => c.facultativ).map((c) => c.id)),
@@ -144,8 +149,13 @@ export async function getDashboardCourses(params: {
         : null,
       enrolled: enrolledByCurs.get(c.id) ?? 0,
       prezenti: prezByCurs.get(c.id) ?? 0,
-      capacitate: c.capacitate_maxima,
-      ocupate: ocupateByCurs.get(c.id) ?? 0,
+      capacitate: c.facultativ
+        ? (capacitateSesiune.get(c.id) ?? c.capacitate_maxima)
+        : c.capacitate_maxima,
+      ocupate: c.facultativ
+        ? (enrolledByCurs.get(c.id) ?? 0)
+        : (ocupateByCurs.get(c.id) ?? 0),
+      facultativ: Boolean(c.facultativ),
       leads: leadsByCurs.get(c.id)?.total ?? 0,
       leadsPrezenti: leadsByCurs.get(c.id)?.prezenti ?? 0,
     }))
@@ -162,7 +172,7 @@ async function loadClientsByCurs(
   cursIds: string[],
   facultativIds: Set<string>,
   date: string,
-): Promise<Map<string, Set<string>>> {
+): Promise<{ clientsByCurs: Map<string, Set<string>>; capacitateSesiune: Map<string, number> }> {
   const monthStart = date.slice(0, 7) + '-01'
   const monthEnd = endOfMonth(monthStart)
   const clientsByCurs = new Map<string, Set<string>>()
@@ -202,7 +212,7 @@ async function loadClientsByCurs(
     (async () => {
       const { data, error } = await supabase
         .from('open_sesiuni')
-        .select('id, curs')
+        .select('id, curs, capacitate')
         .in('curs', cursIds)
         .eq('data', date)
       if (error) throw error
@@ -221,8 +231,10 @@ async function loadClientsByCurs(
   // acces (ex. ședințe bonus din promo: înrolarea lor e pe altă lună). Îi adăugăm
   // ca să rămână invariantul „count card == lungime roster grupă" (vezi grupa.ts).
   const cursBySesiune = new Map<string, string>()
+  const capacitateSesiune = new Map<string, number>()
   for (const s of sesiuni) {
     if (s.id && s.curs) cursBySesiune.set(s.id, s.curs)
+    if (s.curs && s.capacitate != null) capacitateSesiune.set(s.curs, s.capacitate)
   }
   if (cursBySesiune.size > 0) {
     const { data: rez, error: rezErr } = await supabase
@@ -236,7 +248,7 @@ async function loadClientsByCurs(
       if (curs && r.client) add(curs, r.client)
     }
   }
-  return clientsByCurs
+  return { clientsByCurs, capacitateSesiune }
 }
 
 // Prezenti azi per course (join through enrollments → cursul)
