@@ -42,7 +42,7 @@ Se plătește în **fiecare lună a anului**, inclusiv în iulie și august.
 
 | Componentă | Condiția | Pe lună (net) |
 |---|---|---|
-| Salariu fix | norma întreagă | **2.722** |
+| Salariu fix | norma întreagă | **2.840** (corectat de Alex pe 10 oct. 2026; inițial 2.722) |
 | Facturare la timp | facturile lunii ies la termen — **doar Petruța** | 200 |
 | Recepție Quasar 4 Kids | ajută la recepția Q4K — **doar Theo**, în locul facturării | 400 |
 | Abonament la trupa proprie | gratuit, tot anul | 290 (beneficiu, nu bani în mână) |
@@ -66,7 +66,7 @@ salariu arată doar componentele care i se aplică omului (fără linii de 0 lei
 numele indicatorilor dedesubt; tabelul de indicatori arată la fiecare K pragurile și suma treptei (din grila
 omului) — la fel în „Salariul meu". Migrațiile `20261009211100` și `20261009212041`. Se aplică din septembrie 2026 (nicio lună a recepției nu era confirmată).
 
-⚠️ **Theo a fost simulată pe normă întreagă** (decizie Alex, 23 sept.), deci cu același fix de 2.722
+⚠️ **Theo a fost simulată pe normă întreagă** (decizie Alex, 23 sept.), deci cu același fix de 2.840
 ca Petruța, peste care vine salariul de instructor.
 
 ## 3. Bonusul KPI — cinci indicatori, trei trepte
@@ -235,16 +235,17 @@ nu apar**; pe cea a Petruței, da. La implementare, e un flag pe om, nu o linie 
 
 | Scenariu | Pe lună (net) |
 |---|---|
-| Azi (fix + facturare) | **2.922** |
-| Toate KPI-urile în standard | **3.352** |
-| Toate peste standard | **4.022** |
-| **Pe datele reale ale sezonului trecut** | **3.051–3.107** (vezi §6) |
+| Azi (fix + facturare) | **3.040** |
+| Toate KPI-urile în standard | **3.470** |
+| Toate peste standard | **4.140** |
+| **Pe datele reale ale sezonului trecut** | **3.169–3.225** (vezi §6) |
 
 Plus abonamentul (290) în toate variantele, plus fidelitatea (100) de la 2 ani vechime.
 
 ⚠️ În schița lui Alex, „peste standard" era scris **~4.180**. Aritmetica dă 4.022 (2.722 + 200 +
 1.100). Diferența de ~158 lei nu se explică din componentele date; cu fidelitatea inclusă ies 4.122.
 **De lămurit ce intră în cifra de 4.180.**
+Cu fixul corectat la 2.840 (10 oct. 2026) aritmetica dă 4.140 — diferența scade la 40 lei.
 
 ## 6. ⚠️ Calibrarea — pragurile sunt puse deasupra realității de azi
 
