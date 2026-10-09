@@ -45,6 +45,15 @@ type Props = {
   // clientId e cel din formular la momentul salvării, nu defaultClientId: selectorul de
   // cursant rămâne editabil, iar apelantul (fluxul bancă) atribuie plata pe cine trebuie.
   onRecorded?: (linii: FacturaLinie[], clientId: string) => void
+  // Plata pe familie (din profilul familiei): după salvare modalul rămâne deschis și
+  // trece la următorul membru cu rest de plată. Fiecare copil = încasarea lui, ca azi.
+  familie?: FamiliePlata
+}
+
+export type FamiliePlata = {
+  nume: string
+  // rest = tot sezonul (decide la cine trece după salvare); scadent = rate începute până azi (afișat).
+  membri: { id: string; nume: string; rest: number; scadent: number }[]
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
@@ -85,6 +94,7 @@ export function DatoriiUnificateTab({
   defaultMetoda,
   defaultData,
   onRecorded,
+  familie,
 }: Props) {
   const queryClient = useQueryClient()
   const { locatieId, locatieNume } = useWorkingLocatie()
@@ -103,6 +113,7 @@ export function DatoriiUnificateTab({
   const [integralOn, setIntegralOn] = useState(false)
   const [dataPlatii, setDataPlatii] = useState(defaultData ?? todayIso())
   const [error, setError] = useState<string | null>(null)
+  const [incasateFamilie, setIncasateFamilie] = useState<{ id: string; suma: number }[]>([])
   const azi = todayIso()
   const avertismentData = avertismentDataPlata(dataPlatii, azi)
 
@@ -309,7 +320,8 @@ export function DatoriiUnificateTab({
   }
 
   const submit = useMutation({
-    mutationFn: async () => {
+    // Suma pe care o dă omul (fără credite) — pentru totalul familiei.
+    mutationFn: async (_v: { incasat: number }) => {
       if (!locatieId) {
         throw new Error('Setează locația de lucru din bara de sus (📍 lângă dată).')
       }
@@ -525,7 +537,7 @@ export function DatoriiUnificateTab({
 
       return { linii, clientId }
     },
-    onSuccess: (data) => {
+    onSuccess: (data, vars) => {
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['plata-noua-inrolari-ant'] })
       void queryClient.invalidateQueries({ queryKey: ['datorii'] })
@@ -537,8 +549,21 @@ export function DatoriiUnificateTab({
       void queryClient.invalidateQueries({ queryKey: ['plati-inrolari'] })
       void queryClient.invalidateQueries({ queryKey: ['client-inrolari-sezon'] })
       void queryClient.invalidateQueries({ queryKey: ['plan-integral'] })
+      void queryClient.invalidateQueries({ queryKey: ['familie-inrolari-sezon'] })
       onRecorded?.(data.linii, data.clientId)
-      handleClose()
+      if (!familie) {
+        handleClose()
+        return
+      }
+      const platite = [...incasateFamilie, { id: data.clientId, suma: vars.incasat }]
+      setIncasateFamilie(platite)
+      const metodaCurenta = metoda
+      reset()
+      setMetoda(metodaCurenta)
+      const idx = familie.membri.findIndex((m) => m.id === data.clientId)
+      const ordine = [...familie.membri.slice(idx + 1), ...familie.membri.slice(0, idx + 1)]
+      const urmator = ordine.find((m) => m.rest > 0.004 && !platite.some((p) => p.id === m.id))
+      setClientId(urmator?.id ?? '')
     },
     onError: (e: unknown) => setError(humanizeError(e, 'Eroare la salvare.')),
   })
@@ -546,8 +571,66 @@ export function DatoriiUnificateTab({
   const loading = inrolariQ.isLoading || inrolariAntQ.isLoading || datoriiQ.isLoading
   const nimic = clientId && !loading && enrollRows.length === 0 && datRows.length === 0
 
+  const numeMembru = (id: string) => familie?.membri.find((m) => m.id === id)?.nume ?? 'Alt cursant'
+  const totalFamilie = round2(incasateFamilie.reduce((a, p) => a + p.suma, 0))
+
   return (
     <div className="space-y-4">
+      {familie && (
+        <div className="space-y-2 rounded-lg border border-quasar-gray-light bg-quasar-gray-light/20 px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-quasar-black">Familia {familie.nume}:</span>
+            {familie.membri.map((m) => {
+              const platite = incasateFamilie.filter((p) => p.id === m.id)
+              const activ = m.id === clientId
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  title="Abonamente cu luna începută până azi, neachitate (sezonul ales pe pagina familiei)"
+                  onClick={() => {
+                    if (activ) return
+                    reset()
+                    setClientId(m.id)
+                  }}
+                  className={`rounded-full border px-3 py-1 text-sm transition ${
+                    activ
+                      ? 'border-quasar-black bg-quasar-black text-white'
+                      : platite.length > 0
+                        ? 'border-green-300 bg-green-50 text-green-800 hover:border-green-500'
+                        : 'border-quasar-gray-light bg-white text-quasar-black hover:border-quasar-gray'
+                  }`}
+                >
+                  {platite.length > 0 && '✓ '}
+                  {m.nume}
+                  {platite.length > 0 ? (
+                    <span className="ml-1 font-semibold">
+                      {formatRON(platite.reduce((a, p) => a + p.suma, 0))}
+                    </span>
+                  ) : (
+                    m.scadent > 0.004 && (
+                      <span className={`ml-1 text-xs ${activ ? 'text-white/80' : 'text-quasar-gray'}`}>
+                        de plată {formatRON(m.scadent)}
+                      </span>
+                    )
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          {incasateFamilie.length > 0 && (
+            <p className="text-sm text-green-800">
+              Total încasat de la familie: <strong>{formatRON(totalFamilie)}</strong>
+              {incasateFamilie.length > 1 && (
+                <span className="text-green-700">
+                  {' '}
+                  ({incasateFamilie.map((p) => `${numeMembru(p.id)} ${formatRON(p.suma)}`).join(' + ')})
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-64 flex-1">
           <Field label="Cursant">
@@ -578,7 +661,9 @@ export function DatoriiUnificateTab({
 
       {!clientId ? (
         <p className="rounded-md border border-quasar-gray-light bg-quasar-gray-light/20 p-4 text-center text-sm text-quasar-gray">
-          Selectează un cursant pentru a vedea tot ce are de plată.
+          {familie && incasateFamilie.length > 0
+            ? 'Gata, ai încasat pentru toți membrii care au rate în sezon. Dacă mai plătește cineva, alege numele de mai sus.'
+            : 'Selectează un cursant pentru a vedea tot ce are de plată.'}
         </p>
       ) : loading ? (
         <Spinner />
@@ -957,10 +1042,10 @@ export function DatoriiUnificateTab({
           )}
         </div>
         <Button variant="secondary" onClick={handleClose}>
-          Anulează
+          {incasateFamilie.length > 0 ? 'Gata' : 'Anulează'}
         </Button>
         <Button
-          onClick={() => submit.mutate()}
+          onClick={() => submit.mutate({ incasat: cashPool })}
           disabled={
             submit.isPending ||
             (promoApplied <= 0.004 && creditApplied <= 0.004 && cashPool <= 0.004)

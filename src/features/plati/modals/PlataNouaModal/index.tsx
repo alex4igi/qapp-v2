@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Modal } from '@/components/ui'
 import { SimpleIncasareForm } from '../../SimpleIncasareForm'
-import { DatoriiUnificateTab } from './DatoriiUnificateTab'
+import { DatoriiUnificateTab, type FamiliePlata } from './DatoriiUnificateTab'
 import { ReteaDiferitaWarning } from '../../components/ReteaDiferitaWarning'
 import { OpenClassTab } from './OpenClassTab'
 import { InchiriereTab, type DefaultInchiriere } from './InchiriereTab'
@@ -23,6 +23,7 @@ type Props = {
   /** Data reală a plății (ex. data tranzacției din extrasul bancar), nu ziua înregistrării. */
   defaultData?: string
   onRecorded?: (linii: FacturaLinie[], clientId: string) => void
+  familie?: FamiliePlata
 }
 
 export function PlataNouaModal({
@@ -37,6 +38,7 @@ export function PlataNouaModal({
   defaultMetoda,
   defaultData,
   onRecorded,
+  familie,
 }: Props) {
   const [tip, setTip] = useState<TipPlata>(defaultTip ?? 'Abonament')
 
@@ -59,6 +61,7 @@ export function PlataNouaModal({
           defaultMetoda={defaultMetoda}
           defaultData={defaultData}
           onRecorded={onRecorded}
+          familie={familie}
         />
       ) : tip === 'Open' ? (
         <OpenClassTab onClose={onClose} defaultClientId={defaultClientId} />

@@ -20,8 +20,9 @@ import {
 } from '@/lib/checklist/specs/familie'
 import type { Client } from '@/types/db'
 import { useAuth } from '@/hooks/useAuth'
-import { isFrontDeskOrHigher, isTeacher } from '@/lib/rolesMatrix'
+import { isFrontDeskOrHigher, isManagerOrHigher, isTeacher } from '@/lib/rolesMatrix'
 import { IstoricComunicari } from '@/features/comunicari/IstoricComunicari'
+import { IstoricAjustari } from '@/features/ajustari/IstoricAjustari'
 import { humanizeError } from '@/lib/errorMessage'
 import { FamilieForm } from './FamilieForm'
 import { AddMembersModal } from './AddMembersModal'
@@ -34,6 +35,7 @@ import {
   type FamilieInrolareSezon,
 } from './api'
 import { listSezoane } from '@/features/plati/api'
+import { PlataNouaModal } from '@/features/plati/PlataNouaModal'
 import { OptOutSection } from '@/features/opt-out/OptOutSection'
 import { PortalAccountSection } from '@/components/PortalAccountSection'
 import { FACTURARE_LA_CERERE_ENABLED } from '@/features/facturare/flags'
@@ -66,7 +68,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-type TabId = 'inrolari' | 'date' | 'comunicari'
+type TabId = 'inrolari' | 'date' | 'comunicari' | 'ajustari'
 
 export function FamilieProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -77,6 +79,7 @@ export function FamilieProfilePage() {
   const [addMembersOpen, setAddMembersOpen] = useState(false)
   const [tab, setTab] = useState<TabId>('inrolari')
   const [sezonId, setSezonId] = useState<string>('')
+  const [plataOpen, setPlataOpen] = useState(false)
 
   const familieQuery = useQuery({
     queryKey: ['familie', id],
@@ -138,6 +141,26 @@ export function FamilieProfilePage() {
     return { rest, total }
   }, [inrolariQuery.data])
 
+  // Plata pe familie: întâi cine are rate începute până azi, apoi cine mai are rate în sezon.
+  const membriPlata = useMemo(() => {
+    const azi = new Date().toISOString().slice(0, 10)
+    const rest = new Map<string, number>()
+    const scadent = new Map<string, number>()
+    for (const r of inrolariQuery.data ?? []) {
+      const v = Math.max(r.rest ?? 0, 0)
+      rest.set(r.id_cursant, (rest.get(r.id_cursant) ?? 0) + v)
+      if (r.data_incepere <= azi) scadent.set(r.id_cursant, (scadent.get(r.id_cursant) ?? 0) + v)
+    }
+    return (membersQuery.data ?? [])
+      .map((m) => ({
+        id: m.id,
+        nume: m.prenume?.trim() || m.nume,
+        rest: rest.get(m.id) ?? 0,
+        scadent: scadent.get(m.id) ?? 0,
+      }))
+      .sort((a, b) => b.scadent - a.scadent || b.rest - a.rest)
+  }, [membersQuery.data, inrolariQuery.data])
+
   // Reprezentanți = membri majori (vârsta >= 18) automat
   const reprezentanti = useMemo(() => {
     return (membersQuery.data ?? []).filter((m) => {
@@ -188,6 +211,11 @@ export function FamilieProfilePage() {
         actions={
           <>
             <ChecklistBadge rezultat={checklist} />
+            {!isTeacher(role) && members.length > 0 && (
+              <Button variant="secondary" onClick={() => setPlataOpen(true)}>
+                ＄ Plată
+              </Button>
+            )}
             <Button onClick={() => setEditOpen(true)}>Editează</Button>
           </>
         }
@@ -221,6 +249,7 @@ export function FamilieProfilePage() {
             { id: 'inrolari', label: 'Detalii înrolări' },
             { id: 'date',     label: 'Detalii personale' },
             ...(isTeacher(role) ? [] : [{ id: 'comunicari', label: 'Comunicări' }]),
+            ...(isManagerOrHigher(role) ? [{ id: 'ajustari', label: 'Ajustări' }] : []),
           ]}
           active={tab}
           onChange={(t) => setTab(t as TabId)}
@@ -239,6 +268,9 @@ export function FamilieProfilePage() {
           {tab === 'comunicari' && !isTeacher(role) && (
             <IstoricComunicari familieId={familie.id} />
           )}
+          {tab === 'ajustari' && isManagerOrHigher(role) && (
+            <IstoricAjustari familieId={familie.id} />
+          )}
         </div>
       </ProfileScaffold>
 
@@ -251,6 +283,15 @@ export function FamilieProfilePage() {
             setEditOpen(false)
             setFocusSection(undefined)
           }}
+        />
+      )}
+
+      {plataOpen && (
+        <PlataNouaModal
+          open
+          defaultClientId={membriPlata[0]?.id}
+          familie={{ nume: familie.nume_familie, membri: membriPlata }}
+          onClose={() => setPlataOpen(false)}
         />
       )}
 
