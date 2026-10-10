@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button, Modal } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkingLocatie } from '@/hooks/useWorkingLocatie'
+import { ADMIN_OR_OWNER } from '@/lib/rolesMatrix'
 
 const RASPUNS_KEY = 'qapp.sugestie_retea'
 
@@ -23,13 +24,15 @@ function citesteRaspuns(): string | null {
 // Omul e pe rețeaua altei locații decât cea din bara de sus: îi propunem s-o
 // schimbe, nu o schimbăm noi (Alex, 4 oct. 2026 — fiecare s-a obișnuit cu bara lui).
 // Un răspuns ține o zi pe rețeaua aceea; pe altă rețea întrebăm din nou.
+// Admin+ nu încasează la recepție, deci nu-i propunem nimic (Alex, 10 oct. 2026).
 export function SugestieLocatieRetea() {
   const { role } = useAuth()
   const { locatieId, locatieNume, locatieRetea, locatieReteaNume, setLocatieId } =
     useWorkingLocatie()
   const [raspuns, setRaspuns] = useState(citesteRaspuns)
 
-  if (role === 'teacher' || !locatieRetea || !locatieReteaNume) return null
+  if (role === 'teacher' || (role && ADMIN_OR_OWNER.includes(role))) return null
+  if (!locatieRetea || !locatieReteaNume) return null
   if (locatieId === locatieRetea || raspuns === cheieAzi(locatieRetea)) return null
 
   const raspunde = (schimba: boolean) => {
