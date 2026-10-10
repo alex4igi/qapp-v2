@@ -2,7 +2,8 @@
 // SMS dacă are telefon, email doar ca rezervă. (Decis 2026-09-10.) Excepție: cererea de
 // reziliere pleacă DOAR pe email, ca să rămână la dosar. Fără email nu se trimite deloc:
 // o familie care n-a răspuns la telefon n-o completează nici pe asta, iar SMS-ul costă
-// (Alex, 08.10.2026).
+// (Alex, 08.10.2026). „Retrimite link" pleacă și el doar pe email: prima dată linkul vine
+// pe telefon, a doua oară pe email; fără email nu se retrimite (Alex, 10.10.2026).
 //
 // De ce un singur canal: familia semnează dintr-un mesaj și primește degeaba
 // celălalt — dublu cost pe mesaj, fără câștig.
@@ -29,6 +30,8 @@ export type NotificareContract = {
   telefon: string | null
   email: string | null
   clientId?: string | null
+  /** Reminder grupat pe familie: celelalte contracte din același mesaj primesc și ele urma în jurnal. */
+  alte?: { contractId: string; clientId: string | null }[]
   codMesaj: 'contract' | 'contract_reminder'
   /** Cererea de reziliere: doar email; fără email nu pleacă nimic. */
   doarEmail?: boolean
@@ -43,6 +46,10 @@ export type RezultatNotificare = {
   amanat?: boolean
   error?: string
 }
+
+// Zilele de la trimitere la care cron-ul trimite reminder; lungimea = câte remindere primește
+// un contract. Unul singur, la 5 zile (Alex, 10.10.2026; înainte 3 și 7).
+export const REMINDER_DAYS = [5]
 
 export function doarEmail(tipTemplate: string | null | undefined): boolean {
   return tipTemplate === 'cerere_reziliere'
@@ -109,7 +116,9 @@ async function prinSms(
       telefon: n.telefon,
       mesaj: n.smsText,
       cod_mesaj: n.codMesaj,
-      clienti_vizati: n.clientId ? [n.clientId] : [],
+      clienti_vizati: [n.clientId, ...(n.alte ?? []).map((a) => a.clientId)].filter(
+        (id): id is string => !!id,
+      ),
       status: amanat ? 'Amanat' : 'In curs de trimitere',
       data_planificata: localDateBucharest(sendAfter ? new Date(sendAfter) : now),
     })
@@ -128,13 +137,13 @@ async function prinSms(
     })
     if (error) {
       await marcheaza(admin, rand?.id, 'Esuat')
-      await logEvent(admin, n.contractId, 'eroare', {
+      await logToate(admin, n, 'eroare', {
         pas: 'sms_amanare',
         mesaj_eroare: error.message,
       })
       return { canal: 'sms', ok: false, error: error.message }
     }
-    await logEvent(admin, n.contractId, 'sms_amanat', { pleaca_dupa: cfg.end })
+    await logToate(admin, n, 'sms_amanat', { pleaca_dupa: cfg.end })
     return { canal: 'sms', ok: true, amanat: true }
   }
 
@@ -144,9 +153,9 @@ async function prinSms(
   const plecat = res.ok && !res.stub
   await marcheaza(admin, rand?.id, plecat ? 'Trimis' : 'Esuat')
   if (plecat) {
-    await logEvent(admin, n.contractId, 'sms_trimis', { message_id: res.messageId ?? null })
+    await logToate(admin, n, 'sms_trimis', { message_id: res.messageId ?? null })
   } else {
-    await logEvent(admin, n.contractId, 'eroare', {
+    await logToate(admin, n, 'eroare', {
       pas: 'sms',
       stub: res.stub,
       mesaj_eroare: res.error ?? (res.stub ? 'trimitere stub, SMS-ul nu a plecat' : 'eroare necunoscută'),
@@ -165,15 +174,26 @@ async function prinEmail(
     html: n.emailHtml,
   })
   const plecat = res.ok && !res.stub
-  if (plecat) await logEvent(admin, n.contractId, 'email_trimis', {})
+  if (plecat) await logToate(admin, n, 'email_trimis', {})
   else {
-    await logEvent(admin, n.contractId, 'eroare', {
+    await logToate(admin, n, 'eroare', {
       pas: 'email',
       stub: res.stub,
       mesaj_eroare: res.error ?? (res.stub ? 'trimitere stub, emailul nu a plecat' : 'eroare necunoscută'),
     })
   }
   return { canal: 'email', ok: plecat, error: res.error }
+}
+
+async function logToate(
+  admin: SupabaseClient,
+  n: NotificareContract,
+  tip: string,
+  meta: Record<string, unknown>,
+): Promise<void> {
+  for (const id of [n.contractId, ...(n.alte ?? []).map((a) => a.contractId)]) {
+    await logEvent(admin, id, tip, meta)
+  }
 }
 
 async function marcheaza(

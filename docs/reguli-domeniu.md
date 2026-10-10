@@ -260,6 +260,12 @@ Fiecare regulă e o decizie a lui Alex sau o capcană descoperită pe date reale
 - **Doar template-uri**, fără text liber de la recepție; `mesaj_liber` e parcat (se reactivează doar cu selectorul Operațional/Marketing).
 - **Opt-out = doar marketing.** Clasificarea stă într-un singur loc: `supabase/functions/_shared/smsCategorie.ts`
   (marketing: `post_demo`, `review`, `followup`; restul tranzacționale; un cod necunoscut = marketing).
+- **Contractele de semnat** (Alex, 10.10.2026): prima trimitere pe SMS (email doar dacă familia n-are telefon), apoi
+  **un singur reminder automat, la 5 zile**, și un singur mesaj pe familie pe zi — dacă mai multe contracte ale familiei
+  au reminderul atunci, pleacă un SMS cu toate linkurile. **„Retrimite" = doar pe email**; fără email în fișă nu se
+  retrimite, iar după o retrimitere nu mai vine niciun reminder automat. Înainte (3 + 7 zile, iar retrimiterea pornea
+  ciclul de la zero) o familie a ajuns la 12 SMS-uri în trei săptămâni. Cod: `REMINDER_DAYS` în
+  `_shared/contractNotify.ts`, `process-contract-reminders`, `contract-resend`.
 - Adresa/telefonul dintr-un SMS către lead se iau din **locația programării**, nu din `leads.locatia`.
 - **O locație fără adresă nu primește SMS** (`LOCATII_FARA_DATE_SMS` în `_shared/sms.ts`, azi Valea Lupului): `buildSms` întoarce
   null și apelantul sare mesajul, în loc să trimită adresa de la Ștefan. Se scoate de pe listă când intră în `ADRESE`/`TELEFOANE`/`REVIEW_LINKS`.

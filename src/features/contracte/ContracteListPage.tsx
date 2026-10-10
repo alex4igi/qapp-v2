@@ -212,14 +212,14 @@ export function ContracteListPage() {
               onClick={() => {
                 if (
                   confirm(
-                    'Retrimiți linkul de semnare? Familia primește din nou același link, iar valabilitatea pornește de azi.',
+                    'Retrimiți linkul de semnare pe email? Familia primește același link pe adresa din fișă, iar valabilitatea pornește de azi. Fără email în fișă nu se retrimite.',
                   )
                 ) {
                   retrimite.mutate(r)
                 }
               }}
             >
-              Retrimite link
+              Retrimite pe email
             </Button>
           )}
           {canAnula && ['trimis', 'deschis'].includes(r.status) && (

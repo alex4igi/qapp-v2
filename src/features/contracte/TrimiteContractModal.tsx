@@ -156,7 +156,7 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
         setResult({
           ok: false,
           text: nesemnat
-            ? `${prefix}Familia are deja acest contract trimis și nesemnat. Retrimite-i același link — valabilitatea pornește de azi.`
+            ? `${prefix}Familia are deja acest contract trimis și nesemnat. Retrimite-i același link pe email — valabilitatea pornește de azi.`
             : `${prefix}Nu s-a putut trimite: ${r?.error ?? 'eroare necunoscută'}`,
         })
         return
@@ -424,7 +424,7 @@ export function TrimiteContractModal({ open, onClose, familieId, familieNume, cl
           </Button>
           {deRetrimis ? (
             <Button onClick={() => retrimite.mutate(deRetrimis)} disabled={retrimite.isPending}>
-              {retrimite.isPending ? 'Se retrimite…' : 'Retrimite link'}
+              {retrimite.isPending ? 'Se retrimite…' : 'Retrimite pe email'}
             </Button>
           ) : (
             <Button

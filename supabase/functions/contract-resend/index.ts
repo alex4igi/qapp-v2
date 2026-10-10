@@ -1,10 +1,14 @@
 // Edge Function: „Retrimite link" din lista de contracte (JWT staff).
 //
-// Trimite din nou ACELAȘI link de semnare și repornește valabilitatea de azi, cu
-// remindere noi la 3/7 zile. Merge pe contracte trimise, deschise sau expirate —
-// un contract expirat redevine semnabil pe linkul lui, dar doar dacă familia n-a
-// primit între timp alt contract pe același șablon (gardul de dublură din contract-send).
-import { doarEmail, mesajContract, notificaContract } from '../_shared/contractNotify.ts'
+// Trimite din nou ACELAȘI link de semnare și repornește valabilitatea de azi. Merge pe
+// contracte trimise, deschise sau expirate — un contract expirat redevine semnabil pe
+// linkul lui, dar doar dacă familia n-a primit între timp alt contract pe același șablon
+// (gardul de dublură din contract-send).
+//
+// Doar pe email, iar fără email nu se retrimite (Alex, 10.10.2026). Retrimiterea ține loc
+// de reminder: după ea cron-ul nu mai trimite nimic pe contractul ăsta — înainte, fiecare
+// retrimitere pornea de la zero ciclul de remindere și o familie ajungea la 12 SMS-uri.
+import { mesajContract, notificaContract, REMINDER_DAYS } from '../_shared/contractNotify.ts'
 import { linkSemnare, logEvent, serviceClient } from '../_shared/contracte.ts'
 import { requireStaffRole } from '../_shared/staffAuth.ts'
 
@@ -50,8 +54,11 @@ Deno.serve(async (req) => {
       .select('telefon, email')
       .eq('id', c.familie_id)
       .single()
-    if (!familie?.telefon && !familie?.email) {
-      return json({ error: 'Familia nu are telefon sau email în fișă.' }, 400)
+    if (!familie?.email) {
+      return json(
+        { error: 'Familia nu are email în fișă — linkul se retrimite doar pe email. Completează emailul și încearcă din nou.' },
+        400,
+      )
     }
 
     if (c.status === 'expirat') {
@@ -93,8 +100,8 @@ Deno.serve(async (req) => {
         status: c.status === 'expirat' ? (c.deschis_prima_data_la ? 'deschis' : 'trimis') : c.status,
         token_expira_la: expiraLa,
         trimis_la: acum.toISOString(),
-        reminder_count: 0,
-        last_reminder_la: null,
+        reminder_count: REMINDER_DAYS.length,
+        last_reminder_la: acum.toISOString(),
       })
       .eq('id', c.id)
       .eq('status', c.status)
@@ -115,7 +122,7 @@ Deno.serve(async (req) => {
       email: familie.email,
       clientId: c.client_id,
       codMesaj: 'contract',
-      doarEmail: doarEmail(tipTemplate),
+      doarEmail: true,
       ...mesajContract(prenumeCopil, link, zile, tipTemplate),
     })
 
