@@ -2,6 +2,8 @@
 //
 // action='load'   → validează tokenul, marchează prima deschidere, întoarce
 //                   definițiile câmpurilor + precompletările + signed URL preview.
+// action='ciorna' → PDF-ul completat cu ce e pe pagină, fără semnătură și cu
+//                   „CIORNĂ — NESEMNAT" pe fiecare pagină; nu salvează nimic.
 // action='status'   → starea documentului (pagina așteaptă finalizarea după semnare).
 // action='download' → documentul semnat, ca signed URL scurt din bucketul privat.
 //                   Linkul din SMS e calea părintelui spre propriul contract după
@@ -30,6 +32,9 @@ import {
   type TemplateField,
 } from '../_shared/contracte.ts'
 import { raspuns429, verificaPlafon } from '../_shared/rateLimit.ts'
+import { deseneazaCampuri, marcheazaCiorna } from '../_shared/contractPdf.ts'
+import { PDFDocument } from 'npm:pdf-lib@1.17.1'
+import fontkit from 'npm:@pdf-lib/fontkit@1.1.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -343,6 +348,42 @@ Deno.serve(async (req) => {
         copii,
         pdfUrl: signed?.signedUrl ?? null,
       })
+    }
+
+    if (body.action === 'ciorna') {
+      const valori = { ...((body.valori ?? {}) as Record<string, unknown>) }
+      const { mascate } = await buildPrefill(admin, contract, fields)
+      for (const f of fields) {
+        if (f.source === 'staff') valori[f.key] = contract.valori?.[f.key] ?? ''
+        if (f.source === 'azi') valori[f.key] = new Date().toISOString().slice(0, 10)
+        // CNP-ul și CI-ul din fișă rămân mascate și în ciornă: linkul poate
+        // ajunge la altcineva, iar valoarea întreagă intră doar în documentul semnat.
+        if (mascate[f.key] && !String(valori[f.key] ?? '').trim()) valori[f.key] = mascate[f.key]
+      }
+
+      const { data: tplFile } = await admin.storage
+        .from('contracte-templates')
+        .download(tpl.pdf_storage_path)
+      if (!tplFile) return json({ error: 'Ciorna nu s-a putut pregăti acum. Încearcă din nou peste câteva minute.' }, 500)
+      const doc = await PDFDocument.load(new Uint8Array(await tplFile.arrayBuffer()))
+      doc.registerFontkit(fontkit)
+      const fontBytes = await Deno.readFile(new URL('./NotoSans-Regular.ttf', import.meta.url))
+      const font = await doc.embedFont(fontBytes, { subset: true })
+      const { data: copii } = await admin
+        .from('clienti')
+        .select('id, nume, prenume, data_nasterii')
+        .eq('familia', contract.familie_id)
+        .order('data_nasterii')
+      deseneazaCampuri(doc.getPages(), fields, valori, font, {
+        copii: copii ?? [], clientId: contract.client_id, semnatura: null,
+      })
+      marcheazaCiorna(doc, font)
+      const pdf = await doc.saveAsBase64()
+
+      await logEvent(admin, contract.id, 'ciorna_descarcata', {
+        ip: clientIp(req), ua: req.headers.get('user-agent') ?? '',
+      })
+      return json({ pdf, fisier: `Ciorna - ${pdfFileName(tpl.nume)}` })
     }
 
     if (body.action === 'submit') {

@@ -42,6 +42,7 @@ const EVENT_LABEL: Record<string, string> = {
   sms_amanat: 'SMS amânat (zonă interzisă)',
   email_trimis: 'Email trimis',
   deschis: 'Deschis de client',
+  ciorna_descarcata: 'Ciornă descărcată de client',
   consimtamant: 'Consimțământ e-sign',
   semnat: 'Semnat',
   pdf_generat: 'PDF generat',
@@ -52,6 +53,7 @@ const EVENT_LABEL: Record<string, string> = {
   expirat: 'Expirat',
   respins: 'Respins',
   anulat: 'Anulat',
+  descarcat: 'Document semnat descărcat',
   eroare: 'Eroare',
 }
 

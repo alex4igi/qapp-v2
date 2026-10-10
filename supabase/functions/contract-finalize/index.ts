@@ -11,9 +11,10 @@
 //   6. upload Google Drive (Shared Drive, service account) sau fallback signed URL
 //   7. rând în documente_client per copil vizat → apare automat în portal
 //   8. status='finalizat'
-import { PDFDocument, PDFFont, PDFPage, rgb } from 'npm:pdf-lib@1.17.1'
+import { PDFDocument, PDFFont, PDFPage } from 'npm:pdf-lib@1.17.1'
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1'
 import { logEvent, serviceClient, sha256Hex, type TemplateField } from '../_shared/contracte.ts'
+import { deseneazaCampuri } from '../_shared/contractPdf.ts'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -133,41 +134,6 @@ async function driveUpload(
 // Generare PDF
 // ============================================================
 
-// Sub atât nu coborâm: un contract semnat trebuie să rămână citibil pe hârtie.
-const MIN_FONT_SIZE = 6
-
-/**
- * Așază textul CENTRAT în caseta câmpului, pe ambele axe, micșorându-l dacă
- * nu încape pe lățime.
- *
- * Înainte se desena la `x` + `y: yTop - size` — un offset fix care ignora
- * înălțimea casetei, așa că valoarea urca peste linia punctată a formularului
- * și stătea lipită de marginea stângă, peste eticheta tipărită.
- *
- * Centrarea verticală se face pe cutia ascendentului (fără descendent), nu pe
- * înălțimea capitalelor: majusculele românești cu diacritice (Ă, Â, Î, Ș, Ț)
- * chiar folosesc spațiul de deasupra.
- *
- * Micșorarea automată e ce face sigură o mărime de font generoasă în șablon:
- * casetele sunt cât blank-ul tipărit din formular (`ci` are 54pt), iar o adresă
- * sau un email lung ar curge altfel peste textul de alături. Scade doar câmpul
- * care chiar nu încape, restul rămân la mărimea cerută.
- */
-function fitInBox(
-  font: PDFFont, text: string, size: number,
-  x: number, yTop: number, boxW: number, boxH: number,
-): { x: number; y: number; size: number } {
-  let s = size
-  while (s > MIN_FONT_SIZE && font.widthOfTextAtSize(text, s) > boxW) s -= 0.5
-  const textW = font.widthOfTextAtSize(text, s)
-  const textH = font.heightAtSize(s, { descender: false })
-  return {
-    x: textW < boxW ? x + (boxW - textW) / 2 : x,
-    y: yTop - boxH / 2 - textH / 2,
-    size: s,
-  }
-}
-
 function drawWrapped(
   page: PDFPage, text: string, font: PDFFont,
   x: number, yTop: number, size: number, maxWidth: number, lineHeight: number,
@@ -246,61 +212,9 @@ Deno.serve(async (req) => {
       .eq('familia', contract.familie_id)
       .order('data_nasterii')
 
-    for (const f of tpl.fields) {
-      const page = pages[f.page - 1]
-      if (!page) continue
-      const { width, height } = page.getSize()
-      const x = f.x * width
-      const yTop = height - f.y * height
-      const size = f.fontSize ?? 10
-      const boxW = f.w * width
-      const boxH = f.h * height
-
-      if (f.type === 'signature') {
-        if (semnaturaImg) {
-          page.drawImage(semnaturaImg, { x, y: yTop - boxH, width: boxW, height: boxH })
-        }
-      } else if (f.type === 'copii_table') {
-        // `h` e pasul UNUI rând de cursant din tabel, nu înălțimea blocului de
-        // trei — verificat pe randare: cu pasul împărțit la 3 copiii se
-        // înghesuiau toți în prima celulă.
-        const lista = (copii ?? []).filter((c) =>
-          !contract.client_id || c.id === contract.client_id ||
-          (valori.copii_selectati as string[] | undefined)?.includes(c.id)
-        )
-        const randuri = lista.length > 0 ? lista : (copii ?? [])
-        const rowH = boxH
-        randuri.slice(0, 3).forEach((c, i) => {
-          const nume = `${c.nume} ${c.prenume ?? ''}`.trim()
-          const nastere = c.data_nasterii
-            ? new Date(c.data_nasterii).toLocaleDateString('ro-RO')
-            : ''
-          // Rândul rămâne aliniat la stânga: e un tabel cu coloane, iar
-          // centrarea orizontală l-ar rupe de celula „Prenume cursant".
-          const text = `${nume}   ${nastere}`
-          const pos = fitInBox(font, text, size, x, yTop - i * rowH, boxW, rowH)
-          page.drawText(text, { x, y: pos.y, size: pos.size, font })
-        })
-      } else if (f.type === 'checkbox') {
-        if (valori[f.key]) {
-          const pos = fitInBox(font, 'X', size, x, yTop, boxW, boxH)
-          page.drawText('X', { x: pos.x, y: pos.y, size: pos.size, font })
-        }
-      } else {
-        const val = valori[f.key]
-        if (val !== undefined && val !== null && String(val).trim() !== '') {
-          let text = String(val)
-          if (f.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(text)) {
-            text = new Date(text).toLocaleDateString('ro-RO')
-          }
-          const pos = fitInBox(font, text, size, x, yTop, boxW, boxH)
-          page.drawText(text, {
-            x: pos.x, y: pos.y, size: pos.size, font,
-            maxWidth: boxW, color: rgb(0.1, 0.1, 0.3),
-          })
-        }
-      }
-    }
+    deseneazaCampuri(pages, tpl.fields, valori, font, {
+      copii: copii ?? [], clientId: contract.client_id, semnatura: semnaturaImg,
+    })
 
     // 3) pagina certificat de finalizare
     const { data: events } = await admin
