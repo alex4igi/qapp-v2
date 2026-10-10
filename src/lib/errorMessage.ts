@@ -146,6 +146,12 @@ export function humanizeError(e: unknown, fallback = 'A apărut o eroare.'): str
     if (col) return `Lipsește un câmp obligatoriu (${col}). Dacă nu e un câmp din formular, trimite-i mesajul lui Alex.`
   }
 
+  // 23514 vine și din gărzile din triggere (`raise … using errcode = '23514'`), cu text scris
+  // pentru om (ex. abonament peste ședințe plătite). Doar CHECK-ul Postgres rămâne pe cel generic.
+  if (code === '23514' && message && !/violates check constraint/i.test(message)) {
+    return message
+  }
+
   if (code && code in CODE_MESSAGES) return CODE_MESSAGES[code]
 
   // Mesajele RLS pot ajunge fără cod (ex. din edge functions) — detectăm după text.
