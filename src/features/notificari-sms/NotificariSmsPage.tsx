@@ -26,8 +26,14 @@ import {
   processSmsQueue,
   getSmsAmanateInfo,
   PAGE_SIZE,
+  SMS_COD_LABEL,
   type SmsQueueRow,
 } from './api'
+
+const codOptions = Object.entries(SMS_COD_LABEL).map(([value, label]) => ({
+  value,
+  label,
+}))
 
 const STATUS_STYLE: Record<string, string> = {
   'De trimis': 'text-amber-700',
@@ -48,17 +54,18 @@ export function NotificariSmsPage() {
   // restul) — dezactivăm butonul acolo unde ar eșua oricum.
   const poateStergeOrice = isAdminOrHigher(role)
   const [status, setStatus] = useState('')
+  const [cod, setCod] = useState('')
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [composerOpen, setComposerOpen] = useState(false)
   const [processMsg, setProcessMsg] = useState<string | null>(null)
   const [deleteMsg, setDeleteMsg] = useState<string | null>(null)
 
-  useEffect(() => setPage(0), [status])
+  useEffect(() => setPage(0), [status, cod])
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['sms-queue', { status, page }],
-    queryFn: () => listSmsQueue({ status, page }),
+    queryKey: ['sms-queue', { status, cod, page }],
+    queryFn: () => listSmsQueue({ status, cod, page }),
     placeholderData: keepPreviousData,
   })
 
@@ -116,6 +123,13 @@ export function NotificariSmsPage() {
       cell: (s) => s.nume ?? '—',
       className: 'w-44',
       sortValue: (s) => s.nume?.toLowerCase(),
+    },
+    {
+      header: 'Tip',
+      cell: (s) =>
+        s.cod_mesaj ? (SMS_COD_LABEL[s.cod_mesaj] ?? s.cod_mesaj) : '—',
+      className: 'w-36',
+      sortValue: (s) => s.cod_mesaj,
     },
     {
       header: 'Mesaj',
@@ -226,6 +240,14 @@ export function NotificariSmsPage() {
             options={statusSmsOptions}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
+          />
+        </div>
+        <div className="w-52">
+          <Select
+            placeholder="Toate tipurile"
+            options={codOptions}
+            value={cod}
+            onChange={(e) => setCod(e.target.value)}
           />
         </div>
         {processMsg && (

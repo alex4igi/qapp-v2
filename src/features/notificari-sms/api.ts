@@ -9,7 +9,20 @@ export const PAGE_SIZE = 25
 
 export type SmsQueueParams = {
   status: string
+  cod: string
   page: number
+}
+
+// Toate căile care scriu în `situatie_sms_uri` (bulk din compozitor, contracte,
+// cont portal). Cod nou de mesaj ⇒ îl adaugi și aici, altfel nu apare în filtru.
+export const SMS_COD_LABEL: Record<string, string> = {
+  reminder_plata: 'Reminder plată',
+  notificare_restante: 'Restanțe',
+  avertisment_loc: 'Avertisment pierdere loc',
+  contract: 'Contract de semnat',
+  contract_reminder: 'Reminder contract',
+  cont_portal: 'Cont portal',
+  mesaj_liber: 'Mesaj liber',
 }
 
 export type SmsQueueRow = SituatieSms & { nume: string | null }
@@ -21,6 +34,7 @@ export type SmsQueueResult = {
 
 export async function listSmsQueue({
   status,
+  cod,
   page,
 }: SmsQueueParams): Promise<SmsQueueResult> {
   const from = page * PAGE_SIZE
@@ -35,6 +49,7 @@ export async function listSmsQueue({
   if (status) {
     query = query.eq('status', status as NonNullable<SituatieSms['status']>)
   }
+  if (cod) query = query.eq('cod_mesaj', cod)
 
   const { data, error, count } = await query
   if (error) throw error
