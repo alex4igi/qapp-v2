@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { invokeEdge } from '@/lib/invokeEdge'
 import { getSmsQuietHours } from '@/features/setari/api/sms'
 import type { SituatieSms, InsertDto } from '@/types/db'
+import type { Database } from '@/types/database'
 import type { SmsBulkCod, SmsRecipient, SmsRecipientMembru } from './templates'
 import type { ScadenteSezon } from './calendar'
 
@@ -13,19 +14,39 @@ export type SmsQueueParams = {
   page: number
 }
 
-// Toate căile care scriu în `situatie_sms_uri` (bulk din compozitor, contracte,
-// cont portal). Cod nou de mesaj ⇒ îl adaugi și aici, altfel nu apare în filtru.
-export const SMS_COD_LABEL: Record<string, string> = {
-  reminder_plata: 'Reminder plată',
-  notificare_restante: 'Restanțe',
-  avertisment_loc: 'Avertisment pierdere loc',
-  contract: 'Contract de semnat',
-  contract_reminder: 'Reminder contract',
-  cont_portal: 'Cont portal',
-  mesaj_liber: 'Mesaj liber',
-}
+// Toate tipurile din `get_jurnal_sms`: coada /sms (plăți, contracte, cont portal) și
+// jurnalele automate de leaduri și înscrieri. Cod nou de SMS ⇒ îl adaugi aici, altfel
+// nu apare în filtru (rândul se vede oricum, cu codul brut).
+export const SMS_TIPURI: { value: string; label: string; group: string }[] = [
+  { value: 'confirmare', label: 'Confirmare programare', group: 'Leaduri' },
+  { value: 'reminder', label: 'Reminder programare', group: 'Leaduri' },
+  { value: 'post_demo', label: 'După demo', group: 'Leaduri' },
+  { value: 'waiting_list', label: 'Listă de așteptare', group: 'Leaduri' },
+  { value: 'review', label: 'Cerere review', group: 'Leaduri' },
+  { value: 'followup', label: 'Follow-up', group: 'Leaduri' },
+  { value: 'preinscriere', label: 'Preînscriere', group: 'Leaduri' },
+  { value: 'confirmare_inrolare', label: 'Confirmare înrolare', group: 'Înscrieri' },
+  { value: 'start_sezon', label: 'Start sezon', group: 'Înscrieri' },
+  { value: 'prima_sedinta', label: 'Prima ședință', group: 'Înscrieri' },
+  { value: 'absenta_fara_raspuns', label: 'Absent 21z, fără răspuns', group: 'Înscrieri' },
+  { value: 'reminder_plata', label: 'Reminder plată', group: 'Plăți' },
+  { value: 'notificare_restante', label: 'Restanțe', group: 'Plăți' },
+  { value: 'avertisment_loc', label: 'Avertisment pierdere loc', group: 'Plăți' },
+  { value: 'contract', label: 'Contract de semnat', group: 'Contracte' },
+  { value: 'contract_reminder', label: 'Reminder contract', group: 'Contracte' },
+  { value: 'cont_portal', label: 'Cont portal', group: 'Altele' },
+  { value: 'mesaj_liber', label: 'Mesaj liber', group: 'Altele' },
+]
 
-export type SmsQueueRow = SituatieSms & { nume: string | null }
+export const SMS_COD_LABEL: Record<string, string> = Object.fromEntries(
+  SMS_TIPURI.map((t) => [t.value, t.label]),
+)
+
+// `coada` = rând din `situatie_sms_uri` (se poate șterge); restul vin din jurnalele
+// automate și sunt doar de citit.
+export type SmsQueueRow = Database['public']['Functions']['get_jurnal_sms']['Returns'][number] & {
+  nume: string | null
+}
 
 export type SmsQueueResult = {
   rows: SmsQueueRow[]
@@ -37,24 +58,15 @@ export async function listSmsQueue({
   cod,
   page,
 }: SmsQueueParams): Promise<SmsQueueResult> {
-  const from = page * PAGE_SIZE
-  const to = from + PAGE_SIZE - 1
-
-  let query = supabase
-    .from('situatie_sms_uri')
-    .select('*', { count: 'exact' })
-    .order('created', { ascending: false })
-    .range(from, to)
-
-  if (status) {
-    query = query.eq('status', status as NonNullable<SituatieSms['status']>)
-  }
-  if (cod) query = query.eq('cod_mesaj', cod)
-
-  const { data, error, count } = await query
+  const { data, error } = await supabase.rpc('get_jurnal_sms', {
+    p_tip: cod || undefined,
+    p_status: status || undefined,
+    p_limit: PAGE_SIZE,
+    p_offset: page * PAGE_SIZE,
+  })
   if (error) throw error
   const rows = data ?? []
-  return { rows: await cuNume(rows), total: count ?? 0 }
+  return { rows: await cuNume(rows), total: Number(rows[0]?.total ?? 0) }
 }
 
 // Ultimele 9 cifre — singurul numitor comun al formatelor din DB (07…, 40…, +40…).
@@ -63,35 +75,15 @@ function nucleuTelefon(t: string | null): string | null {
   return d.length >= 9 ? d.slice(-9) : null
 }
 
-// Numele de lângă telefon: din `clienti_vizati` când există (rândurile compuse din
-// worklist le au), altfel din telefon — rândurile de contract pe familie n-au copil.
-async function cuNume(rows: SituatieSms[]): Promise<SmsQueueRow[]> {
-  const clientIds = [...new Set(rows.flatMap((r) => r.clienti_vizati ?? []))]
+// Numele vine din RPC (lead, înrolare, `clienti_vizati`); rămân fără nume rândurile
+// de contract pe familie și SMS-urile fără lead — pentru ele căutăm după telefon.
+type JurnalRow = Omit<SmsQueueRow, 'nume'>
 
-  const numePeClient = new Map<string, string>()
-  if (clientIds.length > 0) {
-    const { data } = await supabase
-      .from('clienti')
-      .select('id, nume, prenume')
-      .in('id', clientIds)
-    for (const c of data ?? []) {
-      numePeClient.set(c.id, `${c.nume ?? ''} ${c.prenume ?? ''}`.trim())
-    }
-  }
-
-  const numeDinVizati = (r: SituatieSms): string | null => {
-    const nume = (r.clienti_vizati ?? [])
-      .map((id) => numePeClient.get(id))
-      .filter((n): n is string => !!n)
-    if (nume.length === 0) return null
-    return nume.length <= 2 ? nume.join(', ') : `${nume.slice(0, 2).join(', ')} +${nume.length - 2}`
-  }
-
-  // Fallback pe telefon, doar pentru rândurile rămase fără nume.
+async function cuNume(rows: JurnalRow[]): Promise<SmsQueueRow[]> {
   const nuclee = [
     ...new Set(
       rows
-        .filter((r) => !numeDinVizati(r))
+        .filter((r) => !r.pentru)
         .map((r) => nucleuTelefon(r.telefon))
         .filter((n): n is string => !!n),
     ),
@@ -118,7 +110,7 @@ async function cuNume(rows: SituatieSms[]): Promise<SmsQueueRow[]> {
     const nucleu = nucleuTelefon(r.telefon)
     return {
       ...r,
-      nume: numeDinVizati(r) ?? (nucleu ? numePeTelefon.get(nucleu) ?? null : null),
+      nume: r.pentru || (nucleu ? numePeTelefon.get(nucleu) ?? null : null),
     }
   })
 }

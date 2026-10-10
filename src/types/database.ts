@@ -15120,6 +15120,28 @@ export type Database = {
           tip: string
         }[]
       }
+      get_jurnal_sms: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_status?: string
+          p_tip?: string
+        }
+        Returns: {
+          clienti_vizati: string[]
+          eroare: string
+          id: string
+          mesaj: string
+          pentru: string
+          planificat: string
+          status: string
+          sursa: string
+          telefon: string
+          tip: string
+          total: number
+          trimis_la: string
+        }[]
+      }
       get_kpis_financiar: {
         Args: { p_from: string; p_locatie?: string; p_to: string }
         Returns: {

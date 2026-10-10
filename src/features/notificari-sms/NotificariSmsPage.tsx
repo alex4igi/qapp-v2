@@ -14,7 +14,6 @@ import {
   Spinner,
   type Column,
 } from '@/components/ui'
-import { statusSmsOptions } from '@/lib/enums'
 import { useAuth } from '@/hooks/useAuth'
 import { isAdminOrHigher, isManagerOrHigher } from '@/lib/rolesMatrix'
 import { SmsQueueForm } from './SmsQueueForm'
@@ -27,13 +26,30 @@ import {
   getSmsAmanateInfo,
   PAGE_SIZE,
   SMS_COD_LABEL,
+  SMS_TIPURI,
   type SmsQueueRow,
 } from './api'
 
-const codOptions = Object.entries(SMS_COD_LABEL).map(([value, label]) => ({
-  value,
-  label,
-}))
+const statusOptions = [
+  { value: 'De trimis', label: 'Planificat (de trimis)' },
+  { value: 'Amanat', label: 'Amânat (zona interzisă)' },
+  { value: 'In curs de trimitere', label: 'În curs de trimitere' },
+  { value: 'Trimis', label: 'Trimis' },
+  { value: 'Esuat', label: 'Eșuat' },
+  { value: 'Anulat', label: 'Anulat' },
+]
+
+// Coada /sms are doar data; jurnalele automate au și ora trimiterii.
+function formatMoment(iso: string | null, cuOra: boolean): string {
+  if (!iso) return '—'
+  return new Intl.DateTimeFormat('ro-RO', {
+    timeZone: 'Europe/Bucharest',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    ...(cuOra ? { hour: '2-digit', minute: '2-digit' } : {}),
+  }).format(new Date(iso))
+}
 
 const STATUS_STYLE: Record<string, string> = {
   'De trimis': 'text-amber-700',
@@ -41,6 +57,16 @@ const STATUS_STYLE: Record<string, string> = {
   Trimis: 'text-green-700',
   Esuat: 'text-red-600',
   Amanat: 'text-purple-700',
+  Anulat: 'text-quasar-gray',
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  'De trimis': 'De trimis',
+  'In curs de trimitere': 'În curs',
+  Trimis: 'Trimis',
+  Esuat: 'Eșuat',
+  Amanat: 'Amânat',
+  Anulat: 'Anulat',
 }
 
 export function NotificariSmsPage() {
@@ -126,47 +152,59 @@ export function NotificariSmsPage() {
     },
     {
       header: 'Tip',
-      cell: (s) =>
-        s.cod_mesaj ? (SMS_COD_LABEL[s.cod_mesaj] ?? s.cod_mesaj) : '—',
+      cell: (s) => (s.tip ? (SMS_COD_LABEL[s.tip] ?? s.tip) : '—'),
       className: 'w-36',
-      sortValue: (s) => s.cod_mesaj,
+      sortValue: (s) => s.tip,
     },
     {
       header: 'Mesaj',
-      cell: (s) => (
-        <span className="line-clamp-2 text-quasar-gray">{s.mesaj ?? '—'}</span>
-      ),
+      cell: (s) =>
+        s.mesaj ? (
+          <span className="line-clamp-2 text-quasar-gray">{s.mesaj}</span>
+        ) : (
+          <span className="italic text-quasar-gray">
+            Textul se compune la trimitere
+          </span>
+        ),
       sortValue: (s) => s.mesaj?.toLowerCase(),
     },
     {
       header: 'Status',
       cell: (s) => (
-        <span
-          className={`font-medium ${
-            s.status ? (STATUS_STYLE[s.status] ?? '') : ''
-          }`}
-        >
-          {s.status ?? '—'}
-        </span>
+        <div>
+          <span
+            className={`font-medium ${
+              s.status ? (STATUS_STYLE[s.status] ?? '') : ''
+            }`}
+          >
+            {s.status ? (STATUS_LABEL[s.status] ?? s.status) : '—'}
+          </span>
+          {s.eroare && s.status !== 'Trimis' && (
+            <div className="line-clamp-2 text-xs text-quasar-gray" title={s.eroare}>
+              {s.eroare}
+            </div>
+          )}
+        </div>
       ),
       className: 'w-36',
       sortValue: (s) => s.status?.toLowerCase(),
     },
     {
       header: 'Planificat',
-      cell: (s) => s.data_planificata ?? '—',
-      className: 'w-28',
-      sortValue: (s) => s.data_planificata,
+      cell: (s) => formatMoment(s.planificat, s.sursa !== 'coada'),
+      className: 'w-32',
+      sortValue: (s) => s.planificat,
     },
     {
       header: 'Trimis',
-      cell: (s) => s.data_trimitere ?? '—',
-      className: 'w-28',
-      sortValue: (s) => s.data_trimitere,
+      cell: (s) => formatMoment(s.trimis_la, s.sursa !== 'coada'),
+      className: 'w-32',
+      sortValue: (s) => s.trimis_la,
     },
     {
       header: '',
       cell: (s) => {
+        if (s.sursa !== 'coada') return null
         const stergibil = poateStergeOrice || s.status === 'De trimis'
         return (
           <Button
@@ -237,7 +275,7 @@ export function NotificariSmsPage() {
         <div className="w-52">
           <Select
             placeholder="Toate statusurile"
-            options={statusSmsOptions}
+            options={statusOptions}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           />
@@ -245,7 +283,7 @@ export function NotificariSmsPage() {
         <div className="w-52">
           <Select
             placeholder="Toate tipurile"
-            options={codOptions}
+            options={SMS_TIPURI}
             value={cod}
             onChange={(e) => setCod(e.target.value)}
           />
@@ -267,7 +305,7 @@ export function NotificariSmsPage() {
             columns={columns}
             rows={data?.rows ?? []}
             rowKey={(s) => s.id}
-            emptyMessage="Coada de SMS-uri este goală."
+            emptyMessage="Niciun SMS pentru filtrele alese."
           />
 
           <div className="mt-4 flex items-center justify-between text-sm text-quasar-gray">
