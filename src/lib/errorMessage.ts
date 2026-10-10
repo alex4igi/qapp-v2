@@ -139,6 +139,13 @@ export function humanizeError(e: unknown, fallback = 'A apărut o eroare.'): str
     return message
   }
 
+  // Fără numele coloanei, „Lipsește un câmp obligatoriu" nu spune nimic omului din fața
+  // formularului — iar de cele mai multe ori nici nu e un câmp din formular, ci un bug.
+  if (code === '23502' && message) {
+    const col = /column "([^"]+)"/.exec(message)?.[1]
+    if (col) return `Lipsește un câmp obligatoriu (${col}). Dacă nu e un câmp din formular, trimite-i mesajul lui Alex.`
+  }
+
   if (code && code in CODE_MESSAGES) return CODE_MESSAGES[code]
 
   // Mesajele RLS pot ajunge fără cod (ex. din edge functions) — detectăm după text.

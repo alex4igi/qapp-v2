@@ -493,6 +493,7 @@ function buildRecurentPerLuna(
         activ: true,
         voucher: voucher?.id ?? null,
         este_reinscriere: esteReinscriere,
+        prorata: false,
       })
     } else {
       inserts.push({
@@ -506,6 +507,9 @@ function buildRecurentPerLuna(
         activ: true,
         voucher: isFirst ? (voucher?.id ?? null) : null,
         este_reinscriere: esteReinscriere,
+        // Explicit pe fiecare rând: la un insert cu mai multe rânduri, PostgREST pune
+        // NULL (nu default-ul) pe cheile lipsă dintr-un rând, iar coloana e NOT NULL.
+        prorata: false,
       })
     }
   }
